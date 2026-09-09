@@ -1,0 +1,167 @@
+name: Test Stock vs Sunnypilot Model Equivalence
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_ref:
+        description: 'Upstream openpilot commit ref'
+        required: false
+        default: ''
+  pull_request:
+    paths:
+      - 'openpilot/selfdrive/modeld/**'
+      - 'openpilot/sunnypilot/modeld_v2/**'
+
+jobs:
+  test_stock_parity:
+    name: Compare Stock vs Sunnypilot Model Replay
+    runs-on: ubuntu-latest
+    container: ghcr.io/commaai/openpilot-base:latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Fetch Big Model ONNX
+        run: |
+          mkdir -p /tmp/onnx_models
+          if [ -n "${{ inputs.model_ref }}" ]; then
+            echo "Fetching ONNX from upstream openpilot ref ${{ inputs.model_ref }}..."
+            git clone --depth 1 https://github.com/commaai/openpilot.git /tmp/upstream_openpilot
+            cd /tmp/upstream_openpilot
+            git fetch --depth 1 origin ${{ inputs.model_ref }}
+            git checkout ${{ inputs.model_ref }}
+            git lfs pull -I "**/selfdrive/modeld/models/big_driving_supercombo.onnx"
+            find . -name "big_driving_supercombo.onnx" -exec cp {} /tmp/onnx_models/ \;
+          else
+            echo "Using default model from current branch..."
+            git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+            cp openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx /tmp/onnx_models/
+          fi
+
+      - name: Compile model for stock modeld
+        env:
+          PYTHONPATH: ".:./tinygrad_repo"
+          DEV: "CPU"
+          JIT_BATCH_SIZE: "0"
+        run: |
+          BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
+          if [ ! -f "$BIG_ONNX" ]; then
+            echo "Error: big_driving_supercombo.onnx not found at ref ${{ inputs.model_ref }}"
+            ls -la /tmp/onnx_models
+            exit 1
+          fi
+
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+
+          python3 openpilot/selfdrive/modeld/compile_modeld.py \
+            --onnx "$BIG_ONNX" \
+            --model-size "$MODEL_SIZE" \
+            --camera-resolutions $CAMERA_RESOLUTIONS \
+            --output /tmp/stock_model.pkl \
+            --frame-skip 4 \
+            --benchmark-runs 1
+
+      - name: Compile model for sunnypilot modeld_v2
+        env:
+          PYTHONPATH: ".:./tinygrad_repo"
+          DEV: "CPU"
+          JIT_BATCH_SIZE: "0"
+        run: |
+          BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+
+          python3 openpilot/sunnypilot/modeld_v2/compile_modeld.py \
+            --model-type supercombo \
+            --supercombo-onnx "$BIG_ONNX" \
+            --model-size "$MODEL_SIZE" \
+            --camera-resolutions $CAMERA_RESOLUTIONS \
+            --output /tmp/sunnypilot_model.pkl \
+            --frame-skip 4 \
+            --benchmark-runs 1
+
+      - name: Run model replay
+        env:
+          PYTHONPATH: ".:./tinygrad_repo"
+          DEV: "CPU"
+        run: |
+          python3 openpilot/sunnypilot/modeld_v2/model_replay.py \
+            --sunnypilot-model /tmp/sunnypilot_model.pkl \
+            --stock-model /tmp/stock_model.pkl \
+            --frames 60 \
+            --plot-dir /tmp/replay_plots
+
+      - name: Upload Replay Plots
+        uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: model_replay_plots_${{ github.event.number || github.sha }}
+          path: /tmp/replay_plots
+
+      - name: Checkout ci-artifacts
+        if: github.repository == 'sunnypilot/sunnypilot' && github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          repository: sunnypilot/ci-artifacts
+          ssh-key: ${{ secrets.CI_ARTIFACTS_DEPLOY_KEY }}
+          path: ${{ github.workspace }}/ci-artifacts
+
+      - name: Push plots to ci-artifacts
+        if: github.repository == 'sunnypilot/sunnypilot' && github.event_name == 'pull_request'
+        working-directory: ${{ github.workspace }}/ci-artifacts
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          BRANCH="model_replay_pr_${{ github.event.number }}"
+          git fetch origin $BRANCH || true
+          git checkout $BRANCH 2>/dev/null || git checkout --orphan $BRANCH
+          rm -rf plots && mkdir -p plots
+          cp /tmp/replay_plots/*.png plots/
+          echo "${{ github.sha }}" > ref_commit
+          git add plots ref_commit
+          git commit -m "Model replay plots for PR #${{ github.event.number }}@${{ github.sha }}" || echo "No changes to commit"
+          git push origin $BRANCH --force
+
+      - name: Comment Model Replay Report on PR
+        if: github.repository == 'sunnypilot/sunnypilot' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const prNumber = context.payload.pull_request.number;
+            const branch = `model_replay_pr_${prNumber}`;
+            const baseUrl = `https://raw.githubusercontent.com/sunnypilot/ci-artifacts/refs/heads/${branch}/plots`;
+
+            const priorityPlots = ['desiredCurvature.png', 'desiredAcceleration.png', 'velocity.x.png', 'leadsV3.x.png', 'execution_timings.png'];
+            const allFiles = fs.readdirSync('/tmp/replay_plots').filter(f => f.endsWith('.png'));
+            const orderedFiles = [
+              ...priorityPlots.filter(f => allFiles.includes(f)),
+              ...allFiles.filter(f => !priorityPlots.includes(f)).sort()
+            ];
+
+            let table = '<table>';
+            for (let i = 0; i < orderedFiles.length; i += 2) {
+              table += '<tr>';
+              table += `<td><img src="${baseUrl}/${orderedFiles[i]}" alt="${orderedFiles[i]}"><br><b>${orderedFiles[i].replace('.png', '')}</b></td>`;
+              if (i + 1 < orderedFiles.length) {
+                table += `<td><img src="${baseUrl}/${orderedFiles[i+1]}" alt="${orderedFiles[i+1]}"><br><b>${orderedFiles[i+1].replace('.png', '')}</b></td>`;
+              } else {
+                table += '<td></td>';
+              }
+              table += '</tr>';
+            }
+            table += '</table>';
+
+            const body = `### Model Replay Parity Report for PR #${prNumber} (@${context.sha.substring(0, 7)})\n\n` +
+              `<details><summary>All Model Replay Plots</summary>\n\n${table}\n\n</details>`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: body
+            });
