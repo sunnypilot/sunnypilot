@@ -139,7 +139,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.addCleanup(self._tmp.cleanup)
     self.dest = self._tmp.name
 
-    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01)):
+    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01), ('SPEED_FLOOR', 100)):
       self.enterContext(mock.patch.object(manager_module, name, value))
 
     self.reported: list[float] = []
@@ -229,6 +229,27 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.reported and self.reported == sorted(self.reported), "progress only rises"
     assert max(self.reported) <= 99.0, "progress holds below 100 until the hash check"
     assert artifact.fileName not in self.manager._download_start_times
+    assert artifact.downloadProgress.speed > 0, "a running download shows its speed"
+
+  def test_eta_comes_from_speed(self):
+    artifact = self.make_artifact()
+    self.manager._publish_progress(artifact, done_bytes=400, total=1000, speed=100)
+    assert artifact.downloadProgress.eta == 6
+
+  def test_stalled_speed_drops_to_zero(self):
+    """A stall's decaying speed snaps to exactly 0 so the UI shows no rate, then recovers to the real rate."""
+    stall_event = self.stall(0)
+    seen_speed = threading.Event()
+
+    def release_once_zero(*args):
+      if self.artifact.downloadProgress.speed > 0:
+        seen_speed.set()
+      elif seen_speed.is_set():
+        stall_event.set()
+    self.pm.send.side_effect = release_once_zero
+    self.download_file()
+    assert self.server.stall_released_by_event is True, "the stalled speed never reached exactly 0"
+    assert self.artifact.downloadProgress.speed > 0, "the speed must recover once data flows again"
 
   def test_pieces_download_in_parallel(self):
     stall_event = self.stall(0)
@@ -303,7 +324,8 @@ class TestProcessArtifact(ManagerDownloadTestBase):
         self.download_bundle(source)
         assert ACTIVE_BUNDLE_KEYS[source] in store and ACTIVE_BUNDLE_KEYS[other] not in store
         assert self.manager.selected_bundle.status == ds.downloaded
-        assert self.artifact.downloadProgress.progress == 100 and self.artifact.downloadProgress.eta == 0
+        assert self.artifact.downloadProgress.progress == 100
+        assert self.artifact.downloadProgress.eta == 0 and self.artifact.downloadProgress.speed == 0
         assert self.read_path() == WHOLE_BODY
         os.remove(self.path)
 
