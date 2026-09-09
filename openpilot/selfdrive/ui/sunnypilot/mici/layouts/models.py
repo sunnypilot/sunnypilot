@@ -251,11 +251,12 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.info_text.set_text(tr("download failed"))
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
-      self.cancel_download_btn.set_visible(True)
+      self.cancel_download_btn.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
       device.set_override_interactive_timeout(5)
       progress = 0.0
       count = 0
       verifying = False
+      canceling = False
       for model in manager.selectedBundle.models:
         count += 1
         p = model.artifact.downloadProgress
@@ -263,11 +264,13 @@ class ModelsLayoutMici(NavScroller):
                         custom.ModelManagerSP.DownloadStatus.verifying):
           progress += p.progress
           verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
+          canceling = canceling or p.canceling
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
+      header = tr("canceling...") if canceling else tr("verifying") if verifying else tr("downloading")
+      self.current_model_info.current_model_header.set_text(header)
       self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
       name_text = manager.selectedBundle.internalName.lower()
