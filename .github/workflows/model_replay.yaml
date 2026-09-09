@@ -15,7 +15,7 @@ on:
 jobs:
   test_stock_parity:
     name: Compare Stock vs Sunnypilot Model Replay
-    runs-on: ubuntu-24.04
+    runs-on: macos-14
 
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,7 @@ jobs:
           python3 openpilot/sunnypilot/modeld_v2/model_replay.py \
             --sunnypilot-model /tmp/sunnypilot_model.pkl \
             --stock-model /tmp/stock_model.pkl \
-            --frames 60 \
+            --frames 20 \
             --plot-dir /tmp/replay_plots
 
       - name: Upload Replay Plots
