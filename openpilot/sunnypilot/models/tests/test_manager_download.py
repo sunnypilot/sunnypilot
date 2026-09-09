@@ -9,6 +9,7 @@ import asyncio
 import contextlib
 import hashlib
 import http.server
+import json
 import math
 import os
 import re
@@ -217,6 +218,25 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
   def path(self) -> str:
     return os.path.join(self.dest, FILE_NAME)
 
+  @property
+  def sidecar(self) -> str:
+    return manager_module._sidecar_path(self.path)
+
+  def resume_state(self) -> dict:
+    with open(self.sidecar) as f:
+      return json.load(f)
+
+  def write_resume_state(self, done: list[int], total: int = len(WHOLE_BODY), file_size: int | None = None,
+                         file_sha256: str = sha256(WHOLE_BODY)) -> None:
+    """An interrupted download: a full-size file holding the `done` pieces plus its sidecar."""
+    with open(self.path, 'wb') as f:
+      f.truncate(len(WHOLE_BODY) if file_size is None else file_size)
+      for i in done:
+        f.seek(i * PIECE)
+        f.write(WHOLE_BODY[i * PIECE:(i + 1) * PIECE])
+    with open(self.sidecar, 'w') as f:
+      json.dump({"total": total, "piece_size": PIECE, "ranged": True, "sha256": file_sha256, "done": done}, f)
+
   @staticmethod
   def piece_requests() -> list[tuple[int, int]]:
     """Honored ranges minus the one-byte size probe."""
@@ -258,6 +278,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
     def body():
       artifact = self.download_file()
       assert self.read_path() == WHOLE_BODY
+      assert not os.path.exists(self.sidecar), "resume sidecar must go once every piece has landed"
       assert artifact.fileName not in self.manager._download_start_times
     self.run_with_server(body)
 
@@ -312,6 +333,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
       self.download_file()
       assert self.read_path() == WHOLE_BODY
       assert DownloadHandler.request_ranges == [None, None], "expected the probe plus one whole-body request"
+      assert not os.path.exists(self.sidecar)
     self.run_with_server(body)
 
   def test_http_error_propagates(self):
@@ -319,6 +341,8 @@ class TestManagerDownload(ManagerDownloadTestBase):
       DownloadHandler.fail_ranges = {piece_range(1): 404}
       with self.assertRaises(requests.exceptions.HTTPError):
         self.download_file()
+      assert os.path.isfile(self.sidecar), "a failed download stays marked incomplete"
+      assert 1 not in self.resume_state()["done"]
     self.run_with_server(body)
 
   def test_transient_error_is_retried(self):
@@ -330,8 +354,8 @@ class TestManagerDownload(ManagerDownloadTestBase):
     self.run_with_server(body)
 
   def test_cancellation_via_download_ref(self):
-    """Removing DownloadRef mid-transfer cancels the download. One piece is held back so the transfer
-    spans several reporter ticks; the ref vanishes on the second."""
+    """Removing DownloadRef mid-transfer cancels the download and keeps the finished pieces. One piece
+    is held back so the transfer spans several reporter ticks; the ref vanishes on the second."""
     def body():
       DownloadHandler.stall_ranges = {piece_range(5)}
       DownloadHandler.stall_event = threading.Event()
@@ -349,6 +373,8 @@ class TestManagerDownload(ManagerDownloadTestBase):
       with self.assertRaises(DownloadCancelled):
         self.download_file()
       assert checks["n"] >= 2, "cancel must have been polled while the transfer was running"
+      state = self.resume_state()
+      assert state["done"] and 5 not in state["done"], "a cancel must record the finished pieces for resume"
       assert os.path.getsize(self.path) == len(WHOLE_BODY)
     self.run_with_server(body)
 
@@ -361,7 +387,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
       threading.Timer(0.3, DownloadHandler.stall_event.set).start()
       with self.assertRaises(DownloadCancelled):
         self.download_file()
-      assert DownloadHandler.stall_released_by_event is True, "the cancel must have caught the piece mid-transfer"
+      assert 3 not in self.resume_state()["done"], "cancelled piece must not be recorded as complete"
     self.run_with_server(body)
 
   def test_replaced_download_ref_queues_instead_of_cancelling(self):
@@ -370,6 +396,73 @@ class TestManagerDownload(ManagerDownloadTestBase):
       self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
       self.manager._download_ref = b"ref"
       self.download_file()
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_resume_skips_complete_pieces(self):
+    """Pieces recorded in the sidecar are kept and not re-requested; progress starts above their share."""
+    def body():
+      self.write_resume_state(done=[0, 4])
+      self.download_file()
+      requested = self.piece_requests()
+      assert piece_range(0) not in requested and piece_range(4) not in requested, "complete piece was re-downloaded"
+      assert self.read_path() == WHOLE_BODY
+      assert min(self.reported) >= 2 * PIECE / len(WHOLE_BODY) * 100 - 1, "progress must not restart below the resumed share"
+      assert not os.path.exists(self.sidecar)
+    self.run_with_server(body)
+
+  def test_resume_state_for_another_layout_is_ignored(self):
+    """A sidecar written for a different file size (the model was republished) starts over."""
+    def body():
+      self.write_resume_state(done=[0], total=len(WHOLE_BODY) + 1)
+      self.download_file()
+      assert piece_range(0) in self.piece_requests()
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_resume_state_for_other_content_is_ignored(self):
+    """A sidecar for different bytes of the same name and size (the model was republished) starts over."""
+    def body():
+      self.write_resume_state(done=[0], file_sha256="0" * 64)
+      self.download_file()
+      assert piece_range(0) in self.piece_requests()
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_malformed_resume_state_starts_over(self):
+    """A sidecar that is not the expected JSON object is ignored, never fatal."""
+    def body():
+      layout = {"total": len(WHOLE_BODY), "piece_size": PIECE, "ranged": True, "sha256": sha256(WHOLE_BODY)}
+      for junk in (b'[]', b'{"total": ', json.dumps({**layout, "done": 3}).encode(), json.dumps({**layout, "done": ["0", None]}).encode()):
+        with open(self.path, 'wb') as f:
+          f.truncate(len(WHOLE_BODY))
+        with open(self.sidecar, 'wb') as f:
+          f.write(junk)
+        DownloadHandler.request_ranges = []
+        self.download_file()
+        assert sorted(self.piece_requests()) == [piece_range(i) for i in range(NUM_PIECES)], f"sidecar {junk!r} must be ignored"
+        assert self.read_path() == WHOLE_BODY
+        assert not os.path.exists(self.sidecar)
+    self.run_with_server(body)
+
+  def test_resume_needs_a_full_size_file(self):
+    """A sidecar whose file was truncated underneath it is not trusted."""
+    def body():
+      self.write_resume_state(done=[0], file_size=PIECE)
+      self.download_file()
+      assert piece_range(0) in self.piece_requests()
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_pieces_and_resume_state_are_synced_to_disk(self):
+    """Every piece is fdatasync'd before it is recorded, and the sidecar is fsync'd: a power loss
+    mid-download must never leave resume state naming bytes that never reached flash."""
+    def body():
+      with mock.patch.object(manager_module.os, 'fdatasync', wraps=os.fdatasync) as piece_sync, \
+           mock.patch.object(manager_module.os, 'fsync', wraps=os.fsync) as state_sync:
+        self.download_file()
+      assert piece_sync.call_count == NUM_PIECES, f"expected one fdatasync per piece, got {piece_sync.call_count}"
+      assert state_sync.call_count >= 2, "sidecar file and directory must be fsync'd"
       assert self.read_path() == WHOLE_BODY
     self.run_with_server(body)
 
@@ -556,7 +649,7 @@ class TestChunkedDownload(ManagerDownloadTestBase):
 
 
 class TestProcessArtifact(ManagerDownloadTestBase):
-  """Verification and cleanup around the download."""
+  """Verification, cleanup and resume policy around the download."""
 
   def test_downloaded_file_verifies_and_ends_idle(self):
     def body():
@@ -576,7 +669,31 @@ class TestProcessArtifact(ManagerDownloadTestBase):
       with self.assertRaises(ValueError):
         asyncio.run(self.manager._process_artifact(artifact, self.dest))
       assert not os.path.isfile(self.path)
+      assert not os.path.exists(self.sidecar), "a corrupt file must not be resumed from"
       assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
+    self.run_with_server(body)
+
+  def test_transport_error_keeps_resume_state(self):
+    def body():
+      DownloadHandler.fail_ranges = {piece_range(1): 500}
+      artifact = self.make_artifact()
+      with self.assertRaises(requests.exceptions.HTTPError):
+        asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert os.path.isfile(self.path) and os.path.isfile(self.sidecar), "finished pieces must survive a transport error"
+      assert self.resume_state()["done"]
+    self.run_with_server(body)
+
+  def test_interrupted_download_resumes_without_reverifying(self):
+    """A file with a sidecar is known incomplete: skip hashing it and pick up where it stopped."""
+    def body():
+      self.write_resume_state(done=[0, 1, 2])
+      artifact = self.make_artifact()
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      ds = custom.ModelManagerSP.DownloadStatus
+      assert self.reported_statuses[0] == ds.downloading, "an in-progress download is not verified first"
+      assert piece_range(0) not in self.piece_requests()
+      assert self.read_path() == WHOLE_BODY
+      assert artifact.downloadProgress.status == ds.downloaded
     self.run_with_server(body)
 
   def test_cached_file_skips_network(self):
