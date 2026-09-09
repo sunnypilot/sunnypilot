@@ -14,10 +14,12 @@ import threading
 import unittest
 import urllib.parse
 from pathlib import Path
+from typing import cast
 from types import SimpleNamespace
 from unittest import mock
 
 import requests
+from huggingface_hub import HfApi
 
 from openpilot.common.test import OpenpilotTestCase
 from release.ci import migrate_whole_file_models as migrate
@@ -31,7 +33,7 @@ def sha256(data: bytes) -> str:
 
 
 class RepoHandler(http.server.BaseHTTPRequestHandler):
-  """Serves /datasets/<repo>/resolve/main/<path> from a dict per repo; honours single byte ranges like HuggingFace."""
+  """Serves /datasets/<repo>/resolve/main/<path> from a dict per repo; honors single byte ranges like HuggingFace."""
   repos: dict[str, dict[str, bytes]] = {}
 
   def do_GET(self):
@@ -55,7 +57,7 @@ class RepoHandler(http.server.BaseHTTPRequestHandler):
     self.end_headers()
     self.wfile.write(body)
 
-  def log_message(self, *_):
+  def log_message(self, *args, **kwargs):
     pass
 
 
@@ -127,7 +129,7 @@ class TestMigrateWholeFileModels(OpenpilotTestCase):
     return {"tinygrad_ref": "e837e367", "bundles": list(bundles)}
 
   def run_migration(self, src, **kwargs):
-    return migrate.migrate_manifest(src, hf_repo=DST_REPO, api=self.api, session=self.session, selector_version=20, model_type="driving",
+    return migrate.migrate_manifest(src, hf_repo=DST_REPO, api=cast(HfApi, self.api), session=self.session, selector_version=20, model_type="driving",
                                     log=lambda _: None, **kwargs)
 
   def test_joins_uploads_and_rewrites_entry(self):
