@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: true
       - run: ./tools/op.sh setup
-      - run: scons -j$(nproc) openpilot/cereal msgq_repo opendbc_repo
+      - run: scons -j$(nproc) openpilot/cereal msgq_repo openpilot/common
       - name: Fetch Big Model ONNX
         run: |
           mkdir -p /tmp/onnx_models
@@ -44,7 +44,6 @@ jobs:
           DEV: "CPU"
           JIT_BATCH_SIZE: "0"
         run: |
-          source .venv/bin/activate
           BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
@@ -74,7 +73,6 @@ jobs:
         env:
           DEV: "CPU"
         run: |
-          source .venv/bin/activate
           python3 openpilot/sunnypilot/modeld_v2/model_replay.py \
             --sunnypilot-model /tmp/sunnypilot_model.pkl \
             --stock-model /tmp/stock_model.pkl \
