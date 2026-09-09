@@ -22,7 +22,7 @@ jobs:
         with:
           submodules: true
       - run: ./tools/op.sh setup
-      - run: scons -j$(nproc) openpilot/cereal msgq_repo openpilot/common
+      - run: scons -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu) openpilot/cereal msgq_repo openpilot/common
       - name: Fetch Big Model ONNX
         run: |
           mkdir -p /tmp/onnx_models
