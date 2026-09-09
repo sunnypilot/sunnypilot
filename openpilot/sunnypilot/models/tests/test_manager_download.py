@@ -6,9 +6,12 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import asyncio
+import contextlib
 import hashlib
 import http.server
+import math
 import os
+import re
 import tempfile
 import threading
 import time
@@ -22,83 +25,155 @@ from urllib3.connectionpool import HTTPConnectionPool
 from openpilot.cereal import custom
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
-from openpilot.selfdrive.test.helpers import http_server_context
 from openpilot.sunnypilot.models import manager as manager_module
 from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models import helpers
 from openpilot.sunnypilot.models.helpers import (get_active_bundle, get_active_source, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles)
-from openpilot.sunnypilot.models.manager import ModelManagerSP
+from openpilot.sunnypilot.models.manager import DownloadCancelled, ModelManagerSP
 
+FILE_NAME = 'driving_test_tinygrad.pkl'
+# non-repeating bytes so a misordered or duplicated piece changes the assembled file
+WHOLE_BODY = bytes(range(256)) * 40
+PIECE = 1000  # test piece size -> 11 pieces, the last one short
+NUM_PIECES = math.ceil(len(WHOLE_BODY) / PIECE)
+# a legacy chunked entry, served by path; goes with the chunked download path
 CHUNK_BODIES = [b'A' * 5000, b'B' * 5000, b'C' * 3000]
-WHOLE_BODY = b'Z' * 9000
 
 
 def sha256(data: bytes) -> str:
   return hashlib.sha256(data).hexdigest()
 
 
+def piece_range(index: int) -> tuple[int, int]:
+  """Inclusive byte range the client is expected to request for piece `index`."""
+  start = index * PIECE
+  return start, min(start + PIECE, len(WHOLE_BODY)) - 1
+
+
 class DownloadHandler(http.server.BaseHTTPRequestHandler):
-  """Serves the fixture bodies. Class attributes are reset per test."""
-  request_paths: list[str] = []
-  fail_paths: dict[str, int] = {}
-  stall_paths: set[str] = set()
+  """Serves WHOLE_BODY with byte-range support. Class attributes are reset per test."""
+  request_ranges: list[tuple[int, int] | None] = []  # None: no (honoured) Range header
+  fail_ranges: dict[tuple[int, int], int] = {}  # range -> HTTP status, every time
+  fail_once: set[tuple[int, int]] = set()  # ranges that 503 on their first request only
+  fail_times: dict[tuple[int, int], int] = {}  # range -> how many more requests 503 before it succeeds
+  stall_ranges: set[tuple[int, int]] = set()
   stall_event: threading.Event | None = None
+  stall_released_by_event: bool | None = None
+  support_ranges = True
+  corrupt = False
+  request_paths: list[str] = []  # every path requested, chunk or whole
+  fail_paths: dict[str, int] = {}  # chunk path -> HTTP status
 
   def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
     pass
 
-  def _body_for(self, path):
-    if path.endswith('.whole'):
-      return WHOLE_BODY
-    for i in range(len(CHUNK_BODIES)):
-      if path.endswith(get_chunk_name('', i, len(CHUNK_BODIES))):
-        return CHUNK_BODIES[i]
-    return None
-
   def do_GET(self):
-    type(self).request_paths.append(self.path)
-
-    status = type(self).fail_paths.get(self.path)
-    if status:
-      self.send_response(status)
+    cls = type(self)
+    cls.request_paths.append(self.path)
+    if self.path in cls.fail_paths:
+      self.send_response(cls.fail_paths[self.path])
       self.end_headers()
       return
-
-    body = self._body_for(self.path)
-    if body is None:
+    for i, chunk in enumerate(CHUNK_BODIES):
+      if self.path.endswith(get_chunk_name('', i, len(CHUNK_BODIES))):
+        self.send_response(200)
+        self.send_header('Content-Length', str(len(chunk)))
+        self.end_headers()
+        self.wfile.write(chunk)
+        return
+    if not self.path.endswith('/' + FILE_NAME):
       self.send_response(404)
       self.end_headers()
       return
 
-    self.send_response(200)
-    self.send_header('Content-Length', str(len(body)))
+    body = WHOLE_BODY
+    if cls.corrupt:
+      body = body[:5000] + bytes([body[5000] ^ 0xFF]) + body[5001:]
+
+    rng = None
+    match = re.fullmatch(r'bytes=(\d+)-(\d+)', self.headers.get('Range', ''))
+    if match and cls.support_ranges:
+      rng = (int(match.group(1)), int(match.group(2)))
+    cls.request_ranges.append(rng)
+
+    if rng in cls.fail_ranges:
+      self.send_response(cls.fail_ranges[rng])
+      self.end_headers()
+      return
+    if rng in cls.fail_once:
+      cls.fail_once.discard(rng)
+      self.send_response(503)
+      self.end_headers()
+      return
+    if cls.fail_times.get(rng, 0) > 0:
+      cls.fail_times[rng] -= 1
+      self.send_response(503)
+      self.end_headers()
+      return
+
+    if rng is None:
+      payload = body
+      self.send_response(200)
+    else:
+      start, end = rng
+      payload = body[start:end + 1]
+      self.send_response(206)
+      self.send_header('Content-Range', f'bytes {start}-{end}/{len(body)}')
+    self.send_header('Content-Length', str(len(payload)))
     self.end_headers()
 
-    if self.path in type(self).stall_paths:
-      # write a little, then wait so the test can cancel mid-transfer
-      self.wfile.write(body[:100])
+    if rng in cls.stall_ranges:
+      # write a little, then hold the connection until the test releases it
+      self.wfile.write(payload[:100])
       self.wfile.flush()
-      if type(self).stall_event is not None:
-        type(self).stall_event.wait(timeout=5)
-      self.wfile.write(body[100:])
+      if cls.stall_event is not None:
+        cls.stall_released_by_event = cls.stall_event.wait(timeout=5)
+      self.wfile.write(payload[100:])
     else:
-      self.wfile.write(body)
+      self.wfile.write(payload)
+
+
+@contextlib.contextmanager
+def threaded_server(handler):
+  """One thread per request, so parallel range requests are served concurrently."""
+  server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
+  thread = threading.Thread(target=server.serve_forever)
+  thread.start()
+  try:
+    yield f'http://127.0.0.1:{server.server_port}'
+  finally:
+    server.shutdown()
+    server.server_close()
+    thread.join()
 
 
 class ManagerDownloadTestBase(OpenpilotTestCase):
   def setUp(self):
     super().setUp()
+    DownloadHandler.request_ranges = []
+    DownloadHandler.fail_ranges = {}
+    DownloadHandler.fail_once = set()
+    DownloadHandler.fail_times = {}
+    DownloadHandler.stall_ranges = set()
+    DownloadHandler.stall_event = None
+    DownloadHandler.stall_released_by_event = None
+    DownloadHandler.support_ranges = True
+    DownloadHandler.corrupt = False
     DownloadHandler.request_paths = []
     DownloadHandler.fail_paths = {}
-    DownloadHandler.stall_paths = set()
-    DownloadHandler.stall_event = None
 
     self._tmp = tempfile.TemporaryDirectory()
     self.addCleanup(self._tmp.cleanup)
     self.dest = self._tmp.name
 
+    for name, value in (('PIECE_SIZE', PIECE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01)):
+      patcher = mock.patch.object(manager_module, name, value)
+      patcher.start()
+      self.addCleanup(patcher.stop)
+
     self.reported: list[float] = []
+    self.reported_statuses: list[int] = []
 
     self.manager = ModelManagerSP.__new__(ModelManagerSP)
     self.manager.params = mock.MagicMock()
@@ -110,7 +185,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.manager.active_bundle = None
     self.manager.available_models = []
     self.manager.chestnut_present = False
-    self.manager._chunk_size = 1024
+    self.manager._block_size = 256
     self.manager._download_start_times = {}
 
   def _record_progress(self, *args) -> None:
@@ -118,53 +193,190 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     artifact = getattr(self, 'artifact', None)
     if artifact is not None:
       self.reported.append(float(artifact.downloadProgress.progress))
+      status = artifact.downloadProgress.status
+      self.reported_statuses.append(getattr(status, 'raw', status))  # .raw: _DynamicEnum is not int()-able
 
-  def make_artifact(self, chunked: bool):
+  def make_artifact(self, chunked: bool = False):
     bundle = custom.ModelManagerSP.ModelBundle.new_message()
     bundle.init('models', 1)
     artifact = bundle.models[0].artifact
-    artifact.fileName = 'driving_test_tinygrad.pkl'
-    if chunked:
-      artifact.downloadUri.uri = self.base_url + '/driving_test_tinygrad.pkl'
+    artifact.fileName = FILE_NAME
+    artifact.downloadUri.uri = self.base_url + '/' + FILE_NAME
+    if chunked:  # a legacy manifest entry: the whole file's hash plus one per chunk
       artifact.downloadUri.sha256 = sha256(b''.join(CHUNK_BODIES))
       artifact.init('chunks', len(CHUNK_BODIES))
       for i, body in enumerate(CHUNK_BODIES):
         artifact.chunks[i].sha256 = sha256(body)
     else:
-      artifact.downloadUri.uri = self.base_url + '/driving_test_tinygrad.pkl.whole'
       artifact.downloadUri.sha256 = sha256(WHOLE_BODY)
     self._bundle = bundle
     self.artifact = artifact
     return artifact
 
-  def chunk_paths(self, base_path):
-    return [get_chunk_name(base_path, i, len(CHUNK_BODIES)) for i in range(len(CHUNK_BODIES))]
+  @property
+  def path(self) -> str:
+    return os.path.join(self.dest, FILE_NAME)
 
-  def assert_no_partials(self, base_path):
-    leftovers = [p for p in [base_path, get_manifest_path(base_path)] + self.chunk_paths(base_path)
-                 if os.path.isfile(p)]
-    assert leftovers == [], f"partial files left behind: {leftovers}"
+  @staticmethod
+  def piece_requests() -> list[tuple[int, int]]:
+    """Honoured ranges minus the one-byte size probe."""
+    return [r for r in DownloadHandler.request_ranges if r is not None and r != (0, 0)]
+
+  def run_with_server(self, fn):
+    with threaded_server(DownloadHandler) as base_url:
+      self.base_url = base_url
+      return fn()
+
+  def download_file(self):
+    artifact = self.make_artifact()
+    asyncio.run(self.manager._download_file(artifact.downloadUri.uri, self.path, artifact))
+    return artifact
+
+  def read_path(self) -> bytes:
+    with open(self.path, 'rb') as f:
+      return f.read()
+
+  def _make_params_with_store(self):
+    params = mock.MagicMock()
+    store = {}
+
+    def get(key, *args, **kwargs):
+      return store.get(key, b"0")  # b"0" -> download not cancelled
+
+    def put(key, value, *args, **kwargs):
+      store[key] = value
+
+    params.get.side_effect = get
+    params.put.side_effect = put
+    return params, store
 
 
 class TestManagerDownload(ManagerDownloadTestBase):
-  """Exercises the real _download_file / _download_chunked against a local server."""
-
-  def run_with_server(self, fn):
-    with http_server_context(handler=DownloadHandler) as (host, port):
-      self.base_url = f'http://{host}:{port}'
-      return fn()
+  """Exercises the real parallel byte-range _download_file against a local server."""
 
   def test_download_file_writes_exact_bytes(self):
     def body():
-      artifact = self.make_artifact(chunked=False)
-      path = os.path.join(self.dest, artifact.fileName)
-      asyncio.run(self.manager._download_file(artifact.downloadUri.uri, path, artifact))
-      with open(path, 'rb') as f:
-        written = f.read()
-      assert written == WHOLE_BODY
-      assert sha256(written) == artifact.downloadUri.sha256
+      artifact = self.download_file()
+      assert self.read_path() == WHOLE_BODY
       assert artifact.fileName not in self.manager._download_start_times
     self.run_with_server(body)
+
+  def test_pieces_tile_the_file(self):
+    def body():
+      self.download_file()
+      expected = [piece_range(i) for i in range(NUM_PIECES)]
+      assert sorted(self.piece_requests()) == expected
+    self.run_with_server(body)
+
+  def test_pieces_download_in_parallel(self):
+    """The stalled piece is only released once every other piece has been requested. A serial
+    downloader would sit on it until the server's stall timeout instead."""
+    def body():
+      DownloadHandler.stall_ranges = {piece_range(0)}
+      DownloadHandler.stall_event = threading.Event()
+      others = {piece_range(i) for i in range(1, NUM_PIECES)}
+
+      def release_when_others_requested():
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline and not others <= set(self.piece_requests()):
+          time.sleep(0.01)
+        DownloadHandler.stall_event.set()
+
+      threading.Thread(target=release_when_others_requested).start()
+      self.download_file()
+      assert DownloadHandler.stall_released_by_event is True, "other pieces did not download while one was stalled"
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_progress_is_monotonic_and_bounded(self):
+    def body():
+      self.download_file()
+      assert self.reported, "expected progress reports"
+      for a, b in zip(self.reported, self.reported[1:], strict=False):
+        assert b >= a, f"progress went backwards: {a} -> {b}"
+      assert max(self.reported) <= 99.0, f"progress must stay <=99 until verify, got {max(self.reported)}"
+    self.run_with_server(body)
+
+  def test_fallback_when_server_ignores_ranges(self):
+    """A 200 to the range probe means whole bodies only: one plain stream, same result."""
+    def body():
+      DownloadHandler.support_ranges = False
+      self.download_file()
+      assert self.read_path() == WHOLE_BODY
+      assert DownloadHandler.request_ranges == [None, None], "expected the probe plus one whole-body request"
+    self.run_with_server(body)
+
+  def test_http_error_propagates(self):
+    def body():
+      DownloadHandler.fail_ranges = {piece_range(1): 404}
+      with self.assertRaises(requests.exceptions.HTTPError):
+        self.download_file()
+    self.run_with_server(body)
+
+  def test_transient_error_is_retried(self):
+    def body():
+      DownloadHandler.fail_once = {piece_range(2)}
+      self.download_file()
+      assert self.read_path() == WHOLE_BODY
+      assert self.piece_requests().count(piece_range(2)) == 2
+    self.run_with_server(body)
+
+  def test_cancellation_via_download_ref(self):
+    """Removing DownloadRef mid-transfer cancels the download. One piece is held back so the transfer
+    spans several reporter ticks; the ref vanishes on the second."""
+    def body():
+      DownloadHandler.stall_ranges = {piece_range(5)}
+      DownloadHandler.stall_event = threading.Event()
+      threading.Timer(0.3, DownloadHandler.stall_event.set).start()
+      checks = {"n": 0}
+
+      def get(key):
+        if key == "ModelManager_DownloadRef":
+          checks["n"] += 1
+          return b"ref" if checks["n"] <= 1 else None
+        return b"0"
+
+      self.manager.params.get.side_effect = get
+      self.manager._download_ref = b"ref"
+      with self.assertRaises(DownloadCancelled):
+        self.download_file()
+      assert checks["n"] >= 2, "cancel must have been polled while the transfer was running"
+      assert os.path.getsize(self.path) == len(WHOLE_BODY)
+    self.run_with_server(body)
+
+  def test_cancel_stops_a_running_piece(self):
+    """A worker blocked on a slow piece exits at its next block once cancelled."""
+    def body():
+      DownloadHandler.stall_ranges = {piece_range(3)}
+      DownloadHandler.stall_event = threading.Event()
+      self.manager.params.get.return_value = None  # cancelled
+      threading.Timer(0.3, DownloadHandler.stall_event.set).start()
+      with self.assertRaises(DownloadCancelled):
+        self.download_file()
+      assert DownloadHandler.stall_released_by_event is True, "the cancel must have caught the piece mid-transfer"
+    self.run_with_server(body)
+
+  def test_replaced_download_ref_queues_instead_of_cancelling(self):
+    """Selecting another model mid-transfer lets the running download finish."""
+    def body():
+      self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
+      self.manager._download_ref = b"ref"
+      self.download_file()
+      assert self.read_path() == WHOLE_BODY
+    self.run_with_server(body)
+
+  def test_repeat_downloads_are_stable(self):
+    """Back-to-back runs must produce identical bytes and leak no start-time state."""
+    def body():
+      for _ in range(2):
+        self.download_file()
+        assert self.read_path() == WHOLE_BODY
+        assert self.manager._download_start_times == {}
+    self.run_with_server(body)
+
+
+class TestChunkedDownload(ManagerDownloadTestBase):
+  """The chunked download path, still used by the manifests before selector version 20."""
 
   def test_download_chunked_writes_all_chunks_and_manifest(self):
     def body():
@@ -299,39 +511,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert os.path.isfile(get_manifest_path(base_path))
     self.run_with_server(body)
 
-  def test_replaced_download_ref_is_kept(self):
-    """A selection made during a download must survive that download's cleanup."""
-    self.manager.params.get.return_value = b"new-ref"
-    self.manager._download_ref = b"old-ref"
-    self.manager._release_download_ref()
-    self.manager.params.remove.assert_not_called()
-
-  def test_own_download_ref_is_released(self):
-    self.manager.params.get.return_value = b"ref"
-    self.manager._download_ref = b"ref"
-    self.manager._release_download_ref()
-    self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
-
-  def test_cached_bundle_cancel_skips_slot_write(self):
-    """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      for i, data in enumerate(CHUNK_BODIES):
-        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
-          f.write(data)
-      self._bundle.ref = "test-ref"
-      params, store = self._make_params_with_store()
-      store["ModelManager_DownloadRef"] = None  # removed -> cancelled
-      self.manager.params = params
-      self.manager._download_ref = b"ref"
-      with self.assertRaises(Exception) as ctx:
-        asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
-      assert 'cancelled' in str(ctx.exception).lower()
-      assert "ModelManager_ActiveBundle" not in store
-      assert all(os.path.isfile(p) for p in self.chunk_paths(base_path)), "cancel must not delete cached chunks"
-    self.run_with_server(body)
-
   def test_resume_skips_valid_chunks(self):
     """A chunk already on disk is kept and not re-downloaded; progress starts above its share."""
     def body():
@@ -367,24 +546,63 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.cached
     self.run_with_server(body)
 
-  def _make_params_with_store(self):
-    params = mock.MagicMock()
-    store = {}
 
-    def get(key, *args, **kwargs):
-      return store.get(key, b"0")  # b"0" -> download not cancelled
+class TestProcessArtifact(ManagerDownloadTestBase):
+  """Verification and cleanup around the download."""
 
-    def put(key, value, *args, **kwargs):
-      store[key] = value
+  def test_downloaded_file_verifies_and_ends_idle(self):
+    def body():
+      artifact = self.make_artifact()
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert self.read_path() == WHOLE_BODY
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
+      assert artifact.downloadProgress.progress == 100
+      assert artifact.downloadProgress.eta == 0
+    self.run_with_server(body)
 
-    params.get.side_effect = get
-    params.put.side_effect = put
-    return params, store
+  def test_hash_mismatch_discards_file_and_parts(self):
+    def body():
+      DownloadHandler.corrupt = True
+      artifact = self.make_artifact()
+      with self.assertRaises(ValueError):
+        asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert not os.path.isfile(self.path)
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
+    self.run_with_server(body)
+
+  def test_cached_file_skips_network(self):
+    def body():
+      with open(self.path, 'wb') as f:
+        f.write(WHOLE_BODY)
+      artifact = self.make_artifact()
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert DownloadHandler.request_ranges == [], "cached file must not hit the network"
+      ds = custom.ModelManagerSP.DownloadStatus
+      assert self.reported_statuses == [ds.verifying, ds.cached]
+      assert artifact.downloadProgress.progress == 100
+    self.run_with_server(body)
+
+  def test_cached_bundle_cancel_skips_slot_write(self):
+    """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
+    def body():
+      with open(self.path, 'wb') as f:
+        f.write(WHOLE_BODY)
+      self.make_artifact()
+      self._bundle.ref = "test-ref"
+      params, store = self._make_params_with_store()
+      store["ModelManager_DownloadRef"] = None  # removed -> cancelled
+      self.manager.params = params
+      self.manager._download_ref = b"ref"
+      with self.assertRaises(DownloadCancelled):
+        asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
+      assert "ModelManager_ActiveBundle" not in store
+      assert os.path.isfile(self.path), "cancel must not delete a cached model"
+    self.run_with_server(body)
 
   def test_download_writes_qcom_slot(self):
     """A download resolved to the qcom source writes the qcom active bundle slot only."""
     def body():
-      artifact = self.make_artifact(chunked=True)
+      self.make_artifact()
       self._bundle.ref = "test-ref"
       self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
       params, store = self._make_params_with_store()
@@ -396,15 +614,13 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
       assert self.manager.active_bundle is not None and self.manager.active_bundle.ref == "test-ref"
       assert self.manager.active_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
-      chunk_names = [get_chunk_name(artifact.fileName, i, len(artifact.chunks)) for i in range(len(artifact.chunks))]
-      missing = [c for c in chunk_names if not os.path.isfile(os.path.join(self.dest, c))]
-      assert missing == [], f"chunks missing from the cache: {missing}"
+      assert self.read_path() == WHOLE_BODY
     self.run_with_server(body)
 
   def test_download_writes_chestnut_slot(self):
     """A download resolved to the chestnut source writes the chestnut active bundle slot only."""
     def body():
-      self.make_artifact(chunked=True)
+      self.make_artifact()
       self._bundle.ref = "big-ref"
       self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
       params, store = self._make_params_with_store()
@@ -416,6 +632,18 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
     self.run_with_server(body)
 
+  def test_replaced_download_ref_is_kept(self):
+    """A selection made during a download must survive that download's cleanup."""
+    self.manager.params.get.return_value = b"new-ref"
+    self.manager._download_ref = b"old-ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_not_called()
+
+  def test_own_download_ref_is_released(self):
+    self.manager.params.get.return_value = b"ref"
+    self.manager._download_ref = b"ref"
+    self.manager._release_download_ref()
+    self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
 
 class TestManagerImports(OpenpilotTestCase):
   """Catches undeclared dependencies. aiohttp lived only in the AGNOS venv; 19.6 dropped
@@ -432,6 +660,9 @@ class TestManagerImports(OpenpilotTestCase):
   def test_download_timeout_is_explicit(self):
     connect, read = manager_module.DOWNLOAD_TIMEOUT
     assert connect > 0 and read > 0, "requests defaults to no timeout; downloads would hang forever"
+
+  def test_parallelism_is_bounded(self):
+    assert 1 < manager_module.MAX_CONCURRENT_CHUNKS <= 32, "HuggingFace was only verified rate-limit free up to 32 connections"
 
 
 class TestResolveBundleByRef(OpenpilotTestCase):
