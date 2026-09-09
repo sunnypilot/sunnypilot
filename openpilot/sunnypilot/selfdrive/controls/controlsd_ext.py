@@ -21,9 +21,15 @@ from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import Lat
 
 def longitudinal_plan_sp_idle_active(sm: messaging.SubMaster) -> bool:
   try:
-    if not sm.valid['longitudinalPlanSP']:
+    if not sm.all_checks(['longitudinalPlanSP', 'longitudinalPlan', 'radarState']):
       return False
-    return bool(sm['longitudinalPlanSP'].speedLimit.assist.longitudinalIdle)
+    # controlsd publishes controlsState, so it cannot read forceDecel from its
+    # SubMaster. Use the same inputs as the published forceDecel calculation.
+    force_decel = (sm['driverMonitoringState'].noResponseForceDecel or
+                   sm['selfdriveState'].state == log.SelfdriveState.OpenpilotState.softDisabling)
+    return bool(sm['longitudinalPlanSP'].speedLimit.assist.longitudinalIdle and
+                not sm['longitudinalPlan'].shouldStop and not sm['longitudinalPlan'].fcw and
+                not force_decel and not sm['carState'].gasPressed and not sm['carState'].brakePressed)
   except (AttributeError, KeyError):
     return False
 

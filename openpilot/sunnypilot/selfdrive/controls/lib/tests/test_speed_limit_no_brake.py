@@ -133,3 +133,24 @@ def test_speed_limit_decel_target_does_not_cap_with_lead():
 
 def test_speed_limit_decel_target_does_not_cap_non_speed_limit_source():
   assert limit_speed_limit_decel_target(-1.0, False, False, -0.5) == -1.0
+
+
+def test_approach_releases_once_and_rearms_for_new_limit():
+  from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import SpeedLimitApproach
+  approach = SpeedLimitApproach()
+  target, gap = 50. * CV.KPH_TO_MS, 5. * CV.KPH_TO_MS
+  assert approach.update(True, target, 70. * CV.KPH_TO_MS, gap)
+  assert not approach.update(True, target, 55. * CV.KPH_TO_MS, gap)
+  assert not approach.update(True, target, 56. * CV.KPH_TO_MS, gap)
+  assert not approach.update(True, target, 51. * CV.KPH_TO_MS, gap)
+  assert approach.update(True, 30. * CV.KPH_TO_MS, 51. * CV.KPH_TO_MS, gap)
+
+
+def test_approach_resume_cancels_until_new_approach():
+  from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import SpeedLimitApproach
+  approach = SpeedLimitApproach()
+  assert approach.update(True, 15., 25., 1.)
+  assert not approach.update(True, 15., 25., 1., cancel=True)
+  assert not approach.update(True, 15., 25., 1.)
+  assert not approach.update(False, 15., 25., 1.)
+  assert approach.update(True, 15., 25., 1.)

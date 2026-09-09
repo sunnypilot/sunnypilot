@@ -55,7 +55,7 @@ Default: `0.0`
 
 `speedLimitLowerDecelControlEnabled`
 
-Enables the special lower-speed-limit decel behavior when lower map lookahead is active and there is no lead car.
+Enables the special lower-speed-limit decel behavior when lower map lookahead is active. Fixed/dynamic modes require no lead; idle mode also permits a steady, sufficiently distant lead (see below).
 
 Allowed values: `true`, `false`
 
@@ -85,7 +85,7 @@ Default: `-0.05`
 
 `speedLimitLowerDecelReleaseGapKph`
 
-Stops the lower-limit decel override once ego speed is within this margin above the adjusted speed-limit target. Example: with a `50 kph` target and `5.0`, the override releases at `55 kph`.
+Stops the lower-limit decel override once ego speed is within this margin above the adjusted speed-limit target. Example: with a `50 kph` target and `5.0`, the override releases at `55 kph`. This is a one-time release for that target: normal speed control resumes and small speed increases do not re-enter the override. The release margin does not change the final cruise target. With a posted `50 kph` limit and a `+1 kph` speed-limit offset, the adjusted target is `51 kph`, so a `5 kph` release margin releases at `56 kph`.
 
 Allowed range: `0.0` to `30.0` kph
 
@@ -101,10 +101,10 @@ Default: `-0.5`
 
 `longitudinalNoLeadDecelMode`
 
-Controls intentional no-lead cruise-source decel, outside emergency/lead/stop cases. It does not idle for small speed-hold corrections.
+Controls intentional cruise-source decel, outside emergency, lead-braking, and stop cases. Despite its legacy name, idle mode also permits a qualified steady lead under the rules below. It does not idle for small speed-hold corrections.
 
 This is the broader gas-car test mode. If `"idle"` behaves well, it can replace most fixed/dynamic decel tuning for no-lead slowdowns.
-Pressing accel/resume or increasing the cruise target clears idle and blocks it briefly so the controller sends an active non-idle output again.
+Pressing accel/resume or increasing the cruise target clears idle and blocks it briefly so the controller sends an active non-idle output again. Lowering the set speed while temporarily overriding with the accelerator preserves that slowdown target until control resumes; idle is always blocked while a pedal is pressed, and full disengagement clears the target.
 If SLC is enforcing the current adjusted speed limit and the car is more than `longitudinalNoLeadIdleOverspeedMarginKph` above it, idle is blocked so normal decel/braking can control downhill overspeed. After this happens, idle stays blocked for `longitudinalNoLeadIdleDecelCooldownS` seconds to avoid rapid idle/brake toggling near the limit.
 
 Allowed values:
@@ -155,3 +155,18 @@ The old keys are still accepted as fallbacks:
 - `speedLimitMaxDecel` -> `speedLimitMaxDecelMps2`
 
 Prefer the explicit keys for new configs.
+
+## Idle with a lead and recovery
+
+Both the dedicated lower-limit `"idle"` approach and manual set-speed reductions with `longitudinalNoLeadDecelMode: "idle"` can coast with a lead after two seconds of stable readings. Both detected leads must satisfy all of these initial conservative thresholds:
+
+- Distance at least `6 m + 2 seconds × ego speed`.
+- Relative speed at least `-0.2 m/s` (no appreciable closing).
+- Lead acceleration at least `-0.2 m/s²` (no appreciable slowing).
+- No abrupt distance drop of more than `0.5 m` between planner updates.
+
+Every new lead appearance restarts the two-second qualification period. A lead that simply departs no longer restarts it; the lead-planner brake gate below still blocks idle whenever the planner needs to slow down, so this avoids several seconds of braking right as a qualifying lead pulls away. A flickering lead still cannot repeatedly re-enable idle, because each reappearance resets the timer.
+
+Unsafe lead readings must persist before they restart qualification. Brief radar noise (up to `0.25 s`) keeps the qualified state but still blocks idle on the affected frames. Hard lead-planner braking (`≤ -0.4 m/s²`) blocks idle immediately, while a smaller request (`< -0.15 m/s²`) must persist for about `0.2 s`; this keeps a stable lead's tiny gap correction from permanently suppressing coasting. Stop requests, FCW, forced deceleration, pedal input, experimental control, and invalid/stale planner inputs also block idle. Manual cruise deceleration uses the same lead checks and re-entry delay. For example, reducing cruise from `40` to `20 kph` can coast until `22 kph` with a `2 kph` release gap, then normal control finishes the slowdown; a lead that slows or closes the gap blocks idle immediately. The CAN output rechecks both raw leads without the display's lead-visibility delay.
+
+Accel/resume cancels the current lower-limit approach until a new approach/target. The controller continues updating its engagement state during idle, and stale plans cannot keep commanding idle. These checks address software paths that can suppress acceleration; actual Hyundai SCC recovery after `ACCMode=0` still needs validation on supported hardware using recorded CAN/control data.

@@ -35,8 +35,8 @@ class UIStateSP:
     self.has_icbm: bool = False
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
-      "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-      "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay"
+      "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "carControlSP", "backupManagerSP",
+      "gpsLocation", "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay"
     ]
 
     self.sunnylink_state = SunnylinkState()

@@ -9,6 +9,8 @@ import pyray as rl
 from openpilot.cereal import custom
 from opendbc.car.structs import car
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 MADSState = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -29,9 +31,14 @@ class RocketFuel:
   @staticmethod
   def longitudinal_idle_active(sm) -> bool:
     try:
-      if not RocketFuel.service_alive(sm, 'longitudinalPlanSP'):
+      # The UI samples 100 Hz controls messages at its rendering rate. Fresh,
+      # valid requests may fail frequency checks on a slower UI (e.g. 20 FPS).
+      services = ['carControlSP', 'carControl']
+      if not sm.all_alive(services) or not sm.all_valid(services):
         return False
-      return bool(sm['longitudinalPlanSP'].speedLimit.assist.longitudinalIdle)
+      # Display the accepted controls request, not a planner request that may
+      # have been rejected before reaching car control.
+      return bool(sm['carControlSP'].longitudinalIdle and sm['carControl'].longActive)
     except (AttributeError, KeyError):
       return False
 
@@ -106,4 +113,7 @@ class RocketFuel:
       font_size = 48
       marker_y = int(rect.y + rect.height / 2.0 - marker_h / 2.0)
       rl.draw_rectangle(int(rect.x), marker_y, marker_w, marker_h, rl.Color(245, 180, 0, 220))
-      rl.draw_text("N", int(rect.x + 14), marker_y + 10, font_size, rl.WHITE)
+      font = gui_app.font(FontWeight.BOLD)
+      text_size = measure_text_cached(font, "N", font_size)
+      text_pos = rl.Vector2(rect.x + (marker_w - text_size.x) / 2, marker_y + (marker_h - text_size.y) / 2)
+      rl.draw_text_ex(font, "N", text_pos, font_size, 0, rl.WHITE)

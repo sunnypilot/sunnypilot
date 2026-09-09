@@ -147,11 +147,12 @@ class Controls(ControlsExt):
 
     # accel PID loop
     pid_accel_limits = self.CI.get_pid_accel_limits(self.CP, self.CP_SP, CS.vEgo, CS.vCruise * CV.KPH_TO_MS)
-    if longitudinal_plan_sp_idle_active(self.sm):
+    idle_active = CC.longActive and longitudinal_plan_sp_idle_active(self.sm)
+    actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
+    if idle_active:
       self.LoC.reset()
       actuators.accel = 0.
-    else:
-      actuators.accel = float(self.LoC.update(CC.longActive, CS, long_plan.aTarget, long_plan.shouldStop, pid_accel_limits))
+      self.LoC.last_output_accel = 0.
 
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage

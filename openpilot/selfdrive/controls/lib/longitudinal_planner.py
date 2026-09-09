@@ -3,6 +3,7 @@ import numpy as np
 
 import openpilot.cereal.messaging as messaging
 from opendbc.car.structs import car
+from opendbc.sunnypilot.car.hyundai.lead_data_ext import lead_allows_coasting
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -18,13 +19,13 @@ from openpilot.common.swaglog import cloudlog
 
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import (
   LongitudinalPlannerSP,
+  SpeedLimitApproach,
   LongitudinalPlanSource as SpeedLimitPlanSource,
   limit_speed_limit_decel_target,
   no_lead_normal_decel_idle_active,
   speed_limit_current_limit_decel_needed,
   speed_limit_idle_active,
   speed_limit_no_brake_accel_target,
-  speed_limit_no_brake_active,
 )
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.slc_config import (
   get_longitudinal_no_lead_idle_min_decel,
@@ -47,6 +48,15 @@ CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 MIN_ALLOW_THROTTLE_SPEED = 2.5
 CRUISE_TARGET_CHANGE_MIN_KPH = 0.1
 LONGITUDINAL_IDLE_REENTRY_BLOCK_FRAMES = int(1.0 / DT_MDL)
+LEAD_COAST_REENTRY_STABLE_S = 2.0
+# A brief, noisy lead reading must not restart the whole qualification period.
+# Only sustained unsafe readings reset it.
+LEAD_COAST_UNSAFE_GRACE_FRAMES = int(0.25 / DT_MDL)
+# Lead-planner braking blocks coasting. Hard braking does so immediately; a
+# smaller request must persist before it is trusted over idle.
+LEAD_COAST_HARD_BRAKE_ACCEL = -0.4
+LEAD_COAST_SOFT_BRAKE_ACCEL = -0.15
+LEAD_COAST_SOFT_BRAKE_FRAMES = int(0.2 / DT_MDL)
 ButtonType = car.CarState.ButtonEvent.Type
 CRUISE_TARGET_DOWN_BUTTONS = (ButtonType.decelCruise, ButtonType.setCruise)
 CRUISE_TARGET_UP_BUTTONS = (ButtonType.accelCruise, ButtonType.resumeCruise)
@@ -74,6 +84,14 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.accel_boost = AccelBoost()
     self.speed_limit_no_brake = get_slc_no_brake()
     self.longitudinal_idle = False
+    self.speed_limit_approach = SpeedLimitApproach()
+    # No lead starts qualified; the first detected lead, invalid inputs, or a
+    # controller reset clears this timer before idle eligibility is evaluated.
+    self.coast_lead_stable_time = LEAD_COAST_REENTRY_STABLE_S
+    self.coast_lead_present = (False, False)
+    self.coast_lead_distances = (None, None)
+    self.coast_lead_unsafe_frames = 0
+    self.coast_lead_brake_frames = 0
     self.longitudinal_idle_block_frames = 0
     self.no_lead_idle_target = 0.
     self.v_cruise_kph_prev = V_CRUISE_UNSET
@@ -133,22 +151,72 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     # Get new v_cruise and a_target from Smart Cruise Control and Speed Limit Assist
     v_cruise, self.output_a_target = LongitudinalPlannerSP.update_targets(self, sm, self.v_desired_filter.x, self.output_a_target, v_cruise)
-    has_lead = sm['radarState'].leadOne.present
+    leads = (sm['radarState'].leadOne, sm['radarState'].leadTwo)
+    lead_present = tuple(lead.present for lead in leads)
+    has_lead = any(lead_present)
+    lead_appeared = any(present and not previous for present, previous in
+                        zip(lead_present, self.coast_lead_present, strict=True))
+    self.coast_lead_present = lead_present
+    lead_coast_safe = sm.all_checks(['radarState']) and all(
+      lead_allows_coasting(lead.present, lead.dRel, lead.vRel, lead.aLeadK, v_ego) and
+      (not lead.present or (previous is not None and lead.dRel >= previous - 0.5))
+      for lead, previous in zip(leads, self.coast_lead_distances, strict=True)
+    )
+    self.coast_lead_distances = tuple(lead.dRel if lead.present else None for lead in leads)
+    # Only a new lead or a reset restarts qualification up front. A lead that
+    # merely departs does not: the lead-planner brake gate below keeps idle
+    # blocked whenever the planner still needs to slow down. Sustained unsafe
+    # readings reset the timer, but brief noise is tolerated.
+    if reset_state or lead_appeared:
+      self.coast_lead_stable_time = 0.
+      self.coast_lead_unsafe_frames = 0
+      self.coast_lead_brake_frames = 0
+    elif not lead_coast_safe:
+      self.coast_lead_unsafe_frames += 1
+      if self.coast_lead_unsafe_frames >= LEAD_COAST_UNSAFE_GRACE_FRAMES:
+        self.coast_lead_stable_time = 0.
+    else:
+      self.coast_lead_unsafe_frames = 0
+      self.coast_lead_stable_time = min(self.coast_lead_stable_time + self.dt, LEAD_COAST_REENTRY_STABLE_S)
+    lead_coast_qualified = self.coast_lead_stable_time >= LEAD_COAST_REENTRY_STABLE_S
+    # The current reading must always be safe to coast, so a lead that slows or
+    # closes instantly blocks idle and braking wins. The grace period only
+    # preserves the qualification timer, avoiding a full re-qualification once
+    # a brief noisy reading settles again.
+    lead_coast_allowed = lead_coast_safe and lead_coast_qualified
     no_lead_decel_mode = get_longitudinal_no_lead_decel_mode()
     no_lead_idle_min_decel = get_longitudinal_no_lead_idle_min_decel()
     no_lead_idle_overspeed_margin = get_longitudinal_no_lead_idle_overspeed_margin_kph() * CV.KPH_TO_MS
     no_lead_idle_decel_block_frames = int(get_longitudinal_no_lead_idle_decel_cooldown_s() / DT_MDL)
     no_brake_mode = get_slc_no_brake_mode()
     no_brake_release_gap = get_slc_no_brake_release_gap_kph() * CV.KPH_TO_MS
-    if reset_state or cruise_up_pressed or cruise_target_increased:
+    # A temporary longitudinal override can coincide with a set-speed change.
+    # Remember that target while still engaged; the idle safety gates keep N off
+    # until the pedal is released and longitudinal control resumes.
+    # Cancel takes priority over arming. Then release even a newly armed target
+    # if already within its gap; the re-entry cooldown is tracked separately.
+    if not sm['selfdriveState'].enabled or not v_cruise_initialized or cruise_up_pressed or cruise_target_increased:
       self.no_lead_idle_target = 0.
-      self.longitudinal_idle_block_frames = LONGITUDINAL_IDLE_REENTRY_BLOCK_FRAMES
     elif v_cruise_initialized and (cruise_down_pressed or cruise_target_decreased):
       self.no_lead_idle_target = v_cruise_raw
-    elif self.no_lead_idle_target > 0. and v_ego <= self.no_lead_idle_target + no_brake_release_gap:
+    if self.no_lead_idle_target > 0. and v_ego <= self.no_lead_idle_target + no_brake_release_gap:
       self.no_lead_idle_target = 0.
+    if reset_state or cruise_up_pressed or cruise_target_increased:
+      self.longitudinal_idle_block_frames = max(self.longitudinal_idle_block_frames, LONGITUDINAL_IDLE_REENTRY_BLOCK_FRAMES)
     idle_reentry_blocked = self.longitudinal_idle_block_frames > 0
-    no_brake_for_speed_limit = speed_limit_no_brake_active(self.speed_limit_no_brake, self.resolver.lower_lookahead_active, has_lead)
+    speed_limit_source_active = self.source == SpeedLimitPlanSource.speedLimitAssist
+    approach_active = self.speed_limit_approach.update(
+      self.speed_limit_no_brake and self.resolver.lower_lookahead_active,
+      self.resolver.speed_limit_final_last, v_ego, no_brake_release_gap,
+      cancel=reset_state or cruise_up_pressed or cruise_target_increased or sm['carState'].gasPressed,
+    )
+    no_brake_for_speed_limit = approach_active and not idle_reentry_blocked and lead_coast_allowed and not has_lead
+    # Only idle mode may coast behind a steady lead; fixed/dynamic overrides remain no-lead only.
+    if no_brake_mode == "idle":
+      no_brake_for_speed_limit = approach_active and not idle_reentry_blocked and lead_coast_allowed
+    no_brake_for_speed_limit &= (speed_limit_source_active and not reset_state and not sm['controlsState'].forceDecel and not self.is_e2e(sm) and
+                                 not sm['carState'].brakePressed and not sm['carState'].gasPressed and
+                                 sm.all_checks(['modelV2', 'carState']))
     speed_limit_idle = (
       not idle_reentry_blocked and
       no_brake_for_speed_limit and
@@ -214,18 +282,38 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     idle_blocked = self.longitudinal_idle_block_frames > 0
     intentional_no_lead_decel = (
       self.no_lead_idle_target > 0. or
-      (speed_limit_source_active and not speed_limit_current_limit_decel)
+      (speed_limit_source_active and not speed_limit_current_limit_decel and
+       not self.speed_limit_approach.released and
+       v_ego > self.resolver.speed_limit_final_last + no_brake_release_gap)
     )
     normal_decel_idle = (
       not idle_blocked and
-      no_lead_normal_decel_idle_active(no_lead_decel_mode, intentional_no_lead_decel, selected_source == LongitudinalPlanSource.cruise,
-                                       output_a_target, no_lead_idle_min_decel, has_lead, any_should_stop) and
+      no_lead_normal_decel_idle_active(no_lead_decel_mode, intentional_no_lead_decel,
+                                       selected_source == LongitudinalPlanSource.cruise and
+                                       self.source in (SpeedLimitPlanSource.cruise, SpeedLimitPlanSource.speedLimitAssist),
+                                       output_a_target, no_lead_idle_min_decel, has_lead, any_should_stop,
+                                       lead_coast_allowed=lead_coast_allowed) and
       v_ego > MIN_ALLOW_THROTTLE_SPEED and
       not sm['carState'].standstill and
       not sm['carState'].brakePressed and
       not sm['carState'].gasPressed
     )
-    self.longitudinal_idle = speed_limit_idle or normal_decel_idle
+    # Lead-planner braking also restarts qualification, even if the raw lead
+    # passes the distance/speed checks. Hard braking blocks immediately; a
+    # smaller steady request must persist so a stable lead's tiny gap
+    # correction does not permanently suppress idle. Never delay braking.
+    if has_lead and output_a_target_mpc < LEAD_COAST_SOFT_BRAKE_ACCEL:
+      self.coast_lead_brake_frames = min(self.coast_lead_brake_frames + 1, LEAD_COAST_SOFT_BRAKE_FRAMES)
+    else:
+      self.coast_lead_brake_frames = 0
+    lead_braking = has_lead and (output_a_target_mpc <= LEAD_COAST_HARD_BRAKE_ACCEL or
+                                 self.coast_lead_brake_frames >= LEAD_COAST_SOFT_BRAKE_FRAMES)
+    if lead_braking:
+      self.coast_lead_stable_time = 0.
+      lead_coast_allowed = False
+    idle_safe = (lead_coast_allowed and not reset_state and not sm['controlsState'].forceDecel and not self.fcw and not any_should_stop and
+                 not is_e2e and sm.all_checks(['radarState', 'modelV2', 'carState']))
+    self.longitudinal_idle = idle_safe and (speed_limit_idle or normal_decel_idle)
     if self.longitudinal_idle:
       output_a_target = 0.
     cap_speed_limit_decel = (

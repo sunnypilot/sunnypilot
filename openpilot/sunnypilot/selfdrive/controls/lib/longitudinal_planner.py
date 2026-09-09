@@ -21,6 +21,24 @@ LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 SPEED_LIMIT_APPROACH_SHAPE = 1.5
 
 
+class SpeedLimitApproach:
+  """Release once per target; speed noise must never re-arm the override."""
+  def __init__(self):
+    self.target = 0.
+    self.released = False
+
+  def update(self, active: bool, target: float, v_ego: float, release_gap: float, cancel: bool = False) -> bool:
+    if not active or target <= 0.:
+      self.target = 0.
+      self.released = False
+      return False
+    if abs(target - self.target) > 0.1 * CV.KPH_TO_MS:
+      self.target = target
+      self.released = False
+    self.released |= cancel or v_ego <= target + release_gap
+    return not self.released
+
+
 def speed_limit_no_brake_active(enabled: bool, lower_lookahead_active: bool, has_lead: bool) -> bool:
   return enabled and lower_lookahead_active and not has_lead
 
@@ -36,8 +54,10 @@ def speed_limit_idle_active(v_ego: float, speed_limit_target: float, release_gap
 
 
 def no_lead_normal_decel_idle_active(mode: str, intentional_decel: bool, cruise_source_active: bool,
-                                     a_target: float, min_idle_decel: float, has_lead: bool, should_stop: bool) -> bool:
-  return mode == "idle" and intentional_decel and cruise_source_active and a_target <= min_idle_decel and not has_lead and not should_stop
+                                     a_target: float, min_idle_decel: float, has_lead: bool, should_stop: bool,
+                                     lead_coast_allowed: bool = False) -> bool:
+  return (mode == "idle" and intentional_decel and cruise_source_active and a_target <= min_idle_decel and
+          (not has_lead or lead_coast_allowed) and not should_stop)
 
 
 def speed_limit_current_limit_decel_needed(speed_limit_source_active: bool, lower_lookahead_active: bool,
