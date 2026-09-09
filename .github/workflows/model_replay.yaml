@@ -15,15 +15,14 @@ on:
 jobs:
   test_stock_parity:
     name: Compare Stock vs Sunnypilot Model Replay
-    runs-on: ubuntu-latest
-    container: ghcr.io/commaai/openpilot-base:latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
 
-      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - run: ./tools/op.sh setup
       - name: Fetch Big Model ONNX
         run: |
           mkdir -p /tmp/onnx_models
@@ -47,6 +46,7 @@ jobs:
           DEV: "CPU"
           JIT_BATCH_SIZE: "0"
         run: |
+          source .venv/bin/activate
           BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
           if [ ! -f "$BIG_ONNX" ]; then
             echo "Error: big_driving_supercombo.onnx not found at ref ${{ inputs.model_ref }}"
@@ -71,6 +71,7 @@ jobs:
           DEV: "CPU"
           JIT_BATCH_SIZE: "0"
         run: |
+          source .venv/bin/activate
           BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
@@ -89,6 +90,7 @@ jobs:
           PYTHONPATH: ".:./tinygrad_repo"
           DEV: "CPU"
         run: |
+          source .venv/bin/activate
           python3 openpilot/sunnypilot/modeld_v2/model_replay.py \
             --sunnypilot-model /tmp/sunnypilot_model.pkl \
             --stock-model /tmp/stock_model.pkl \
