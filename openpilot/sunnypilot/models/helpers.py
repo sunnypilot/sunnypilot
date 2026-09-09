@@ -16,7 +16,8 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 19
+# 20: whole-file models downloaded by parallel byte ranges; chunked bundles (<= 19) are not loaded
+REQUIRED_JSON_VERSION = 20
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 ModelManager = custom.ModelManagerSP
@@ -58,20 +59,12 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
 
 def _bundle_artifacts(bundle: custom.ModelManagerSP.ModelBundle) -> list[tuple[str, str]]:
   artifacts = []
-  from openpilot.common.file_chunker import get_chunk_name
   for model in getattr(bundle, 'models', []) or []:
-    for artifact in (getattr(model, 'artifact', None),):
-      if artifact and getattr(artifact, 'fileName', None):
-        if len(artifact.chunks) > 0:
-          for i, chunk in enumerate(artifact.chunks):
-            chunk_name = get_chunk_name(artifact.fileName, i, len(artifact.chunks))
-            if getattr(chunk, 'sha256', None):
-              artifacts.append((chunk_name, chunk.sha256))
-        else:
-          if getattr(artifact, 'downloadUri', None):
-            sha256 = getattr(artifact.downloadUri, 'sha256', None)
-            if sha256:
-              artifacts.append((artifact.fileName, sha256))
+    artifact = getattr(model, 'artifact', None)
+    if artifact and getattr(artifact, 'fileName', None) and getattr(artifact, 'downloadUri', None):
+      sha256 = getattr(artifact.downloadUri, 'sha256', None)
+      if sha256:
+        artifacts.append((artifact.fileName, sha256))
   return artifacts
 
 

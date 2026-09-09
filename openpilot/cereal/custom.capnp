@@ -150,7 +150,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     fileName @0 :Text;
     downloadUri @1 :DownloadUri;
     downloadProgress @2 :DownloadProgress;
-    chunks @3 :List(Chunk);
+    chunks @3 :List(Chunk);  # unused since selector version 20: models are whole files
   }
 
   struct Model {
@@ -165,7 +165,8 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
       policy @3;
       offPolicy @4;
       onPolicy @5;
-      chunked @6;
+      chunked @6;  # legacy: the combined driving pkl split into .chunkNNofMM files (manifests v18-v22)
+      driving @7;  # the combined driving pkl, published whole (selector version 20+)
     }
   }
 

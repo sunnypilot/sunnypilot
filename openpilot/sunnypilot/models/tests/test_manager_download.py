@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import asyncio
 import contextlib
+import glob
 import hashlib
 import http.server
 import json
@@ -21,11 +22,10 @@ from typing import Any
 from unittest import mock
 
 import requests
-from urllib3.connectionpool import HTTPConnectionPool
 
 from openpilot.cereal import custom
+from openpilot.common.hardware import hw
 from openpilot.common.test import OpenpilotTestCase
-from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.sunnypilot.models import manager as manager_module
 from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models import helpers
@@ -38,8 +38,6 @@ FILE_NAME = 'driving_test_tinygrad.pkl'
 WHOLE_BODY = bytes(range(256)) * 40
 PIECE = 1000  # test piece size -> 11 pieces, the last one short
 NUM_PIECES = math.ceil(len(WHOLE_BODY) / PIECE)
-# a legacy chunked entry, served by path; goes with the chunked download path
-CHUNK_BODIES = [b'A' * 5000, b'B' * 5000, b'C' * 3000]
 
 
 def sha256(data: bytes) -> str:
@@ -63,26 +61,12 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
   stall_released_by_event: bool | None = None
   support_ranges = True
   corrupt = False
-  request_paths: list[str] = []  # every path requested, chunk or whole
-  fail_paths: dict[str, int] = {}  # chunk path -> HTTP status
 
   def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
     pass
 
   def do_GET(self):
     cls = type(self)
-    cls.request_paths.append(self.path)
-    if self.path in cls.fail_paths:
-      self.send_response(cls.fail_paths[self.path])
-      self.end_headers()
-      return
-    for i, chunk in enumerate(CHUNK_BODIES):
-      if self.path.endswith(get_chunk_name('', i, len(CHUNK_BODIES))):
-        self.send_response(200)
-        self.send_header('Content-Length', str(len(chunk)))
-        self.end_headers()
-        self.wfile.write(chunk)
-        return
     if not self.path.endswith('/' + FILE_NAME):
       self.send_response(404)
       self.end_headers()
@@ -161,8 +145,6 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     DownloadHandler.stall_released_by_event = None
     DownloadHandler.support_ranges = True
     DownloadHandler.corrupt = False
-    DownloadHandler.request_paths = []
-    DownloadHandler.fail_paths = {}
 
     self._tmp = tempfile.TemporaryDirectory()
     self.addCleanup(self._tmp.cleanup)
@@ -197,19 +179,13 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
       status = artifact.downloadProgress.status
       self.reported_statuses.append(getattr(status, 'raw', status))  # .raw: _DynamicEnum is not int()-able
 
-  def make_artifact(self, chunked: bool = False):
+  def make_artifact(self):
     bundle = custom.ModelManagerSP.ModelBundle.new_message()
     bundle.init('models', 1)
     artifact = bundle.models[0].artifact
     artifact.fileName = FILE_NAME
     artifact.downloadUri.uri = self.base_url + '/' + FILE_NAME
-    if chunked:  # a legacy manifest entry: the whole file's hash plus one per chunk
-      artifact.downloadUri.sha256 = sha256(b''.join(CHUNK_BODIES))
-      artifact.init('chunks', len(CHUNK_BODIES))
-      for i, body in enumerate(CHUNK_BODIES):
-        artifact.chunks[i].sha256 = sha256(body)
-    else:
-      artifact.downloadUri.sha256 = sha256(WHOLE_BODY)
+    artifact.downloadUri.sha256 = sha256(WHOLE_BODY)
     self._bundle = bundle
     self.artifact = artifact
     return artifact
@@ -476,178 +452,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     self.run_with_server(body)
 
 
-class TestChunkedDownload(ManagerDownloadTestBase):
-  """The chunked download path, still used by the manifests before selector version 20."""
-
-  def test_download_chunked_writes_all_chunks_and_manifest(self):
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-
-      for i, expected in enumerate(CHUNK_BODIES):
-        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'rb') as f:
-          assert f.read() == expected, f"chunk {i} body mismatch"
-
-      with open(get_manifest_path(base_path)) as f:
-        assert f.read() == str(len(CHUNK_BODIES))
-
-      assert not os.path.isfile(base_path), "base file should be removed after chunking"
-      assert artifact.fileName not in self.manager._download_start_times
-    self.run_with_server(body)
-
-  def test_progress_is_monotonic_and_bounded(self):
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-
-      assert self.reported, "expected progress reports"
-      for a, b in zip(self.reported, self.reported[1:], strict=False):
-        assert b >= a, f"progress went backwards: {a} -> {b}"
-      assert max(self.reported) <= 99.0, f"chunked progress must stay <=99 until verify, got {max(self.reported)}"
-    self.run_with_server(body)
-
-  def test_session_is_reused_across_chunks(self):
-    """One connection pool shared across every chunk."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-
-      pools = []
-      original = HTTPConnectionPool.urlopen
-
-      def tracked(pool_self, *args, **kwargs):
-        pools.append(id(pool_self))
-        return original(pool_self, *args, **kwargs)
-
-      with mock.patch.object(HTTPConnectionPool, 'urlopen', tracked):
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-
-      assert len(pools) == len(CHUNK_BODIES), f"expected one request per chunk, got {len(pools)}"
-      assert len(set(pools)) == 1, f"connection pool not reused across chunks: {len(set(pools))} pools"
-    self.run_with_server(body)
-
-  def test_http_error_propagates(self):
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      failing = '/' + os.path.basename(get_chunk_name(artifact.downloadUri.uri, 1, len(CHUNK_BODIES)))
-      DownloadHandler.fail_paths = {failing: 404}
-
-      with self.assertRaises(requests.exceptions.HTTPError):
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-
-      # chunk 1 failed, so its file and the manifest must not exist
-      assert not os.path.isfile(get_chunk_name(base_path, 1, len(CHUNK_BODIES)))
-      assert not os.path.isfile(get_manifest_path(base_path))
-    self.run_with_server(body)
-
-  def test_cancellation_mid_transfer(self):
-    """Cancellation is checked inside the byte loop; it must still fire after the port."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      self.manager.params.get.return_value = None  # cancelled
-
-      with self.assertRaises(Exception) as ctx:
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-      assert 'cancelled' in str(ctx.exception).lower()
-      assert not os.path.isfile(get_manifest_path(base_path))
-    self.run_with_server(body)
-
-  def test_repeat_downloads_are_stable(self):
-    """Back-to-back runs must produce identical bytes and leak no start-time state."""
-    def body():
-      for _ in range(2):
-        artifact = self.make_artifact(chunked=True)
-        base_path = os.path.join(self.dest, artifact.fileName)
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-        for i, expected in enumerate(CHUNK_BODIES):
-          with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'rb') as f:
-            assert f.read() == expected
-        assert self.manager._download_start_times == {}
-    self.run_with_server(body)
-
-  def test_download_ref_present_keeps_download_alive(self):
-    """A pending download request (DownloadRef set) must not be cancelled mid-transfer."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      self.manager.params.get.side_effect = lambda key: b"ref" if key == "ModelManager_DownloadRef" else None
-      self.manager._download_ref = b"ref"
-      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-      assert os.path.isfile(get_manifest_path(base_path))
-    self.run_with_server(body)
-
-  def test_cancellation_via_download_ref(self):
-    """Removing DownloadRef mid-transfer cancels the download."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      checks = {"n": 0}
-
-      def get(key):
-        if key == "ModelManager_DownloadRef":
-          checks["n"] += 1
-          return b"ref" if checks["n"] <= 2 else None
-        return b"0"
-
-      self.manager.params.get.side_effect = get
-      self.manager._download_ref = b"ref"
-      with self.assertRaises(Exception) as ctx:
-        asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-      assert 'cancelled' in str(ctx.exception).lower()
-      assert not os.path.isfile(get_manifest_path(base_path))
-    self.run_with_server(body)
-
-  def test_replaced_download_ref_queues_instead_of_cancelling(self):
-    """Selecting another model mid-transfer lets the running download finish."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
-      self.manager._download_ref = b"ref"
-      asyncio.run(self.manager._download_chunked(artifact.downloadUri.uri, base_path, artifact))
-      assert os.path.isfile(get_manifest_path(base_path))
-    self.run_with_server(body)
-
-  def test_resume_skips_valid_chunks(self):
-    """A chunk already on disk is kept and not re-downloaded; progress starts above its share."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      with open(get_chunk_name(base_path, 0, len(CHUNK_BODIES)), 'wb') as f:
-        f.write(CHUNK_BODIES[0])
-
-      asyncio.run(self.manager._process_artifact(artifact, self.dest))
-
-      chunk0_suffix = get_chunk_name('', 0, len(CHUNK_BODIES))
-      assert not any(p.endswith(chunk0_suffix) for p in DownloadHandler.request_paths), "valid chunk was re-downloaded"
-      for i, expected in enumerate(CHUNK_BODIES):
-        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'rb') as f:
-          assert f.read() == expected
-      assert os.path.isfile(get_manifest_path(base_path))
-      assert min(self.reported) >= (1 / len(CHUNK_BODIES)) * 100 - 1, "progress must not restart below the resumed share"
-    self.run_with_server(body)
-
-  def test_verify_reports_valid_fraction_then_cached(self):
-    """A fully cached bundle publishes climbing verify progress and ends cached."""
-    def body():
-      artifact = self.make_artifact(chunked=True)
-      base_path = os.path.join(self.dest, artifact.fileName)
-      for i, data in enumerate(CHUNK_BODIES):
-        with open(get_chunk_name(base_path, i, len(CHUNK_BODIES)), 'wb') as f:
-          f.write(data)
-
-      asyncio.run(self.manager._process_artifact(artifact, self.dest))
-
-      assert DownloadHandler.request_paths == [], "cached bundle must not hit the network"
-      assert [round(p) for p in self.reported[:3]] == [33, 67, 100]
-      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.cached
-    self.run_with_server(body)
-
-
 class TestProcessArtifact(ManagerDownloadTestBase):
   """Verification, cleanup and resume policy around the download."""
 
@@ -706,6 +510,18 @@ class TestProcessArtifact(ManagerDownloadTestBase):
       ds = custom.ModelManagerSP.DownloadStatus
       assert self.reported_statuses == [ds.verifying, ds.cached]
       assert artifact.downloadProgress.progress == 100
+    self.run_with_server(body)
+
+  def test_legacy_chunk_files_are_purged(self):
+    """Chunk files from a pre-v20 download would shadow the whole file in open_file_chunked."""
+    def body():
+      for suffix in ('.chunkmanifest', '.chunk01of02', '.chunk02of02'):
+        with open(self.path + suffix, 'wb') as f:
+          f.write(b'2' if suffix == '.chunkmanifest' else b'legacy')
+      artifact = self.make_artifact()
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert glob.glob(self.path + '.chunk*') == []
+      assert self.read_path() == WHOLE_BODY
     self.run_with_server(body)
 
   def test_cached_bundle_cancel_skips_slot_write(self):
@@ -770,6 +586,23 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     self.manager._download_ref = b"ref"
     self.manager._release_download_ref()
     self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
+
+  def test_clear_cache_keeps_only_active_files(self):
+    """Interrupted downloads, legacy chunk files and other models all go; the selected slots' files stay."""
+    active = custom.ModelManagerSP.ModelBundle.new_message()
+    active.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
+    active.init('models', 1)
+    active.models[0].artifact.fileName = 'active.pkl'
+    raw = active.to_dict()
+    self.manager.params.get.side_effect = lambda key, *a, **k: raw if key == "ModelManager_ActiveBundle" else None
+
+    for name in ('active.pkl', 'active.pkl.chunkmanifest', 'active.pkl.chunk01of02', 'other.pkl', 'other.pkl.download'):
+      with open(os.path.join(self.dest, name), 'wb') as f:
+        f.write(b'x')
+    with mock.patch.object(hw.Paths, 'model_root', staticmethod(lambda: self.dest)):
+      self.manager.clear_model_cache()
+    assert os.listdir(self.dest) == ['active.pkl']
+
 
 class TestTransferRetries(ManagerDownloadTestBase):
   """A transfer whose pieces exhaust their retries is retried from its resume state after a
@@ -957,7 +790,7 @@ class TestResolveBundleByRef(OpenpilotTestCase):
 
 
 def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = False) -> dict:
-  """Minimal manifest bundle dict, version-compatible (no chunks to avoid disk side effects).
+  """Minimal whole-file manifest bundle dict, version-compatible.
   Big (chestnut) bundles carry `is_big: true` in the manifest JSON."""
   return {
     "index": index,
@@ -970,7 +803,7 @@ def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = Fa
     "minimum_selector_version": str(helpers.REQUIRED_JSON_VERSION),
     "ref": ref,
     "models": [{
-      "type": "supercombo",
+      "type": "driving",
       "artifact": {
         "file_name": f"{short_name}.pkl",
         "download_uri": {"url": f"https://example.com/{short_name}.pkl", "sha256": "s"},
@@ -1044,6 +877,24 @@ class TestModelFetcherSources(OpenpilotTestCase):
       "chestnut": ModelFetcher.MODEL_URL_CHESTNUT,
     }
 
+  def test_chunked_manifest_entries_are_ignored(self):
+    """A stray `chunks` array is not parsed and leaves no chunk manifest on disk."""
+    chunked = manifest_bundle("small", "aaa")
+    chunked["models"][0]["artifact"]["chunks"] = [{"file_name": "small.pkl.chunk01of01", "sha256": "c"}]
+    with tempfile.TemporaryDirectory() as model_dir, mock.patch.object(hw.Paths, 'model_root', staticmethod(lambda: model_dir)):
+      bundles = ModelFetcher(mock.MagicMock()).model_parser.parse_models({"bundles": [chunked]})
+      assert len(bundles[0].models[0].artifact.chunks) == 0
+      assert os.listdir(model_dir) == []
+
+  def test_model_type_driving_and_legacy_chunked_both_parse(self):
+    """New manifests type the whole pkl `driving`; `chunked` must keep parsing because an upgrading
+    device reads its cached v22 catalog before the first refetch, and an unknown type raises."""
+    driving = manifest_bundle("small", "aaa")
+    legacy = manifest_bundle("old", "bbb", index=1)
+    legacy["models"][0]["type"] = "chunked"
+    bundles = ModelFetcher(mock.MagicMock()).model_parser.parse_models({"bundles": [driving, legacy]})
+    assert bundles[0].models[0].type == helpers.ModelManager.Model.Type.driving
+    assert bundles[1].models[0].type == helpers.ModelManager.Model.Type.chunked
 
 
 class TestSourceCacheIntegrity(OpenpilotTestCase):
@@ -1185,6 +1036,15 @@ class TestActiveBundleValidation(OpenpilotTestCase):
     runner_puts = [call for call in params.put.call_args_list if call.args[0] == "ModelRunnerTypeCache"]
     assert [call.args[1] for call in runner_puts] == [tinygrad]
 
+  def test_previous_version_slot_is_reset(self):
+    """A slot saved by a chunked-manifest client (selector 19) is dropped, never downloaded as-is."""
+    stale = self._raw_bundle("small")
+    stale["minimumSelectorVersion"] = helpers.REQUIRED_JSON_VERSION - 1
+    params = self._params(qcom=stale)
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
+      validate_active_bundles(params, {"qcom": [], "chestnut": []})
+    params.remove.assert_called_once_with("ModelManager_ActiveBundle")
+
 
 class TestActiveBundleSelection(OpenpilotTestCase):
   """The effective active bundle is the active source's slot: chestnut when a GPU is
@@ -1280,31 +1140,33 @@ class TestEffectiveSource(OpenpilotTestCase):
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')
 class TestLiveModelManifest(OpenpilotTestCase):
-  """Every artifact and chunk URL in the published manifest must resolve."""
+  """Every artifact in the published manifests must be a reachable whole file that honours byte
+  ranges, which the parallel downloader depends on."""
 
   def test_all_manifest_urls_available(self):
-    from openpilot.sunnypilot.models.fetcher import ModelFetcher
-
-    manifest = requests.get(ModelFetcher.MODEL_URL, timeout=30).json()
     session = requests.Session()
     dead = []
 
-    for bundle in manifest.get('bundles', []):
-      for model in bundle.get('models', []):
-        artifact = model['artifact']
-        url = artifact['download_uri']['url']
-        chunks = artifact.get('chunks', [])
-        urls = ([url] if not chunks
-                else [get_chunk_name(url, i, len(chunks)) for i in range(len(chunks))])
-        for u in urls:
+    for manifest_url in (ModelFetcher.MODEL_URL, ModelFetcher.MODEL_URL_CHESTNUT):
+      manifest = requests.get(manifest_url, timeout=30).json()
+      for bundle in manifest.get('bundles', []):
+        # a build-all manifest starts as a copy of the previous one: entries still at the old
+        # selector version are never loaded by this client, so they are not checked either
+        if str(bundle.get('minimum_selector_version', '')).strip() != str(helpers.REQUIRED_JSON_VERSION):
+          continue
+        for model in bundle.get('models', []):
+          artifact = model['artifact']
+          if artifact.get('chunks'):
+            dead.append(f"{bundle.get('short_name')}: still chunked {artifact['file_name']}")
+          url = artifact['download_uri']['url']
           try:
-            r = session.head(u, timeout=15, allow_redirects=True)
-            if r.status_code != 200:
-              dead.append(f"{bundle.get('short_name')}: HTTP {r.status_code} {u}")
+            with session.get(url, headers={'Range': 'bytes=0-0'}, stream=True, timeout=15, allow_redirects=True) as r:
+              if r.status_code != 206:
+                dead.append(f"{bundle.get('short_name')}: HTTP {r.status_code} (expected 206) {url}")
           except requests.RequestException as e:
-            dead.append(f"{bundle.get('short_name')}: {type(e).__name__} {u}")
+            dead.append(f"{bundle.get('short_name')}: {type(e).__name__} {url}")
 
-    assert not dead, "unreachable model URLs:\n" + "\n".join(dead)
+    assert not dead, "unusable model URLs:\n" + "\n".join(dead)
 
 
 if __name__ == '__main__':

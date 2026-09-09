@@ -261,11 +261,10 @@ jobs:
           sudo rm -rf ${{ env.OUTPUT_DIR }}
           mkdir -p ${{ env.OUTPUT_DIR }}
 
-          # Copy the model files
+          # Copy the model files (the compiled pkl is published whole; clients range-request it)
           rsync -avm \
             --include='*.dlc' \
-            --include='*.chunk*' \
-            --include='*.chunkmanifest' \
+            --include='*_tinygrad.pkl' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
