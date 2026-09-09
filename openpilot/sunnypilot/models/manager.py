@@ -25,7 +25,7 @@ from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_
 
 # (connect, read) seconds. read is per-request inactivity, not a total cap
 DOWNLOAD_TIMEOUT = (30, 30)
-# Models live on HuggingFace, whose Xet CAS throttles each TCP connection to ~1-2 MB/s (erratically)
+# Models live on HuggingFace, whose Xet content-addressed storage throttles each TCP connection to ~1-2 MB/s (erratically)
 # but never rate-limited 32 parallel connections. Measured on a comma 3X: 1 connection ~2 MB/s,
 # 8 ~12.7 MB/s, 12 ~13.5 MB/s, which is the device link ceiling. 12 saturates it with headroom.
 MAX_CONCURRENT_CHUNKS = 12
@@ -85,7 +85,7 @@ def _content_range_total(response: requests.Response) -> int | None:
 
 
 def _probe_size(url: str) -> tuple[int, bool]:
-  """(total bytes, server honours byte ranges). A one-byte Range probe doubles as the size lookup:
+  """(total bytes, server honors byte ranges). A one-byte Range probe doubles as the size lookup:
   a 206 carries the total in Content-Range, a 200 means the server only serves whole bodies."""
   with requests.get(url, headers={"Range": "bytes=0-0"}, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
     response.raise_for_status()
@@ -99,7 +99,7 @@ def _fetch_piece(url: str, path: str, index: int, start: int, end: int | None, p
                  cancel: threading.Event, block_size: int) -> None:
   """Worker thread: streams one byte range straight into `path` at its offset. `end is None` streams
   the whole body (server without range support). Transient errors retry the piece from scratch; a
-  permanent HTTP status, a cancel and a server that stops honouring ranges do not."""
+  permanent HTTP status, a cancel and a server that stops honoring ranges do not."""
   headers = {"Range": f"bytes={start}-{end - 1}"} if end is not None else {}
   label = f"{os.path.basename(path)} piece {index}"
   for attempt in range(PIECE_RETRIES):

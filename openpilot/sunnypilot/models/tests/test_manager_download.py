@@ -53,7 +53,7 @@ def piece_range(index: int) -> tuple[int, int]:
 
 class DownloadHandler(http.server.BaseHTTPRequestHandler):
   """Serves WHOLE_BODY with byte-range support. Class attributes are reset per test."""
-  request_ranges: list[tuple[int, int] | None] = []  # None: no (honoured) Range header
+  request_ranges: list[tuple[int, int] | None] = []  # None: no (honored) Range header
   fail_ranges: dict[tuple[int, int], int] = {}  # range -> HTTP status, every time
   fail_once: set[tuple[int, int]] = set()  # ranges that 503 on their first request only
   fail_times: dict[tuple[int, int], int] = {}  # range -> how many more requests 503 before it succeeds
@@ -106,7 +106,7 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
       self.send_response(503)
       self.end_headers()
       return
-    if cls.fail_times.get(rng, 0) > 0:
+    if rng is not None and cls.fail_times.get(rng, 0) > 0:
       cls.fail_times[rng] -= 1
       self.send_response(503)
       self.end_headers()
@@ -219,7 +219,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 
   @staticmethod
   def piece_requests() -> list[tuple[int, int]]:
-    """Honoured ranges minus the one-byte size probe."""
+    """Honored ranges minus the one-byte size probe."""
     return [r for r in DownloadHandler.request_ranges if r is not None and r != (0, 0)]
 
   def run_with_server(self, fn):
