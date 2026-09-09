@@ -158,7 +158,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.addCleanup(self._tmp.cleanup)
     self.dest = self._tmp.name
 
-    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01)):
+    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01), ('SPEED_FLOOR', 100)):
       patcher = mock.patch.object(manager_module, name, value)
       patcher.start()
       self.addCleanup(patcher.stop)
@@ -272,6 +272,33 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert self.read_path() == WHOLE_BODY
     self.run_with_server(body)
 
+  def test_speed_and_eta_reported(self):
+    def body():
+      artifact = self.download_file()
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloading
+      assert artifact.downloadProgress.speed > 0
+      assert artifact.downloadProgress.eta >= 1
+    self.run_with_server(body)
+
+  def test_stalled_speed_drops_to_zero(self):
+    """A stall's decaying speed snaps to exactly 0 so the UI shows no rate, then recovers to the real rate."""
+    def body():
+      DownloadHandler.stall_ranges = {piece_range(0)}
+      DownloadHandler.stall_event = stall_event = threading.Event()
+      seen_speed = threading.Event()
+
+      def release_once_zero(*args):
+        speed = self.artifact.downloadProgress.speed
+        if speed > 0:
+          seen_speed.set()
+        elif seen_speed.is_set():
+          stall_event.set()
+      self.manager.pm.send.side_effect = release_once_zero
+      self.download_file()
+      assert DownloadHandler.stall_released_by_event is True, "the stalled speed never reached exactly 0"
+      assert self.artifact.downloadProgress.speed > 0, "the speed must recover once data flows again"
+    self.run_with_server(body)
+
   def test_progress_is_monotonic_and_bounded(self):
     """Without failures, progress only rises and tops out at 99; a failed piece takes its bytes back, so retries can lower it."""
     def body():
@@ -377,6 +404,7 @@ class TestProcessArtifact(ManagerDownloadTestBase):
       assert self.read_path() == WHOLE_BODY
       assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
       assert artifact.downloadProgress.progress == 100
+      assert artifact.downloadProgress.speed == 0
       assert artifact.downloadProgress.eta == 0
     self.run_with_server(body)
 
