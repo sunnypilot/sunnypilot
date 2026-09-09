@@ -49,8 +49,6 @@ def test_orientation_and_position_must_describe_the_same_times():
   assert not encode_model_action(m, .01, 20.).valid
 
 
-def test_model_heading_unwraps_before_interpolation_and_terminal_slope():
+def test_model_heading_unwraps_before_interpolation():
   m = model_points([0., .5, 1.5], [0., 10., 30.], [0., 0., 0.], [3., 3.1, -3.1])
-  # Heading at 20 m is pi, but the terminal slope is gentler than the
-  # average slope. Its release bound is 3 + 20 * ((2*pi - 3.1) - 3.1)/20.
-  assert encode_model_action(m, 0., 20.).path_angle == pytest.approx(2*np.pi - 3.2)
+  assert encode_model_action(m, 0., 20.).path_angle == pytest.approx(np.pi)

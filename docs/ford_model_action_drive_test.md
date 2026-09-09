@@ -1,22 +1,21 @@
 # Ford model-point drive-test branch
 
 The default-off **Selected-Action Path Tracking (Experimental)** Sunnylink toggle
-now selects the C1 early-release candidate on the **Ford CAN FD F-150 Lightning**.
+now selects the v7 model-point candidate on the **Ford CAN FD F-150 Lightning**.
 The stored key remains `FordModelActionController`; an already enabled setting
 selects this revision after updating and completing an offroad-to-onroad cycle.
 
 The controller reads **model lateral position and model heading at the same
 point**. Start with the model's predicted distance at one second, enforce the
 existing seven-metre minimum, and hold the available endpoint when necessary.
-C0 is that point's lateral position in metres. C1 starts from its unwrapped
-heading and is bounded toward zero using the model's terminal spatial curvature
-at the same point. This asks for earlier release when the path straightens
-ahead. C2 and C3 stay zero. See [the exact rule and its authority tradeoff](ford_model_release.md).
+C0 is that point's lateral position in metres; C1 is its unwrapped heading in
+radians. C2 and C3 stay zero. The 150 ms yaw-based forecast and the reconstruction
+of heading from selected curvature are removed.
 
 This point choice is an engineering guess, not an identified Ford reference or
 PSCM calibration. `calibration_approved=false`: offline tests do not establish
 physical tracking, turn-exit behavior, or stability across different PSCMs.
-The [v7 model-point decision and validation](ford_model_points.md) is historical.
+See [the model-point decision and validation](ford_model_points.md).
 
 ## Select and restore
 
@@ -30,10 +29,9 @@ The [v7 model-point decision and validation](ford_model_points.md) is historical
 
 The startup event `Ford path controller selected` reports
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events report
-`hypothesis=model-pose-terminal-c1-v1`, `pose_source=model`, `preview_time_s=1.0`
+`hypothesis=model-pose-one-second-v7`, `pose_source=model`, `preview_time_s=1.0`
 and `minimum_station_m=7.0`, plus input ages, slew state and the command tuple.
-Active diagnostics also report `c1_release=terminal_spatial_curvature`.
-Selected desired curvature is still logged, but does not construct C0/C1.
+Selected desired curvature is still logged, but no longer constructs C0/C1.
 
 Turning the toggle off and completing another offroad-to-onroad cycle restores
 **PSCM Coefficient Observer** if selected, otherwise the original Ford path
@@ -55,7 +53,7 @@ candidate at 20 Hz. Float32 publication, host-to-wire negation, packing and
 Panda safety are unchanged. The opendbc pin remains
 `87ca78e6e641eefb2d654f260a6ab08df3058bd5`.
 
-Normal operation uses the model point with the one-sided C1 release bound. The upstream scalar curvature
+Normal operation uses the model's point directly. The upstream scalar curvature
 and its clipping still exist for logging/other controllers, but no longer bound
 this candidate's heading target. Its C0/C1 field caps and slew still apply;
 passing Panda TX checks does not establish an actual vehicle acceleration bound.
@@ -75,7 +73,7 @@ python -m pytest -q openpilot/selfdrive/controls/tests/test_ford*.py tools/ford_
 python -m tools.ford_pscm_lab.stress_model_action --cycles 200000 --seed 20260908 --opendbc-revision 87ca78e6e641eefb2d654f260a6ab08df3058bd5 --output .cache/ford_model_points/stress.json
 ```
 
-Historical v1–v7 validation files retain their original source hashes and apply
+Historical v1–v6 validation files retain their original source hashes and apply
 to those revisions. In particular, `ford_model_action_measured_pose_validation.json`
 describes v6, not the current model-point mapping. The hardware build and device
 boot are not performed by these offline checks. Pushing a branch does not update

@@ -1,4 +1,4 @@
-"""Experimental Ford model-point controller with earlier C1 release.
+"""Experimental Ford C2-free controller using one shared model-path point.
 
 The one-second preview and seven-metre minimum are engineering choices,
 not identified Ford reference points or PSCM calibration.
@@ -31,14 +31,11 @@ def _finite(*values):
 
 
 def encode_model_action(model, desired_curvature, speed):
-  """Sample a model pose and unload C1 when its path is straightening ahead.
+  """Sample model lateral position and heading at the same arc station.
 
   Use the model's distance at one second, with a seven-metre minimum and an
-  endpoint hold. Terminal spatial curvature bounds the heading contribution
-  toward zero. A constant heading slope in sampled arc distance retains C1;
-  decreasing curvature can release C1 before that heading returns to zero.
-  This is an experimental request mapping, not an identified PSCM response.
-  Selected curvature remains a health/diagnostic input only.
+  endpoint hold. Selected curvature remains a health/diagnostic input; it does
+  not reconstruct heading or rotate the model geometry in this experiment.
   """
   if not _finite(desired_curvature, speed) or not .3 <= speed <= 55 or abs(desired_curvature) > 1:
     return FordPath()
@@ -57,17 +54,6 @@ def encode_model_action(model, desired_curvature, speed):
   sample_station = min(station[-1], max(MIN_STATION_M, float(np.interp(PREVIEW_TIME_S, times, station))))
   c0 = float(np.interp(sample_station, station, lateral))
   c1 = float(np.interp(sample_station, station, heading))
-  # Use the same enclosing model segment as the pose interpolation. At an
-  # exact knot use its incoming segment; an ambiguous duplicate keeps C1.
-  upper = max(1, int(np.searchsorted(station, sample_station, side='left')))
-  span = station[upper] - station[upper - 1]
-  duplicate = (upper + 1 < len(station) and station[upper] == sample_station == station[upper + 1])
-  if span > 0. and not duplicate:
-    terminal_heading = heading[0] + sample_station * ((heading[upper] - heading[upper - 1]) / span)
-    if _finite(terminal_heading):
-      # One-sided: never amplify C1 or invent a reversal ahead of the model.
-      direction = math.copysign(1., c1)
-      c1 = direction * float(np.clip(direction * terminal_heading, 0., abs(c1)))
   return FordPath(True, c0, c1, 0., 0.) if _finite(c0, c1) else FordPath()
 
 
@@ -111,7 +97,7 @@ class FordModelActionController:
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-pose-terminal-c1-v1',
+    self.diagnostics = {'status': status, 'hypothesis': 'model-pose-one-second-v7',
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, yaw_rate, speed, now, measurement_time, model_time, reference_time,
@@ -144,11 +130,10 @@ class FordModelActionController:
       self.reset('invalid_path')
       return command
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-pose-terminal-c1-v1',
+    self.diagnostics = {'status': 'active', 'hypothesis': 'model-pose-one-second-v7',
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'yaw_rate': yaw_rate, 'pose_source': 'model',
                         'preview_time_s': PREVIEW_TIME_S, 'minimum_station_m': MIN_STATION_M,
-                        'c1_release': 'terminal_spatial_curvature',
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
                         'command': (command.path_offset, command.path_angle, 0., 0.)}

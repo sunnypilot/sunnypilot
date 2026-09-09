@@ -1,9 +1,5 @@
 # Ford model-point candidate v7
 
-This is the historical baseline at `4bd841ecc`. The driving branch now uses
-the [C1 early-release experiment](ford_model_release.md). Results below remain
-bound to their original sources and do not validate the newer request mapping.
-
 ## Decision
 
 Use the model's own position and orientation at one shared path point. This
