@@ -35,8 +35,7 @@ jobs:
             git lfs pull -I "**/selfdrive/modeld/models/big_driving_supercombo.onnx"
             find . -name "big_driving_supercombo.onnx" -exec cp {} /tmp/onnx_models/ \;
           else
-            echo "Using default model from current branch..."
-            git lfs pull -I "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
+            echo "Using default model from current branch"
             cp openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx /tmp/onnx_models/
           fi
 
