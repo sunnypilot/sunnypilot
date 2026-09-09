@@ -1,15 +1,11 @@
-name: Test Models Compatibility With New Tinygrad
+name: Test Models Compatibility With Tinygrad Changes
 on:
   push:
     paths:
       - 'tinygrad_repo/**'
-      - '.github/workflows/test_models.yml'
-      - 'openpilot/sunnypilot/modeld_v2/**'
   pull_request:
     paths:
       - 'tinygrad_repo/**'
-      - '.github/workflows/test_models.yml'
-      - 'openpilot/sunnypilot/modeld_v2/**'
   workflow_dispatch:
 
 jobs:
