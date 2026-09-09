@@ -14,13 +14,13 @@ import numpy as np
 from tinygrad.device import Device
 
 from openpilot.common.file_chunker import open_file_chunked
-from openpilot.selfdrive.modeld.compile_modeld import MODELD_INPUTS, make_input_queues
+from openpilot.selfdrive.modeld.compile_modeld import MODELD_INPUTS, make_input_queues, nv12_copy_size
 from openpilot.selfdrive.modeld.helpers import load_oob
 from openpilot.selfdrive.test.process_replay.model_replay import SEGMENT, TEST_ROUTE
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.tools.lib.framereader import FrameReader
 from openpilot.tools.lib.openpilotci import get_url
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, nv12_copy_size
+from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 
 
@@ -124,9 +124,7 @@ def compare_models_on_route(new_model_path, old_model_path, route_or_path=None, 
     old_array = old_step["raw_output"]
     if not np.allclose(new_array, old_array, atol=tolerance, rtol=tolerance):
       max_absolute_error = np.max(np.abs(new_array - old_array))
-      sys.stderr.write(
-        f"Replay mismatch at frame {step_index}: max absolute error {max_absolute_error:.6f} exceeds tolerance {tolerance}\n"
-      )
+      sys.stderr.write(f"Replay mismatch at frame {step_index}: max absolute error {max_absolute_error:.6f} exceeds tolerance {tolerance}\n")
       return False
 
   if len(new_results) > 1 and len(old_results) > 1:
@@ -181,17 +179,9 @@ if __name__ == "__main__":
   argument_parser.add_argument("--plot-dir", default=None)
   parsed_arguments = argument_parser.parse_args()
 
-  if not parsed_arguments.model_a:
-    argument_parser.error("Must provide either --sunnypilot-model, --new-model, or --model-path-a")
-
-  if parsed_arguments.model_b:
-    matches = compare_models_on_route(parsed_arguments.model_a, parsed_arguments.model_b, route_or_path=parsed_arguments.route,
-                                      segment_index=parsed_arguments.segment, number_of_frames=parsed_arguments.frames,
-                                      tolerance=1e-4, label_a="modeld_v2 model",
-                                      label_b="stock", plot_directory=parsed_arguments.plot_dir)
-    if not matches:
-      sys.exit(1)
-  else:
-    source_url = get_replay_video_source(parsed_arguments.route, parsed_arguments.segment)
-    reader = FrameReader(source_url, pix_fmt="nv12")
-    results = replay_model_on_frames(parsed_arguments.model_a, reader, parsed_arguments.frames)
+  matches = compare_models_on_route(parsed_arguments.model_a, parsed_arguments.model_b, route_or_path=parsed_arguments.route,
+                                    segment_index=parsed_arguments.segment, number_of_frames=parsed_arguments.frames,
+                                    tolerance=1e-4, label_a="modeld_v2 model",
+                                    label_b="stock", plot_directory=parsed_arguments.plot_dir)
+  if not matches:
+    sys.exit(1)
