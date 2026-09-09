@@ -39,42 +39,26 @@ jobs:
             cp openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx /tmp/onnx_models/
           fi
 
-      - name: Compile model for stock modeld
+      - name: Compile models
         env:
-          PYTHONPATH: ".:./tinygrad_repo"
           DEV: "CPU"
           JIT_BATCH_SIZE: "0"
         run: |
           source .venv/bin/activate
           BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
-          if [ ! -f "$BIG_ONNX" ]; then
-            echo "Error: big_driving_supercombo.onnx not found at ref ${{ inputs.model_ref }}"
-            ls -la /tmp/onnx_models
-            exit 1
-          fi
-
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
+          echo "Compiling stock model in background"
           python3 openpilot/selfdrive/modeld/compile_modeld.py \
             --onnx "$BIG_ONNX" \
             --model-size "$MODEL_SIZE" \
             --camera-resolutions $CAMERA_RESOLUTIONS \
             --output /tmp/stock_model.pkl \
             --frame-skip 4 \
-            --benchmark-runs 1
+            --benchmark-runs 1 &
 
-      - name: Compile model for sunnypilot modeld_v2
-        env:
-          PYTHONPATH: ".:./tinygrad_repo"
-          DEV: "CPU"
-          JIT_BATCH_SIZE: "0"
-        run: |
-          source .venv/bin/activate
-          BIG_ONNX="/tmp/onnx_models/big_driving_supercombo.onnx"
-          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
-          CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
-
+          echo "Compiling sunnypilot model in background"
           python3 openpilot/sunnypilot/modeld_v2/compile_modeld.py \
             --model-type supercombo \
             --supercombo-onnx "$BIG_ONNX" \
@@ -82,11 +66,12 @@ jobs:
             --camera-resolutions $CAMERA_RESOLUTIONS \
             --output /tmp/sunnypilot_model.pkl \
             --frame-skip 4 \
-            --benchmark-runs 1
+            --benchmark-runs 1 &
+          wait
+          echo "Both models compiled"
 
       - name: Run model replay
         env:
-          PYTHONPATH: ".:./tinygrad_repo"
           DEV: "CPU"
         run: |
           source .venv/bin/activate
