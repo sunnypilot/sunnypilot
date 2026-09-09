@@ -23,6 +23,7 @@ jobs:
         with:
           submodules: true
 
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Fetch Big Model ONNX
         run: |
           mkdir -p /tmp/onnx_models
