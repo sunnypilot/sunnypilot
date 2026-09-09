@@ -35,7 +35,6 @@ jobs:
             git lfs pull -I "**/selfdrive/modeld/models/big_driving_supercombo.onnx"
             find . -name "big_driving_supercombo.onnx" -exec cp {} /tmp/onnx_models/ \;
           else
-            echo "Using default model from current branch"
             cp openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx /tmp/onnx_models/
           fi
 
@@ -48,7 +47,6 @@ jobs:
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RESOLUTIONS=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
-          echo "Compiling stock model in background"
           python3 openpilot/selfdrive/modeld/compile_modeld.py \
             --onnx "$BIG_ONNX" \
             --model-size "$MODEL_SIZE" \
@@ -57,7 +55,6 @@ jobs:
             --frame-skip 4 \
             --benchmark-runs 1 &
 
-          echo "Compiling sunnypilot model in background"
           python3 openpilot/sunnypilot/modeld_v2/compile_modeld.py \
             --model-type supercombo \
             --supercombo-onnx "$BIG_ONNX" \
@@ -67,7 +64,6 @@ jobs:
             --frame-skip 4 \
             --benchmark-runs 1 &
           wait
-          echo "Both models compiled"
 
       - name: Run model replay
         env:
