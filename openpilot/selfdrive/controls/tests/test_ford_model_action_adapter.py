@@ -15,6 +15,7 @@ import pytest
 from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.ford.carcontroller import CarController
+from opendbc.car.ford.fordcan import calculate_lat_ctl2_checksum
 from opendbc.car.ford.values import FordFlags
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
@@ -29,6 +30,7 @@ def update(controller, now=1., **overrides):
   kwargs = {'model': straight(.4), 'desired_curvature': .01, 'speed': 20., 'yaw_rate': 0., 'now': now,
                 'model_time': now, 'measurement_time': now, 'reference_time': now, 'active': True}
   kwargs.update(overrides)
+  kwargs.setdefault('current_curvature', kwargs['desired_curvature'])  # Preserve feedforward-only compatibility probes.
   return controller.update(**kwargs)
 
 
@@ -149,7 +151,7 @@ class Subscriptions:
   frame = 1
 
   def __init__(self, maneuver):
-    self.valid = {'lateralManeuverPlan': maneuver, 'modelV2': True}
+    self.valid = {'lateralManeuverPlan': maneuver, 'modelV2': True, 'carStateSP': True}
     self.logMonoTime = {'carState': 995_000_000, 'modelV2': 980_000_000, 'lateralManeuverPlan': 990_000_000}
     self.failed = set()
     self.messages = {'carStateSP': custom.CarStateSP.new_message(), 'lateralManeuverPlan': SimpleNamespace(desiredCurvature=-.1)}
@@ -217,3 +219,73 @@ def test_actual_controlsd_service_gates(pipeline, maneuver, failed):
   exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model, 'lp': SimpleNamespace(roll=0.),
                          'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
   assert controls.ford_path.valid == cc.latActive == (failed == 'lateralManeuverPlan' and not maneuver)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline, sign):
+  call, publication = pipeline
+  controls, sm = startup(), Subscriptions(False)
+  controls.sm, controls.desired_curvature = sm, sign*.004
+  model = straight(.4)
+  model.action = SimpleNamespace(desiredCurvature=sign*.004)
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=20., yawRate=.2, canValid=True, steeringPressed=False, steeringTorque=0.)
+  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=20., vEgoRaw=20.), acc_tja_status_stock_values=defaultdict(int),
+                            lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  frame = 0
+  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.02),
+                                           (sign*.004, 0., 100, sign*.02), (sign*.005, 0., 100, 0.),
+                                           (sign*.003, 0., 100, sign*.02), (0., 1.0625, 5, 0.)]:
+    for _ in range(count):
+      now = 1.+frame*.01
+      controls.curvature, cs.steeringTorque = measured, torque
+      sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
+      environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                     'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
+                     'time': SimpleNamespace(monotonic=lambda now=now: now)}
+      exec(call, environment)
+      msg = custom.CarControlSP.new_message()
+      exec(publication, {'self': controls, 'CC_SP': msg})
+      _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
+      received = parser.update([round(now*1e9), packets])
+      assert parser.dbc.name_to_msg['LateralMotionControl2'].address in received
+      wire = parser.vl['LateralMotionControl2']
+      assert wire['LatCtlPath_An_Actl'] == pytest.approx(-controls.ford_path.path_angle)
+      assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-controls.ford_path.path_offset)
+      assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
+      assert wire['LatCtl_D2_Rq'] == 2
+      assert wire['LatCtlPath_No_Cnt'] == frame % 16
+      address = parser.dbc.name_to_msg['LateralMotionControl2'].address
+      packet = next(packet for packet in packets if packet[0] == address)
+      assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
+      frame += 1
+    assert controls.ford_path_controller.core.correction == pytest.approx(expected)
+    assert controls.ford_path.path_angle == pytest.approx(sign*.08+expected)
+    assert controls.ford_path.path_offset == pytest.approx(.4)
+
+
+@pytest.mark.parametrize('service_valid', [False, True])
+def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, service_valid):
+  controls, sm = startup(), Subscriptions(False)
+  controls.sm, controls.desired_curvature = sm, .004
+  model = straight(.4)
+  model.action = SimpleNamespace(desiredCurvature=.004)
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=20., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  for frame in range(101):
+    now = 1.+frame*.01
+    controls.curvature = .004 if frame < 100 else .003
+    sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
+    sm.valid['carStateSP'] = service_valid
+    status = sm['carStateSP'].fordPscmStatus
+    status.valid, status.canMonoTime, status.limit, status.lateralState = True, round(now*1e9), 2, 2
+    exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                      'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
+                      'time': SimpleNamespace(monotonic=lambda now=now: now)})
+  controller = controls.ford_path_controller
+  assert controller.diagnostics['pscm_limited'] is service_valid
+  assert controller.core.correction == pytest.approx(0. if service_valid else .0002)
+  assert cc.latActive and controls.ford_path.valid

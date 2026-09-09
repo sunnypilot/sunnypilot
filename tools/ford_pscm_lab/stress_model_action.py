@@ -1,4 +1,7 @@
-"""Deterministic numerical stress and exhaustive field-boundary CAN checks.
+"""Zero-error numerical stress and exhaustive field-boundary CAN checks.
+
+Measured curvature equals requested curvature here to preserve the independent
+feedforward oracle. Feedback behavior is covered by its own tests and replay.
 
 Analytic straight/rotated paths supply an independent y(7) oracle. The
 reference slew uses scalar arithmetic. Packing is checked against direct
@@ -64,8 +67,8 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
     model, mirror = line(offset, heading), line(-offset, -heading)
     if i % 401 == 0:
       model.position.y[4] = mirror.position.y[4] = math.nan
-    out = controller.update(model, desired, speed=speed, dt=dt, active=active, valid=valid)
-    other = mirrored.update(mirror, -desired, speed=speed, dt=dt, active=active, valid=valid)
+    out = controller.update(model, desired, current_curvature=desired, speed=speed, dt=dt, active=active, valid=valid)
+    other = mirrored.update(mirror, -desired, current_curvature=-desired, speed=speed, dt=dt, active=active, valid=valid)
     expected_valid = active and valid and dt <= .1 and i % 401 != 0
     assert out.valid == other.valid == expected_valid
     previous = np.array([c0, c1])
@@ -99,14 +102,14 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
         selected = float(np.clip(scalar, low, high))
         offset, heading = (selected, 0.) if field == 0 else (0., selected)
         controller.c0, controller.c1 = offset, heading
-        out = controller.update(line(offset), heading/20., speed=20., dt=.01)
+        out = controller.update(line(offset), heading/20., current_curvature=heading/20., speed=20., dt=.01)
         check_raw_packing(wire, controller, out)
         boundary_cases += 1
   report = {'seed': seed, 'random_cycles': cycles, 'mirrored_core_updates': cycles,
             'invalid_or_inactive_resets': resets, 'field_boundary_cases': boundary_cases,
             'float32_can_round_trips': wire.count, 'analytic_targets_scalar_slew_and_mirror_checks_pass': True,
             'direct_raw_float32_packing_matches_host_output': True, 'max_continuous_step_c0_c1': max_continuous_step.tolist(),
-            'calibration_approved': False, 'scope': 'Numerical construction only; no PSCM response or closed-loop performance claims.',
+            'calibration_approved': False, 'scope': 'Zero-error numerical construction: measured equals requested curvature. No PSCM response claims.',
             'opendbc_import_head': revision(dependency),
             'source_sha256': {str(p.resolve()): hashlib.sha256(p.read_bytes()).hexdigest() for p in
                               (Path(__file__), Path(ford_model_action.__file__), Path(__file__).with_name('model_action_replay.py'))}}

@@ -1,0 +1,258 @@
+{
+  "created_at_utc": "2026-09-09T14:45:33.853345+00:00",
+  "baseline_commit": "a7d70e2b0890184636827351e4789d866f2a7c97",
+  "deployment_target": {
+    "repository": "sunnypilot/sunnypilot",
+    "branch": "hiimisaac-dev"
+  },
+  "scope": "C1 measured-curvature feedback on restored original v1. Offline software validation only; no predicted or measured physical improvement.",
+  "calibration_approved": false,
+  "toggle": {
+    "key": "FordModelActionController",
+    "default_enabled": false,
+    "activation": "Existing startup selection after offroad-to-onroad cycle"
+  },
+  "feedback_law": "correction += (desired_curvature - measured_curvature) * speed * elapsed_measurement_time, subject to output and PSCM anti-windup",
+  "feedback_strength": "Explicit 1:1 heading-error-to-C1 choice; no fitted PSCM plant or new tunable multiplier",
+  "preserved": [
+    "C0 mapping and limits",
+    "C2=C3=0",
+    "C1 final amplitude and slew limits",
+    "100 Hz sender",
+    "upstream selection and limiting"
+  ],
+  "panda_safety_changed": false,
+  "opendbc_submodule_changed": false,
+  "opendbc_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9",
+  "controller_size": {
+    "total_lines": 181,
+    "code_lines_excluding_blanks_comments_docstrings": 123,
+    "core_persistent_values": 3,
+    "adapter_timestamps": 3
+  },
+  "tests": {
+    "combined_suite": "511 passed, 178 skipped, 9146 subtests passed in 5.14s",
+    "suite_log_sha256": "001ef6633b22513317593dd8debc160a0ca8aaf78ea53418c5f7a50c370cc818",
+    "ruff_changed_python": "pass",
+    "ty_controller": "pass",
+    "settings_compiler_check": "pass",
+    "safety_skip_reasons": [
+      "SKIPPED [145] ../../../../dev/sunnypilot/.venv/lib/python3.12/site-packages/_pytest/unittest.py:523: Skipped",
+      "SKIPPED [9] opendbc_repo/opendbc/safety/tests/common.py:64: Safety mode implements no _user_regen_msg",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:51: Skipping test because MADS button is not supported",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:254: Skipping test because MADS button is not supported",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:67: Skipping test because _acc_state_msg is not implemented for this car",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:165: Skipping test because MADS button is not supported",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:165: Skipping test because ACC main is not supported",
+      "SKIPPED [3] opendbc_repo/opendbc/safety/tests/mads_common.py:411: MADS button not supported",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:378: CAN FD only",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:361: CAN FD only",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:351: CAN FD only",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:327: CAN FD only",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:341: CAN FD only",
+      "SKIPPED [1] opendbc_repo/opendbc/safety/tests/test_ford.py:320: CAN FD only"
+    ],
+    "safety_native_build": "Pinned safety C source is compiled locally by libsafety_py before testing.",
+    "controlsd_to_can_feedback_integration_frames": 1010,
+    "integration_checks": "Both signs: build, hold, unwind, rebuild, immediate driver override; actual 100 Hz sender, counter, checksum, fields and publication. Separate integration tests validate PSCM service forwarding.",
+    "regression_test_evidence": [
+      "Nonzero-error integration failed with zero correction before implementing feedback.",
+      "Both sign tests failed when a reached limit trapped an old opposing correction; they pass after allowing return to zero."
+    ]
+  },
+  "route_b8": {
+    "baseline_revision": "a7d70e2b0890184636827351e4789d866f2a7c97",
+    "baseline_source_sha256": "8f3bc5d68e0051776f614a2ccffae84a88f7898dc95bdc12c23dcfe10dfe676a",
+    "cycles": 160431,
+    "active_cycles": 68217,
+    "validity_and_c0_match_original_v1_exactly": true,
+    "status_counts": {
+      "inactive": 92214,
+      "active": 68217
+    },
+    "feedback_enabled_seconds": 598.256888772994,
+    "pscm_limit_2_seconds": 12.139079590997426,
+    "c1_changed_cycles": 58106,
+    "max_abs_c1_change_rad": 0.29800000000000004,
+    "max_abs_correction_rad": 0.29816844327770786,
+    "can_round_trips": 160431,
+    "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+    "reference_limit": "Uses exact consumed model publication as reference; the b8 route has no maneuver-plan messages.",
+    "example_points": [
+      {
+        "time_s": 130.9368894940053,
+        "old_c0_c1": [
+          -0.7400000000000002,
+          -0.18700000000000006
+        ],
+        "candidate_c0_c1": [
+          -0.7400000000000002,
+          -0.22899999999999998
+        ],
+        "correction_rad": -0.042171663052515254,
+        "feedback_enabled": true,
+        "pscm_limited": false
+      },
+      {
+        "time_s": 235.3960996990063,
+        "old_c0_c1": [
+          -2.04,
+          -0.40449999999999997
+        ],
+        "candidate_c0_c1": [
+          -2.04,
+          -0.4145
+        ],
+        "correction_rad": -0.00989648519895422,
+        "feedback_enabled": true,
+        "pscm_limited": true
+      },
+      {
+        "time_s": 236.25034470800165,
+        "old_c0_c1": [
+          -1.46,
+          -0.128
+        ],
+        "candidate_c0_c1": [
+          -1.46,
+          -0.10799999999999998
+        ],
+        "correction_rad": 0.01990758350705991,
+        "feedback_enabled": true,
+        "pscm_limited": false
+      },
+      {
+        "time_s": 252.49320156300382,
+        "old_c0_c1": [
+          -0.6699999999999999,
+          -0.16249999999999998
+        ],
+        "candidate_c0_c1": [
+          -0.6699999999999999,
+          -0.20350000000000001
+        ],
+        "correction_rad": -0.040907632902654506,
+        "feedback_enabled": true,
+        "pscm_limited": false
+      },
+      {
+        "time_s": 674.430371745002,
+        "old_c0_c1": [
+          0.4299999999999997,
+          0.128
+        ],
+        "candidate_c0_c1": [
+          0.4299999999999997,
+          0.1345
+        ],
+        "correction_rad": 0.00639271291315417,
+        "feedback_enabled": true,
+        "pscm_limited": false
+      },
+      {
+        "time_s": 1534.5190040400048,
+        "old_c0_c1": [
+          2.62,
+          0.5
+        ],
+        "candidate_c0_c1": [
+          2.62,
+          0.5
+        ],
+        "correction_rad": 0.0,
+        "feedback_enabled": true,
+        "pscm_limited": true
+      },
+      {
+        "time_s": 1562.5074677500015,
+        "old_c0_c1": [
+          -0.1200000000000001,
+          -0.051000000000000045
+        ],
+        "candidate_c0_c1": [
+          -0.1200000000000001,
+          -0.046499999999999986
+        ],
+        "correction_rad": 0.004453988923883501,
+        "feedback_enabled": true,
+        "pscm_limited": false
+      }
+    ]
+  },
+  "route_input_sha256": {
+    "route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+    "model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+    "metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c"
+  },
+  "feedback_stress": {
+    "cycles": 200000,
+    "mirrored_updates": 200000,
+    "can_round_trips": 200000,
+    "checks": "Mirror symmetry, reset/override, amplitude, slew, correction bounds, integration direction/size, PSCM anti-windup, CAN fields.",
+    "scope": "Numerical software invariants only; no model of vehicle motion.",
+    "calibration_approved": false,
+    "controller_sha256": "4499defbb7fc5ddf5029ca42c549f0935b0758b08818c5bf0490fb52221f9a34"
+  },
+  "zero_error_stress": {
+    "seed": 20260907,
+    "random_cycles": 200000,
+    "mirrored_core_updates": 200000,
+    "invalid_or_inactive_resets": 3537,
+    "field_boundary_cases": 18138,
+    "float32_can_round_trips": 218138,
+    "analytic_targets_scalar_slew_and_mirror_checks_pass": true,
+    "direct_raw_float32_packing_matches_host_output": true,
+    "max_continuous_step_c0_c1": [
+      0.40000000000000147,
+      0.05000000000000002
+    ],
+    "calibration_approved": false,
+    "scope": "Zero-error numerical construction: measured equals requested curvature. No PSCM response claims.",
+    "opendbc_import_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9"
+  },
+  "total_lab_float32_can_round_trips": 578569,
+  "artifact_sha256": {
+    ".cache/ford_c1_feedback/routeb8/report.json": "648887eebb76260a60f7c0f0d9aaac83d0f1c06b443e28bc6fdf296bad4526c0",
+    ".cache/ford_c1_feedback/routeb8/commands.npz": "1aef98365572b3fb3cb8ba2a93cf30041ff3be133718d469145b710f2c94dc32",
+    ".cache/ford_c1_feedback/feedback_stress.json": "abf4e7bccc1e460008cc7450fcd92e9b2a6108bd71e53a01bdc24e31e5b5ad32",
+    ".cache/ford_c1_feedback/zero_error_stress.json": "2a3f284e10e5054205a788cce59bcf57bd837e13afff327457244141ba5522f0",
+    ".cache/ford_c1_feedback/safety_skip_reasons.txt": "5384c82b07b7cc20c6b22b8e94246cb104d53f8866af02b28fda7d4138cf377f"
+  },
+  "native_params": {
+    "library_sha256": "270bf43241cf7c02cc432cf78ec9411a62d7653ca445695efe785ae82241aa09",
+    "sources_match_original_rebuild_record": true,
+    "provenance": "Same locally rebuilt native library and source hashes recorded in ford_model_action_drive_test_validation.json; verified for this run."
+  },
+  "test_environment": {
+    "python": "/Users/ibpersonal/dev/sunnypilot/.venv/bin/python",
+    "PYTHONPATH": ".:opendbc_repo:.cache/ford_v6/test_deps",
+    "LOG_ROOT": "/private/tmp/ford-feedback-logs",
+    "PARAMS_ROOT": "/private/tmp/ford-feedback-params",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "source_sha256": {
+    "docs/ford_c1_feedback.md": "c1bc7f24c5ebe28679b4a04d09085d7b937926e63a38d43a3abfac93dfcfa0f9",
+    "docs/ford_model_action_candidate.md": "20cd8d10008cd796cc8719f5795ee80f50d8133d6e7684fb057a78fb05323fbe",
+    "docs/ford_model_action_drive_test.md": "7860ae26a61682aff86743ba302eb23c8f271d5700a2e616da1b6b38d438b57d",
+    "opendbc_repo/opendbc/car/vehicle_model.py": "ddc2a93d9c2b2ef6c9a913a5aef4c51e2bc387db1f7640473657e5ade4e50fac",
+    "openpilot/selfdrive/controls/controlsd.py": "2b7e246f00bccce3a2bb9f6f44009ca77690cadb8527cd2bdfe855e9ad72ad1e",
+    "openpilot/selfdrive/controls/lib/drive_helpers.py": "916bcd83c2a909a89795da58c7c43d7b168c9b82e1a6d281484bae45c667c01e",
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "4499defbb7fc5ddf5029ca42c549f0935b0758b08818c5bf0490fb52221f9a34",
+    "openpilot/selfdrive/controls/lib/ford_path.py": "383538fc7cdae3bc28dffb71fe12ac5f3f9866ffbe6adfb7457f3593e9fc903a",
+    "openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py": "84113b1b7800c868117af0034278f53a1a6153c7bb5fadc1ea45958e62c4f0d0",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action.py": "cbe1b2aa1961deba3a42e1d82f5f75ae0c3d7a219428dea5f50cb70e1b27fd11",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_adapter.py": "c7f5ffd650e804e6e02fa12d435e0867b56b13a49c3d9fa511993188d5cb625a",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_feedback.py": "f7a956c082a246d9506e21adbf348cbdc7f94d5342d832841058c71f7e264eeb",
+    "openpilot/sunnypilot/selfdrive/controls/controlsd_ext.py": "7a13dc5ce49b40e27e05e62cdb9ef1bb764de8ed8167f7e982d54a4dffe97ed4",
+    "openpilot/sunnypilot/sunnylink/settings_ui.json": "7d38f315a7c5ce6d46d01a06f7eaddd4933f85639e5325ff71fdce22866ef401",
+    "openpilot/sunnypilot/sunnylink/settings_ui_src/pages/vehicle.yaml": "410e306958ece12e49fc114707741c57a2dd927c6ba3410e160834e52a759ea9",
+    "tools/ford_pscm_lab/feedback_replay.py": "ca552217953f3cce35da0b1666252fd43b6f8ab6c067e5c9102da8ea8d97c2f3",
+    "tools/ford_pscm_lab/model_action_replay.py": "af97c665f342c66b1be2502e188c63e6f3ee106d0a0d5e80997bc3040373ff9f",
+    "tools/ford_pscm_lab/stress_model_action.py": "0b25188edf2b248ebe741173ce02ce75bd59f1f39fd5bd909d41a3dca2294aa8"
+  },
+  "limitations": [
+    "Frozen route replay changes commands only; it cannot establish tracking, unwind response or closed-loop stability.",
+    "Measured curvature uses the existing steering-angle vehicle model; it is not an independent ground-path measurement.",
+    "No full device build, device boot, installation or road validation was performed."
+  ]
+}

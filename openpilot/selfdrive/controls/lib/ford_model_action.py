@@ -1,14 +1,15 @@
-"""Experimental Ford C2-free controller: nearby offset and selected-action heading.
+"""Experimental Ford C2-free controller with measured-curvature C1 feedback.
 
 Selected only by its explicit toggle. The 7 m station and one-second scale are
-engineering choices, not identified PSCM gains or physical calibration.
+engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
+explicit feedback-strength choice, not an identified PSCM model or calibration.
 """
 import math
 import struct
 
 import numpy as np
 
-from opendbc.car.ford.values import FordFlags
+from opendbc.car.ford.values import CarControllerParams, FordFlags
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 
@@ -51,21 +52,24 @@ def encode_model_action(model, desired_curvature, speed):
 
 
 class ModelActionController:
-  """Only two control states: unquantized, independently slewed C0 and C1.
+  """Unquantized C0/C1 slew positions and one C1 feedback correction.
 
-  Freshness and engagement belong to the caller. No measured yaw, model
-  history, heading integral, blending or release modes enter the law.
+  Feedback integrates requested minus measured curvature over traveled distance.
+  Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
-  __slots__ = ('c0', 'c1')
+  __slots__ = ('c0', 'c1', 'correction')
 
   def __init__(self):
     self.reset()
 
   def reset(self):
-    self.c0 = self.c1 = 0.
+    self.c0 = self.c1 = self.correction = 0.
 
-  def update(self, model, desired_curvature, *, speed, dt, active=True, valid=True):
-    if not active or not valid or not _finite(dt) or not .002 <= dt <= .1:
+  def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
+             feedback_dt=None, feedback_enabled=True, pscm_limited=False):
+    feedback_dt = dt if feedback_dt is None else feedback_dt
+    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature) or not .002 <= dt <= .1
+        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1.):
       self.reset()
       return FordPath()
     target = encode_model_action(model, desired_curvature, speed)
@@ -73,8 +77,27 @@ class ModelActionController:
       self.reset()
       return FordPath()
     c0 = float(np.clip(target.path_offset, -5.11, 5.11))
-    c1 = float(np.clip(target.path_angle, -.5, .5))
+    base_c1 = float(np.clip(target.path_angle, -.5, .5))
+    lower = max(-.5, self.c1-.5*dt)
+    upper = min(.5, self.c1+.5*dt)
+    if not feedback_enabled:
+      self.correction = 0.
+    else:
+      increment = (desired_curvature-current_curvature)*speed*feedback_dt
+      # LimitReached inhibits only extra demand in the measured turn direction.
+      # Opposing correction and changes to the model request remain available.
+      direction = current_curvature if current_curvature else self.c1
+      if pscm_limited and increment*direction > 0.:
+        # An old opposing correction may return to zero; don't trap it below
+        # the base request just because the PSCM now reports a limit.
+        increment = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
+      # Integrate only as far as this cycle's amplitude/slew envelope permits.
+      # If the base moved outside that envelope, allow increments toward it;
+      # never rewrite existing correction merely because the base changed.
+      request = base_c1+self.correction
+      self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
     self.c0 += float(np.clip(c0-self.c0, -4.*dt, 4.*dt))
+    c1 = float(np.clip(base_c1+self.correction, -.5, .5))
     self.c1 += float(np.clip(c1-self.c1, -.5*dt, .5*dt))
     return FordPath(True, _packed(self.c0, .01, -5.12), _packed(self.c1, .0005, -.5), 0., 0.)
 
@@ -83,13 +106,13 @@ class FordModelActionController:
   """Input adapter for the opt-in selected-action controller.
 
   controlsd owns upstream selection/limiting and service health. This adapter
-  checks ages and clock order, then supplies elapsed time to the two-state
-  core. Its timestamps and diagnostics never affect the targets. Raw model
-  geometry is checked on every cycle, even at a repeated model timestamp.
+  checks ages and clock order, then supplies elapsed time to the three-state
+  core. Feedback advances once per fresh steering measurement; repeated samples
+  can still advance output slew. Raw model geometry is checked on every cycle.
 
-  Yaw is checked only for the inherited finite/range input gate. Engagement
-  and downstream driver arbitration still apply. This controller does not use
-  PSCM status or driver torque as control-law inputs.
+  CAN yaw remains a health gate, not the feedback measurement. Driver override
+  clears the correction. Fresh PSCM limits only inhibit outward integration;
+  neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self):
     self.core = ModelActionController()
@@ -98,41 +121,54 @@ class FordModelActionController:
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c0-c1-v1',
+    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v1',
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
-  def update(self, model, desired_curvature, *, yaw_rate, speed, now, measurement_time, model_time, reference_time,
-             active, valid=True):
+  def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
+             reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None):
     reason = None
     if not active:
       reason = 'inactive'
     elif not valid:
       reason = 'invalid_service'
-    elif not _finite(desired_curvature, yaw_rate, speed, now, measurement_time, model_time, reference_time):
+    elif not _finite(desired_curvature, current_curvature, yaw_rate, speed, now, measurement_time, model_time, reference_time):
       reason = 'nonfinite'
     elif not all(-.005 <= now - timestamp <= .15 for timestamp in (measurement_time, model_time, reference_time)):
       reason = 'stale_input'
-    elif not .3 <= speed <= 55 or abs(yaw_rate) > 3 or abs(desired_curvature) > 1:
+    elif not .3 <= speed <= 55 or abs(yaw_rate) > 3 or abs(desired_curvature) > 1 or abs(current_curvature) > 1:
       reason = 'input_range'
     if reason is not None:
       self.reset(reason)
       return FordPath()
 
     dt = .01 if self.last_time is None else now - self.last_time
-    if not .002 <= dt <= .1 or (self.last_measurement_time is not None and measurement_time < self.last_measurement_time) or (
+    feedback_dt = 0. if self.last_measurement_time is None else measurement_time-self.last_measurement_time
+    if not .002 <= dt <= .1 or not 0. <= feedback_dt <= .15 or (
       self.last_model_time is not None and model_time < self.last_model_time
     ):
       self.reset('timing_reset')
       return FordPath()
-    command = self.core.update(model, desired_curvature, speed=speed, dt=dt)
+    status_fresh = (pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0
+                    and -.005 <= now-pscm_status.canMonoTime*1e-9 <= .15)
+    pscm_limited = bool(status_fresh and pscm_status.limit == 2)
+    driver_override = bool(driver_pressed or not _finite(driver_torque)
+                           or abs(driver_torque) > CarControllerParams.STEER_DRIVER_ALLOWANCE
+                           or (status_fresh and pscm_status.limit == 3))
+    feedback_enabled = not (driver_override or (status_fresh and (pscm_status.denied or pscm_status.lateralState != 2)))
+    command = self.core.update(model, desired_curvature, current_curvature=current_curvature, speed=speed, dt=dt,
+                               feedback_dt=feedback_dt, feedback_enabled=feedback_enabled, pscm_limited=pscm_limited)
     if not command.valid:
       self.reset('invalid_path')
       return command
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c0-c1-v1',
+    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v1',
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
+                        'curvature_error': desired_curvature-current_curvature, 'feedback_dt': feedback_dt,
+                        'heading_feedforward': float(np.clip(max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature, -.5, .5)),
+                        'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
+                        'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}
     return command
 

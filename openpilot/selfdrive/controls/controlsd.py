@@ -173,11 +173,13 @@ class Controls(ControlsExt):
       if self.ford_model_action:
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
         self.ford_path = self.ford_path_controller.update(
-          ford_model, self.desired_curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
+          ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
+          driver_pressed=CS.steeringPressed, driver_torque=CS.steeringTorque,
+          pscm_status=self.sm['carStateSP'].fordPscmStatus if self.sm.valid['carStateSP'] else None,
         )
         if not self.ford_path.valid:
           CC.latActive = False

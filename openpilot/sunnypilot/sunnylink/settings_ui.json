@@ -2183,8 +2183,8 @@
           "widget": "toggle",
           "needs_onroad_cycle": true,
           "title": "Selected-Action Path Tracking (Experimental)",
-          "description": "Follow the selected steering plan with nearby model-path centering on the Ford CAN FD F-150 Lightning.",
-          "details": "Uses nearby model-path offset and a heading request based directly on selected planned curvature. There is no accumulated measured-turning correction. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. On the Ford CAN FD F-150 Lightning this takes priority over PSCM Coefficient Observer; other vehicles retain their existing controller. Turning it off restores PSCM Coefficient Observer if selected, otherwise the original Ford path controller. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
+          "description": "Follow the selected steering plan using model-path centering and measured steering feedback on the Ford CAN FD F-150 Lightning.",
+          "details": "Keeps the nearby model-path centering request and adjusts the heading request using the difference between requested and measured steering. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. On the Ford CAN FD F-150 Lightning this takes priority over PSCM Coefficient Observer; other vehicles retain their existing controller. Turning it off restores PSCM Coefficient Observer if selected, otherwise the original Ford path controller. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
           "enablement": [
             {
               "type": "offroad_only"

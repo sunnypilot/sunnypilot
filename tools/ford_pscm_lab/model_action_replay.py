@@ -1,4 +1,8 @@
-"""Replay the selected core and its adapter on route90/95 original-time extracts.
+"""Check zero-error compatibility on route90/95 original-time extracts.
+
+Measured curvature is deliberately set to the requested curvature in this
+historical compatibility check, so feedback stays zero. This is not a replay
+of the new feedback controller's response to recorded steering measurements.
 
 The historical pass deliberately uses the archived eligibility mask to check
 command compatibility. The separate adapter pass reconstructs input eligibility
@@ -132,11 +136,13 @@ def run(directory, output):
   reasons = Counter()
   for i, now in enumerate(t):
     selected_model = models[mi[i]] if exact[i] else None
-    old_gate = core.update(selected_model, controls['desired'][i], speed=cs['speed'][i], dt=dt[i], active=bool(baseline['valid'][i]))
+    old_gate = core.update(selected_model, controls['desired'][i], current_curvature=controls['desired'][i],
+                           speed=cs['speed'][i], dt=dt[i], active=bool(baseline['valid'][i]))
     commands[i] = old_gate.path_offset, old_gate.path_angle, old_gate.curvature, old_gate.curvature_rate
     valid[i] = old_gate.valid
     wire.check(old_gate)
-    new_gate = adapter.update(selected_model, controls['desired'][i], speed=cs['speed'][i], yaw_rate=cs['yaw'][i], now=now,
+    new_gate = adapter.update(selected_model, controls['desired'][i], current_curvature=controls['desired'][i],
+                              speed=cs['speed'][i], yaw_rate=cs['yaw'][i], now=now,
                               measurement_time=cs['t'][i], model_time=model['t'][i], reference_time=model['t'][i],
                               active=bool(cc['active'][i]), valid=bool(services_valid[i]))
     adapted[i] = new_gate.path_offset, new_gate.path_angle, new_gate.curvature, new_gate.curvature_rate
@@ -146,7 +152,8 @@ def run(directory, output):
     # Isolate the adapter's fresh 10 ms engagement tick from the archived
     # harness, which used the preceding publication interval even on engage.
     entry_dt = dt[i] if i > 0 and baseline['valid'][i-1] else .01
-    expected_adapter = entry_clock_core.update(selected_model, controls['desired'][i], speed=cs['speed'][i], dt=entry_dt,
+    expected_adapter = entry_clock_core.update(selected_model, controls['desired'][i], current_curvature=controls['desired'][i],
+                                               speed=cs['speed'][i], dt=entry_dt,
                                                active=bool(baseline['valid'][i]))
     assert new_gate == expected_adapter, f'Unexplained adapter difference at cycle {i}'
   np.testing.assert_array_equal(valid, baseline['valid'])
@@ -186,7 +193,7 @@ def run(directory, output):
   sources = [Path(__file__), Path(ford_model_action.__file__),
              root/'openpilot/selfdrive/controls/lib/ford_path.py', directory/'route.npz', directory/'metadata.json',
              directory/'encoder_comparison.npz', directory/'encoder_comparison.json', directory/'pose_candidate/pose_replay.npz']
-  report = {'scope': 'Command construction and adapter reconstruction only; no counterfactual closed-loop score.',
+  report = {'scope': 'Zero-error compatibility only: measured curvature is set to requested curvature. No physical tracking score.',
             'calibration_approved': False, 'executes_live_selector': False, 'cycles': len(t),
             'core_active_cycles': int(valid.sum()), 'core_exact_archived_match': True, 'cohorts_reproduced': True,
             'adapter_active_cycles': int(adapter_valid.sum()), 'adapter_status_counts': dict(reasons),

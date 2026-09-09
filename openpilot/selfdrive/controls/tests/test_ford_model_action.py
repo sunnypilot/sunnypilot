@@ -42,27 +42,27 @@ def test_centering_information_is_independent_of_action_and_not_scaled_with_spee
     assert target.path_angle == pytest.approx(sign*.2)  # No 10 m cap at highway speed.
 
 
-def test_two_actuator_positions_are_sufficient_for_every_next_output():
+def test_three_control_states_are_sufficient_for_every_next_output():
   controller = ModelActionController()
   assert not hasattr(controller, '__dict__')
   for i in range(300):
     copied = ModelActionController()
-    copied.c0, copied.c1 = controller.c0, controller.c1
+    copied.c0, copied.c1, copied.correction = controller.c0, controller.c1, controller.correction
     model = straight(.2*math.sin(i*.1))
     kwargs = {'speed': 20., 'dt': .01}
     desired = .005*math.cos(i*.03)
-    assert controller.update(model, desired, **kwargs) == copied.update(model, desired, **kwargs)
+    assert controller.update(model, desired, current_curvature=0., **kwargs) == copied.update(model, desired, current_curvature=0., **kwargs)
 
 
 def test_held_turn_releases_without_a_bias_tail_or_sign_reversal():
   for sign in (-1., 1.):
     controller = ModelActionController()
     for _ in range(400):
-      out = controller.update(circle(sign*.01), sign*.01, speed=20., dt=.01)
+      out = controller.update(circle(sign*.01), sign*.01, current_curvature=sign*.01, speed=20., dt=.01)
     assert out.path_angle == pytest.approx(sign*.2)
     previous = np.array([out.path_offset, out.path_angle])
     for desired in sign*np.linspace(.01, 0., 101):
-      out = controller.update(straight(), desired, speed=20., dt=.01)
+      out = controller.update(straight(), desired, current_curvature=desired, speed=20., dt=.01)
       values = np.array([out.path_offset, out.path_angle])
       assert (abs(values) <= abs(previous)+1e-8).all()
       assert (sign*values >= -1e-8).all()
@@ -73,13 +73,13 @@ def test_held_turn_releases_without_a_bias_tail_or_sign_reversal():
 def test_current_model_replacement_leaves_only_independent_actuator_slew():
   controller = ModelActionController()
   for _ in range(150):
-    controller.update(straight(1.), .04, speed=20., dt=.01)
+    controller.update(straight(1.), .04, current_curvature=.04, speed=20., dt=.01)
   for _ in range(25):
-    out = controller.update(straight(), 0., speed=20., dt=.01)
+    out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out.path_offset == pytest.approx(0.)
   assert out.path_angle > 0.  # C1 cannot hold C0 during its longer release.
   for _ in range(75):
-    out = controller.update(straight(), 0., speed=20., dt=.01)
+    out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out == FordPath(True, 0., 0., 0., 0.)
 
 
@@ -87,12 +87,12 @@ def test_current_model_replacement_leaves_only_independent_actuator_slew():
 def test_invalid_or_inactive_input_clears_state_before_reengagement(overrides):
   controller = ModelActionController()
   for _ in range(100):
-    controller.update(straight(.5), .01, speed=20., dt=.01)
+    controller.update(straight(.5), .01, current_curvature=.01, speed=20., dt=.01)
   kwargs = {'speed': 20., 'dt': .01, 'active': True, 'valid': True}
   kwargs.update(overrides)
-  assert controller.update(straight(), 0., **kwargs) == FordPath()
+  assert controller.update(straight(), 0., current_curvature=0., **kwargs) == FordPath()
   assert (controller.c0, controller.c1) == (0., 0.)
-  assert controller.update(straight(), 0., speed=20., dt=.01) == FordPath(True, 0., 0., 0., 0.)
+  assert controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01) == FordPath(True, 0., 0., 0., 0.)
 
 
 def test_malformed_geometry_and_nonfinite_action_never_create_an_active_command():
@@ -108,7 +108,7 @@ def test_selected_core_reversal_through_float32_and_wire_keeps_sign_and_zero_c2(
   previous = np.zeros(2)
   for i in range(600):
     sign = 1. if i < 300 else -1.
-    out = controller.update(straight(sign*8.), sign*.1, speed=30., dt=.01)
+    out = controller.update(straight(sign*8.), sign*.1, current_curvature=sign*.1, speed=30., dt=.01)
     fields = np.array([out.path_offset, out.path_angle])
     assert (abs(fields) <= [5.1100001, .5000001]).all()
     assert (abs(fields-previous) <= [.0500001, .0055001]).all()
@@ -133,8 +133,8 @@ def test_short_path_holds_available_endpoint_without_extrapolation():
 def test_overflowing_arc_resets_instead_of_publishing_invalid_geometry():
   model = make_model([0., 1e308, -1e308], [0., 0., 0.], [0., 0., 0.])
   controller = ModelActionController()
-  controller.update(straight(.4), .01, speed=20., dt=.01)
-  assert controller.update(model, .01, speed=20., dt=.01) == FordPath()
+  controller.update(straight(.4), .01, current_curvature=.01, speed=20., dt=.01)
+  assert controller.update(model, .01, current_curvature=.01, speed=20., dt=.01) == FordPath()
   assert (controller.c0, controller.c1) == (0., 0.)
 
 
@@ -143,9 +143,9 @@ def test_overflowing_arc_resets_instead_of_publishing_invalid_geometry():
 def test_malformed_numeric_input_resets_without_throwing(field, value):
   controller = ModelActionController()
   kwargs = {'speed': 20., 'dt': .01, 'desired_curvature': .01}
-  controller.update(straight(.4), **kwargs)
+  controller.update(straight(.4), current_curvature=kwargs['desired_curvature'], **kwargs)
   kwargs[field] = value
-  assert controller.update(straight(.4), **kwargs) == FordPath()
+  assert controller.update(straight(.4), current_curvature=kwargs['desired_curvature'], **kwargs) == FordPath()
   assert (controller.c0, controller.c1) == (0., 0.)
 
 
@@ -160,8 +160,8 @@ def test_malformed_numeric_input_resets_without_throwing(field, value):
 ])
 def test_malformed_model_arrays_cannot_reuse_a_previous_valid_command(model):
   controller = ModelActionController()
-  controller.update(straight(.4), .01, speed=20., dt=.01)
-  assert controller.update(model, .01, speed=20., dt=.01) == FordPath()
+  controller.update(straight(.4), .01, current_curvature=.01, speed=20., dt=.01)
+  assert controller.update(model, .01, current_curvature=.01, speed=20., dt=.01) == FordPath()
   assert (controller.c0, controller.c1) == (0., 0.)
 
 
@@ -173,7 +173,7 @@ def test_malformed_model_arrays_cannot_reuse_a_previous_valid_command(model):
 def test_domain_and_elapsed_time_boundaries(field, value, valid):
   kwargs = {'speed': 20., 'desired_curvature': .01, 'dt': .01}
   kwargs[field] = value
-  assert ModelActionController().update(straight(.4), **kwargs).valid == valid
+  assert ModelActionController().update(straight(.4), current_curvature=kwargs['desired_curvature'], **kwargs).valid == valid
 
 
 def test_arc_station_not_forward_x_or_model_heading_determines_offset():
@@ -188,6 +188,6 @@ def test_arc_station_not_forward_x_or_model_heading_determines_offset():
 def test_duplicate_stations_keep_valid_geometry_and_first_cycle_slew():
   model = make_model([0., 0., 10.], [.4, .4, .4], [0., 0., 0.])
   assert encode_model_action(model, .01, 20.) == FordPath(True, .4, .2, 0., 0.)
-  out = ModelActionController().update(model, .01, speed=20., dt=.002)
+  out = ModelActionController().update(model, .01, current_curvature=.01, speed=20., dt=.002)
   assert out.path_offset == pytest.approx(.01)
   assert out.path_angle == pytest.approx(.001)

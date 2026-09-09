@@ -5,7 +5,9 @@ stage committed as `7ca3c6e3b`. The candidate is now available behind a
 separate default-off Sunnylink toggle; see
 [drive-test setup and validation](ford_model_action_drive_test.md).
 The counts, source hashes and selector status below describe that earlier
-stage, not the subsequent wiring change.
+stage. The current experiment adds [measured-curvature C1 feedback](ford_c1_feedback.md)
+to this original mapping; the historical no-feedback description below is
+not the current controller specification.
 
 The decision is `C0 = current model y(7 m)`,
 `C1 = max(7 m, speed × 1 s) × selected upstream-limited desiredCurvature`,
