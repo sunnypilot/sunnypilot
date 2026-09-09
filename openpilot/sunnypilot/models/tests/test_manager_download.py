@@ -1140,7 +1140,7 @@ class TestEffectiveSource(OpenpilotTestCase):
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')
 class TestLiveModelManifest(OpenpilotTestCase):
-  """Every artifact in the published manifests must be a reachable whole file that honours byte
+  """Every artifact in the published manifests must be a reachable whole file that honors byte
   ranges, which the parallel downloader depends on."""
 
   def test_all_manifest_urls_available(self):
