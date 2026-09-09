@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import os
 import sys
 import time
@@ -104,13 +105,20 @@ def plot_comparison(series_a, series_b, title, output_directory, label_a="modeld
   return plot_path
 
 
+def replay_model_on_frames_wrapper(model_path, video_url, number_of_frames):
+  frame_reader = FrameReader(video_url, pix_fmt="nv12")
+  return replay_model_on_frames(model_path, frame_reader, number_of_frames)
+
 def compare_models_on_route(new_model_path, old_model_path, route_or_path=None, segment_index=SEGMENT,
                             number_of_frames=20, tolerance=1e-2, label_a="modeld_v2 model", label_b="stock",
                             plot_directory=None, enforce_timings=False):
   video_url_or_path = get_replay_video_source(route_or_path, segment_index)
-  frame_reader = FrameReader(video_url_or_path, pix_fmt="nv12")
-  new_results = replay_model_on_frames(new_model_path, frame_reader, number_of_frames)
-  old_results = replay_model_on_frames(old_model_path, frame_reader, number_of_frames)
+
+  with concurrent.futures.ProcessPoolExecutor(max_workers=2) as executor:
+    future_new = executor.submit(replay_model_on_frames_wrapper, new_model_path, video_url_or_path, number_of_frames)
+    future_old = executor.submit(replay_model_on_frames_wrapper, old_model_path, video_url_or_path, number_of_frames)
+    new_results = future_new.result()
+    old_results = future_old.result()
 
   for step_index, (new_step, old_step) in enumerate(zip(new_results, old_results, strict=True)):
     new_array = new_step["raw_output"]
