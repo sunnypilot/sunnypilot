@@ -57,6 +57,8 @@ class ServerState:
   fail_ranges: dict[tuple[int, int], int] = dataclasses.field(default_factory=dict)  # range -> HTTP status, every time
   fail_times: dict[tuple[int, int], int] = dataclasses.field(default_factory=dict)  # range -> how many more requests 503
   short_once: set[tuple[int, int]] = dataclasses.field(default_factory=set)  # ranges whose first answer is cut short
+  fail_after_others: bool = False  # hold each failure until every other piece has been sent
+  sent: set[tuple[int, int]] = dataclasses.field(default_factory=set)  # ranges sent in full
   stall_ranges: set[tuple[int, int]] = dataclasses.field(default_factory=set)
   stall_event: threading.Event | None = None
   stall_released_by_event: bool | None = None
@@ -90,6 +92,10 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
         state.fail_times[rng] -= 1
         status = 503
       if status is not None:
+        others = {piece_range(i) for i in range(NUM_PIECES)} - {rng}
+        deadline = time.monotonic() + 5
+        while state.fail_after_others and not others <= state.sent and time.monotonic() < deadline:
+          time.sleep(0.01)
         self.send_response(status)
         self.end_headers()
         return
@@ -117,6 +123,8 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
       self.wfile.write(payload[100:])
     else:
       self.wfile.write(payload)
+    if rng is not None:
+      state.sent.add(rng)
 
 
 @contextlib.contextmanager
@@ -152,7 +160,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.addCleanup(self._tmp.cleanup)
     self.dest = self._tmp.name
 
-    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01), ('SPEED_FLOOR', 100)):
+    for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01), ('SPEED_FLOOR', 100), ('RETRY_BACKOFF', 0.01)):
       self.enterContext(mock.patch.object(manager_module, name, value))
 
     self.reported: list[float] = []
@@ -234,6 +242,18 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
   def download_bundle(self, source: str):
     asyncio.run(self.manager._download_bundle(self._bundle, self.dest, source))
 
+  def request_download(self) -> dict:
+    """Asks for the test bundle the way the UI does, then runs one tick of the request loop."""
+    self.make_artifact()
+    self._bundle.ref = "ref"
+    self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
+    self.manager.source_models = {"qcom": [self._bundle], "chestnut": []}
+    self.manager.params, store = self._make_params_with_store()
+    store["ModelManager_DownloadRef"] = "ref"
+    with mock.patch.object(manager_module.Paths, 'model_root', return_value=self.dest):
+      self.manager._process_download_requests()
+    return store
+
   def read_path(self) -> bytes:
     with open(self.path, 'rb') as f:
       return f.read()
@@ -250,6 +270,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 
     params.get.side_effect = get
     params.put.side_effect = put
+    params.remove.side_effect = lambda key: put(key, None)
     return params, store
 
 
@@ -328,6 +349,38 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.piece_requests().count(piece_range(1)) == 1
     assert os.path.isfile(self.path)
     assert self.resume_state()["done"] == [i for i in range(NUM_PIECES) if i != 1]
+
+  def test_failed_transfer_resumes_on_retry(self):
+    """When a piece runs out of tries the whole transfer is retried, skipping the pieces already saved."""
+    self.server.fail_times = {piece_range(1): manager_module.PIECE_ATTEMPTS}  # the first transfer gives up on piece 1
+    self.server.fail_after_others = True  # by then every other piece is saved
+    self.process_artifact()
+    assert self.read_path() == WHOLE_BODY
+    assert self.piece_requests().count(piece_range(1)) == manager_module.PIECE_ATTEMPTS + 1, "the retry fetched piece 1"
+    others = [i for i in range(NUM_PIECES) if i != 1]
+    assert all(self.piece_requests().count(piece_range(i)) == 1 for i in others), "the retry skipped every saved piece"
+
+  def test_lasting_transient_failure_gives_up(self):
+    self.server.fail_ranges = {piece_range(1): 503}
+    with self.assertRaises(requests.exceptions.HTTPError):
+      self.process_artifact()
+    assert self.piece_requests().count(piece_range(1)) == manager_module.PIECE_ATTEMPTS * manager_module.DOWNLOAD_ATTEMPTS
+
+  def test_cancel_ends_retry_backoff(self):
+    """A cancel during the wait before a retry ends the wait at once, and is not a failure."""
+    self.enterContext(mock.patch.object(manager_module, 'RETRY_BACKOFF', 30.0))
+    self.manager._download_ref = b"ref"
+
+    def fail_then_cancel(*args):
+      self.params.get.return_value = None  # the user cancels while the manager waits to retry
+      raise requests.exceptions.ConnectionError("dropped")
+    transfer = self.enterContext(mock.patch.object(self.manager, '_download_file', side_effect=fail_then_cancel))
+    started = time.monotonic()
+    with self.assertRaises(DownloadCancelled):
+      self.process_artifact()
+    assert time.monotonic() - started < 5, "the wait must end at the cancel, not after 30 s"
+    assert transfer.call_count == 1, "no second transfer after a cancel"
+    assert self.artifact.downloadProgress.status != custom.ModelManagerSP.DownloadStatus.failed
 
   def test_removing_download_ref_cancels(self):
     stall_event = self.stall(3)
@@ -465,6 +518,23 @@ class TestProcessArtifact(ManagerDownloadTestBase):
       self.download_bundle("qcom")
     assert ACTIVE_BUNDLE_KEYS["qcom"] not in store
     assert os.path.isfile(self.path), "cancel must not delete a cached model"
+    assert self.manager.selected_bundle.status != custom.ModelManagerSP.DownloadStatus.failed, "a cancel is not a failure"
+
+  def test_failed_download_stays_on_the_row(self):
+    self.server.fail_ranges = {piece_range(1): 404}
+    store = self.request_download()
+    selected = self.manager.selected_bundle
+    assert selected is not None and selected.status == custom.ModelManagerSP.DownloadStatus.failed, "a failure stays on the row"
+    assert store["ModelManager_DownloadRef"] is None, "the failed request is released"
+
+  def test_finished_download_clears_the_row(self):
+    self.request_download()
+    assert self.manager.selected_bundle is None
+
+  def test_cancelled_download_clears_the_row(self):
+    self.pm.send.side_effect = lambda *args: self.manager.params.remove("ModelManager_DownloadRef")  # cancel at the first report
+    self.request_download()
+    assert self.manager.selected_bundle is None
 
   def test_download_ref_is_released_only_if_unchanged(self):
     for current, removed in ((b"new-ref", False), (b"ref", True)):
