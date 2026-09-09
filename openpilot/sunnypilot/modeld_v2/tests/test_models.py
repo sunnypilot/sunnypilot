@@ -25,6 +25,8 @@ class TestLegacyModels(unittest.TestCase):
     def safe_getitem(device_self, ix):
       if ix == "QCOM" and not os.path.exists("/dev/kgsl-3d0"):
         return real_getitem(device_self, "CPU")
+      if ix == "AMD" and not os.path.exists("/dev/kfd"):
+        return real_getitem(device_self, "CPU")
       return real_getitem(device_self, ix)
 
     with patch.object(Device.__class__, "__getitem__", safe_getitem):

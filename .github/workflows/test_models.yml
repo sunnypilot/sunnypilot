@@ -19,14 +19,16 @@ jobs:
         id: set-matrix
         run: |
           python3 -c '
-          import json, urllib.request, sys, os, re
+          import json, urllib.request, sys, os, re, random
 
           with open("openpilot/sunnypilot/models/fetcher.py", "r") as f:
             content = f.read()
             match = re.search(r"MODEL_URL\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", content)
+            match_chestnut = re.search(r"MODEL_URL_CHESTNUT\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", content)
             if not match:
               raise ValueError("MODEL_URL not found in fetcher.py")
             url = match.group(1)
+            chestnut_url = match_chestnut.group(1) if match_chestnut else None
 
           req = urllib.request.urlopen(url)
           data = json.loads(req.read())
@@ -36,6 +38,21 @@ jobs:
             for model in bundle.get("models", []):
               if "artifact" in model:
                 artifacts.append(model["artifact"])
+
+          if chestnut_url:
+            try:
+              req_chestnut = urllib.request.urlopen(chestnut_url)
+              data_chestnut = json.loads(req_chestnut.read())
+              chestnut_artifacts = [
+                m["artifact"]
+                for b in data_chestnut.get("bundles", [])
+                for m in b.get("models", [])
+                if "artifact" in m
+              ]
+              if chestnut_artifacts:
+                artifacts.append(random.choice(chestnut_artifacts))
+            except Exception as e:
+              print(f"Failed to fetch Chestnut models: {e}", file=sys.stderr)
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"models={json.dumps(artifacts)}\n")
@@ -61,7 +78,7 @@ jobs:
           echo '${{ toJson(matrix.artifact.chunks) }}' > chunks.json
 
           BASE_URL="${{ matrix.artifact.download_uri.url }}"
-          BASE_DIR=$(dirname "$BASE_URL")
+          export BASE_DIR=$(dirname "$BASE_URL")
 
           python3 -c '
           import json, os
@@ -70,9 +87,13 @@ jobs:
           manifest_path = f"/tmp/model_chunks/${{ matrix.artifact.file_name }}.chunkmanifest"
           with open(manifest_path, "w") as f:
             f.write(str(len(chunks)))
-          for c in chunks:
-            print(c["file_name"])
-          ' | xargs -I {} -P 10 bash -c "echo 'Downloading {}...' && curl -f -s -S -L -o '/tmp/model_chunks/{}' \"$BASE_DIR/{}\""
+          base_dir = os.environ["BASE_DIR"]
+          with open("/tmp/curl_config.txt", "w") as f:
+            for c in chunks:
+              fn = c["file_name"]
+              f.write(f"url = \"{base_dir}/{fn}\"\noutput = \"/tmp/model_chunks/{fn}\"\n")
+          '
+          curl -Z --parallel-immediate --parallel-max 16 -s -S -f -L -K /tmp/curl_config.txt
 
       - name: Run Model Compatibility Test
         env:
