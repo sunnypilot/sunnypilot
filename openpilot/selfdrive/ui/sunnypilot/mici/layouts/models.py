@@ -4,15 +4,17 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
-                                                           default_model_name, model_info, queued_name)
+                                                           default_model_name, model_cache_size_mb, model_info, queued_name)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -84,7 +86,11 @@ class ModelsLayoutMici(NavScroller):
     self.cancel_download_btn = BigButton(tr("cancel download"))
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
+    self.clear_cache_btn = BigButton(tr("clear cache"), value=f"{model_cache_size_mb():.1f} MB")
+    self.clear_cache_btn.set_click_callback(self._confirm_clear_cache)
+    self._cache_size_time = 0.0
+
+    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.clear_cache_btn]
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -162,6 +168,11 @@ class ModelsLayoutMici(NavScroller):
     ui_state.params.remove(ACTIVE_BUNDLE_KEYS[source])
     self._pop_to_main()
 
+  def _confirm_clear_cache(self):
+    icon = gui_app.texture("icons_mici/settings/network/new/trash.png", 54, 64)
+    gui_app.push_widget(BigConfirmationDialog(f"{tr('slide to')}\n{tr('clear cache')}", icon,
+                                              lambda: ui_state.params.put_bool("ModelManager_ClearCache", True), red=True))
+
   def _select_folder(self, folder_name):
     source = self._selection_source
     if source is None:  # folders are only reachable after picking a hardware
@@ -204,6 +215,16 @@ class ModelsLayoutMici(NavScroller):
     if self._was_downloading and not is_downloading:
       device.set_override_interactive_timeout(None)
     self._was_downloading = is_downloading
+
+    # manager is offroad-only, so an onroad clear would never be serviced
+    clearing = ui_state.params.get_bool("ModelManager_ClearCache")
+    self.clear_cache_btn.set_enabled(ui_state.is_offroad() and not is_downloading and not clearing)
+    if clearing:
+      self.clear_cache_btn.set_value(tr("clearing..."))
+      self._cache_size_time = 0.0  # refresh the size as soon as clearing finishes
+    elif (now := time.monotonic()) - self._cache_size_time > 0.5:
+      self._cache_size_time = now
+      self.clear_cache_btn.set_value(f"{model_cache_size_mb():.1f} MB")
 
     self.current_model_info.current_model_header.set_text(tr("active model"))
     active_text, info_header, info_text = _model_info()
