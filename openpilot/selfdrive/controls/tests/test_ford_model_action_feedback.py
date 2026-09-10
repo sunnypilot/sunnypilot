@@ -16,6 +16,114 @@ def tick(controller, desired, measured, **overrides):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
+def test_old_turn_correction_does_not_keep_c1_in_old_direction_after_reversal(sign):
+  controller = ModelActionController()
+  # Build an actual correction through feedback, rather than injecting a state.
+  for _ in range(100):
+    controller.update(straight(), sign*.004, current_curvature=sign*.004, speed=20., dt=.01)
+  for _ in range(100):
+    controller.update(straight(), sign*.004, current_curvature=sign*.001, speed=20., dt=.01)
+  assert controller.correction == pytest.approx(sign*.06)
+  # The request has reversed, but measured steering still points into the old
+  # turn. C0 also confirms the new direction. The existing slew permits
+  # crossing zero within these 0.4 seconds.
+  for _ in range(40):
+    before = controller.c1
+    out = controller.update(straight(-sign*.2), -sign*.001, current_curvature=sign*.003, speed=20., dt=.01)
+    assert abs(controller.c1-before) <= .0050000001
+  assert sign*out.path_angle < 0., 'Stored old-turn correction still overrides the new C1 direction'
+  assert out.path_offset == pytest.approx(-sign*.2)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('limited', [False, True])
+def test_carryover_release_uses_fresh_feedback_and_preserves_final_slew(sign, limited):
+  controller = ModelActionController()
+  controller.c0, controller.c1, controller.correction = -sign*.2, sign*.03, sign*.05
+  kwargs = {'speed': 20., 'dt': .01, 'current_curvature': sign*.003, 'pscm_limited': limited}
+  controller.update(straight(-sign*.2), -sign*.001, feedback_dt=0., **kwargs)
+  assert controller.correction == pytest.approx(sign*.05)
+  before = controller.c1
+  out = controller.update(straight(-sign*.2), -sign*.001, **kwargs)
+  assert controller.correction == 0.
+  assert controller.carryover_release_count == 1
+  assert out.path_angle == pytest.approx(before-sign*.005)
+  for _ in range(30):
+    controller.update(straight(-sign*.2), -sign*.001, **kwargs)
+  assert controller.carryover_release_count == 1
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('case', ['matched', 'same_turn', 'already_turning_new_way', 'c0_opposes', 'c0_neutral',
+                                  'c0_sub_resolution', 'target_c0_opposes', 'c1_sub_resolution',
+                                  'neutral_request', 'neutral_measurement', 'correction_helps', 'correction_not_dominant'])
+def test_carryover_release_preserves_steady_correction_and_ambiguous_requests(sign, case):
+  controller = ModelActionController()
+  offset, desired, measured, correction = -.2, -.001, .003, .05
+  if case == 'matched':
+    measured = desired
+  elif case == 'same_turn':
+    measured = -.0005
+  elif case == 'already_turning_new_way':
+    measured = -.003
+  elif case == 'c0_opposes':
+    offset = .2
+  elif case == 'c0_neutral':
+    offset = 0.
+  elif case == 'c0_sub_resolution':
+    offset = -.001
+  elif case == 'c1_sub_resolution':
+    desired = -.000001
+  elif case == 'neutral_request':
+    desired = 0.
+  elif case == 'neutral_measurement':
+    measured = 0.
+  elif case == 'correction_helps':
+    correction = -.05
+  elif case == 'correction_not_dominant':
+    correction = .01
+  controller.c0, controller.c1, controller.correction = sign*offset, sign*(20.*desired+correction), sign*correction
+  if case == 'target_c0_opposes':
+    offset = .2  # The old slewed C0 alone is not enough to confirm the request.
+  controller.update(straight(sign*offset), sign*desired, current_curvature=sign*measured, speed=20., dt=.01)
+  assert controller.carryover_release_count == 0
+  assert abs(controller.correction-sign*correction) <= abs(desired-measured)*20.*.01+1e-10
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_carryover_release_waits_for_c0_to_finish_opposing_the_new_request(sign):
+  controller = ModelActionController()
+  controller.c0, controller.c1, controller.correction = sign*.2, sign*.03, sign*.05
+  for _ in range(4):
+    controller.update(straight(-sign*.2), -sign*.001, current_curvature=sign*.003, speed=20., dt=.01)
+    assert controller.carryover_release_count == 0
+  for _ in range(3):
+    controller.update(straight(-sign*.2), -sign*.001, current_curvature=sign*.003, speed=20., dt=.01)
+  assert controller.carryover_release_count == 1
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_steady_opposing_correction_is_preserved_through_small_error_crossings(sign):
+  controller = ModelActionController()
+  controller.c0, controller.c1, controller.correction = -sign*.2, sign*.03, sign*.05
+  for i in range(200):
+    measured = sign*(-.001+(-1 if i % 2 else 1)*.000001)
+    controller.update(straight(-sign*.2), -sign*.001, current_curvature=measured, speed=20., dt=.01)
+  assert controller.carryover_release_count == 0
+  assert controller.correction == pytest.approx(sign*.05)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('offset', [.009999, .01, .010001])
+@pytest.mark.parametrize('heading', [.0004999, .0005, .0005001])
+def test_carryover_direction_confirmation_uses_existing_dbc_steps(sign, offset, heading):
+  controller = ModelActionController()
+  controller.c0, controller.c1, controller.correction = -sign*offset, sign*.03, sign*.05
+  controller.update(straight(-sign*offset), -sign*heading/20., current_curvature=sign*.003, speed=20., dt=.01)
+  assert controller.carryover_release_count == int(offset >= .01 and heading >= .0005)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
 def test_feedback_builds_holds_and_unwinds_without_changing_c0(sign):
   controller, matched = ModelActionController(), ModelActionController()
   for _ in range(100):

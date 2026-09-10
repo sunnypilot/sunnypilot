@@ -1,5 +1,10 @@
 # Ford C1 feedback experiment
 
+This document records the original feedback change at `5fbb583e5`. The current
+version retains its feedback law and adds [conditional carryover release](ford_c1_carryover.md).
+The validation counts below describe the original change; current results are
+recorded in `ford_c1_carryover_validation.json`.
+
 The restored original v1 can leave a steering error while C0 and C1 still have
 room. Its command law does not directly correct measured steering error. This
 experiment keeps that mapping and adds one accumulated C1 correction:

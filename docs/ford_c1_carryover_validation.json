@@ -1,0 +1,177 @@
+{
+  "created_at_utc": "2026-09-10T14:00:37.853762+00:00",
+  "scope": "Conditional release of accumulated C1 correction; offline command behavior only, no predicted vehicle response.",
+  "baseline_commit": "5fbb583e592d30de266f8160a5d6b9c620c97f56",
+  "baseline_source_sha256": "4499defbb7fc5ddf5029ca42c549f0935b0758b08818c5bf0490fb52221f9a34",
+  "deployment_target": {
+    "repository": "sunnypilot/sunnypilot",
+    "branch": "hiimisaac-dev"
+  },
+  "hypothesis": "model-action-c1-feedback-v2",
+  "calibration_approved": false,
+  "toggle": {
+    "key": "FordModelActionController",
+    "default_enabled": false,
+    "activation": "Existing controlsd startup selection"
+  },
+  "release_rule": "Fresh enabled feedback; target and slewed C0 agree with base C1 by >= one DBC step; measured curvature is opposite; stored correction makes total C1 zero or opposite base. Clear correction, then apply original integration and output slew.",
+  "engineering_choices": "Conditional reset policy, using existing DBC steps (0.01 m, 0.0005 rad) to confirm nonzero commands. Original 1:1 integral strength is unchanged.",
+  "preserved": [
+    "C0 mapping and limits",
+    "Base C1 mapping",
+    "Original integral strength",
+    "Final C1 amplitude and slew limits",
+    "Driver and PSCM arbitration",
+    "Upstream selection and limiting",
+    "100 Hz sender",
+    "C2=C3=0"
+  ],
+  "panda_safety_changed": false,
+  "opendbc_submodule_changed": false,
+  "opendbc_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9",
+  "controller_size": {
+    "total_lines": 194,
+    "code_lines_excluding_blanks_comments_docstrings": 131,
+    "core_command_state_values": 3,
+    "core_diagnostic_counters": 1
+  },
+  "tests": {
+    "combined_suite": "567 passed, 178 skipped, 9146 subtests passed in 6.45s",
+    "safety_skips": "Same 178 inherited or unsupported variants recorded in ford_c1_feedback_validation.json.",
+    "regression": "Two mirrored carryover command tests fail on the exact baseline class and pass in the candidate suite.",
+    "ruff_changed_python": "pass",
+    "ty_controller": "pass",
+    "settings_compiler_check": "pass",
+    "carryover_controlsd_to_can_frames": 1120,
+    "existing_feedback_controlsd_to_can_frames": 1010,
+    "integration_scope": "Actual source selection, upstream limiting, controller, Float32 publication, Ford sender, both plan sources and signs, all counters and checksums."
+  },
+  "routes": {
+    "b8": {
+      "cycles": 160431,
+      "active_cycles": 68217,
+      "validity_and_c0_match_baseline_exactly": true,
+      "c1_changed_cycles": 6065,
+      "max_abs_c1_change_rad": 0.09250000000000003,
+      "can_round_trips": 160431,
+      "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+      "reference_limit": "Uses exact consumed model publication as reference; b8 and b9 have no maneuver-plan messages.",
+      "carryover_release_count": 11,
+      "input_sha256": {
+        "route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        "model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        "metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c"
+      }
+    },
+    "b9": {
+      "cycles": 90774,
+      "active_cycles": 86474,
+      "validity_and_c0_match_baseline_exactly": true,
+      "c1_changed_cycles": 15208,
+      "max_abs_c1_change_rad": 0.10400000000000004,
+      "can_round_trips": 90774,
+      "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+      "reference_limit": "Uses exact consumed model publication as reference; b8 and b9 have no maneuver-plan messages.",
+      "carryover_release_count": 14,
+      "input_sha256": {
+        "route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee"
+      }
+    }
+  },
+  "command_timing_example": {
+    "event": {
+      "time_s": 808.286646083,
+      "correction_before_rad": -0.13089810321135922,
+      "correction_after_rad": 0.0,
+      "base_c1_rad": 0.06412824021622576,
+      "desired_angle_deg": -24.17155647277832,
+      "actual_angle_deg": -0.30000001192092896,
+      "speed_m_s": 11.804088592529297,
+      "baseline_c0_c1": [
+        0.15000000000000036,
+        -0.06600000000000006
+      ],
+      "candidate_c0_c1": [
+        0.15000000000000036,
+        -0.062000000000000055
+      ]
+    },
+    "scope": "Command zero crossing on identical frozen recorded inputs; not wheel response.",
+    "baseline_c1_rightward_at_s": 808.67241324,
+    "candidate_c1_rightward_at_s": 808.4169884780001,
+    "command_crossing_advance_s": 0.25542476199984776
+  },
+  "feedback_stress": {
+    "cycles": 200000,
+    "mirrored_updates": 200000,
+    "can_round_trips": 200000,
+    "carryover_release_count": 946,
+    "baseline_revision": "5fbb583e592d30de266f8160a5d6b9c620c97f56",
+    "baseline_source_sha256": "4499defbb7fc5ddf5029ca42c549f0935b0758b08818c5bf0490fb52221f9a34",
+    "exact_unchanged_state_and_commands_without_release": 199054,
+    "checks": "Mirror symmetry, reset/override, amplitude, slew, correction bounds, carryover direction/confirmation, integration, PSCM limits, CAN.",
+    "scope": "Numerical software invariants only; no model of vehicle motion.",
+    "calibration_approved": false,
+    "controller_sha256": "6f40a05977253987a2c96e74c8c18d912367ed1e55630558ed7b28d52576e552"
+  },
+  "zero_error_stress": {
+    "seed": 20260907,
+    "random_cycles": 200000,
+    "mirrored_core_updates": 200000,
+    "invalid_or_inactive_resets": 3537,
+    "field_boundary_cases": 18138,
+    "float32_can_round_trips": 218138,
+    "analytic_targets_scalar_slew_and_mirror_checks_pass": true,
+    "direct_raw_float32_packing_matches_host_output": true,
+    "max_continuous_step_c0_c1": [
+      0.40000000000000147,
+      0.05000000000000002
+    ],
+    "calibration_approved": false,
+    "scope": "Zero-error numerical construction: measured equals requested curvature. No PSCM response claims.",
+    "opendbc_import_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9"
+  },
+  "total_lab_float32_can_round_trips": 669343,
+  "source_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "6f40a05977253987a2c96e74c8c18d912367ed1e55630558ed7b28d52576e552",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_feedback.py": "04935fb941a795cb243870a4c03f7073c68147b01da3cedf2872476aa5fb798e",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_adapter.py": "e2e98d3a0a531235abd032fc4d3564796613ad51ff6ba22a230c48e36f6f6848",
+    "openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py": "90fb42ce580f0085e349467086a2eef28c2512c671755d0771f6331d30b19035",
+    "tools/ford_pscm_lab/feedback_replay.py": "9bf145fbff6ed685aec2c0e5d0584e2dc7ff831021f15110f939e8a94c93280b",
+    "tools/ford_pscm_lab/stress_model_action.py": "0b25188edf2b248ebe741173ce02ce75bd59f1f39fd5bd909d41a3dca2294aa8",
+    "tools/ford_pscm_lab/model_action_replay.py": "af97c665f342c66b1be2502e188c63e6f3ee106d0a0d5e80997bc3040373ff9f",
+    "docs/ford_c1_carryover.md": "e8d08375963efc6d1ae6ce503bb580ba00cfa90adb71c941d56fe6e3701d5cbb",
+    "docs/ford_c1_feedback.md": "1b440a03082e5cec264a1d6693833ed0a7e07b6c6e2122f8e4455c5971121b57",
+    "docs/ford_model_action_drive_test.md": "7ac5ca0faf9690a23e7058d09b55f23e21e2ba74666001cacb56b67e8d8b4376",
+    "openpilot/selfdrive/controls/controlsd.py": "2b7e246f00bccce3a2bb9f6f44009ca77690cadb8527cd2bdfe855e9ad72ad1e",
+    "opendbc_repo/opendbc/car/ford/carcontroller.py": "b2d327a1833fb1f0d09ee17f54c9c8d45517fa29beb04a4543cfbf1b43f1a65e",
+    "opendbc_repo/opendbc/safety/modes/ford.h": "1d9d996292d6697ab4f02d55fae348d6aca1df94a07f7bdae48b68971b91afe7",
+    "openpilot/sunnypilot/sunnylink/settings_ui.json": "7d38f315a7c5ce6d46d01a06f7eaddd4933f85639e5325ff71fdce22866ef401"
+  },
+  "artifact_sha256": {
+    ".cache/ford_c1_carryover/tests.txt": "cd65146df93632e4a2c1e086781e1da4673db7d038c7e673124f227efefbb567",
+    ".cache/ford_c1_carryover/baseline_regression.txt": "4469873f95ccf45a376a27fed05be3bdad5f808af7ceca472c6e2cb9d973eb7f",
+    ".cache/ford_c1_carryover/stress.json": "7a8d20d7abd7cf444f55b7316e8bedbed0fbe8e9587e09f90d5b1946c3c2e98c",
+    ".cache/ford_c1_carryover/zero_error_stress.json": "09e64eaac35df4ec324b41fabdc8baf91931106ac98b89c1ca71f4c8bf8796a4",
+    ".cache/ford_c1_carryover/timing.json": "0d18ed4164803adedbbd660fe024f4c28de8eb7921caa60659346ff386d3847f",
+    ".cache/ford_c1_carryover/routeb8/report.json": "d2c6f767cef29a74e292b6a16263d2da13b8c302e4653e419b0e232e1aaf762e",
+    ".cache/ford_c1_carryover/routeb8/commands.npz": "89b5c3474940b61afce060111c27fd9bad9e24d703c59fca61adf4ce10473df3",
+    ".cache/ford_c1_carryover/routeb9/report.json": "e3ff7bfa70e770eca763b125c283fd8a1d509ef1b6e7f26a81c398aca89a87da",
+    ".cache/ford_c1_carryover/routeb9/commands.npz": "e4f5f341146e2897a479baf222d678fd16352c8da931876a2471c3719faf9edf"
+  },
+  "test_environment": {
+    "python": "/Users/ibpersonal/dev/sunnypilot/.venv/bin/python",
+    "PYTHONPATH": ".:opendbc_repo:.cache/ford_v6/test_deps",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LOG_ROOT": "/private/tmp/ford-carryover-logs",
+    "PARAMS_ROOT": "/private/tmp/ford-carryover-params"
+  },
+  "limitations": [
+    "Frozen replay preserves recorded requests and measured motion; changed commands do not establish changed wheel angles, centering or stability.",
+    "C0/C1 agreement is a reset-policy choice, not an identified relationship between PSCM input and wheel angle.",
+    "The rule can release small corrections and does not promise unchanged centering during transients.",
+    "No device build, boot, installation or physical validation was performed."
+  ]
+}
