@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.sunnypilot.models.fetcher import get_cached_bundles
 from openpilot.sunnypilot.models.helpers import get_active_source, get_selected_bundle, resolve_bundle_by_ref
@@ -83,3 +85,22 @@ def model_info() -> tuple[str, str, str]:
   active_name = active_bundle.displayName if active_bundle else default_model_name(source)
   other_name = other_bundle.displayName if other_bundle else default_model_name(other)
   return source, active_name, other_name
+
+
+# mirrors the manager's ModelCache keys; the manager restamps them on a successful fetch
+MODEL_SYNC_KEYS = ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_Chestnut")
+MODEL_SYNC_TIMEOUT = 20.0
+
+
+def refresh_model_list() -> None:
+  # zeroing the sync keys makes the manager refetch each manifest on its next tick
+  for key in MODEL_SYNC_KEYS:
+    ui_state.params.put(key, 0)
+
+
+def refresh_in_progress(started_at: float | None) -> bool:
+  """Whether a user refresh is still outstanding. A failed fetch never restamps the
+  sync keys, so the spinner is bounded by MODEL_SYNC_TIMEOUT rather than sticking."""
+  if started_at is None or time.monotonic() - started_at > MODEL_SYNC_TIMEOUT:
+    return False
+  return not all(ui_state.params.get(key) for key in MODEL_SYNC_KEYS)
