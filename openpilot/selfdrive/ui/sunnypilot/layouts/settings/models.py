@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import os
 import re
 import time
 import pyray as rl
@@ -13,7 +12,8 @@ from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
-from openpilot.selfdrive.ui.sunnypilot.model_info import big_model_state, bundles_for_source, carrying_model, default_model_name, queued_name
+from openpilot.selfdrive.ui.sunnypilot.model_info import (big_model_state, bundles_for_source, carrying_model, default_model_name,
+                                                           model_cache_size_mb, queued_name)
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
@@ -21,7 +21,6 @@ from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDial
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
 
-from openpilot.sunnypilot.models.runners.constants import CUSTOM_MODEL_PATH
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.lib.utils import NoElideButtonAction, ScrollingButtonAction
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, toggle_item_sp, option_item_sp
@@ -40,6 +39,7 @@ class ModelsLayout(Widget):
     self._selection_source = None
     self._downloading = False
     self._verifying = False
+    self._clearing = False
     self._last_note = None
     self.last_cache_calc_time = 0
 
@@ -75,7 +75,7 @@ class ModelsLayout(Widget):
     self.clear_cache_item = ListItemSP(
       title=tr("Clear Model Cache"),
       description="",
-      action_item=NoElideButtonAction(tr("CLEAR")),
+      action_item=NoElideButtonAction(lambda: tr("CLEARING...") if self._clearing else tr("CLEAR")),
       callback=self._clear_cache
     )
 
@@ -122,20 +122,12 @@ class ModelsLayout(Widget):
 
   @staticmethod
   def calculate_cache_size():
-    cache_size = 0.0
-    if os.path.exists(CUSTOM_MODEL_PATH):
-      for file in os.listdir(CUSTOM_MODEL_PATH):
-        try:
-          cache_size += os.path.getsize(os.path.join(CUSTOM_MODEL_PATH, file))
-        except OSError:
-          continue
-    return cache_size / (1024**2)
+    return model_cache_size_mb()
 
   def _clear_cache(self):
     def _callback(response):
       if response == DialogResult.CONFIRM:
         ui_state.params.put_bool("ModelManager_ClearCache", True)
-        self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
     dialog = ConfirmDialog(tr("This will delete ALL downloaded models from the cache except the currently active model. Are you sure?"),
                            tr("Clear Cache"), callback=_callback)
@@ -147,7 +139,10 @@ class ModelsLayout(Widget):
     self._verifying = False
     self.download_item.set_visible(True)
 
-    if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
+    self._clearing = ui_state.params.get_bool("ModelManager_ClearCache")
+    if self._clearing:
+      self.last_cache_calc_time = 0.0  # refresh the size as soon as clearing finishes
+    elif (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
       self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
 
@@ -344,6 +339,9 @@ class ModelsLayout(Widget):
     self.small_model_item.action_item.set_enabled(offroad)
     self.big_model_item.action_item.set_enabled(offroad)
     self.small_model_item.set_description("" if offroad else tr("Only available when vehicle is off, or always offroad mode is on"))
+
+    # manager is offroad-only, so an onroad clear would never be serviced
+    self.clear_cache_item.action_item.set_enabled(offroad and not self._downloading and not self._clearing)
 
   def _render(self, rect):
     self._scroller.render(rect)
