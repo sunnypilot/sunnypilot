@@ -187,8 +187,8 @@ class FordModelActionController:
 
 
 def select_model_action_controller(CP, enabled, previous_controller):
-  """The separate default-off toggle takes priority on the CAN FD Lightning."""
-  compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD and CP.carFingerprint == 'FORD_F_150_LIGHTNING_MK1'
+  """The separate default-off toggle takes priority on any Ford CAN FD vehicle."""
+  compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
     return FordModelActionController()
   return previous_controller

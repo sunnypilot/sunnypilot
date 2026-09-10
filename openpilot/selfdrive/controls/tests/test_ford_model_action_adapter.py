@@ -23,7 +23,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from openpilot.selfdrive.controls.tests.test_ford_model_action import circle, straight
-from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import startup
+from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import CANFD_CARS, car_params, startup
 
 
 def update(controller, now=1., **overrides):
@@ -164,10 +164,11 @@ class Subscriptions:
 
 
 @pytest.mark.parametrize('maneuver', [False, True])
-def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipeline, maneuver):
+@pytest.mark.parametrize('fingerprint', CANFD_CARS)
+def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipeline, maneuver, fingerprint):
   call, publication = pipeline
   sm = Subscriptions(maneuver)
-  controls = startup()
+  controls = startup(car_params(carFingerprint=fingerprint))
   controller = controls.ford_path_controller
   controls.sm, controls.desired_curvature, controls.curvature = sm, 0., 0.
   model = straight(.4)
@@ -184,7 +185,7 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
 
-  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
+  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint=fingerprint)
   downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
   vehicle = SimpleNamespace(out=structs.CarState(vEgo=20., vEgoRaw=20.), acc_tja_status_stock_values=defaultdict(int),
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))

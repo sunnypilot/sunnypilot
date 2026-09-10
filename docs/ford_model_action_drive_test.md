@@ -2,8 +2,8 @@
 
 The current experiment adds [measured-curvature C1 feedback](ford_c1_feedback.md)
 and [conditional correction release](ford_c1_carryover.md) to the restored
-original v1 mapping. It is selectable on the **Ford CAN FD
-F-150 Lightning** through the existing persistent, default-off Sunnylink
+original v1 mapping. It is selectable on **any Ford CAN FD vehicle**
+through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
 
@@ -28,7 +28,7 @@ steering. `calibration_approved=false` remains.
 Turning the toggle off and completing another offroad-to-onroad cycle restores
 **PSCM Coefficient Observer** if selected, otherwise the original Ford path
 controller. The stored observer selection is preserved. The experiment takes
-priority on the supported vehicle; other vehicles retain their existing
+priority on Ford CAN FD vehicles; other vehicles retain their existing
 controller. A leftover `FordVirtualAngleController` parameter has no effect.
 
 ## Wiring and validation
