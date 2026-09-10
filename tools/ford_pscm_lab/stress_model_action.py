@@ -73,7 +73,9 @@ def run(cycles, seed, output, opendbc_revision=PINNED_OPENDBC):
     assert out.valid == other.valid == expected_valid
     previous = np.array([c0, c1])
     if expected_valid:
-      target = (max(-5.11, min(5.11, offset+7.*math.sin(heading))), max(-.5, min(.5, max(7., speed)*desired)))
+      raw_heading = max(7., speed)*desired
+      limited_heading = max(-.5, min(.5, raw_heading))
+      target = (max(-5.11, min(5.11, offset+7.*math.sin(heading)+7.*(raw_heading-limited_heading))), limited_heading)
       c0 += max(-4.*dt, min(4.*dt, target[0]-c0))
       c1 += max(-.5*dt, min(.5*dt, target[1]-c1))
       step = abs(np.array([controller.c0, controller.c1])-previous)

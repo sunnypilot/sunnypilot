@@ -74,11 +74,12 @@ def test_current_model_replacement_leaves_only_independent_actuator_slew():
   controller = ModelActionController()
   for _ in range(150):
     controller.update(straight(1.), .04, current_curvature=.04, speed=20., dt=.01)
-  for _ in range(25):
+  # C0 starts at 1 + 7*(.8-.5) = 3.1 m, including the clipped heading.
+  for _ in range(78):
     out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out.path_offset == pytest.approx(0.)
   assert out.path_angle > 0.  # C1 cannot hold C0 during its longer release.
-  for _ in range(75):
+  for _ in range(22):
     out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out == FordPath(True, 0., 0., 0., 0.)
 

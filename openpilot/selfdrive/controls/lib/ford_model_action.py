@@ -4,6 +4,7 @@ Selected only by its explicit toggle. The 7 m station and one-second scale are
 engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
 explicit feedback-strength choice, not an identified PSCM model or calibration.
 Opposed correction may be released when both path commands confirm the turn.
+Base heading clipped by C1 is allocated to C0 at the existing 7 m reference.
 """
 import math
 import struct
@@ -78,9 +79,11 @@ class ModelActionController:
     if not target.valid:
       self.reset()
       return FordPath()
-    c0 = float(np.clip(target.path_offset, -5.11, 5.11))
-    self.c0 += float(np.clip(c0-self.c0, -4.*dt, 4.*dt))
     base_c1 = float(np.clip(target.path_angle, -.5, .5))
+    # Preserve the linear path reference at 7 m when the base heading clips.
+    # This is instantaneous geometry, not stored error or C1 feedback spill.
+    c0 = float(np.clip(target.path_offset + OFFSET_STATION_M*(target.path_angle-base_c1), -5.11, 5.11))
+    self.c0 += float(np.clip(c0-self.c0, -4.*dt, 4.*dt))
     lower = max(-.5, self.c1-.5*dt)
     upper = min(.5, self.c1+.5*dt)
     if not feedback_enabled:
@@ -88,11 +91,11 @@ class ModelActionController:
     else:
       direction = math.copysign(1., base_c1)
       # Release only correction that prevents C1 from requesting the direction
-      # shared by target C0, slewed C0 and base C1, while measured steering is
+      # shared by model C0, slewed C0 and base C1, while measured steering is
       # still opposite. One DBC step confirms each request is nonzero. Matched
       # steering, neutral/conflicting centering and duplicate samples retain I.
       if (feedback_dt > 0. and abs(base_c1) >= .0005 and current_curvature*direction < 0.
-          and min(c0*direction, self.c0*direction) >= .01
+          and min(target.path_offset*direction, self.c0*direction) >= .01
           and (base_c1+self.correction)*direction <= 0.):
         self.correction = 0.
         self.carryover_release_count += 1
@@ -133,7 +136,7 @@ class FordModelActionController:
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v2',
+    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v3',
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
@@ -173,12 +176,15 @@ class FordModelActionController:
       self.reset('invalid_path')
       return command
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v2',
+    raw_heading = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
+    base_heading = float(np.clip(raw_heading, -.5, .5))
+    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v3',
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
                         'curvature_error': desired_curvature-current_curvature, 'feedback_dt': feedback_dt,
-                        'heading_feedforward': float(np.clip(max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature, -.5, .5)),
+                        'heading_feedforward': base_heading,
+                        'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
                         'carryover_release_count': self.core.carryover_release_count,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),

@@ -21,7 +21,7 @@ from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sam
 
 
 BASELINE = 'a7d70e2b0890184636827351e4789d866f2a7c97'
-FEEDBACK_V1 = '5fbb583e592d30de266f8160a5d6b9c620c97f56'
+FEEDBACK_V2 = '959ae3d6e76c479f48e081c060b0f3569a6f15f4'
 OPENDBC = 'c21a9013700734dd20b09e05aa68329ad8cc20f9'
 
 
@@ -67,6 +67,7 @@ def replay(directory, output, baseline_revision=BASELINE):
   feedback_dt = np.zeros(len(t))
   feedback_enabled = np.zeros(len(t), bool)
   pscm_limited = np.zeros(len(t), bool)
+  offset_overflow = np.zeros(len(t))
   reasons = Counter()
   releases = []
   for i, now in enumerate(t):
@@ -95,6 +96,7 @@ def replay(directory, output, baseline_revision=BASELINE):
     feedback_dt[i] = d.get('feedback_dt', 0.)
     feedback_enabled[i] = d.get('feedback_enabled', False)
     pscm_limited[i] = d.get('pscm_limited', False)
+    offset_overflow[i] = d.get('offset_overflow', 0.)
     if controller.core.carryover_release_count > previous_count:
       releases.append({'time_s': float(now-metadata['t0']), 'correction_before_rad': float(previous_correction),
                        'correction_after_rad': float(correction[i]), 'base_c1_rad': float(d['heading_feedforward']),
@@ -104,13 +106,17 @@ def replay(directory, output, baseline_revision=BASELINE):
     wire_check.check(command)
   field_checks(commands, valid, t)
   np.testing.assert_array_equal(valid, old_valid)
-  np.testing.assert_array_equal(commands[:, 0], baseline[:, 0])
   assert np.all(correction[~feedback_enabled] == 0.)
   assert np.all(abs(correction) <= 1.+1e-10)
   weight = np.minimum(np.diff(t, append=t[-1]+.01), .03)
   report = {'scope': __doc__, 'baseline_revision': baseline_revision, 'baseline_source_sha256': baseline_hash,
             'calibration_approved': False, 'cycles': len(t), 'active_cycles': int(valid.sum()),
-            'validity_and_c0_match_baseline_exactly': True, 'status_counts': dict(reasons),
+            'validity_matches_baseline_exactly': True, 'status_counts': dict(reasons),
+            'c0_matches_baseline_exactly': bool(np.array_equal(commands[:, 0], baseline[:, 0])),
+            'c0_changed_cycles': int((abs(commands[:, 0]-baseline[:, 0]) > 1e-8).sum()),
+            'max_abs_c0_change_m': float(abs(commands[:, 0]-baseline[:, 0]).max()),
+            'offset_overflow_seconds': float(weight[offset_overflow != 0.].sum()),
+            'max_abs_offset_overflow_target_m': float(abs(offset_overflow).max()),
             'carryover_releases': releases,
             'feedback_enabled_seconds': float(weight[feedback_enabled].sum()),
             'pscm_limit_2_seconds': float(weight[pscm_limited & valid].sum()),
@@ -121,7 +127,7 @@ def replay(directory, output, baseline_revision=BASELINE):
                               (directory/'route.npz', directory/'model_paths.npz', directory/'metadata.json',
                                Path(__file__).resolve(), Path(ford_model_action.__file__).resolve())},
             'timing_limit': 'Controls publication time proxies the computation clock; full SubMaster checks are unavailable.',
-            'reference_limit': 'Uses exact consumed model publication as reference; b8 and b9 have no maneuver-plan messages.'}
+            'reference_limit': 'Uses exact consumed model publication as reference; selected maneuver-plan messages are not reconstructed.'}
   report['example_points'] = []
   for seconds in (130.937, 235.396, 236.250, 252.493, 330.651, 674.430, 808.408, 876.419, 1534.519, 1562.507):
     if seconds > t[-1]-metadata['t0']:
@@ -133,7 +139,7 @@ def replay(directory, output, baseline_revision=BASELINE):
   output.mkdir(parents=True, exist_ok=True)
   np.savez_compressed(output/'commands.npz', t=t-metadata['t0'], baseline=baseline, candidate=commands, valid=valid,
                       correction=correction, baseline_correction=baseline_correction, feedback_dt=feedback_dt,
-                      feedback_enabled=feedback_enabled, pscm_limited=pscm_limited)
+                      feedback_enabled=feedback_enabled, pscm_limited=pscm_limited, offset_overflow=offset_overflow)
   (output/'report.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
   print(json.dumps({k: v for k, v in report.items() if k not in ('source_sha256', 'carryover_releases')}
                    | {'carryover_release_count': len(releases)}, indent=2))
@@ -143,8 +149,9 @@ def stress(cycles, output):
   verify_dependency(OPENDBC)
   rng = np.random.default_rng(20260909)
   controller, mirror, wire = ModelActionController(), ModelActionController(), WireCheck()
-  old, baseline_hash = original_controller(FEEDBACK_V1)
+  old, baseline_hash = original_controller(FEEDBACK_V2)
   releases = 0
+  unchanged_without_overflow = 0
   for i in range(cycles):
     desired, measured = rng.uniform(-.1, .1, 2)
     speed, dt, offset = rng.uniform(.3, 55.), rng.uniform(.002, .1), rng.uniform(-8., 8.)
@@ -161,14 +168,21 @@ def stress(cycles, output):
     # Clone the pre-update state to isolate this cycle's policy from the
     # different history that a previous release would otherwise create.
     old.core.c0, old.core.c1, old.core.correction = previous
+    old.core.carryover_release_count = previous_count
     baseline_out = old.core.update(model(offset), desired, current_curvature=measured, **args)
     released = controller.carryover_release_count > previous_count
-    if not released:
+    baseline_released = old.core.carryover_release_count > previous_count
+    raw_heading = max(7., speed)*desired
+    overflow = raw_heading-float(np.clip(raw_heading, -.5, .5))
+    if not active or overflow == 0.:
       assert out == baseline_out
       assert (controller.c0, controller.c1, controller.correction) == (old.core.c0, old.core.c1, old.core.correction)
-    else:
-      assert out.path_offset == baseline_out.path_offset
-      assert (controller.c1-old.core.c1)*(desired-measured) >= -1e-10
+      unchanged_without_overflow += 1
+    if active:
+      expected_c0 = previous[0]+float(np.clip(np.clip(offset+7.*overflow, -5.11, 5.11)-previous[0], -4.*dt, 4.*dt))
+      assert abs(controller.c0-expected_c0) <= 1e-10
+    if released == baseline_released:
+      assert controller.c1 == old.core.c1 and controller.correction == old.core.correction
     state = controller.c0, controller.c1, controller.correction
     mirrored = mirror.c0, mirror.c1, mirror.correction
     np.testing.assert_allclose(state, -np.array(mirrored), rtol=0., atol=1e-10)
@@ -197,8 +211,8 @@ def stress(cycles, output):
     wire.check(out)
   report = {'cycles': cycles, 'mirrored_updates': cycles, 'can_round_trips': wire.count,
             'carryover_release_count': releases,
-            'baseline_revision': FEEDBACK_V1, 'baseline_source_sha256': baseline_hash,
-            'exact_unchanged_state_and_commands_without_release': cycles-releases,
+            'baseline_revision': FEEDBACK_V2, 'baseline_source_sha256': baseline_hash,
+            'exact_unchanged_state_and_commands_without_overflow': unchanged_without_overflow,
             'checks': 'Mirror symmetry, reset/override, amplitude, slew, correction bounds, carryover direction/confirmation, integration, PSCM limits, CAN.',
             'scope': 'Numerical software invariants only; no model of vehicle motion.', 'calibration_approved': False,
             'controller_sha256': hashlib.sha256(Path(ford_model_action.__file__).read_bytes()).hexdigest()}

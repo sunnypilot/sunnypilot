@@ -1,0 +1,307 @@
+{
+  "created_at_utc": "2026-09-10T22:04:22.589047+00:00",
+  "scope": "Base heading overflow allocated to C0; frozen-input command verification only, no vehicle response prediction.",
+  "baseline_commit": "959ae3d6e76c479f48e081c060b0f3569a6f15f4",
+  "baseline_source_sha256": "47fff1fd1bd7e65ca6d6b437fa9d2e8a864d421622d9efdfe0fe04b927c6d972",
+  "deployment_target": {
+    "repository": "sunnypilot/sunnypilot",
+    "branch": "hiimisaac-dev"
+  },
+  "hypothesis": "model-action-c1-feedback-v3",
+  "calibration_approved": false,
+  "toggle": {
+    "key": "FordModelActionController",
+    "default_enabled": false,
+    "eligibility": "Any Ford CAN FD",
+    "activation": "Existing controlsd startup selection"
+  },
+  "command_rule": "extra C0 = 7 m * (raw base C1 - clip(raw base C1, -0.5, 0.5)); add to original model C0, then existing C0 amplitude/slew limits.",
+  "engineering_choices": "Single-reference linear allocation at existing 7 m. No new tuning parameter or stored overflow. Does not establish physical C0/C1 interchangeability. Existing 1:1 integral feedback strength remains.",
+  "output_limits": {
+    "c0_m": [
+      -5.11,
+      5.11
+    ],
+    "c1_rad": [
+      -0.5,
+      0.5
+    ],
+    "c0_slew_m_s": 4.0,
+    "c1_slew_rad_s": 0.5,
+    "c2": 0.0,
+    "c3": 0.0
+  },
+  "preserved": [
+    "Upstream reference selection/limiting",
+    "Driver and PSCM arbitration",
+    "Freshness/reset gates",
+    "C1 feedback law",
+    "Original model C0 required for carryover confirmation",
+    "100 Hz CAN sender",
+    "Float32 publication"
+  ],
+  "controller_command_state_values": 3,
+  "controller_diagnostic_counters": 1,
+  "controller_total_lines": 200,
+  "opendbc_submodule_changed": false,
+  "panda_safety_changed": false,
+  "opendbc_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9",
+  "tests": {
+    "combined_suite": "670 passed, 178 skipped, 9146 subtests passed in 5.77s",
+    "safety_skips": "Inherited or unsupported variants; unchanged from prior feedback validations.",
+    "new_core_regressions": "Before implementation: 28 failed, 18 passed; after: all 46 pass.",
+    "overflow_controlsd_to_can_cases": 12,
+    "overflow_controlsd_to_can_frames": 4800,
+    "integration_scope": "All six listed CAN FD platforms; both signs; selected upstream-limited request, release, limits, Float32 publication, decoded commands, zero C2/C3, active mode, counters, checksums.",
+    "ruff_changed_python": "pass",
+    "ty_controller": "pass",
+    "git_diff_check": "pass",
+    "settings_compiler_check": "pass"
+  },
+  "stress": {
+    "cycles": 200000,
+    "mirrored_updates": 200000,
+    "can_round_trips": 200000,
+    "carryover_release_count": 864,
+    "baseline_revision": "959ae3d6e76c479f48e081c060b0f3569a6f15f4",
+    "baseline_source_sha256": "47fff1fd1bd7e65ca6d6b437fa9d2e8a864d421622d9efdfe0fe04b927c6d972",
+    "exact_unchanged_state_and_commands_without_overflow": 56061,
+    "checks": "Mirror symmetry, reset/override, amplitude, slew, correction bounds, carryover direction/confirmation, integration, PSCM limits, CAN.",
+    "scope": "Numerical software invariants only; no model of vehicle motion.",
+    "calibration_approved": false
+  },
+  "zero_error_stress": {
+    "seed": 20260910,
+    "random_cycles": 200000,
+    "mirrored_core_updates": 200000,
+    "invalid_or_inactive_resets": 3537,
+    "field_boundary_cases": 18138,
+    "float32_can_round_trips": 218138,
+    "analytic_targets_scalar_slew_and_mirror_checks_pass": true,
+    "direct_raw_float32_packing_matches_host_output": true,
+    "max_continuous_step_c0_c1": [
+      0.4000000000000019,
+      0.05000000000000002
+    ],
+    "calibration_approved": false,
+    "scope": "Zero-error numerical construction: measured equals requested curvature. No PSCM response claims.",
+    "opendbc_import_head": "c21a9013700734dd20b09e05aa68329ad8cc20f9"
+  },
+  "route_ca": {
+    "baseline_revision": "959ae3d6e76c479f48e081c060b0f3569a6f15f4",
+    "baseline_source_sha256": "47fff1fd1bd7e65ca6d6b437fa9d2e8a864d421622d9efdfe0fe04b927c6d972",
+    "calibration_approved": false,
+    "cycles": 327448,
+    "active_cycles": 118756,
+    "validity_matches_baseline_exactly": true,
+    "status_counts": {
+      "inactive": 208692,
+      "active": 118756
+    },
+    "c0_matches_baseline_exactly": false,
+    "c0_changed_cycles": 855,
+    "max_abs_c0_change_m": 2.2,
+    "offset_overflow_seconds": 7.359375754000212,
+    "max_abs_offset_overflow_target_m": 2.867466852068901,
+    "feedback_enabled_seconds": 1128.448330694985,
+    "pscm_limit_2_seconds": 1.5229074359986043,
+    "c1_changed_cycles": 0,
+    "max_abs_c1_change_rad": 0.0,
+    "max_abs_correction_rad": 0.13238253764709199,
+    "can_round_trips": 327448,
+    "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+    "reference_limit": "Uses exact consumed model publication as reference; selected maneuver-plan messages are not reconstructed.",
+    "carryover_release_count": 32
+  },
+  "route_ca_release": {
+    "scope": "Describe candidate command tails on frozen ca measurements, not wheel response.",
+    "changed_c0_seconds": 8.606610047996583,
+    "overflow_target_seconds": 7.359375754000212,
+    "changed_c0_without_current_overflow_seconds": 1.4386431469993113,
+    "candidate_c0_at_cap_seconds": 2.054423716999736,
+    "baseline_c0_at_cap_seconds": 0.0,
+    "all_c1_c2_c3_match_baseline_exactly": true,
+    "all_pre_overflow_commands_match_baseline_exactly": true,
+    "all_inactive_commands_zero": true,
+    "windows": [
+      {
+        "start_s": 645.4515506280004,
+        "last_overflow_s": 647.9591778859995,
+        "duration_s": 2.5175176129996544,
+        "extra_target_peak_m": 2.867466852068901,
+        "c0_change_peak_m": 2.2,
+        "post_overflow_tail_s": 0.4753179760009516,
+        "tail_end_s": 648.444386217001,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 1896.7594062080007,
+        "last_overflow_s": 1897.0382758169999,
+        "duration_s": 0.29005605599923,
+        "extra_target_peak_m": 0.16229432076215744,
+        "c0_change_peak_m": 0.16999999999999993,
+        "post_overflow_tail_s": 0.0,
+        "tail_end_s": 1897.0494622639999,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 1897.3739526980007,
+        "last_overflow_s": 1897.4413651220002,
+        "duration_s": 0.0802515539999149,
+        "extra_target_peak_m": 0.049945808947086334,
+        "c0_change_peak_m": 0.04999999999999982,
+        "post_overflow_tail_s": 0.0,
+        "tail_end_s": 1897.4542042520006,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 1897.492552009,
+        "last_overflow_s": 1897.681751143,
+        "duration_s": 0.19981637000091723,
+        "extra_target_peak_m": 0.10685679316520691,
+        "c0_change_peak_m": 0.11000000000000032,
+        "post_overflow_tail_s": 0.01193945599879953,
+        "tail_end_s": 1897.7043078349998,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 1897.743499225,
+        "last_overflow_s": 1897.7842587169998,
+        "duration_s": 0.05174380599964934,
+        "extra_target_peak_m": 0.04502199590206146,
+        "c0_change_peak_m": 0.040000000000000036,
+        "post_overflow_tail_s": 0.011911696001334349,
+        "tail_end_s": 1897.807154727001,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 1897.9437203819998,
+        "last_overflow_s": 1899.2943476260007,
+        "duration_s": 1.361525778000214,
+        "extra_target_peak_m": 0.22848158329725266,
+        "c0_change_peak_m": 0.22999999999999954,
+        "post_overflow_tail_s": 0.021877274999496876,
+        "tail_end_s": 1899.3271234349995,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 2146.154050938001,
+        "last_overflow_s": 2146.185627021001,
+        "duration_s": 0.04039318899958744,
+        "extra_target_peak_m": 0.045987628400325775,
+        "c0_change_peak_m": 0.050000000000000266,
+        "post_overflow_tail_s": 0.034061254000334884,
+        "tail_end_s": 2146.228505381001,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 2146.2950925490004,
+        "last_overflow_s": 2146.5387542179997,
+        "duration_s": 0.25293986199903884,
+        "extra_target_peak_m": 0.21167446672916412,
+        "c0_change_peak_m": 0.17999999999999972,
+        "post_overflow_tail_s": 0.040063559001282556,
+        "tail_end_s": 2146.5880959700007,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 2146.6577708509994,
+        "last_overflow_s": 2148.3543101739997,
+        "duration_s": 1.7074812410010054,
+        "extra_target_peak_m": 2.0555079206824303,
+        "c0_change_peak_m": 1.58,
+        "post_overflow_tail_s": 0.7118495689992415,
+        "tail_end_s": 2149.0771016609997,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 3121.067818462001,
+        "last_overflow_s": 3121.8665919270006,
+        "duration_s": 0.8071899679998751,
+        "extra_target_peak_m": 0.5380096957087517,
+        "c0_change_peak_m": 0.5099999999999998,
+        "post_overflow_tail_s": 0.06879738699899463,
+        "tail_end_s": 3121.943805817,
+        "tail_ended_by": "matches baseline"
+      },
+      {
+        "start_s": 3122.0664172689994,
+        "last_overflow_s": 3122.105900957,
+        "duration_s": 0.05046031700112508,
+        "extra_target_peak_m": 0.008371405303478241,
+        "c0_change_peak_m": 0.010000000000000231,
+        "post_overflow_tail_s": 0.02107719199921121,
+        "tail_end_s": 3122.1379547779998,
+        "tail_ended_by": "matches baseline"
+      }
+    ],
+    "example_points": [
+      {
+        "segment": 10,
+        "time_s": 646.7503591629993,
+        "baseline_c0_m": 3.9000000000000004,
+        "candidate_c0_m": 5.11,
+        "extra_c0_target_m": 2.867466852068901,
+        "baseline_c1_rad": 0.5,
+        "candidate_c1_rad": 0.5
+      },
+      {
+        "segment": 31,
+        "time_s": 1898.0837712450011,
+        "baseline_c0_m": -2.8499999999999996,
+        "candidate_c0_m": -3.079999999999999,
+        "extra_c0_target_m": -0.22848158329725266,
+        "baseline_c1_rad": -0.5,
+        "candidate_c1_rad": -0.5
+      },
+      {
+        "segment": 35,
+        "time_s": 2147.4098699660008,
+        "baseline_c0_m": 3.67,
+        "candidate_c0_m": 5.11,
+        "extra_c0_target_m": 2.0555079206824303,
+        "baseline_c1_rad": 0.5,
+        "candidate_c1_rad": 0.5
+      },
+      {
+        "segment": 52,
+        "time_s": 3121.239466367,
+        "baseline_c0_m": 3.11,
+        "candidate_c0_m": 3.42,
+        "extra_c0_target_m": 0.5380096957087517,
+        "baseline_c1_rad": 0.5,
+        "candidate_c1_rad": 0.5
+      }
+    ]
+  },
+  "route_ca_input_sha256": {
+    "route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+    "model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+    "metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525"
+  },
+  "lab_can_round_trips_excluding_integration": 745586,
+  "validation_environment": {
+    "python": "/Users/ibpersonal/dev/sunnypilot/.venv/bin/python",
+    "PYTHONPATH": ".:opendbc_repo:.cache/ford_v6/test_deps",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LOG_ROOT": "/private/tmp/ford-overflow-logs",
+    "PARAMS_ROOT": "/private/tmp/ford-overflow-params"
+  },
+  "source_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "90269d748d55558bf2495d3b4afcfd7429f373108df1f9259e154d1b92184262",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_overflow.py": "9086434d2b76ab51f69ef08c4f0033c4eaa1950083cc9cce4b34279eb17c5b1b",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_adapter.py": "dc552f3088b7e437a928f349989b74c4e7772d2a88b14a93e933ea8b8344d23b",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action.py": "4e82101463c5d83f6b1f72ba4918c2b37731bc2db6ec7e29e6b402ea67276db2",
+    "openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py": "6b73e70b120527275a9e4e3dff07dd7d19648da517402187d57a90ba09b017eb",
+    "tools/ford_pscm_lab/feedback_replay.py": "7c65515d37aac900eaaef8451a7d643b72c566a2366651f843de2ffca5f24b8d",
+    "tools/ford_pscm_lab/stress_model_action.py": "cec2619285dd41274562ac035ee8ea0a389269a0c4ef1b62efa6252ad1a714aa",
+    "openpilot/sunnypilot/sunnylink/settings_ui_src/pages/vehicle.yaml": "3ae6b16a8c267ab181e00f4b59be8b65134480bec26c8c039bcbae88cb745feb",
+    "openpilot/sunnypilot/sunnylink/settings_ui.json": "ba803819751b304e82936a95902afae63ff88e16e64988622715a7b713f3b982"
+  },
+  "limitations": [
+    "Recorded vehicle motion does not react to changed commands.",
+    "Computation time proxies and service-check reconstruction limits apply.",
+    "C0 slew can leave extra command after overflow stops; maximum observed tail 0.712 s.",
+    "No device build, boot, installation, road tracking or physical stability validation."
+  ]
+}

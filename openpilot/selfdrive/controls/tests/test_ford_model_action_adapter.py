@@ -337,8 +337,59 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
       assert core.carryover_release_count == 0
   assert core.carryover_release_count == 1
   assert controls.ford_path_controller.diagnostics['carryover_release_count'] == 1
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v2'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v3'
   assert sign*controls.ford_path.path_angle < 0.
   assert controls.ford_path.path_offset == pytest.approx(-sign*.2)
   controls.ford_path_controller.reset()
   assert core.carryover_release_count == 0
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('fingerprint', CANFD_CARS)
+def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerprint):
+  call, publication = pipeline
+  controls, sm = startup(car_params(carFingerprint=fingerprint)), Subscriptions(False)
+  controls.sm, controls.desired_curvature = sm, sign*.1
+  core = controls.ford_path_controller.core
+  model = straight(sign*.2)
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=5., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint=fingerprint)
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=5., vEgoRaw=5.), acc_tja_status_stock_values=defaultdict(int),
+                            lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  for frame in range(400):
+    now = 1.+frame*.01
+    desired = sign*(.1 if frame < 150 else .04)
+    model.action = SimpleNamespace(desiredCurvature=desired)
+    # Match the selected request after its real upstream limiter, isolating base allocation.
+    controls.curvature = clip_curvature(cs.vEgo, controls.desired_curvature, desired, 0.)[0]
+    sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
+    before = core.c0, core.c1
+    exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
+                'time': SimpleNamespace(monotonic=lambda now=now: now)})
+    assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    assert core.correction == 0.
+    msg = custom.CarControlSP.new_message()
+    exec(publication, {'self': controls, 'CC_SP': msg})
+    _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
+    received = parser.update([round(now*1e9), packets])
+    address = parser.dbc.name_to_msg['LateralMotionControl2'].address
+    assert address in received
+    wire = parser.vl['LateralMotionControl2']
+    assert wire['LatCtlPath_An_Actl'] == pytest.approx(-controls.ford_path.path_angle)
+    assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-controls.ford_path.path_offset)
+    assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
+    assert wire['LatCtl_D2_Rq'] == 2 and wire['LatCtlPath_No_Cnt'] == frame % 16
+    packet = next(packet for packet in packets if packet[0] == address)
+    assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
+    if frame == 149:
+      assert controls.desired_curvature == pytest.approx(sign*.1)
+      assert controls.ford_path.path_offset == pytest.approx(sign*1.6)
+      assert controls.ford_path.path_angle == pytest.approx(sign*.5)
+      assert controls.ford_path_controller.diagnostics['offset_overflow'] == pytest.approx(sign*1.4)
+  assert controls.ford_path.path_offset == pytest.approx(sign*.2)
+  assert controls.ford_path.path_angle == pytest.approx(sign*.28)
+  assert controls.ford_path_controller.diagnostics['offset_overflow'] == 0.
