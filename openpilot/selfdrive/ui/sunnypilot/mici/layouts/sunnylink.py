@@ -306,7 +306,6 @@ class LocalAppsPanelMici(NavScroller):
     if index >= len(apps):
       return
     app = apps[index]
-    name = local_app_display_name(app)
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
       tr("slide to unpair"),
