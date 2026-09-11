@@ -286,8 +286,8 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     assert candidate["widget"] == "toggle"
     assert candidate["needs_onroad_cycle"] is True
     assert candidate["enablement"] == [{"type": "offroad_only"}]
-    assert "takes priority over PSCM Coefficient Observer" in candidate["details"]
-    assert "Turning it off restores PSCM Coefficient Observer if selected" in candidate["details"]
+    assert "Turning it off restores upstream Ford curvature control" in candidate["details"]
+    assert "regardless of any previously stored experimental settings" in candidate["details"]
     assert "not road-validated" in candidate["details"]
     with tempfile.TemporaryDirectory() as path:
       assert Params(path).get_default_value("FordModelActionController") is False
@@ -297,15 +297,7 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     keys = {item["key"] for item in items}
     assert "FordVirtualAngleController" not in keys
     assert "FordSharedPathController" not in keys
-
-  def test_ford_has_pscm_observer(self, schema):
-    items = _brand_items(schema["vehicle_settings"].get("ford"))
-    observer = next(item for item in items if item["key"] == "FordPscmObserver")
-    assert observer["needs_onroad_cycle"] is True
-    assert observer["enablement"] == [
-      {"type": "offroad_only"},
-      {"type": "param", "key": "FordModelActionController", "equals": False},
-    ]
+    assert "FordPscmObserver" not in keys
 
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}

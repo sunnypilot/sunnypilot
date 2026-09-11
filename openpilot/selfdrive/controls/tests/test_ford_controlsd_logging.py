@@ -8,7 +8,6 @@ import unittest
 
 from openpilot.common.logging_extra import SwagFormatter, SwagLogger
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
-from openpilot.selfdrive.controls.lib.ford_path import FordPathController, FordPscmObserverPathController
 from openpilot.selfdrive.controls.tests.test_ford_model_action import circle
 
 
@@ -40,10 +39,11 @@ class TestFordControlsLogging(unittest.TestCase):
     return record['msg']
 
   def test_startup_logs_selected_controller_without_crashing(self):
-    for controller in (FordPathController(), FordPscmObserverPathController(), FordModelActionController()):
+    for controller in (None, FordModelActionController()):
       with self.subTest(controller=type(controller).__name__):
-        record = self.emit_controls_event('Ford path controller selected', SimpleNamespace(ford_path_controller=controller))
-        self.assertEqual(record['controller'], type(controller).__name__)
+        record = self.emit_controls_event('Ford path controller selected',
+                                          SimpleNamespace(ford_path_controller=controller, ford_model_action=controller is not None))
+        self.assertEqual(record['controller'], 'upstream' if controller is None else type(controller).__name__)
 
   def test_candidate_diagnostics_identify_the_experiment_and_do_not_claim_calibration(self):
     controller = FordModelActionController()

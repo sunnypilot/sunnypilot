@@ -1,0 +1,190 @@
+{
+  "created_at_utc": "2026-09-11T16:11:23.341760+00:00",
+  "scope": "Default-off upstream Ford control, including CAN sender; exact software comparison only.",
+  "parent_commit": "b81c00f5b9c3658d72675ec3ee0ac07e0ef14807",
+  "opendbc_commit": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+  "target": {
+    "repository": "sunnypilot/sunnypilot",
+    "branch": "hiimisaac-dev"
+  },
+  "selection": {
+    "param": "FordModelActionController",
+    "default": false,
+    "off": "upstream",
+    "on": "Ford CAN FD model-action v3",
+    "activation": "Existing controlsd startup; real offroad-to-onroad cycle",
+    "observer_setting": "Ignored for control selection; no longer exposed in Sunnylink",
+    "sender_field": "fordLateralPath.enabled defaults false, independent of valid"
+  },
+  "custom_command_law_ast_matches_parent": [
+    "_packed",
+    "_finite",
+    "encode_model_action",
+    "ModelActionController",
+    "FordModelActionController"
+  ],
+  "tests": {
+    "combined": "683 passed, 178 skipped, 9145 subtests passed in 9.61s",
+    "additional_ford_interface_fuzz": "11 passed, 258 non-Ford deselected in 8.15s; 60 examples per Ford platform",
+    "fuzz_seed": 20260911,
+    "dependency_setup": "Initialized existing neural-network-data pin 03cac2d30e111e0689c0429cb8c1fe6cb5a905af after missing-model-data failure.",
+    "new_toggle_off_integration_cases": 14,
+    "new_integration_cycles": 4200,
+    "new_steering_frames": 840,
+    "ruff_changed_python": "pass",
+    "ty_controller": "pass",
+    "settings_compiler_check": "pass",
+    "diff_check": "pass"
+  },
+  "packet_equivalence": {
+    "scope": "Compare all outgoing Ford packets with pinned upstream and custom senders.\n\nUses trusted local Git sources, identical synthetic inputs, and the actual CAN\npackers. Establishes software equivalence, not physical steering performance.\n",
+    "seed": 20260911,
+    "upstream_revision": "f95f996f5917dcbbf2e32fe51b606a24cf836af6",
+    "previous_custom_revision": "c21a9013700734dd20b09e05aa68329ad8cc20f9",
+    "upstream_source_sha256": {
+      "opendbc/car/ford/fordcan.py": "8b3c74bff68146cf9f97d17203b7deebb9254561d9591a4a92d978bf01808a75",
+      "opendbc/car/ford/carcontroller.py": "c7e590c13cfe2434d77d6224359d659bb5092a3fdd65b12c7d8d9eddfb3deada"
+    },
+    "previous_custom_source_sha256": {
+      "opendbc/car/ford/fordcan.py": "5b73c568149bde299f71f92f034f3032a94ecae4ee4bae8af938f34ef9590062",
+      "opendbc/car/ford/carcontroller.py": "b2d327a1833fb1f0d09ee17f54c9c8d45517fa29beb04a4543cfbf1b43f1a65e"
+    },
+    "results": [
+      {
+        "fingerprint": "FORD_BRONCO_SPORT_MK1",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 5665
+      },
+      {
+        "fingerprint": "FORD_ESCAPE_MK4",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 5665
+      },
+      {
+        "fingerprint": "FORD_ESCAPE_MK4_5",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_ESCAPE_MK4_5",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      },
+      {
+        "fingerprint": "FORD_EXPLORER_MK6",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 5665
+      },
+      {
+        "fingerprint": "FORD_EXPEDITION_MK4",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_EXPEDITION_MK4",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      },
+      {
+        "fingerprint": "FORD_F_150_MK14",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_F_150_MK14",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      },
+      {
+        "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      },
+      {
+        "fingerprint": "FORD_FOCUS_MK4",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 5665
+      },
+      {
+        "fingerprint": "FORD_MAVERICK_MK1",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 5665
+      },
+      {
+        "fingerprint": "FORD_MUSTANG_MACH_E_MK1",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_MUSTANG_MACH_E_MK1",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      },
+      {
+        "fingerprint": "FORD_RANGER_MK2",
+        "custom_enabled": false,
+        "cycles": 5000,
+        "identical_packets": 3165
+      },
+      {
+        "fingerprint": "FORD_RANGER_MK2",
+        "custom_enabled": true,
+        "cycles": 5000,
+        "identical_packets": 7165
+      }
+    ],
+    "total_cycles": 85000,
+    "total_identical_packets": 90305,
+    "candidate_source_sha256": {
+      "opendbc/car/ford/carcontroller.py": "6d33f288de87e3baa69e9161b1b85367dc1d8542c06c3d3a9ce2d1f2347dbd30",
+      "opendbc/car/ford/fordcan.py": "0e241f19f152df897b294d4562bfd729dbfcbc56bcc9770379f76922f2864cb8",
+      "opendbc/car/structs.py": "82ecc4de1e5fda486d68fcf67903098dd083a56b78e65866744f42d5fb97b385"
+    },
+    "checker_sha256": "1d33a07cc5e6188c6d1b5de2a2a603efaee691d25d91b7bcd843ab4909753ae1"
+  },
+  "source_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "167ae5a01fdd7ea014e6ad3fe9d0b6e31c67de8ba057ec5ecf18ab38fc16353f",
+    "openpilot/selfdrive/controls/controlsd.py": "c9b68431d212178ae2177b16ddba4cf023ece84c7c0ea8a1db02a2527dc27aba",
+    "openpilot/cereal/custom.capnp": "c877eac4a77ea4cb42447edcf38da4baf20708e8993124852234008e0a084664",
+    "openpilot/sunnypilot/selfdrive/controls/controlsd_ext.py": "45bfaafa9a96d3ccbb56f34ec0b9a71abb7cd7f01e7e80620796d13c222e4720",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_selection.py": "3dc4f7236937358aad09b544577a796e47c15dbc96607739ff0874b900d55089",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_adapter.py": "073b16ffa611d654b954711f9e4f24df95477dfc0c09e75eff89d02eb29d7f2a",
+    "openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py": "5b082f3c1f6dc596a40a2011c71928debeb04fa70af36841f6f9a237a9ca439e",
+    "openpilot/sunnypilot/sunnylink/settings_ui_src/pages/vehicle.yaml": "e37a662618b6ccd2620ac355b4cc40a2253707bb4ba1d5d4631fdc89fd01a800",
+    "openpilot/sunnypilot/sunnylink/settings_ui.json": "36ac7f6177de2679d35c5f7f77234336e17a8632d31b195f40aec6014efb8577",
+    "openpilot/sunnypilot/sunnylink/tests/test_settings_schema.py": "53a3f1f807c638661c8ef60b5dc5c28ecf5604a9d35b610b8e4a5f5d1d99eedb",
+    "tools/ford_pscm_lab/feedback_replay.py": "860aff9fd00d26b2bd7c2b627286918d3b52c25cc31b0b0768a51fc55b0df37e"
+  },
+  "validation_environment": {
+    "python": "/Users/ibpersonal/dev/sunnypilot/.venv/bin/python",
+    "PYTHONPATH": ".:opendbc_repo:.cache/ford_v6/test_deps",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "LOG_ROOT": "/private/tmp/ford-upstream-logs",
+    "PARAMS_ROOT": "/private/tmp/ford-upstream-params"
+  },
+  "panda_safety_changed": false,
+  "limitations": [
+    "No full device build, boot, installation or physical steering validation.",
+    "Upstream means the pinned upstream implementation merged into this branch, not an upgrade to unrelated latest source."
+  ]
+}

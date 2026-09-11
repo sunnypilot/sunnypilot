@@ -106,6 +106,7 @@ class ControlsExt(ModelStateBase):
 
     ford_path = getattr(self, 'ford_path', None)
     if ford_path is not None:
+      CC_SP.fordLateralPath.enabled = getattr(self, 'ford_model_action', False)
       CC_SP.fordLateralPath.valid = ford_path.valid
       CC_SP.fordLateralPath.pathOffset = ford_path.path_offset
       CC_SP.fordLateralPath.pathAngle = ford_path.path_angle

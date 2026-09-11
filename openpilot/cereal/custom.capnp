@@ -410,6 +410,7 @@ struct FordLateralPath {
   curvature @2 :Float32;      # c2 [1/m]
   curvatureRate @3 :Float32;  # c3 [1/m^2]
   valid @4 :Bool;
+  enabled @5 :Bool;          # Startup-selected custom controller; independent of command validity.
 }
 
 struct BackupManagerSP @0xf98d843bfd7004a3 {

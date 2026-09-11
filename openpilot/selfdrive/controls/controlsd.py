@@ -12,11 +12,10 @@ from openpilot.common.realtime import config_realtime_process, DT_CTRL, Priority
 from openpilot.common.swaglog import cloudlog
 
 from opendbc.car.car_helpers import interfaces
-from opendbc.car.ford.values import FordFlags
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
-from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController, FordPscmObserverPathController
+from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -56,14 +55,11 @@ class Controls(ControlsExt):
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
-    self.ford_pscm_observer = (self.CP.brand == "ford" and self.CP.flags & FordFlags.CANFD and
-                               self.params.get_bool("FordPscmObserver"))
-    self.ford_path_controller = FordPscmObserverPathController() if self.ford_pscm_observer else FordPathController()
-    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
-                                                              self.ford_path_controller)
+    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":
-      cloudlog.event("Ford path controller selected", controller=type(self.ford_path_controller).__name__)
+      cloudlog.event("Ford path controller selected",
+                     controller=type(self.ford_path_controller).__name__ if self.ford_model_action else "upstream")
     self.ford_path = FordPath()
 
     self.pose_calibrator = PoseCalibrator()
@@ -189,15 +185,7 @@ class Controls(ControlsExt):
                          reference_service=reference_service, reference_mono_time=self.sm.logMonoTime[reference_service],
                          measured_curvature=self.curvature,
                          **self.ford_path_controller.diagnostics)
-      elif self.ford_pscm_observer:
-        self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
-                                                          current_curvature=self.curvature, v_ego=CS.vEgo,
-                                                          v_ego_raw=CS.vEgoRaw, active=CC.latActive)
-      else:
-        self.ford_path = self.ford_path_controller.update(ford_model, self.desired_curvature,
-                                                          current_curvature=self.curvature, v_ego=CS.vEgo,
-                                                          active=CC.latActive)
-      actuators.curvature = float(self.ford_path.curvature)
+        actuators.curvature = float(self.ford_path.curvature)
     # Ensure no NaNs/Infs
     for p in ACTUATOR_FIELDS:
       attr = getattr(actuators, p)

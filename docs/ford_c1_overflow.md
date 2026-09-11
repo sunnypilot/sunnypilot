@@ -1,5 +1,9 @@
 # Ford base-heading overflow experiment
 
+This records the overflow implementation and validation at `b81c00f5b`.
+The later [toggle-off restoration](ford_upstream_fallback.md) updates selection
+and the opendbc sender while preserving the enabled experiment's command law.
+
 The Lightning ca route recorded controller `959ae3d6e`. Its large turns included
 flat C1 requests at ±0.5 rad while C0 still had available range. Those were
 nonzero, active commands, but increasing base heading above the C1 limit was

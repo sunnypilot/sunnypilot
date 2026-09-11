@@ -28,10 +28,12 @@ steering. `offset_overflow` reports the extra C0 target in meters before C0
 amplitude and slew limits. `calibration_approved=false` remains.
 
 Turning the toggle off and completing another offroad-to-onroad cycle restores
-**PSCM Coefficient Observer** if selected, otherwise the original Ford path
-controller. The stored observer selection is preserved. The experiment takes
-priority on Ford CAN FD vehicles; other vehicles retain their existing
-controller. A leftover `FordVirtualAngleController` parameter has no effect.
+**upstream Ford curvature control**: 20 Hz steering messages, limited mode on
+CAN FD, zero C0/C1/C3, and upstream curvature limiting and platform-specific
+overshoot handling. Stored observer or retired controller settings cannot select
+a custom controller. The observer toggle is no longer exposed. The experiment
+only runs on Ford CAN FD vehicles; legacy Ford uses upstream control as well.
+See [toggle-off validation](ford_upstream_fallback.md).
 
 ## Wiring and validation
 
@@ -51,8 +53,10 @@ exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
 Accumulated C1 feedback does not spill into C0. The extra target returns to zero
 as the base heading falls below the cap; applied C0 still follows its 4 m/s slew.
 C2 and C3 remain zero. The
-existing output limits, 100 Hz sender, Float32 publication and CAN builder
-remain in place. No opendbc submodule or Panda safety change is required.
+existing output limits, 100 Hz custom sender and Float32 publication remain in
+place. An explicit selection flag distinguishes upstream mode from an invalid
+experimental command; invalid experimental input cannot switch to upstream.
+The opendbc sender restores upstream behavior when that flag is false.
 
 See [the overflow specification and validation](ford_c1_overflow.md) and
 `ford_c1_overflow_validation.json` for current evidence and reproduction

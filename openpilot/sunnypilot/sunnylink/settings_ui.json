@@ -2184,28 +2184,10 @@
           "needs_onroad_cycle": true,
           "title": "Selected-Action Path Tracking (Experimental)",
           "description": "Follow the selected steering plan using model-path centering and measured steering feedback on any Ford CAN FD vehicle.",
-          "details": "Uses the nearby model path for centering and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. On any Ford CAN FD vehicle this takes priority over PSCM Coefficient Observer; other vehicles retain their existing controller. Turning it off restores PSCM Coefficient Observer if selected, otherwise the original Ford path controller. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
+          "details": "Uses the nearby model path for centering and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
           "enablement": [
             {
               "type": "offroad_only"
-            }
-          ]
-        },
-        {
-          "key": "FordPscmObserver",
-          "widget": "toggle",
-          "needs_onroad_cycle": true,
-          "title": "PSCM Coefficient Observer (Experimental)",
-          "description": "Track the Ford steering controller's internal polynomial states and use fast path terms only for the response that slow curvature cannot provide.",
-          "details": "This changes live steering behavior on Ford CAN FD vehicles. Use only for supervised testing and be ready to take over immediately. This strategy is bypassed when Selected-Action Path Tracking is selected on a supported vehicle; its selection is retained when that experiment is turned off.",
-          "enablement": [
-            {
-              "type": "offroad_only"
-            },
-            {
-              "type": "param",
-              "key": "FordModelActionController",
-              "equals": false
             }
           ]
         }

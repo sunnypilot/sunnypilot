@@ -22,7 +22,7 @@ from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sam
 
 BASELINE = 'a7d70e2b0890184636827351e4789d866f2a7c97'
 FEEDBACK_V2 = '959ae3d6e76c479f48e081c060b0f3569a6f15f4'
-OPENDBC = 'c21a9013700734dd20b09e05aa68329ad8cc20f9'
+OPENDBC = '64aa61b9b3fd26e70a7caa915acab207ff3cd64a'
 
 
 def original_controller(revision=BASELINE):

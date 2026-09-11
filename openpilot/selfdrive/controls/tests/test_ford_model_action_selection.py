@@ -10,7 +10,7 @@ import pytest
 from opendbc.car.ford.values import CAR, FordFlags
 from openpilot.common.params import Params, ParamKeyFlag, ParamKeyType
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
-from openpilot.selfdrive.controls.lib.ford_path import FordPath, FordPathController, FordPscmObserverPathController
+from openpilot.selfdrive.controls.lib.ford_path import FordPath
 
 
 CANFD_CARS = [car for car in CAR if car.config.flags & FordFlags.CANFD]
@@ -26,13 +26,12 @@ def startup(cp=None, params=None):
   tree = ast.parse(filename.read_text())
   cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'Controls')
   body = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '__init__').body
-  start = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_pscm_observer')
+  start = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_path_controller')
   end = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_path')
   if params is None:
     params = SimpleNamespace(get_bool=lambda key: key == 'FordModelActionController')
   controls = SimpleNamespace(CP=cp or car_params(), params=params)
   environment = {'self': controls, 'FordFlags': FordFlags, 'FordPath': FordPath,
-                 'FordPathController': FordPathController, 'FordPscmObserverPathController': FordPscmObserverPathController,
                  'FordModelActionController': FordModelActionController,
                  'select_model_action_controller': select_model_action_controller,
                  'cloudlog': SimpleNamespace(event=lambda *args, **kwargs: None)}
@@ -45,22 +44,23 @@ def startup(cp=None, params=None):
 def test_actual_startup_priority(candidate, observer, fingerprint):
   settings = {'FordModelActionController': candidate, 'FordPscmObserver': observer}
   selected = startup(car_params(carFingerprint=fingerprint), params=SimpleNamespace(get_bool=settings.__getitem__))
-  previous = FordPscmObserverPathController if observer else FordPathController
-  expected = FordModelActionController if candidate else previous
-  assert type(selected.ford_path_controller) is expected
+  if candidate:
+    assert type(selected.ford_path_controller) is FordModelActionController
+  else:
+    assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate
   assert selected.ford_path == FordPath()
 
 
 @pytest.mark.parametrize('overrides', [{'brand': 'tesla'}, {'flags': 0}, {'flags': 8}])
 @pytest.mark.parametrize('observer', [False, True])
-def test_other_vehicles_keep_their_previous_selection(overrides, observer):
+def test_other_vehicles_always_use_upstream(overrides, observer):
   settings = {'FordModelActionController': False, 'FordPscmObserver': observer}
   params = SimpleNamespace(get_bool=settings.__getitem__)
   before = startup(car_params(**overrides), params)
   settings['FordModelActionController'] = True
   after = startup(car_params(**overrides), params)
-  assert type(after.ford_path_controller) is type(before.ford_path_controller)
+  assert after.ford_path_controller is before.ford_path_controller is None
   assert not after.ford_model_action
 
 
@@ -75,7 +75,7 @@ def test_candidate_accepts_canfd_with_additional_flags():
 
 @pytest.mark.parametrize('observer', [False, True])
 @pytest.mark.parametrize('fingerprint', CANFD_CARS)
-def test_sunnylink_write_takes_effect_on_restart_and_restores_stored_selection(tmp_path, monkeypatch, observer, fingerprint):
+def test_sunnylink_write_takes_effect_on_restart_and_restores_upstream(tmp_path, monkeypatch, observer, fingerprint):
   from openpilot.sunnypilot.sunnylink import utils
 
   params = Params(str(tmp_path))
@@ -87,14 +87,14 @@ def test_sunnylink_write_takes_effect_on_restart_and_restores_stored_selection(t
   params.put_bool('FordPscmObserver', observer, block=True)
   cp = car_params(carFingerprint=fingerprint)
   old = startup(cp, params=params)
-  assert not isinstance(old.ford_path_controller, FordModelActionController)
+  assert old.ford_path_controller is None
   utils.save_param_from_base64_encoded_string('FordModelActionController', base64.b64encode(b'true').decode())
   enabled = startup(cp, params=params)
   assert isinstance(enabled.ford_path_controller, FordModelActionController)
   assert not isinstance(old.ford_path_controller, FordModelActionController)
   utils.save_param_from_base64_encoded_string('FordModelActionController', base64.b64encode(b'false').decode())
   assert isinstance(enabled.ford_path_controller, FordModelActionController)
-  assert type(startup(cp, params=params).ford_path_controller) is type(old.ford_path_controller)
+  assert startup(cp, params=params).ford_path_controller is None
   assert params.get_bool('FordPscmObserver') == observer
 
 
@@ -103,7 +103,7 @@ def test_stored_retired_toggle_cannot_enable_the_candidate(tmp_path):
   Path(params.get_param_path('FordVirtualAngleController')).write_text('1')
   assert b'FordVirtualAngleController' not in params.all_keys()
   assert params.get_bool('FordModelActionController') is False
-  assert type(startup(params=params).ford_path_controller) is FordPathController
+  assert startup(params=params).ford_path_controller is None
   params.put_bool('FordModelActionController', True, block=True)
   params.clear_all(ParamKeyFlag.CLEAR_ON_MANAGER_START)
   assert not Path(params.get_param_path('FordVirtualAngleController')).exists()

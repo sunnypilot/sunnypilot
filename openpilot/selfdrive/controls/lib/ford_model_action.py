@@ -192,9 +192,9 @@ class FordModelActionController:
     return command
 
 
-def select_model_action_controller(CP, enabled, previous_controller):
-  """The separate default-off toggle takes priority on any Ford CAN FD vehicle."""
+def select_model_action_controller(CP, enabled):
+  """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
     return FordModelActionController()
-  return previous_controller
+  return None

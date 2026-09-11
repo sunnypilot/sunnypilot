@@ -16,7 +16,7 @@ from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.ford.carcontroller import CarController
 from opendbc.car.ford.fordcan import calculate_lat_ctl2_checksum
-from opendbc.car.ford.values import FordFlags
+from opendbc.car.ford.values import CAR, CarControllerParams, FordFlags
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
@@ -393,3 +393,62 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
   assert controls.ford_path.path_offset == pytest.approx(sign*.2)
   assert controls.ford_path.path_angle == pytest.approx(sign*.28)
   assert controls.ford_path_controller.diagnostics['offset_overflow'] == 0.
+
+
+@pytest.mark.parametrize('fingerprint', [*CANFD_CARS, CAR.FORD_ESCAPE_MK4])
+@pytest.mark.parametrize('observer', [False, True])
+def test_toggle_off_preserves_upstream_actuators_and_can(pipeline, fingerprint, observer):
+  call, publication = pipeline
+  settings = {'FordModelActionController': False, 'FordPscmObserver': observer}
+  flags = CAR(fingerprint).config.flags
+  controls = startup(car_params(carFingerprint=fingerprint, flags=flags), SimpleNamespace(get_bool=settings.__getitem__))
+  assert controls.ford_path_controller is None
+  sm = Subscriptions(False)
+  controls.sm, controls.desired_curvature, controls.curvature = sm, .004, 0.
+  # Missing custom model geometry must not inhibit the upstream actuator output.
+  model = SimpleNamespace(action=SimpleNamespace(desiredCurvature=.004))
+  cs = SimpleNamespace(vEgo=5., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  cp = structs.CarParams(flags=int(flags), carFingerprint=fingerprint)
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=5., vEgoRaw=5.), acc_tja_status_stock_values=defaultdict(int),
+                            lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+  canfd = bool(flags & FordFlags.CANFD)
+  name = 'LateralMotionControl2' if canfd else 'LateralMotionControl'
+  parser = CANParser('ford_lincoln_base_pt', [(name, 20)], downstream.CAN.main)
+  address = parser.dbc.name_to_msg[name].address
+  sent = 0
+  for frame in range(300):
+    active = not 100 <= frame < 200
+    cc = structs.CarControl(latActive=active)
+    cc.actuators.curvature = -.003 if active else 0.  # Distinct from desired curvature; produced by LaC upstream.
+    before = cc.actuators.curvature
+    now = 1.+frame*.01
+    sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
+    exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature})
+    assert cc.actuators.curvature == before and cc.latActive == active
+    msg = custom.CarControlSP.new_message()
+    exec(publication, {'self': controls, 'CC_SP': msg})
+    assert not msg.fordLateralPath.enabled and not msg.fordLateralPath.valid
+    converted = convert_carControlSP(msg.as_reader())
+    assert not converted.fordLateralPath.enabled
+    _, packets = downstream.update(cc.as_reader(), converted, vehicle, round(now*1e9))
+    received = parser.update([round(now*1e9), packets])
+    assert (address in received) == (frame % CarControllerParams.STEER_STEP == 0)
+    if address in received:
+      sent += 1
+      wire = parser.vl[name]
+      assert wire['LatCtlPathOffst_L_Actl'] == wire['LatCtlPath_An_Actl'] == 0.
+      assert wire['LatCtlCrv_NoRate2_Actl' if canfd else 'LatCtlCurv_NoRate_Actl'] == 0.
+      assert wire['LatCtl_D2_Rq' if canfd else 'LatCtl_D_Rq'] == int(active)
+      assert wire['LatCtlRampType_D_Rq'] == 0
+      if canfd:
+        count = frame // CarControllerParams.STEER_STEP % 16
+        assert wire['LatCtlPath_No_Cnt'] == count
+        packet = next(packet for packet in packets if packet[0] == address)
+        assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(int(active), count, packet[1])
+      if frame in (95, 295):
+        assert wire['LatCtlCurv_No_Actl'] == pytest.approx(.003)
+      elif not active:
+        assert wire['LatCtlCurv_No_Actl'] == 0.
+  assert sent == 60
