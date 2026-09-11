@@ -119,7 +119,10 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
 
   def prob(c):
     prob_d = laplacian_pdf(c.dRel, offset_vision_dist, lead.xStd[0])
-    prob_y = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0])
+    # Some OEM-selected lead messages do not contain lateral position. Treat
+    # those as a lower-confidence fallback instead of allowing NaN to make the
+    # result dependent on dictionary insertion order.
+    prob_y = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0]) if math.isfinite(c.yRel) else 0.5
     prob_v = laplacian_pdf(c.vRel + v_ego, lead.v[0], lead.vStd[0])
 
     # This isn't exactly right, but it's a good heuristic
