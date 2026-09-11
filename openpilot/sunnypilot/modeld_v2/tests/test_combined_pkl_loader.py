@@ -12,7 +12,7 @@ import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 from openpilot.sunnypilot.modeld_v2.modeld import _find_driving_pkl
 from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
 from openpilot.sunnypilot.modeld_v2.tests.helpers import DummyModel, DummyBundle, ARCHETYPES, CAM_W, CAM_H, \
-  SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES
+  SPLIT_VISION_INPUT_SHAPES
 from openpilot.common.test import OpenpilotTestCase
 
 # resolved by name from this module when a test asks for them
@@ -66,21 +66,6 @@ class TestModelStateCombinedInit(OpenpilotTestCase):
 
 
 class TestStockEquivalence(OpenpilotTestCase):
-
-  def test_split_queue_keys_match_stock(self, model_state_factory):
-    from openpilot.selfdrive.modeld.compile_modeld import make_input_queues
-    from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip
-
-    state = model_state_factory(ARCHETYPES['vision_policy_split'])
-
-    frame_skip = derive_frame_skip(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES)
-    stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
-    stock_queues, stock_npy, _frame_views = make_input_queues(stock_shapes, frame_skip, device='NPY', frame_copy_size=49152)
-
-    # sunnypilot split pipeline has tfm/big_tfm as queues (stock has them in npy only)
-    assert set(stock_queues.keys()) <= set(state.input_queues.keys())
-    assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
-
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
 
@@ -108,8 +93,11 @@ class TestStockEquivalence(OpenpilotTestCase):
     from openpilot.selfdrive.modeld.helpers import dump_oob
     shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
               'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
-    pkl_data = {'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}},
-                'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}}
+    import codecs
+    import pickle
+    slices_b64 = codecs.encode(pickle.dumps({}), 'base64').decode()
+    pkl_data = {'metadata': {'metadata': {'output_slices': slices_b64}},
+                'variants': {f'{CAM_W}x{CAM_H}': {'input_specs': {}, 'packed_specs': {}, 'run': tests_helpers._noop_jit}}}
     with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
       dump_oob(pkl_data, f)
     bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])

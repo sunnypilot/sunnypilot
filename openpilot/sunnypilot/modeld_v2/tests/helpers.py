@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 
 import pathlib
 import tempfile
+import codecs
+import pickle
 
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
@@ -161,6 +163,16 @@ ARCHETYPES = {
 
 
 def make_pkl_data(archetype):
+  if archetype.expected_model_type == 'supercombo':
+    slices_b64 = codecs.encode(pickle.dumps(archetype.metadata_structure['model']['output_slices']), 'base64').decode()
+    return {
+      'metadata': {
+        'metadata': {'output_slices': slices_b64},
+        'input_shapes': archetype.metadata_structure['model']['input_shapes']
+      },
+      'variants': {f'{CAM_W}x{CAM_H}': {'input_specs': {}, 'packed_specs': {}, 'run': _noop_jit}},
+    }
+
   return {
     'metadata': archetype.metadata_structure,
     'run_policy': _noop_jit,

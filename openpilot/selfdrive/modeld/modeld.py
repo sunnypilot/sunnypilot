@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 from collections.abc import Callable
 import ctypes
+import codecs
 from functools import cached_property
 import os
+import pickle
 os.environ['GMMU'] = '0' # for chestnut fast loading, noop for qcom
 from tinygrad.device import Device
+from tinygrad_repo.examples.openpilot.helpers import allocate_inputs, load_pickle
 import usb1
 import struct
 import threading
@@ -23,21 +26,15 @@ from openpilot.common.params import Params
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
-from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, should_stop, smooth_value, get_curvature_from_plan
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
-from openpilot.selfdrive.modeld.compile_modeld import make_input_queues, nv12_copy_size, MODELD_INPUTS
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_driving_model_data, fill_pose_msg, PublishState
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.common.hardware.usb import CHESTNUT_USB_IDS
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
-from openpilot.selfdrive.modeld.helpers import chestnut_present, chestnut_compiled, chestnut_ready, modeld_pkl_path, load_oob
-
-from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
-from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
-from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
+from openpilot.selfdrive.modeld.helpers import chestnut_present, chestnut_compiled, modeld_pkl_path
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -175,28 +172,30 @@ class FrameMeta:
       self.frame_id, self.timestamp_sof, self.timestamp_eof = vipc.frame_id, vipc.timestamp_sof, vipc.timestamp_eof
 
 
-class ModelState(ModelStateBase):
+class ModelState:
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, cam_w: int, cam_h: int, chestnut: bool):
-    ModelStateBase.__init__(self)
-    jits = load_oob(open_file_chunked(modeld_pkl_path(chestnut)))
-    input_devices = jits['input_devices']
-    self.model_device = input_devices['model']
+    jits = load_pickle(open_file_chunked(modeld_pkl_path(chestnut)), out_of_band=True)
+    variant = jits['variants'][f'{cam_w}x{cam_h}']
     metadata = jits['metadata']
     self.input_shapes = metadata['input_shapes']
     self.vision_input_names = [k for k in self.input_shapes if 'img' in k]
-    self.output_slices = metadata['output_slices']
+    self.output_slices = pickle.loads(codecs.decode(metadata['metadata']['output_slices'].encode(), 'base64'))
 
     self.prev_desire = np.zeros(ModelConstants.DESIRE_LEN, dtype=np.float32)
     self.chestnut = chestnut
 
-    self.frame_skip = ModelConstants.MODEL_RUN_FREQ // ModelConstants.MODEL_CONTEXT_FREQ
-    self.frame_copy_size = nv12_copy_size(*get_nv12_info(cam_w, cam_h)[:3])
-    self.input_queues, self.npy, self.frame_views = make_input_queues(
-      self.input_shapes, self.frame_skip, device=self.model_device, frame_copy_size=self.frame_copy_size)
+    self.input_specs = variant['input_specs']
+    self.packed_specs = variant['packed_specs']
+    self.reset_inputs()
     self.parser = Parser()
-    self.run_model = jits['run_model'][(cam_w,cam_h)]
+    self.run_model = variant['run']
+
+  def reset_inputs(self) -> None:
+    self.input_queues, views = allocate_inputs(self.input_specs, self.packed_specs)
+    self.frame_views = {name: views[name] for name in self.vision_input_names}
+    self.npy = {name: views[name] for name in self.packed_specs if name not in self.frame_views}
 
   def slice_outputs(self, model_outputs: np.ndarray, output_slices: dict[str, slice]) -> dict[str, np.ndarray]:
     parsed_model_outputs = {k: model_outputs[np.newaxis, v] for k,v in output_slices.items()}
@@ -205,62 +204,48 @@ class ModelState(ModelStateBase):
   def run(self, bufs: dict[str, VisionBuf], transforms: dict[str, np.ndarray],
           inputs: dict[str, np.ndarray], after_enqueue: Callable[[], None] | None = None) -> dict[str, np.ndarray]:
     for key, buf in bufs.items():
-      np.copyto(self.frame_views[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_copy_size))
+      np.copyto(self.frame_views[key], np.frombuffer(buf.data, dtype=np.uint8, count=self.frame_views[key].size))
 
     # Model decides when action is completed, so desire input is just a pulse triggered on rising edge
     inputs['desire_pulse'][0] = 0
-    self.npy['desire'][:] = np.where(inputs['desire_pulse'] - self.prev_desire > .99, inputs['desire_pulse'], 0)
+    self.npy['desire'].flat[:] = np.where(inputs['desire_pulse'] - self.prev_desire > .99, inputs['desire_pulse'], 0)
     self.prev_desire[:] = inputs['desire_pulse']
     self.npy['traffic_convention'][:] = inputs['traffic_convention']
     self.npy['action_t'][:] = inputs['action_t']
     self.npy['tfm'][:,:] = transforms['img'][:,:]
     self.npy['big_tfm'][:,:] = transforms['big_img'][:,:]
 
-    outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
+    outs = self.run_model(**self.input_queues)
     if after_enqueue is not None:
       after_enqueue()
     model_output = outs.numpy()[0]
     if self.chestnut and not np.all(np.isfinite(model_output)):
       raise RuntimeError("model output not finite")
     outputs_dict = self.parser.parse_outputs(self.slice_outputs(model_output, self.output_slices))
-    self.npy['prev_feat'][:] = model_output[self.output_slices['hidden_state']]
+    self.npy['prev_feat'].flat[:] = model_output[self.output_slices['hidden_state']]
 
     if SEND_RAW_PRED:
       outputs_dict['raw_pred'] = model_output.copy()
     return outputs_dict
 
   def warmup(self) -> None:
-    dummy_frames = {k: np.zeros(self.frame_copy_size, dtype=np.uint8) for k in self.vision_input_names}
+    dummy_frames = {k: np.zeros_like(v) for k, v in self.frame_views.items()}
     eye = np.eye(3, dtype=np.float32)
     dims = {'desire_pulse': ModelConstants.DESIRE_LEN, 'traffic_convention': 2, 'action_t': 2}
     self.run(dummy_frames, dict.fromkeys(self.vision_input_names, eye), {k: np.zeros(v, dtype=np.float32) for k, v in dims.items()})
-    self.input_queues, self.npy, self.frame_views = make_input_queues(
-      self.input_shapes, self.frame_skip, device=self.model_device, frame_copy_size=self.frame_copy_size)
+    self.reset_inputs()
     self.prev_desire[:] = 0
 
 
 def main(demo=False):
   cloudlog.warning("modeld init")
 
-  chestnut_available = chestnut_present() and chestnut_compiled()
-  CHESTNUT = False
-  if chestnut_available:
-    poller = messaging.Poller()
-    sock = messaging.sub_sock("chestnutState", poller=poller, conflate=True)
-    deadline = time.monotonic() + 4. / SERVICE_LIST['deviceState'].frequency
-    while not CHESTNUT and (remaining := deadline - time.monotonic()) > 0.:
-      if not poller.poll(round(remaining * 1000)):
-        break
-      msg = messaging.recv_one_or_none(sock)
-      CHESTNUT = msg is not None and msg.valid and chestnut_ready(msg.chestnutState)
+  CHESTNUT = chestnut_present() and chestnut_compiled()
   if CHESTNUT:
     os.environ['HCQDEV_WAIT_TIMEOUT_MS'] = '3000'
   params = Params()
   params.put_bool("ChestnutLoading", CHESTNUT)
-  if chestnut_available and not CHESTNUT:
-    params.put_bool("ChestnutActive", False)
-  else:
-    params.remove("ChestnutActive")
+  params.remove("ChestnutActive")
 
   config_realtime_process(7, 54)
 
@@ -304,21 +289,16 @@ def main(demo=False):
     loader.start()
     loader.join(BIG_MODEL_TIMEOUT)
     model = big_model
-    if model is None:
-      params.put_bool("ChestnutModelError", True)
     params.put_bool("ChestnutActive", model is not None)
-    if model is not None:
-      params.remove("ChestnutModelError")
 
   small_model = ModelState(vipc_client_main.width, vipc_client_main.height, False) if model is None or CHESTNUT else None
   if model is None:
     model = small_model
   params.put_bool("ChestnutLoading", False)
-  assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if CHESTNUT else [])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry"] + (["chestnutState"] if CHESTNUT else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
@@ -351,7 +331,6 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
-  RELC = RoadEdgeLaneChangeController()
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -391,7 +370,6 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["narrowRoadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
     lat_delay = sm["lateralDelay"].lateralDelay + LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -442,9 +420,7 @@ def main(demo=False):
         raise
       # fallback to small model
       cloudlog.exception("big model failed, fall back to small")
-      params.put_bool("ChestnutModelError", True)
       params.put_bool("ChestnutActive", False)
-      assert small_model is not None
       model = small_model
       if chestnut_state is not None:
         chestnut_state.big = False
@@ -469,19 +445,15 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      mdv2sp_send = messaging.new_message('modelDataV2SP')
-      left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
-      mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
 
       fill_driving_model_data(drivingdata_send, modelv2_send)
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, extrinsics_calibration_seen)
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
-      pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
 if __name__ == "__main__":
