@@ -306,11 +306,15 @@ class LocalAppsPanelMici(NavScroller):
     if index >= len(apps):
       return
     app = apps[index]
+
+    def unpair():
+      remove_local_app(app.app_id)
+
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
       tr("slide to unpair"),
       icon,
-      confirm_callback=lambda: remove_local_app(app.app_id),
+      confirm_callback=unpair,
       red=True,
     )
     gui_app.push_widget(dlg)
