@@ -4,8 +4,11 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import codecs
+import pickle
 import numpy as np
 from tinygrad.tensor import Tensor
+from tinygrad_repo.examples.openpilot.helpers import allocate_inputs
 
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import MODELD_INPUTS, make_input_queues as make_stock_input_queues
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -32,6 +35,7 @@ class BaseModelAdapter:
     self.frame_buffers = {}
     self.frame_views = {}
     self.nv12_info = get_nv12_info(cam_w, cam_h)
+    self.is_native = False
 
   def _init_common(self):
     self._desire_key = next((key for key in getattr(self, 'numpy_inputs', {}) if key.startswith('desire')), 'desire')
@@ -44,7 +48,10 @@ class BaseModelAdapter:
     if getattr(self, 'is_run_model', True) is False:
       dummy_size = self.frame_buf_params[self._road_key][3]
 
-    dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
+    dummy_frames = {
+      k: np.zeros(self.frame_views[k].size, dtype=np.uint8) if self.is_native else np.zeros(dummy_size, dtype=np.uint8)
+      for k in self._vision_input_names
+    }
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     return dummy_frames, transforms, dummy_inputs
@@ -125,6 +132,7 @@ class LegacyModelAdapter(BaseModelAdapter):
       outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
       return outs
     else:
+      assert self.warp is not None and self.run_policy is not None
       warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
       raw_outputs = self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
       return raw_outputs
@@ -133,14 +141,13 @@ class LegacyModelAdapter(BaseModelAdapter):
 class NativeTinygradAdapter(BaseModelAdapter):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-
-    self.input_specs = self.jits['input_specs'][(self.cam_w, self.cam_h)]
-    self.npy_shapes = self.jits['npy_shapes']
-    self.run_model = self.jits['run_model'][(self.cam_w, self.cam_h)]
-    self.vision_output_slices = self.jits['metadata']['model']['output_slices']
-
+    self.is_native = True
+    variant = self.jits['variants'][f'{self.cam_w}x{self.cam_h}']
+    self.input_specs = variant['input_specs']
+    self.packed_specs = variant['packed_specs']
+    self.run_model = variant['run']
+    self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
     self._vision_input_names = ['img', 'big_img']
-
     self.reset_warmup_buffers()
     self._init_common()
 
@@ -148,30 +155,20 @@ class NativeTinygradAdapter(BaseModelAdapter):
     for key, buf in bufs.items():
       data = buf.data if hasattr(buf, 'data') else buf
       if key in self.frame_views:
-        np.copyto(self.frame_views[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+        np.copyto(self.frame_views[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_views[key].size))
 
   def reset_warmup_buffers(self) -> None:
-    buffers = {name: np.zeros(shape, dtype=dtype) for name, (shape, dtype, _) in self.input_specs.items()}
-    self.input_queues = {name: Tensor(buffers[name], device=device).realize() for name, (_, _, device) in self.input_specs.items()}
-
-    sizes = [int(np.prod(shape)) for shape in self.npy_shapes.values()]
-    packed = buffers['packed_npy_inputs']
-    npy_size = sum(sizes) * np.dtype(np.float32).itemsize
-
-    self.numpy_inputs = {name: v.reshape(shape) for (name, shape), v in
-                zip(self.npy_shapes.items(), np.split(packed[:npy_size].view(np.float32), np.cumsum(sizes[:-1])), strict=True)}
-
-    self.frame_copy_size = (packed.size - npy_size) // 2
-    self.frame_views = {'img': packed[npy_size:npy_size+self.frame_copy_size],
-                        'big_img': packed[npy_size+self.frame_copy_size:]}
+    self.input_queues, views = allocate_inputs(self.input_specs, self.packed_specs)
+    self.frame_views = {name: views[name] for name in self._vision_input_names if name in views}
+    self.numpy_inputs = {name: views[name] for name in views if name not in self.frame_views}
 
   def run(self):
-    outs, = self.run_model(**self.input_queues)
+    outs = self.run_model(**self.input_queues)
     return outs
 
 
 def get_model_adapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False):
-  if 'input_specs' in jits:
+  if 'variants' in jits:
     return NativeTinygradAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)
   else:
     return LegacyModelAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)

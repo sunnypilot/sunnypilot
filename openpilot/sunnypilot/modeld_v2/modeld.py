@@ -13,7 +13,6 @@ import numpy as np
 import threading
 import time
 from setproctitle import setproctitle
-from tinygrad.tensor import Tensor
 
 import openpilot.cereal.messaging as messaging
 from openpilot.common.hardware import COMMA_HARDWARE
@@ -33,7 +32,6 @@ from openpilot.common.realtime import config_realtime_process, DT_MDL
 from openpilot.common.transformations.camera import DEVICE_CAMERAS
 from openpilot.common.transformations.model import get_warp_matrix
 from openpilot.system import sentry
-from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
 from openpilot.selfdrive.modeld.modeld import ChestnutState
@@ -166,7 +164,8 @@ class ModelState(ModelStateBase):
 
     desire_key = self.desire_key
     inputs[desire_key][0] = 0
-    self.numpy_inputs[desire_key][:] = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
+    (self.numpy_inputs[desire_key].flat if self.adapter.is_native else self.numpy_inputs[desire_key])[:] = \
+      np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
     self.prev_desire[:] = inputs[desire_key]
 
     for key in ('traffic_convention', 'lateral_control_params', 'action_t'):
@@ -188,14 +187,16 @@ class ModelState(ModelStateBase):
       sliced = {k: model_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_outputs(sliced)
       if 'prev_feat' in self.numpy_inputs and 'hidden_state' in self.vision_output_slices:
-        self.numpy_inputs['prev_feat'][:] = model_output[self.vision_output_slices['hidden_state']]
+        (self.numpy_inputs['prev_feat'].flat if self.adapter.is_native else self.numpy_inputs['prev_feat'])[:] = \
+          model_output[self.vision_output_slices['hidden_state']]
     else:
       vision_output = raw_outputs[0].numpy().flatten()
       vision_sliced = {k: vision_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_vision_outputs(vision_sliced)
 
       if 'prev_feat' in self.numpy_inputs and 'hidden_state' in self.vision_output_slices:
-        self.numpy_inputs['prev_feat'][:] = vision_output[self.vision_output_slices['hidden_state']]
+        (self.numpy_inputs['prev_feat'].flat if self.adapter.is_native else self.numpy_inputs['prev_feat'])[:] = \
+          vision_output[self.vision_output_slices['hidden_state']]
 
       for i, policy_slices in enumerate(self._policy_slices_list):
         policy_output = raw_outputs[i + 1].numpy().flatten()
@@ -302,11 +303,7 @@ def main(demo=False):
     loader.start()
     loader.join(BIG_MODEL_TIMEOUT)
     model = big_model
-    if model is None:
-      params.put_bool("ChestnutModelError", True)
     params.put_bool("ChestnutActive", model is not None)
-    if model is not None:
-      params.remove("ChestnutModelError")
 
   small_model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False) if model is None or CHESTNUT else None
   if model is None:
@@ -448,8 +445,7 @@ def main(demo=False):
     except Exception:
       if not params.get_bool("ChestnutActive"):
         raise
-      cloudlog.exception("chestnut failed, falling back to small")
-      params.put_bool("ChestnutModelError", True)
+      cloudlog.exception("big model failed, fall back to small")
       params.put_bool("ChestnutActive", False)
       assert small_model is not None
       model = small_model
