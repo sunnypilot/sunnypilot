@@ -1,8 +1,5 @@
 name: Test Models Compatibility With Tinygrad Changes
 on:
-  push:
-    paths:
-      - 'tinygrad_repo'
   pull_request:
     paths:
       - 'tinygrad_repo'
