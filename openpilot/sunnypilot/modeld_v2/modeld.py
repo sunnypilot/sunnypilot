@@ -47,6 +47,7 @@ from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.chestnut_power_limit import apply_power_limit, get_power_limit
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
                                                            make_supercombo_input_queues, nv12_copy_size,
                                                            WARP_INPUTS, POLICY_INPUTS)
@@ -364,6 +365,9 @@ def main(demo=False):
     def load_big():
       nonlocal big_model
       try:
+        # cap package power before the model transfer: on accessory-outlet installs the
+        # stock boost transients brown out the supply during the load as well as inference
+        apply_power_limit(get_power_limit(params))
         m = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=True)
         m.warmup()
         big_model = m
