@@ -11,7 +11,7 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID, API_HOST
-from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.system.ui.lib.application import FontWeight, font_fallback, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -66,7 +66,7 @@ class SunnylinkPairingDialog(PairingDialog):
 
     # Title
     title = tr("Pair your GitHub account") if self._sponsor_pairing else tr("Early Access: Become a sunnypilot Sponsor")
-    title_font = gui_app.font(FontWeight.NORMAL)
+    title_font = font_fallback(gui_app.font(FontWeight.NORMAL))
     left_width = int(content_rect.width * 0.5 - 15)
 
     title_wrapped = wrap_text(title_font, title, 75, left_width)
@@ -103,7 +103,7 @@ class SunnylinkPairingDialog(PairingDialog):
         tr("Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues")
       ]
 
-    font = gui_app.font(FontWeight.BOLD)
+    font = font_fallback(gui_app.font(FontWeight.BOLD))
     y = rect.y
 
     for i, text in enumerate(instructions):

@@ -16,6 +16,14 @@ msgstr " 스티어링 토크 응답 보정이 {}% 완료되었습니다."
 msgid " Your device is pointed {:.1f}° {} and {:.1f}° {}."
 msgstr " 장치는 {:.1f}° {} 및 {:.1f}° {} 방향을 가리키고 있습니다."
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "(Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"
+msgstr "(최상위 후원 등급 전용이며, 현재 사용자에게 제공되는 혜택은 없습니다. 데이터 양만 테스트하고 있습니다.)"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid ", but we'll be here when you're ready to come back."
+msgstr ". 다시 이용하실 준비가 되면 언제든 돌아오세요."
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "--"
 msgstr "--"
@@ -52,7 +60,7 @@ msgstr "<br><br>스티어링 지연 보정이 {}% 완료되었습니다."
 msgid "ADD"
 msgstr "추가"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "APN Setting"
 msgstr "APN 설정"
 
@@ -60,7 +68,7 @@ msgstr "APN 설정"
 msgid "Acknowledge Excessive Actuation"
 msgstr "과도한 작동을 확인"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Advanced"
 msgstr "고급"
 
@@ -76,6 +84,10 @@ msgstr "동의"
 msgid "Always-On Driver Monitoring"
 msgstr "운전자 모니터링 항상 켜짐"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Are you sure you want to backup your current sunnypilot settings?"
+msgstr "현재 sunnypilot 설정을 백업하시겠습니까?"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Are you sure you want to power off?"
 msgstr "정말 전원을 끄시겠습니까?"
@@ -88,18 +100,43 @@ msgstr "정말 재시작하시겠습니까?"
 msgid "Are you sure you want to reset calibration?"
 msgstr "정말 보정을 재설정하시겠습니까?"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Are you sure you want to restore the last backed up sunnypilot settings?"
+msgstr "마지막으로 백업한 sunnypilot 설정을 복원하시겠습니까?"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Are you sure you want to uninstall?"
 msgstr "정말 제거하시겠습니까?"
 
 #: openpilot/selfdrive/ui/layouts/onboarding.py
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Back"
 msgstr "뒤로"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backing up {progress}%"
+msgstr "백업 중 {progress}%"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup"
+msgstr "백업"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup Failed"
+msgstr "백업 실패"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup Settings"
+msgstr "설정 백업"
 
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "Become a comma prime member at connect.comma.ai"
 msgstr "connect.comma.ai에서 comma prime 회원이 되세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."
+msgstr "sunnypilot을 후원하면 새로운 sunnylink 기능이 제공될 때 먼저 이용할 수 있습니다."
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Bookmark connect.comma.ai to your home screen to use it like an app"
@@ -118,22 +155,22 @@ msgid "CHILL MODE ON"
 msgstr "안정적 모드 켜짐"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECT"
 msgstr "연결"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECTING..."
 msgstr "연결 중..."
 
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/keyboard.py
-#: system/ui/widgets/network.py
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/keyboard.py
+#: openpilot/system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Cancel"
 msgstr "취소"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Cellular Metered"
 msgstr "종량제 셀룰러"
 
@@ -145,13 +182,17 @@ msgstr "언어 변경"
 msgid "Changing this setting will restart sunnypilot if the car is powered on."
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Choose your sponsorship tier and confirm your support"
-msgstr ""
+msgstr "후원 등급을 선택하고 후원을 확인하세요"
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
 msgstr "\"add new device\"를 눌러 오른쪽의 QR 코드를 스캔하세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Click the Sponsor button for more details"
+msgstr "자세한 내용은 후원하기 버튼을 누르세요"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"
@@ -181,6 +222,10 @@ msgstr "개발자"
 msgid "Device"
 msgstr "장치"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "Disable"
+msgstr "비활성화"
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Disengage on Accelerator Pedal"
 msgstr "가속 페달로 해제"
@@ -202,8 +247,9 @@ msgid "Display speed in km/h instead of mph."
 msgstr "속도를 mph 대신 km/h로 표시합니다."
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
 msgid "Dongle ID"
-msgstr "동글 ID"
+msgstr "기기 ID"
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Download"
@@ -217,7 +263,7 @@ msgstr "운전자 카메라"
 msgid "Driving Personality"
 msgstr "주행 성향"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "EDIT"
 msgstr "편집"
 
@@ -233,14 +279,15 @@ msgstr "ETH"
 msgid "EXPERIMENTAL MODE ON"
 msgstr "실험 모드 켜짐"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Early Access: Become a sunnypilot Sponsor"
-msgstr ""
+msgstr "미리 이용하기: sunnypilot 후원하기"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
 msgid "Enable"
-msgstr "사용"
+msgstr "활성화"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Enable ADB"
@@ -250,7 +297,7 @@ msgstr "ADB 사용"
 msgid "Enable Lane Departure Warnings"
 msgstr "차선 이탈 경고 사용"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Roaming"
 msgstr "로밍 사용"
 
@@ -258,13 +305,25 @@ msgstr "로밍 사용"
 msgid "Enable SSH"
 msgstr "SSH 사용"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Tethering"
 msgstr "테더링 사용"
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Enable driver monitoring even when sunnypilot is not engaged."
 msgstr ""
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink"
+msgstr "sunnylink 활성화"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink uploader (infrastructure test)"
+msgstr "sunnylink 업로더 활성화 (인프라 테스트)"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. "
+msgstr "sunnylink 업로더를 활성화하면 sunnypilot이 주행 데이터를 sunnypilot 서버에 업로드할 수 있습니다. "
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Enable sunnypilot"
@@ -274,23 +333,23 @@ msgstr ""
 msgid "Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter APN"
 msgstr "APN 입력"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter SSID"
 msgstr "SSID 입력"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter new tethering password"
 msgstr "새 테더링 비밀번호 입력"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter password"
 msgstr "비밀번호 입력"
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Enter search query"
 msgstr ""
 
@@ -298,7 +357,7 @@ msgstr ""
 msgid "Enter your GitHub username"
 msgstr "GitHub 사용자 이름 입력"
 
-#: system/ui/widgets/list_view.py
+#: openpilot/system/ui/widgets/list_view.py
 msgid "Error"
 msgstr "오류"
 
@@ -310,7 +369,7 @@ msgstr "실험 모드"
 msgid "Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control."
 msgstr "이 차량은 롱컨 제어에 순정 ACC를 사용하므로 현재 실험 모드를 사용할 수 없습니다."
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "FORGETTING..."
 msgstr "삭제 중..."
 
@@ -323,18 +382,23 @@ msgid "Firehose"
 msgstr "파이어호스"
 
 #: openpilot/selfdrive/ui/layouts/settings/firehose.py
+#: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Firehose Mode"
 msgstr "파이어호스 모드"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Follow the prompts to complete the pairing process"
-msgstr ""
+msgstr "안내에 따라 연결을 완료하세요"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "For secure backup, restore, and remote configuration"
+msgstr "안전한 백업, 복원 및 원격 설정"
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget"
 msgstr "삭제"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget Wi-Fi Network \"{}\"?"
 msgstr "Wi‑Fi 네트워크 \"{}\"를 삭제하시겠습니까?"
 
@@ -350,7 +414,7 @@ msgstr "휴대폰에서 https://connect.comma.ai 에 접속하세요"
 msgid "HIGH"
 msgstr "높음"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Hidden Network"
 msgstr "숨겨진 네트워크"
 
@@ -358,21 +422,25 @@ msgstr "숨겨진 네트워크"
 msgid "INSTALL"
 msgstr "설치"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "IP Address"
 msgstr "IP 주소"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai"
-msgstr ""
+msgstr "후원 상태가 업데이트되지 않으면 https://community.sunnypilot.ai 커뮤니티 포럼의 운영진에게 문의하세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "If sunnylink is disabled, features such as settings management, remote monitoring, real-time dashboards will be unavailable."
+msgstr "비활성화하면 설정 관리, 원격 모니터링, 실시간 대시보드 등의 기능을 사용할 수 없습니다."
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Install Update"
 msgstr "업데이트 설치"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues"
-msgstr ""
+msgstr "문제가 있으면 https://community.sunnypilot.ai 커뮤니티 포럼에 참여하여 운영진에게 문의하세요"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Joystick Debug Mode"
@@ -403,6 +471,8 @@ msgid "Maximize your training data uploads to improve openpilot's driving models
 msgstr "학습 데이터 업로드를 최대화하여 openpilot의 주행 모델을 개선하세요."
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
 msgid "N/A"
 msgstr "해당 없음"
 
@@ -422,13 +492,25 @@ msgstr "사용자 '{}'의 SSH 키를 찾을 수 없습니다"
 msgid "No release notes available."
 msgstr "릴리스 노트가 없습니다."
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not Paired"
+msgstr "연결 안 됨"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not Sponsor"
+msgstr "후원자 아님"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not going to lie, it's sad to see you disabled sunnylink"
+msgstr "sunnylink를 비활성화하셨다니 아쉽습니다"
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "OFFLINE"
 msgstr "오프라인"
 
-#: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/html_render.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/html_render.py
 msgid "OK"
 msgstr "확인"
 
@@ -460,13 +542,21 @@ msgstr "프라임 기능:"
 msgid "Pair Device"
 msgstr "장치 페어링"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Pair GitHub Account"
+msgstr "GitHub 계정 연결"
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Pair device"
 msgstr "장치 페어링"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Pair your GitHub account"
-msgstr ""
+msgstr "GitHub 계정 연결"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink."
+msgstr "GitHub 계정을 연결하면 sunnylink API 접근 권한을 포함한 후원자 혜택을 기기에서 이용할 수 있습니다."
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Pair your device to your comma account"
@@ -477,19 +567,27 @@ msgstr "장치를 귀하의 comma 계정에 페어링하세요"
 msgid "Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."
 msgstr "장치를 comma connect(connect.comma.ai)와 페어링하고 comma 프라임 혜택을 받으세요."
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Paired"
+msgstr "연결됨"
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Please connect to Wi-Fi to complete initial pairing"
 msgstr "초기 페어링을 완료하려면 Wi‑Fi에 연결하세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Please reboot and try again."
+msgstr "재부팅 후 다시 시도하세요."
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Power Off"
 msgstr "전원 끄기"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered Wi-Fi connection"
 msgstr "종량제 Wi‑Fi 연결 시 대용량 업로드 방지"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered cellular connection"
 msgstr "종량제 셀룰러 연결 시 대용량 업로드 방지"
 
@@ -513,9 +611,9 @@ msgstr "재설정"
 msgid "REVIEW"
 msgstr "검토"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Re-enter the \"sunnylink\" panel to verify sponsorship status"
-msgstr ""
+msgstr "\"sunnylink\" 화면을 다시 열어 후원 상태를 확인하세요"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Reboot"
@@ -569,6 +667,22 @@ msgstr "재설정"
 msgid "Reset Calibration"
 msgstr "캘리브레이션 재설정"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore"
+msgstr "복원"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore Failed"
+msgstr "복원 실패"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore Settings"
+msgstr "설정 복원"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restoring {progress}%"
+msgstr "복원 중 {progress}%"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Review Training Guide"
 msgstr "학습 가이드 검토"
@@ -581,27 +695,31 @@ msgstr ""
 msgid "SELECT"
 msgstr "선택"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "SPONSOR"
+msgstr "후원하기"
+
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "SSH Keys"
 msgstr "SSH 키"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to login to your GitHub account"
-msgstr ""
+msgstr "QR 코드를 스캔하여 GitHub 계정에 로그인하세요"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"
-msgstr ""
+msgstr "QR 코드를 스캔하여 sunnyhaibin의 GitHub Sponsors 페이지를 여세요"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Scanning Wi-Fi networks..."
 msgstr "Wi‑Fi 네트워크 검색 중..."
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Search"
 msgstr ""
 
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Select"
 msgstr "선택"
 
@@ -617,6 +735,14 @@ msgstr "언어 선택"
 msgid "Serial"
 msgstr "시리얼"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Settings backup completed."
+msgstr "설정 백업이 완료되었습니다."
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Settings restored. Confirm to restart the interface."
+msgstr "설정이 복원되었습니다. 확인하면 인터페이스를 다시 시작합니다."
+
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Snooze Update"
 msgstr "업데이트 나중에 알림"
@@ -624,6 +750,14 @@ msgstr "업데이트 나중에 알림"
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Software"
 msgstr "소프트웨어"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Sponsor Status"
+msgstr "후원 상태"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Sponsorship isn't required for basic backup/restore"
+msgstr "기본 백업 및 복원 기능은 후원 없이 사용할 수 있습니다"
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Standard"
@@ -641,13 +775,25 @@ msgstr "즉시 수동 조작하세요"
 msgid "TEMP"
 msgstr "온도"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "THANKS ♥"
+msgstr "감사합니다 ♥"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Target Branch"
 msgstr "대상 브랜치"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Tethering Password"
 msgstr "테더링 비밀번호"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that."
+msgstr "이 기본 스위치를 끄면 필요할 때 모든 sunnylink 요청을 중단할 수 있습니다."
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "This may be due to weak internet connection or sunnylink registration issue. "
+msgstr "인터넷 연결이 불안정하거나 sunnylink 등록에 문제가 있을 수 있습니다. "
 
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Toggles"
@@ -664,6 +810,10 @@ msgstr "제거"
 #: openpilot/selfdrive/ui/layouts/home.py
 msgid "UPDATE"
 msgstr "업데이트"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Unable to restore the settings, try again later."
+msgstr "설정을 복원할 수 없습니다. 나중에 다시 시도하세요."
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Uninstall"
@@ -701,6 +851,10 @@ msgstr "보기"
 msgid "Waiting to start"
 msgstr "시작 대기 중"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Welcome back!! We're excited to see you've enabled sunnylink again!"
+msgstr "다시 오신 것을 환영합니다! sunnylink를 다시 활성화해 주셔서 감사합니다!"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Welcome to sunnypilot"
 msgstr ""
@@ -713,11 +867,11 @@ msgstr ""
 msgid "Wi-Fi"
 msgstr "Wi‑Fi"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wi-Fi Network Metered"
 msgstr "Wi‑Fi 네트워크 종량제"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wrong password"
 msgstr "비밀번호가 올바르지 않습니다"
 
@@ -729,7 +883,23 @@ msgstr ""
 msgid "You must accept the Terms of Service to use sunnypilot. Read the latest terms at https://sunnypilot.ai/terms before continuing."
 msgstr ""
 
-#: openpilot/selfdrive/ui/onroad/driver_camera_dialog.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backing up"
+msgstr "백업 중"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backup"
+msgstr "백업"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backup settings"
+msgstr "설정 백업"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/widgets/sunnylink_pairing_dialog.py
+msgid "become a sunnypilot sponsor"
+msgstr "sunnypilot 후원하기"
+
+#: openpilot/selfdrive/ui/onroad/cabin_camera_dialog.py
 msgid "camera starting"
 msgstr "카메라 시작 중"
 
@@ -741,9 +911,21 @@ msgstr "확인 중..."
 msgid "comma prime"
 msgstr "comma 프라임"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "default"
 msgstr "기본값"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "device id"
+msgstr "기기 ID"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid ""
+"disable\n"
+"sunnylink"
+msgstr ""
+"sunnylink\n"
+"비활성화"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "down"
@@ -753,6 +935,22 @@ msgstr "아래"
 msgid "downloading..."
 msgstr "다운로드 중..."
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid ""
+"enable\n"
+"sunnylink"
+msgstr ""
+"sunnylink\n"
+"활성화"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "enable sunnylink"
+msgstr "sunnylink 활성화"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "failed"
+msgstr "실패"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "failed to check for update"
 msgstr "업데이트 확인 실패"
@@ -761,7 +959,7 @@ msgstr "업데이트 확인 실패"
 msgid "finalizing update..."
 msgstr "업데이트 마무리 중..."
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "for \"{}\""
 msgstr "\"{}\"용"
 
@@ -769,7 +967,7 @@ msgstr "\"{}\"용"
 msgid "km/h"
 msgstr "km/h"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "leave blank for automatic configuration"
 msgstr "자동 구성을 사용하려면 비워 두세요"
 
@@ -777,7 +975,7 @@ msgstr "자동 구성을 사용하려면 비워 두세요"
 msgid "left"
 msgstr "왼쪽"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "metered"
 msgstr "종량제"
 
@@ -789,13 +987,105 @@ msgstr "mph"
 msgid "never"
 msgstr "없음"
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "no internet"
+msgstr "인터넷 연결 없음"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "now"
 msgstr "지금"
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "pair"
+msgstr "연결"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/widgets/sunnylink_pairing_dialog.py
+msgid "pair with sunnylink"
+msgstr "sunnylink 연결"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "paired"
+msgstr "연결됨"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "please connect to WiFi & try again"
+msgstr "Wi-Fi 연결 후 다시 시도하세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "please reboot & try again"
+msgstr "재부팅 후 다시 시도하세요"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restore"
+msgstr "복원"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restore settings"
+msgstr "설정 복원"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restoring"
+msgstr "복원 중"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "right"
 msgstr "오른쪽"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid "scroll to continue"
+msgstr "스크롤하여 계속"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "settings backed up"
+msgstr "설정 백업 완료"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to backup"
+msgstr "밀어서 백업"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to restart"
+msgstr "밀어서 다시 시작"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to restore"
+msgstr "밀어서 복원"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sponsor"
+msgstr "후원하기"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sponsor tier"
+msgstr "후원 등급"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink"
+msgstr "sunnylink"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "sunnylink Dongle ID not found. "
+msgstr "sunnylink 기기 ID를 찾을 수 없습니다. "
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sunnylink dongle id not found"
+msgstr "sunnylink 기기 ID를 찾을 수 없습니다"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink enables secured remote access to your comma device from anywhere, including settings management, remote monitoring, real-time dashboard, etc."
+msgstr "sunnylink를 사용하면 어디서든 comma 기기에 안전하게 원격 접속하여 설정 관리, 원격 모니터링, 실시간 대시보드 등을 이용할 수 있습니다."
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid "sunnylink enables secured remote access to your comma device from anywhere."
+msgstr "sunnylink를 사용하면 어디서든 comma 기기에 안전하게 원격 접속할 수 있습니다."
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink is designed to be enabled as part of sunnypilot's core functionality."
+msgstr "sunnylink는 sunnypilot의 핵심 기능으로 활성화하여 사용하도록 설계되었습니다."
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sunnylink uploader"
+msgstr "sunnylink 업로더"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "sunnypilot Longitudinal Control (Alpha)"
@@ -813,7 +1103,19 @@ msgstr ""
 msgid "sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "thanks"
+msgstr "감사합니다"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "try again later."
+msgstr "나중에 다시 시도하세요."
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "unable to restore"
+msgstr "복원할 수 없음"
+
+#: openpilot/system/ui/widgets/network.py
 msgid "unmetered"
 msgstr "비종량제"
 
@@ -832,6 +1134,10 @@ msgstr "최신입니다. 마지막 확인: {}"
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "update available"
 msgstr "업데이트 가능"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "{progress}%"
+msgstr "{progress}%"
 
 #: openpilot/selfdrive/ui/layouts/home.py
 msgid "{} ALERT"
@@ -853,16 +1159,7 @@ msgid "{} minute ago"
 msgid_plural "{} minutes ago"
 msgstr[0] "{}분 전"
 
-#: openpilot/selfdrive/ui/layouts/settings/firehose.py
-msgid "{} segment of your driving is in the training dataset so far."
-msgid_plural "{} segments of your driving is in the training dataset so far."
-msgstr[0] "현재까지 귀하의 주행 {}구간이 학습 데이터셋에 포함되었습니다."
-
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "✓ SUBSCRIBED"
 msgstr "✓ 구독됨"
-
-#: openpilot/selfdrive/ui/widgets/setup.py
-msgid "🔥 Firehose Mode 🔥"
-msgstr "🔥 파이어호스 모드 🔥"
 
