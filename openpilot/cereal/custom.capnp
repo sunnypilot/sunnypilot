@@ -354,6 +354,8 @@ struct OnroadEventSP @0xda96579883444c35 {
     e2eChime @23;
     laneChangeRoadEdge @24;
     bigModelReady @25;
+    bigModelAvailable @26;
+    bigModelLinkLost @27;
   }
 }
 
@@ -462,6 +464,24 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
   leftLaneChangeEdgeBlock @1 :Bool;
   rightLaneChangeEdgeBlock @2 :Bool;
+
+  # A late-loading big model is connected and waiting for disengagement.
+  # This is availability, not proof of inference; modelV2.big reports execution.
+  # Startup-only runners and older logs leave this false.
+  bigModelAvailable @3 :Bool;
+
+  # Runtime state of an off-board accelerator (sunnypilot/accelerators). Offroad
+  # progress stays in the AcceleratorProgress param; telemetry waits for a customReserved slot.
+  acceleratorState @4 :AcceleratorState;
+  acceleratorName @5 :Text;
+
+  enum AcceleratorState {
+    none @0;
+    joining @1;
+    running @2;
+    retrying @3;
+    unavailable @4;
+  }
 
   enum TurnDirection {
     none @0;

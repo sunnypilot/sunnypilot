@@ -33,6 +33,7 @@ from openpilot.sunnypilot.selfdrive.car.cruise_helpers import CruiseHelper
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.controller import IntelligentCruiseButtonManagement
 from openpilot.sunnypilot.selfdrive.selfdrived.button_state_tracker import ButtonStateTracker
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
+from openpilot.sunnypilot.selfdrive.selfdrived.accelerator_events import AcceleratorEvents
 
 REPLAY = "REPLAY" in os.environ
 SIMULATION = "SIMULATION" in os.environ
@@ -85,7 +86,9 @@ class SelfdriveD(CruiseHelper):
     self.big_model_loading = False
     self.big_model_active = False
     self.big_model_failed = False
+    self.big_model_running = False
     self.big_model_ready_t = 0.
+    self.accelerator_events = AcceleratorEvents()
 
     # Setup sockets
     self.pm = messaging.PubMaster(['selfdriveState', 'onroadEvents'] + ['selfdriveStateSP', 'onroadEventsSP'])
@@ -198,10 +201,15 @@ class SelfdriveD(CruiseHelper):
     loading = self.params.get_bool("ChestnutLoading")
     if self.big_model_loading and not loading:
       self.big_model_ready_t = time.monotonic()
-      self.events_sp.add(custom.OnroadEventSP.EventName.bigModelReady)
     self.big_model_loading = loading
     if self.big_model_loading:
       self.events.add(EventName.bigModelLoading)
+
+    # ChestnutLoading also clears after a failed load, so only modelV2.big means the big model is up
+    running_big = self.sm.alive['modelV2'] and self.sm.valid['modelV2'] and self.sm['modelV2'].big
+    if running_big and not self.big_model_running:
+      self.events_sp.add(custom.OnroadEventSP.EventName.bigModelReady)
+    self.big_model_running = running_big
 
     big_active = self.params.get("ChestnutActive")
     chestnut_present = self.sm['deviceState'].chestnutPresent
@@ -216,6 +224,7 @@ class SelfdriveD(CruiseHelper):
       self.big_model_active = True
     if not self.enabled and not model_unavailable:
       self.big_model_active = False
+    self.accelerator_events.update(self.sm, self.enabled, self.events, self.events_sp)
 
     if self.sm.recv_frame['lateralManeuverPlan'] > 0:
       self.events.add(EventName.lateralManeuver)
@@ -453,11 +462,13 @@ class SelfdriveD(CruiseHelper):
       self.logged_comm_issue = None
 
     if not self.CP.notCar and not big_model_settling:  # localization has nothing to work with during the load
-      if not self.sm['deviceMotion'].posenetOK:
+      # a message never received is capnp defaults, not a localizer verdict
+      if self.sm.seen['deviceMotion'] and not self.sm['deviceMotion'].posenetOK:
         self.events.add(EventName.posenetInvalid)
-      if not self.sm['deviceMotion'].inputsOK:
+      if self.sm.seen['deviceMotion'] and not self.sm['deviceMotion'].inputsOK:
         self.events.add(EventName.locationdTemporaryError)
-      if (not self.sm['vehicleParameters'].valid and cal_status == log.ExtrinsicsCalibration.Status.calibrated and
+      if (self.sm.seen['vehicleParameters'] and not self.sm['vehicleParameters'].valid and
+          cal_status == log.ExtrinsicsCalibration.Status.calibrated and
           not TESTING_CLOSET and (not SIMULATION or REPLAY)):
         self.events.add(EventName.paramsdTemporaryError)
 

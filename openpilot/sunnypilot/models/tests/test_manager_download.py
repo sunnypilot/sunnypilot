@@ -24,7 +24,7 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.file_chunker import get_chunk_name, get_manifest_path
 from openpilot.selfdrive.test.helpers import http_server_context
 from openpilot.sunnypilot.models import manager as manager_module
-from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
+from openpilot.sunnypilot.models.fetcher import ModelFetcher, ModelParser, get_cached_bundles
 from openpilot.sunnypilot.models import helpers
 from openpilot.sunnypilot.models.helpers import (get_active_bundle, get_active_source, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles)
@@ -693,6 +693,12 @@ class TestActiveBundleSelection(OpenpilotTestCase):
   present, qcom otherwise. An empty active slot means the hardware default (stock
   runner), never the other slot's pick - modeld_v2 requires a real bundle."""
 
+  def setUp(self):
+    super().setUp()
+    patcher = mock.patch('openpilot.sunnypilot.accelerators.uses_stock_runner', return_value=False)
+    patcher.start()
+    self.addCleanup(patcher.stop)
+
   @staticmethod
   def _raw_bundle(ref: str) -> dict:
     bundle = custom.ModelManagerSP.ModelBundle.new_message()
@@ -718,6 +724,18 @@ class TestActiveBundleSelection(OpenpilotTestCase):
     assert get_selected_bundle(params, "qcom").ref == "small"
     assert get_selected_bundle(params, "chestnut").ref == "big"
 
+  def test_jetlink_override_preserves_both_bundle_slots(self):
+    params = self._params(qcom=self._raw_bundle('small'), chestnut=self._raw_bundle('big'))
+    with mock.patch('openpilot.sunnypilot.accelerators.uses_stock_runner', return_value=True):
+      assert get_active_bundle(params) is None
+      assert helpers.get_active_model_runner(params, force_check=True) == custom.ModelManagerSP.Runner.stock
+      assert get_selected_bundle(params, 'qcom').ref == 'small'
+      assert get_selected_bundle(params, 'chestnut').ref == 'big'
+    params.remove.assert_not_called()
+    with mock.patch('openpilot.sunnypilot.accelerators.uses_stock_runner', return_value=False), \
+         mock.patch('openpilot.sunnypilot.models.helpers.chestnut_present', return_value=False):
+      assert get_active_bundle(params).ref == 'small'
+
   def test_no_gpu_uses_qcom_slot(self):
     params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
     with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
@@ -739,6 +757,12 @@ class TestEffectiveSource(OpenpilotTestCase):
   attached); display callers (mici) pass the ui_state flags, which additionally
   require the big model to be loading, active, or the device offroad. The active
   bundle is simply the selected bundle of that source."""
+
+  def setUp(self):
+    super().setUp()
+    patcher = mock.patch('openpilot.sunnypilot.accelerators.uses_stock_runner', return_value=False)
+    patcher.start()
+    self.addCleanup(patcher.stop)
 
   @staticmethod
   def _raw_bundle(ref: str) -> dict:
@@ -807,6 +831,112 @@ class TestLiveModelManifest(OpenpilotTestCase):
             dead.append(f"{bundle.get('short_name')}: {type(e).__name__} {u}")
 
     assert not dead, "unreachable model URLs:\n" + "\n".join(dead)
+
+
+class TestEffectiveSmallBundle(OpenpilotTestCase):
+  """Under the jetlink override manager runs stock modeld, which loads the default
+  small model and never reads the stored qcom bundle, so the UI must not name it."""
+
+  @staticmethod
+  def _params(qcom: dict | None) -> mock.MagicMock:
+    params = mock.MagicMock()
+    params.get.side_effect = lambda key: {"ModelManager_ActiveBundle": qcom}.get(key)
+    return params
+
+  @staticmethod
+  def _raw_bundle(ref: str) -> dict:
+    bundle = custom.ModelManagerSP.ModelBundle.new_message()
+    bundle.ref = ref
+    bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
+    bundle.internalName = ref
+    bundle.displayName = ref
+    bundle.runner = custom.ModelManagerSP.Runner.tinygrad
+    return bundle.to_dict()
+
+  def test_override_hides_the_stored_bundle(self):
+    params = self._params(self._raw_bundle("custom_small"))
+    with mock.patch("openpilot.sunnypilot.accelerators.uses_stock_runner", return_value=True):
+      assert helpers.effective_small_bundle(params) is None
+
+  def test_without_override_reports_the_stored_bundle(self):
+    params = self._params(self._raw_bundle("custom_small"))
+    with mock.patch("openpilot.sunnypilot.accelerators.uses_stock_runner", return_value=False):
+      assert helpers.effective_small_bundle(params).ref == "custom_small"
+
+  def test_override_is_exactly_the_toggle(self):
+    # JetlinkEnabled true, nothing about the model (it defaults), link state or readiness
+    from openpilot.sunnypilot.accelerators.jetlink import helpers as jetlink_helpers
+    params = self._params(self._raw_bundle("custom_small"))
+
+    def stub(values):
+      return mock.patch.object(jetlink_helpers, "_get", side_effect=lambda key, default=None: values.get(key, default))
+
+    with stub({"JetlinkEnabled": True, "JetlinkModel": "m"}):
+      assert helpers.effective_small_bundle(params) is None
+    with stub({"JetlinkEnabled": True}):
+      assert helpers.effective_small_bundle(params) is None
+    with stub({"JetlinkModel": "m"}):
+      assert helpers.effective_small_bundle(params).ref == "custom_small"
+
+
+class TestChunkManifestRepair(OpenpilotTestCase):
+  """qcom and chestnut list the same file with different chunk counts; the manifest must
+  describe the chunks on disk, not whichever was parsed last"""
+
+  CHUNKED_NAME = "shared_model.pkl"
+
+  def setUp(self):
+    super().setUp()
+    self.model_root = tempfile.mkdtemp()
+    patcher = mock.patch('openpilot.sunnypilot.models.fetcher.Paths')
+    self.addCleanup(patcher.stop)
+    patcher.start().model_root.return_value = self.model_root
+
+  def artifact_data(self, num_chunks: int, file_name: str | None = None) -> dict:
+    name = file_name or self.CHUNKED_NAME
+    return {
+      "file_name": name,
+      "download_uri": {"url": f"https://example.com/{name}", "sha256": "s"},
+      "chunks": [{"file_name": get_chunk_name(name, i, num_chunks), "sha256": "s"}
+                 for i in range(num_chunks)],
+    }
+
+  def manifest_text(self) -> str | None:
+    path = get_manifest_path(os.path.join(self.model_root, self.CHUNKED_NAME))
+    if not os.path.isfile(path):
+      return None
+    with open(path) as f:
+      return f.read().strip()
+
+  def place_chunks(self, num_chunks: int) -> None:
+    base = os.path.join(self.model_root, self.CHUNKED_NAME)
+    for i in range(num_chunks):
+      with open(get_chunk_name(base, i, num_chunks), 'wb') as f:
+        f.write(b'x')
+
+  def test_no_manifest_for_an_undownloaded_artifact(self):
+    ModelParser._parse_artifact(self.artifact_data(4))
+    assert self.manifest_text() is None, "wrote a manifest for chunks that are not on disk"
+
+  def test_manifest_repaired_for_a_downloaded_artifact(self):
+    self.place_chunks(4)
+    ModelParser._parse_artifact(self.artifact_data(4))
+    assert self.manifest_text() == "4"
+
+  def test_two_sources_disagreeing_do_not_thrash(self):
+    # qcom says 4 chunks, chestnut says 5, and only qcom's were downloaded
+    self.place_chunks(4)
+    for _ in range(3):
+      ModelParser._parse_artifact(self.artifact_data(4))
+      ModelParser._parse_artifact(self.artifact_data(5))
+      assert self.manifest_text() == "4", "the other source overwrote the manifest"
+
+  def test_unchunked_artifact_writes_nothing(self):
+    ModelParser._parse_artifact({
+      "file_name": self.CHUNKED_NAME,
+      "download_uri": {"url": "https://example.com/x", "sha256": "s"},
+    })
+    assert self.manifest_text() is None
 
 
 if __name__ == '__main__':

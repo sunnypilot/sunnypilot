@@ -10,14 +10,18 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
+from openpilot.sunnypilot import accelerators
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
+from openpilot.selfdrive.ui.sunnypilot.accelerator_link import (link_enabled, link_toggle_meaningful,
+                                                                selected_accelerator_model, set_link_enabled)
 from openpilot.selfdrive.ui.sunnypilot.model_info import big_model_state, bundles_for_source, carrying_model, default_model_name, queued_name
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
+from openpilot.system.ui.widgets.option_dialog import MultiOptionDialog
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 from openpilot.system.ui.widgets.toggle import ON_COLOR
 
@@ -37,6 +41,7 @@ class ModelsLayout(Widget):
     super().__init__()
     self.model_manager = None
     self.model_dialog = None
+    self.accelerator_dialog = None
     self._selection_source = None
     self._downloading = False
     self._verifying = False
@@ -64,6 +69,20 @@ class ModelsLayout(Widget):
       action_item=ScrollingButtonAction(tr("SELECT")),
       callback=lambda: self._open_source_dialog("chestnut")
     )
+
+    self.accelerator_model_item = ListItemSP(
+      title=tr("Accelerator Model"),
+      description=tr("The big model an attached accelerator runs, from its own registry. The model manager's slots do not apply to it."),
+      action_item=ScrollingButtonAction(tr("SELECT")),
+      callback=self._open_accelerator_dialog
+    )
+
+    # not a param-bound toggle: the write also drops manager's runner cache and
+    # is refused onroad, so it goes through accelerator_link by hand
+    self.accelerator_link_item = toggle_item_sp(
+      tr("Accelerator Link"),
+      tr("Run the big driving model on an attached accelerator."),
+      initial_state=link_enabled(), callback=self._set_link_state)
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
@@ -106,8 +125,43 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.small_model_item, self.big_model_item, self.accelerator_model_item, self.accelerator_link_item, self.cancel_download_item,
+                  self.download_item, self.refresh_item, self.clear_cache_item,
                   self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
+    self._refresh_accelerator_items()
+
+  def _set_link_state(self, enabled: bool):
+    if not ui_state.is_offroad():
+      self.accelerator_link_item.action_item.set_state(link_enabled())
+      return
+    set_link_enabled(enabled)
+
+  def _refresh_accelerator_items(self):
+    # present() and unavailable_reason() read sysfs, so this rides the half-second tick
+    choices = accelerators.model_choices()
+    self.accelerator_model_item.set_visible(bool(choices))
+    if choices:
+      name = next((m['name'] for m in choices if m['selected']), tr("None"))
+      self.accelerator_model_item.action_item.set_value(name, style.ITEM_TEXT_VALUE_COLOR)
+    self.accelerator_link_item.set_visible(link_toggle_meaningful())
+    self.accelerator_link_item.action_item.set_state(link_enabled())
+
+  def _open_accelerator_dialog(self):
+    choices = accelerators.model_choices()
+    if not choices:
+      return
+    self.accelerator_dialog = MultiOptionDialog(tr("Select an Accelerator Model"), [m['name'] for m in choices],
+                                                selected_accelerator_model(), callback=self._on_accelerator_selected)
+    gui_app.push_widget(self.accelerator_dialog)
+
+  def _on_accelerator_selected(self, result):
+    dialog, self.accelerator_dialog = self.accelerator_dialog, None
+    if result != DialogResult.CONFIRM or dialog is None or not dialog.selection:
+      return
+    # a selection that crosses ignition must not change the model mid-drive
+    if not ui_state.is_offroad():
+      return
+    accelerators.select_model(dialog.selection)
 
   def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
@@ -150,6 +204,7 @@ class ModelsLayout(Widget):
     if (current_time := time.monotonic()) - self.last_cache_calc_time > 0.5:
       self.last_cache_calc_time = current_time
       self.clear_cache_item.action_item.set_value(f"{self.calculate_cache_size():.2f} MB")
+      self._refresh_accelerator_items()
 
     bundle = self.model_manager.selectedBundle if self.model_manager else None
     progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName] if bundle else []
@@ -208,13 +263,19 @@ class ModelsLayout(Widget):
     """The failover story for the Model Status row. One-way big -> small, and the
     fallback is runner-matched: a Default big can only fall back to the Default
     small (stock modeld), a custom big has no automatic fallback yet."""
-    if not ui_state.chestnut_present:
+    accelerator = ui_state.accelerator_view is not None
+    if not (ui_state.chestnut_present or accelerator):
       return ""
-    big_bundle = get_selected_bundle(ui_state.params, "chestnut")
-    big_name = big_bundle.internalName if big_bundle else default_model_name("chestnut")
-    big_is_default = big_bundle is None
     fallback_name = default_model_name("qcom")
     state = big_model_state()
+    if accelerator:
+      # the accelerator's model comes from its own registry, so it reads like a Default big
+      big_name = selected_accelerator_model() or tr("The big model")
+      big_is_default = True
+    else:
+      big_bundle = get_selected_bundle(ui_state.params, "chestnut")
+      big_name = big_bundle.internalName if big_bundle else default_model_name("chestnut")
+      big_is_default = big_bundle is None
     if state == 'failed':
       if big_is_default:
         return tr("Big model unavailable, {} is driving until the next drive.").format(fallback_name)
@@ -223,6 +284,8 @@ class ModelsLayout(Widget):
       if big_is_default:
         return tr("{} drives until the big model is ready.").format(fallback_name)
       return tr("Getting the big model ready.")
+    if accelerator and not ui_state.accelerator_view.ready:
+      return tr("{} will drive when the accelerator is ready.").format(big_name)
     if big_is_default:
       return tr("{} will drive. If it fails during a drive, {} takes over until the next drive.").format(big_name, fallback_name)
     return tr("{} will drive when the chestnut is ready.").format(big_name)
@@ -343,6 +406,8 @@ class ModelsLayout(Widget):
     offroad = ui_state.is_offroad()
     self.small_model_item.action_item.set_enabled(offroad)
     self.big_model_item.action_item.set_enabled(offroad)
+    self.accelerator_model_item.action_item.set_enabled(offroad)
+    self.accelerator_link_item.action_item.set_enabled(offroad)
     self.small_model_item.set_description("" if offroad else tr("Only available when vehicle is off, or always offroad mode is on"))
 
   def _render(self, rect):

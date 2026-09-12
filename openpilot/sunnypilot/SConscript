@@ -1,2 +1,3 @@
+SConscript(['accelerators/SConscript'])
 SConscript(['common/transformations/SConscript'])
 SConscript(['selfdrive/locationd/SConscript'])

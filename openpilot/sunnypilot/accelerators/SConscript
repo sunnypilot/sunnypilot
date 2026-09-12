@@ -1,0 +1,61 @@
+# The comma-side warp JIT, as a build product.
+#
+# jetlink runs `warp` on the comma and `run_policy` on the Jetson, and upstream
+# no longer ships a standalone warp JIT (#38684 fused warp and policy). Built
+# here like dm_warp_*.pkl in modeld/SConscript: launch_chffrplus.sh runs
+# build.py before manager, so a tinygrad bump has a fresh warp before ignition.
+# Building it in modeld or jetlinkd instead loses the ~9 s compile to ignition
+# and costs a drive on the small model.
+import glob
+import importlib.util
+import os
+
+from SCons.Script import Action
+
+Import('env', 'arch')
+
+lenv = env.Clone()
+basedir = env.Dir("#").abspath
+
+
+def jetlink_installed() -> bool:
+  """Is the jetlink submodule checked out? An empty jetlink_repo/ has no package in it."""
+  return os.path.isdir(os.path.join(basedir, 'jetlink_repo', 'jetlink'))
+
+
+# comma GPU only: the pickle is captured against Device.DEFAULT and only modeld
+# on the device loads one
+if arch == 'comma_arm64' and jetlink_installed():
+  from openpilot.common.hardware import HARDWARE
+  from openpilot.common.transformations.camera import _ar_ox_fisheye, _os_fisheye
+  from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE
+
+  camera = _os_fisheye if HARDWARE.get_device_type() == "mici" else _ar_ox_fisheye
+  cam_w, cam_h = camera.width, camera.height
+  model_w, model_h = MEDMODEL_INPUT_SIZE
+
+  jetlink_dir = Dir("#openpilot/sunnypilot/accelerators/jetlink").abspath
+
+  # the target name comes from warp_cache so build and modeld cannot drift.
+  # By file, not by package: the package __init__ imports Params, which loads
+  # libparams_c, which scons has not built yet
+  _spec = importlib.util.spec_from_file_location('jetlink_warp_cache', f"{jetlink_dir}/warp_cache.py")
+  warp_cache = importlib.util.module_from_spec(_spec)
+  _spec.loader.exec_module(warp_cache)
+  pkl = str(warp_cache.warp_path(cam_w, cam_h, model_w, model_h))
+  tinygrad_files = ["#" + x for x in glob.glob(env.Dir("#tinygrad_repo").relpath + "/**",
+                                               recursive=True, root_dir=basedir)
+                    if 'pycache' not in x and os.path.isfile(os.path.join(basedir, x))]
+  script_files = [
+    File(f"{jetlink_dir}/compile_warp.py"),
+    File(f"{jetlink_dir}/warp_cache.py"),                    # make_warp's caller, and the capture itself
+    File("#openpilot/selfdrive/modeld/compile_modeld.py"),   # make_warp
+    File("#openpilot/system/camerad/cameras/nv12_info.py"),  # the frame layout the graph indexes
+  ]
+
+  # no tinygrad flags, unlike dm_warp: the bare-environment warp is what the
+  # parity and timing numbers were measured against
+  cmd = (f'python3 {jetlink_dir}/compile_warp.py '
+         f'--camera-resolution {cam_w}x{cam_h} --model-size {model_w}x{model_h} '
+         f'--output {pkl}')
+  lenv.Command(pkl, tinygrad_files + script_files, Action(cmd, "  [JETLINK WARP] $TARGET"))
