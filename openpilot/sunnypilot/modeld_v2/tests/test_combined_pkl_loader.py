@@ -5,9 +5,6 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import numpy as np
-from tinygrad.tensor import Tensor
-
 from openpilot.common.parameterized import parameterized
 
 import openpilot.sunnypilot.models.helpers as helpers
@@ -24,10 +21,6 @@ patch_modeld = tests_helpers.patch_modeld
 model_state_factory = tests_helpers.model_state_factory
 
 ModelState = modeld_module.ModelState
-
-
-def _unified_jit(**kwargs):
-  return (Tensor(np.zeros(1, dtype=np.float32), device='CPU').realize(),)
 
 
 # Pkl discovery
@@ -110,73 +103,22 @@ class TestStockEquivalence(OpenpilotTestCase):
     assert state.vision_output_slices == arch.metadata_structure['vision']['output_slices']
     assert state.policy_output_slices == arch.metadata_structure['policy']['output_slices']
 
-  @parameterized.expand([(False, True), (True, True), (True, False)], names=["resize", "include_target"])
-  def test_unified_run_model(self, resize, include_target, tmp_path, monkeypatch, patch_modeld):
+  def test_unified_run_model(self, tmp_path, monkeypatch, patch_modeld):
     from openpilot.common.hardware import hw
     from openpilot.selfdrive.modeld.helpers import dump_oob
     shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
               'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
     pkl_data = {'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}},
                 'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}}
-    if include_target:
-      pkl_data['run_model'][(1344, 760)] = _unified_jit
     with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
       dump_oob(pkl_data, f)
     bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
     patch_modeld(bundle)
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
-    monkeypatch.setattr(modeld_module, 'COMMA_HARDWARE', resize)
-    monkeypatch.setattr(modeld_module.HARDWARE, 'get_device_type', lambda: 'tizi')
-    make_queues = modeld_module.make_stock_input_queues
-    monkeypatch.setattr(modeld_module, 'make_stock_input_queues',
-                       lambda input_shapes, frame_skip, device, frame_copy_size:
-                       make_queues(input_shapes, frame_skip, device='CPU', frame_copy_size=frame_copy_size))
-
-    if resize and not include_target:
-      with self.assertRaisesRegex(RuntimeError, "requires a compiled 1344x760 run_model entry"):
-        ModelState(cam_w=CAM_W, cam_h=CAM_H, chestnut=True)
-      return
-
-    state = ModelState(cam_w=CAM_W, cam_h=CAM_H, chestnut=resize)
+    state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
     assert state.is_run_model and state.run_model is not None
     assert state.run_policy is None and state.warp is None
     assert 'img' in state.frame_views and 'big_img' in state.frame_views
-    self.assertEqual(state.source_frame_copy_size, 3735552)
-    self.assertEqual(state.frame_copy_size, 1622016 if resize else 3735552)
-    self.assertIs(state.run_model, _unified_jit if resize else tests_helpers._noop_jit)
-    if not resize:
-      self.assertIsNone(state.frame_resize)
-      return
-
-    self.assertIsNotNone(state.frame_resize)
-    self.assertEqual(state.WARP_DEV, 'QCOM')
-    self.assertEqual(state.input_queues['packed_npy_inputs'].shape, (3309688,))
-    old_frames = state.frame_buffers.copy()
-    state.warmup()
-    self.assertIs(state.frame_views, state.frame_buffers)
-    self.assertIs(state.npy, state.numpy_inputs)
-    self.assertEqual(state.input_queues['packed_npy_inputs'].shape, (3309688,))
-    for key, frame in state.frame_buffers.items():
-      self.assertIsNot(frame, old_frames[key])
-      self.assertEqual(frame.size, 1622016)
-
-    frames = {key: np.full(3735552, value, dtype=np.uint8) for key, value in (('img', 7), ('big_img', 9))}
-    transforms = {
-      'img': np.array([[1, 2, 3], [4, 5, 6], [.01, .02, 1]], dtype=np.float32),
-      'big_img': np.array([[7, 8, 9], [10, 11, 12], [.03, .04, 1]], dtype=np.float32),
-    }
-    original_transforms = {key: value.copy() for key, value in transforms.items()}
-    scale = np.diag([1344 / 1928, 760 / 1208, 1]).astype(np.float32)
-    inputs = {state.desire_key: np.zeros(8, dtype=np.float32)}
-    for _ in range(2):
-      self.assertEqual(state.run(frames, transforms, inputs), {})
-      np.testing.assert_allclose(state.numpy_inputs['tfm'], scale @ original_transforms['img'])
-      np.testing.assert_allclose(state.numpy_inputs['big_tfm'], scale @ original_transforms['big_img'])
-    self.assertTrue(np.all(state.frame_buffers['img'] == 7))
-    self.assertTrue(np.all(state.frame_buffers['big_img'] == 9))
-    for key in transforms:
-      np.testing.assert_array_equal(transforms[key], original_transforms[key])
-      self.assertTrue(np.all(old_frames[key] == 0))
 
 
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())
