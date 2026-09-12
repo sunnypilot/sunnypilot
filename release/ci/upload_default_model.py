@@ -32,6 +32,7 @@ def main():
   parser.add_argument("--onnx-ref", required=True)
   parser.add_argument("--model-name", required=True)
   parser.add_argument("--tinygrad-ref", required=True)
+  parser.add_argument("--compile-ref", required=True)
   parser.add_argument("--run-number", required=True)
   args = parser.parse_args()
 
@@ -77,6 +78,7 @@ def main():
     defaults_json = {"tinygrad_ref": args.tinygrad_ref, "bundles": []}
 
   defaults_json['tinygrad_ref'] = args.tinygrad_ref
+  defaults_json['compile_ref'] = args.compile_ref
 
   existing_idx = next((i for i, b in enumerate(defaults_json['bundles'])
                        if b.get('onnx_sha256') == onnx_sha256), None)
