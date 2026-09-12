@@ -13,6 +13,7 @@ import numpy as np
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
+from openpilot.sunnypilot.modeld_v2.frame_resize import FrameResize, TARGET_SIZE
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import make_input_queues as stock_make_input_queues, nv12_copy_size
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from tinygrad.device import Buffer
@@ -28,12 +29,14 @@ def input_view(buffer: Buffer, shape: tuple[int, ...], dtype: DType, offset: int
 
 
 class BaseModelAdapter:
-  def __init__(self, jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False):
+  def __init__(self, jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False, resize_frames=False):
     self.jits = jits
     self.DEV = model_device
     self.QUEUE_DEV = queue_device
     self.WARP_DEV = warp_device
     self.chestnut = chestnut
+    self.resize_frames = resize_frames
+    self.frame_resize: FrameResize | None = None
     self.cam_w = cam_w
     self.cam_h = cam_h
     self._combined_model_type = 'supercombo'
@@ -92,12 +95,19 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.vision_output_slices = model_metadata['output_slices']
       self._vision_input_names = [key for key in self.input_shapes if 'img' in key]
       self.frame_skip = derive_frame_skip({}, self.input_shapes)
+      model_camera_size = (self.cam_w, self.cam_h)
+      if self.chestnut and self.resize_frames and 'run_policy' not in self.jits:
+        if TARGET_SIZE not in self.jits:
+          raise RuntimeError("Comma 3X unified AMD model requires a compiled 1344x760 model entry")
+        self.frame_resize = FrameResize()
+        model_camera_size = TARGET_SIZE
+        self.frame_copy_size = self.frame_resize.target_copy_size
       if self.chestnut:
         self.input_queues, self.numpy_inputs, self.frame_slots = stock_make_input_queues(
           self.input_shapes, self.frame_skip, device=self.QUEUE_DEV, frame_copy_size=self.frame_copy_size)
       else:
         self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
-      self.run_policy = self.jits['run_policy'] if 'run_policy' in self.jits else self.jits[(self.cam_w, self.cam_h)]
+      self.run_policy = self.jits['run_policy'] if 'run_policy' in self.jits else self.jits[model_camera_size]
     else:
       self.run_policy = self.jits['run_policy']
       vision_metadata = metadata['vision']
@@ -128,7 +138,10 @@ class LegacyModelAdapter(BaseModelAdapter):
       for key in self._vision_input_names:
         if key in bufs:
           data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-          np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+          if self.frame_resize is not None:
+            self.frame_resize.resize(data, self.frame_slots[key])
+          else:
+            np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key in bufs.keys():
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
@@ -217,8 +230,6 @@ class NativeTinygradAdapter(BaseModelAdapter):
     return self.outputs['outputs']
 
 
-def get_model_adapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False):
-  if 'input_specs' in jits:
-    return NativeTinygradAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)
-  else:
-    return LegacyModelAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)
+def get_model_adapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False, resize_frames=False):
+  adapter = NativeTinygradAdapter if 'input_specs' in jits else LegacyModelAdapter
+  return adapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut, resize_frames=resize_frames)

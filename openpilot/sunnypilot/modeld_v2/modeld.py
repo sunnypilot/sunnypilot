@@ -15,7 +15,7 @@ import time
 from setproctitle import setproctitle
 
 import openpilot.cereal.messaging as messaging
-from openpilot.common.hardware import COMMA_HARDWARE
+from openpilot.common.hardware import COMMA_HARDWARE, HARDWARE
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 from openpilot.cereal import log
 from opendbc.car.structs import car
@@ -40,6 +40,7 @@ from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.frame_resize import SOURCE_SIZE, TARGET_SIZE
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_oob
@@ -114,7 +115,12 @@ class ModelState(ModelStateBase):
     self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
     self.QUEUE_DEV = self.DEV
-    self.adapter = get_model_adapter(jits, cam_w, cam_h, self.DEV, self.QUEUE_DEV, self.WARP_DEV, self.chestnut)
+    resize_frames = (COMMA_HARDWARE and self.DEV == 'AMD' and (cam_w, cam_h) == SOURCE_SIZE
+                     and HARDWARE.get_device_type() == 'tizi')
+    self.adapter = get_model_adapter(jits, cam_w, cam_h, self.DEV, self.QUEUE_DEV, self.WARP_DEV, self.chestnut,
+                                     resize_frames=resize_frames)
+    if self.adapter.frame_resize is not None:
+      cloudlog.warning(f"Comma 3X unified AMD frame resize: {cam_w}x{cam_h} -> {TARGET_SIZE[0]}x{TARGET_SIZE[1]}")
     self.vision_output_slices = self.adapter.vision_output_slices
     self.policy_output_slices = self.adapter.policy_output_slices
     self._policy_slices_list = self.adapter._policy_slices_list
@@ -178,6 +184,10 @@ class ModelState(ModelStateBase):
     else:
       self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
       self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
+      if self.adapter.frame_resize is not None:
+        for key in ('tfm', 'big_tfm'):
+          self.numpy_inputs[key][0] *= TARGET_SIZE[0] / SOURCE_SIZE[0]
+          self.numpy_inputs[key][1] *= TARGET_SIZE[1] / SOURCE_SIZE[1]
 
     raw_outputs = self.adapter.run()
 
