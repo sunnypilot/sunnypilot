@@ -207,6 +207,20 @@ class TestSpuriousOffroadGatesDropped(OpenpilotTestCase):
     assert "offroad_only" not in _flatten_rule_types(item.get("enablement"))
 
 
+class TestLaneTurnValueUnits(OpenpilotTestCase):
+  def test_metric_display_preserves_mph_storage(self, schema):
+    item = _find_item(schema, "LaneTurnValue")
+    assert item is not None
+    assert item["max"] == 20
+    assert item["unit"] == {"metric": "km/h", "imperial": "mph"}
+    assert item["value_transform"] == {
+      "metric": {"scale": 1.609344, "precision": 0, "step": 1},
+      "imperial": {"scale": 1, "precision": 0, "step": 1},
+    }
+    metric = item["value_transform"]["metric"]
+    assert round(item["max"] * metric["scale"], metric["precision"]) == 32
+
+
 class TestNotEngagedReplacement(OpenpilotTestCase):
   @parameterized.expand([
     "AlphaLongitudinalEnabled",

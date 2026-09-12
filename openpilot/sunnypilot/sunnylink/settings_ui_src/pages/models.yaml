@@ -27,6 +27,9 @@ sections:
     unit:
       metric: km/h
       imperial: mph
+    value_transform:
+      metric: {scale: 1.609344, precision: 0, step: 1}
+      imperial: {scale: 1, precision: 0, step: 1}
     enablement:
     - type: param
       key: LaneTurnDesire

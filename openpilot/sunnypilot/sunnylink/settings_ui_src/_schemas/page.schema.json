@@ -88,6 +88,7 @@
             }
           ]
         },
+        "value_transform": {"$ref": "#/$defs/ValueTransformByUnit"},
         "needs_onroad_cycle": {"type": "boolean"},
         "requires_attestation": {"type": "boolean"},
         "blocked": {"type": "boolean"},
@@ -107,6 +108,30 @@
         "visibility": {"type": "array", "items": {"$ref": "rule.schema.json"}},
         "enablement": {"type": "array", "items": {"$ref": "rule.schema.json"}},
         "sub_items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}
+      }
+    },
+    "ValueTransformByUnit": {
+      "type": "object",
+      "description": "Converts canonical stored numeric values for display according to IsMetric.",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "metric": {"$ref": "#/$defs/ValueTransform"},
+        "imperial": {"$ref": "#/$defs/ValueTransform"}
+      }
+    },
+    "ValueTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scale", "precision"],
+      "properties": {
+        "scale": {"type": "number", "exclusiveMinimum": 0},
+        "precision": {"type": "integer", "minimum": 0, "maximum": 10},
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Display-space step; keep it on the decimal grid declared by precision."
+        }
       }
     }
   }
