@@ -59,6 +59,42 @@ sections:
       label: 24h
     - value: 1800
       label: 30h (Default)
+- id: chestnut
+  title: chestnut
+  description: External GPU power
+  items:
+  - key: ChestnutPowerLimit
+    widget: option
+    title: GPU Power Limit
+    description: Caps the chestnut GPU's package power (PPT) before the driving model loads. Use it when the enclosure runs
+      from a 12V accessory outlet, whose wiring sags under the GPU's stock boost transients and can reset the USB link or hang
+      the model mid-drive. The driving model needs well under 60W. Stock leaves the GPU's own limit untouched. Takes effect at
+      the next model load (ignition on).
+    options:
+    - value: 0
+      label: Stock
+    - value: 40
+      label: 40W
+    - value: 50
+      label: 50W
+    - value: 60
+      label: 60W
+    - value: 70
+      label: 70W
+    - value: 80
+      label: 80W
+    - value: 100
+      label: 100W
+    - value: 120
+      label: 120W
+    - value: 150
+      label: 150W
+    visibility:
+    - type: capability
+      field: device_type
+      equals: mici
+    enablement:
+    - $ref: '#/macros/advanced_only'
 - id: language
   title: Language
   items:
