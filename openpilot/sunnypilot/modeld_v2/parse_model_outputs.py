@@ -115,22 +115,41 @@ class Parser:
     outs[name + '_stds'] = pred_std_final.reshape(final_shape)
 
   def parse_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
-    # supercombo (4955 / 102) and newer variants (e.g. 990 / 144).
-    self.parse_mdn('plan',   outs, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
-    self.parse_mdn('lane_lines', outs, out_shape=(ModelConstants.NUM_LANE_LINES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
-    self.parse_mdn('road_edges', outs, out_shape=(ModelConstants.NUM_ROAD_EDGES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
-    self.parse_mdn('pose',         outs, out_shape=(ModelConstants.POSE_WIDTH,))
-    self.parse_mdn('road_transform', outs, out_shape=(ModelConstants.POSE_WIDTH,))
+    if 'plan' in outs:
+      self.parse_mdn('plan', outs, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
+    if 'planplus' in outs:
+      self.parse_mdn('planplus', outs, out_shape=(ModelConstants.IDX_N, ModelConstants.PLAN_WIDTH))
+    if 'lane_lines' in outs:
+      self.parse_mdn('lane_lines', outs, out_shape=(ModelConstants.NUM_LANE_LINES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
+    if 'road_edges' in outs:
+      self.parse_mdn('road_edges', outs, out_shape=(ModelConstants.NUM_ROAD_EDGES, ModelConstants.IDX_N, ModelConstants.LANE_LINES_WIDTH))
+    if 'pose' in outs:
+      self.parse_mdn('pose', outs, out_shape=(ModelConstants.POSE_WIDTH,))
+    if 'road_transform' in outs:
+      self.parse_mdn('road_transform', outs, out_shape=(ModelConstants.POSE_WIDTH,))
     if 'sim_pose' in outs:
       self.parse_mdn('sim_pose', outs, out_shape=(ModelConstants.POSE_WIDTH,))
-    self.parse_mdn('wide_from_device_euler', outs, out_shape=(ModelConstants.WIDE_FROM_DEVICE_WIDTH,))
-    self.parse_mdn('lead', outs, out_shape=(ModelConstants.LEAD_TRAJ_LEN, ModelConstants.LEAD_WIDTH))
+    if 'wide_from_device_euler' in outs:
+      self.parse_mdn('wide_from_device_euler', outs, out_shape=(ModelConstants.WIDE_FROM_DEVICE_WIDTH,))
+    if 'lead' in outs:
+      self.parse_mdn('lead', outs, out_shape=(ModelConstants.LEAD_TRAJ_LEN, ModelConstants.LEAD_WIDTH))
     if 'lat_planner_solution' in outs:
       self.parse_mdn('lat_planner_solution', outs, out_shape=(ModelConstants.IDX_N, ModelConstants.LAT_PLANNER_SOLUTION_WIDTH))
     if 'desired_curvature' in outs:
       self.parse_mdn('desired_curvature', outs, out_shape=(ModelConstants.DESIRED_CURV_WIDTH,))
+    if 'action' in outs:
+      self.parse_mdn('action', outs, out_shape=(ModelConstants.ACTION_WIDTH,))
     for k in ['lead_prob', 'lane_lines_prob', 'meta']:
-      self.parse_binary_crossentropy(k, outs)
-    self.parse_categorical_crossentropy('desire_state', outs, out_shape=(ModelConstants.DESIRE_PRED_WIDTH,))
-    self.parse_categorical_crossentropy('desire_pred',  outs, out_shape=(ModelConstants.DESIRE_PRED_LEN, ModelConstants.DESIRE_PRED_WIDTH))
+      if k in outs:
+        self.parse_binary_crossentropy(k, outs)
+    if 'desire_state' in outs:
+      self.parse_categorical_crossentropy('desire_state', outs, out_shape=(ModelConstants.DESIRE_PRED_WIDTH,))
+    if 'desire_pred' in outs:
+      self.parse_categorical_crossentropy('desire_pred', outs, out_shape=(ModelConstants.DESIRE_PRED_LEN, ModelConstants.DESIRE_PRED_WIDTH))
     return outs
+
+  def parse_vision_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return self.parse_outputs(outs)
+
+  def parse_policy_outputs(self, outs: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    return self.parse_outputs(outs)
