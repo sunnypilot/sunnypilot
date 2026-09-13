@@ -57,13 +57,14 @@ def chunk_urls(artifact: dict) -> list[str]:
   return [f"{folder}/{urllib.parse.quote(chunk['file_name'])}" for chunk in artifact["chunks"]]
 
 
-def download(session: requests.Session, url: str, dest: Path, expected_sha256: str) -> None:
+def download(url: str, dest: Path, expected_sha256: str) -> None:
   """Stream url to dest, retried on transport errors and on a hash mismatch."""
+  # its own request per worker: a shared requests.Session is not thread-safe
   last: Exception | None = None
   for attempt in range(DOWNLOAD_ATTEMPTS):
     try:
       digest = hashlib.sha256()
-      with session.get(url, stream=True, timeout=60) as response, open(dest, "wb") as f:
+      with requests.get(url, stream=True, timeout=60) as response, open(dest, "wb") as f:
         response.raise_for_status()
         for block in response.iter_content(BLOCK):
           f.write(block)
@@ -125,7 +126,7 @@ def migrate_artifact(api: HfApi, session: requests.Session, hf_repo: str, name: 
   try:
     chunk_paths = [model_dir / chunk["file_name"] for chunk in artifact["chunks"]]
     with ThreadPoolExecutor(max_workers=workers) as pool:
-      list(pool.map(lambda job: download(session, *job),
+      list(pool.map(lambda job: download(*job),
                     zip(chunk_urls(artifact), chunk_paths, [chunk["sha256"] for chunk in artifact["chunks"]], strict=True)))
     whole = model_dir / posixpath.basename(path)
     joined = join_chunks(chunk_paths, whole)
@@ -153,6 +154,8 @@ def migrate_manifest(src: dict, *, hf_repo: str, api: HfApi, session: requests.S
                      only: set[str] | None = None, limit: int | None = None, workers: int = 8, work_dir: Path | None = None,
                      dry_run: bool = False, log: Callable[[str], None] = lambda line: print(line, flush=True)) -> dict:
   """The whole-file manifest for src. Raises before anything is written if a model cannot be migrated."""
+  if not dry_run and (only is not None or limit is not None):
+    raise ValueError("--only/--limit would publish a manifest that drops every other model; use --dry-run for a partial run")
   if "tinygrad_ref" not in src:
     raise ValueError("source manifest has no tinygrad_ref; the client's manifest test requires one")
   bundles = [bundle for bundle in src["bundles"] if only is None or bundle["short_name"] in only]
