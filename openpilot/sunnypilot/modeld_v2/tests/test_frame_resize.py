@@ -22,7 +22,6 @@ class TestFrameResize(unittest.TestCase):
     self.destination = np.empty(self.resizer.target_copy_size, dtype=np.uint8)
 
   def test_sampling_and_padding(self):
-    self.assertTrue(self.resizer._indices.flags['W'])
     source_y = self.source[:2490368].reshape(1216, 2048)
     source_uv = self.source[2490368:].reshape(608, 2048)
     source_y[:1208, :1928] = (3 * np.arange(1208)[:, None] + 5 * np.arange(1928)) % 251
@@ -47,17 +46,61 @@ class TestFrameResize(unittest.TestCase):
     np.testing.assert_array_equal(uv_pairs[:, 672:], np.broadcast_to(uv_pairs[:, 671:672], (384, 32, 2)))
     np.testing.assert_array_equal(uv_pairs[380:], np.broadcast_to(uv_pairs[379:380], (4, 704, 2)))
 
+  def test_matches_numpy_gather(self):
+    self.source[:] = np.random.default_rng(0).integers(0, 256, self.source.size, dtype=np.uint8)
+    x = ((2 * np.minimum(np.arange(1408), 1343) + 1) * 1928) // (2 * 1344)
+    y = ((2 * np.minimum(np.arange(768), 759) + 1) * 1208) // (2 * 760)
+    y_indices = y[:, None] * 2048 + x
+    uv_bytes = np.arange(1408)
+    x = ((2 * np.minimum(uv_bytes // 2, 671) + 1) * 964) // (2 * 672) * 2 + uv_bytes % 2
+    y = ((2 * np.minimum(np.arange(384), 379) + 1) * 604) // (2 * 380)
+    uv_indices = 2490368 + y[:, None] * 2048 + x
+    indices = np.concatenate((y_indices.ravel(), uv_indices.ravel()))
+
+    self.resizer.resize(memoryview(self.source).toreadonly(), self.destination)
+    np.testing.assert_array_equal(self.destination, np.take(self.source, indices, mode='clip'))
+
+  def test_rejects_invalid_destinations(self):
+    size = self.resizer.target_copy_size
+    readonly = self.destination.view()
+    readonly.setflags(write=False)
+    for destination in (self.destination[:-1], np.empty(size + 1, dtype=np.uint8), self.destination.reshape(2, -1),
+                        self.destination.view(np.int8), np.empty(2 * size, dtype=np.uint8)[::2], readonly):
+      with self.subTest(shape=destination.shape, dtype=destination.dtype, flags=str(destination.flags)):
+        original = destination.copy()
+        with self.assertRaisesRegex(ValueError, "destination must be"):
+          self.resizer.resize(self.source, destination)
+        np.testing.assert_array_equal(destination, original)
+
+  def test_native_rejects_invalid_buffers_before_writing(self):
+    self.destination.fill(201)
+    src, dst = self.source.ctypes.data, self.destination.ctypes.data
+    src_size, dst_size = self.source.size, self.destination.size
+    for args in ((None, src_size, dst, dst_size), (src, src_size, None, dst_size),
+                 (src, src_size - 1, dst, dst_size), (src, src_size, dst, dst_size - 1),
+                 (src, src_size, dst, dst_size + 1)):
+      with self.subTest(args=args):
+        self.assertNotEqual(self.resizer._resize(*args), 0)
+        self.assertTrue(np.all(self.source == 255))
+        self.assertTrue(np.all(self.destination == 201))
+
+    overlap = np.full(src_size + 1, 255, dtype=np.uint8)
+    for source, destination in ((overlap[:src_size], overlap[1:dst_size + 1]), (overlap[1:], overlap[:dst_size])):
+      with self.assertRaisesRegex(ValueError, "overlapping buffers"):
+        self.resizer.resize(source, destination)
+      self.assertTrue(np.all(overlap == 255))
+
   def test_writes_only_supplied_packed_frame_views(self):
     size = self.resizer.target_copy_size
-    packed = np.full(64 + 2 * size + 32, 201, dtype=np.uint8)
-    road = packed[64:64 + size]
-    wide = packed[64 + size:64 + 2 * size]
+    packed = np.full(65 + 2 * size + 32, 201, dtype=np.uint8)
+    road = packed[65:65 + size]
+    wide = packed[65 + size:65 + 2 * size]
     self.source.fill(7)
     self.resizer.resize(self.source, road)
     self.source.fill(9)
     self.resizer.resize(self.source, wide)
 
-    self.assertTrue(np.all(packed[:64] == 201))
+    self.assertTrue(np.all(packed[:65] == 201))
     self.assertTrue(np.all(road == 7))
     self.assertTrue(np.all(wide == 9))
     self.assertTrue(np.all(packed[-32:] == 201))

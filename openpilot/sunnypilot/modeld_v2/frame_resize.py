@@ -5,7 +5,10 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import ctypes
+import sys
 from collections.abc import Buffer
+from pathlib import Path
 
 import numpy as np
 
@@ -28,30 +31,21 @@ class FrameResize:
   """Fixed NV12 point sampling: center-anchored floor((2*dst + 1) * source / (2 * target)), with edge-filled padding."""
 
   def __init__(self):
-    source_w, source_h = SOURCE_SIZE
-    target_w, target_h = TARGET_SIZE
     source_stride, source_y_height, source_uv_height, _ = get_nv12_info(*SOURCE_SIZE)
     target_stride, target_y_height, target_uv_height, _ = get_nv12_info(*TARGET_SIZE)
     self.source_copy_size = source_stride * (source_y_height + source_uv_height)
     self.target_copy_size = target_stride * (target_y_height + target_uv_height)
-    # np.take copies read-only indices, so keep this private map writable.
-    self._indices = np.empty(self.target_copy_size, dtype=np.intp)
-
-    x = ((2 * np.minimum(np.arange(target_stride, dtype=np.intp), target_w - 1) + 1) * source_w) // (2 * target_w)
-    y = ((2 * np.minimum(np.arange(target_y_height, dtype=np.intp), target_h - 1) + 1) * source_h) // (2 * target_h)
-    target_uv_offset = target_stride * target_y_height
-    self._indices[:target_uv_offset].reshape(target_y_height, target_stride)[:] = y[:, None] * source_stride + x
-
-    # Resize chroma pairs on their own grid, retaining the U/V byte within each pair.
-    uv_bytes = np.arange(target_stride, dtype=np.intp)
-    x = ((2 * np.minimum(uv_bytes // 2, target_w // 2 - 1) + 1) * (source_w // 2)) // (2 * (target_w // 2)) * 2 + uv_bytes % 2
-    y = ((2 * np.minimum(np.arange(target_uv_height, dtype=np.intp), target_h // 2 - 1) + 1) * (source_h // 2)) // (2 * (target_h // 2))
-    self._indices[target_uv_offset:].reshape(target_uv_height, target_stride)[:] = source_stride * source_y_height + y[:, None] * source_stride + x
-
-    assert self._indices.min() >= 0 and self._indices.max() < self.source_copy_size
+    suffix = ".dylib" if sys.platform == "darwin" else ".so"
+    self._lib = ctypes.CDLL(Path(__file__).with_name(f"libframe_resize{suffix}"))
+    self._resize = self._lib.frame_resize_nv12
+    self._resize.argtypes = [ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p, ctypes.c_size_t]
+    self._resize.restype = ctypes.c_int
 
   def resize(self, source: Buffer, destination: np.ndarray) -> None:
     """Write into a contiguous uint8 frame view of target_copy_size bytes."""
     frame = np.frombuffer(source, dtype=np.uint8, count=self.source_copy_size)
-    # Bounds are established above; clip avoids take's buffered output in raise mode.
-    np.take(frame, self._indices, out=destination, mode='clip')
+    if (destination.dtype != np.uint8 or destination.ndim != 1 or destination.size != self.target_copy_size
+        or not destination.flags.c_contiguous or not destination.flags['W']):
+      raise ValueError(f"NV12 resize destination must be a writable contiguous uint8 vector of {self.target_copy_size} bytes")
+    if self._resize(frame.ctypes.data, frame.nbytes, destination.ctypes.data, destination.nbytes) != 0:
+      raise ValueError("Native NV12 resize rejected invalid or overlapping buffers")
