@@ -1,13 +1,18 @@
 # Ford selected-action drive-test branch
 
-The current v7 experiment uses [continuous C1 PI feedback](ford_c1_minimal_pi.md)
-with **P=0.50 and I=0.25**, replacing the earlier conditional-release rules.
-Only C0, C1 and accumulated error carry control history. The restored model
-mapping and [base C1 overflow allocation to C0](ford_c1_overflow.md) remain.
+This local v8 candidate uses [curvature-derived C0](ford_curvature_c0_v8.md)
+and [continuous C1 PI feedback](ford_c1_minimal_pi.md)
+with **P=0.50 and I=0.25**.
+Only C0, C1 and accumulated error carry control history. C0 is now a 7 m circular arc from selected desired curvature.
+[Base C1 overflow allocation to C0](ford_c1_overflow.md) remains.
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
+
+The v8 implementation is on local branch `codex/ford-curvature-c0-trial`.
+This evaluation does not push it to `hiimisaac-dev`; the deployed v7 commit is
+`08b3a14ad`. The selection instructions below apply once a candidate is installed.
 
 ## Select and restore
 
@@ -21,7 +26,7 @@ turn-exit behavior and closed-loop stability remain unvalidated.
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-c1-pi-v7`**. They report desired and measured
+identify **`hypothesis=model-action-curvature-c0-pi-v8`**. They report desired and measured
 curvature, base heading, proportional and accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `proportional_gain=0.5` and
 `integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
@@ -51,7 +56,9 @@ combined feedforward/P/I amplitude and slew envelope. There is no C0 confirmatio
 threshold or remembered turn direction. Zero error removes P and holds I; it
 does not trigger a release. Final command limits still apply.
 
-C0 starts with the original 7 m model-path mapping. When the raw base heading
+C0 starts with the 7 m circular arc of selected desired curvature. It does not
+add independent live model-path position or heading. Valid model geometry is
+still required as a health gate. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
 Accumulated C1 feedback does not spill into C0. The extra target returns to zero
 as the base heading falls below the cap; applied C0 still follows its 4 m/s slew.
@@ -61,8 +68,9 @@ place. An explicit selection flag distinguishes upstream mode from an invalid
 experimental command; invalid experimental input cannot switch to upstream.
 The opendbc sender restores upstream behavior when that flag is false.
 
-See [continuous PI trial and validation](ford_c1_minimal_pi.md) and
-`ford_c1_minimal_pi_validation.json` for current evidence and reproduction commands.
+See [curvature-C0 trial and validation](ford_curvature_c0_v8.md) and
+`ford_curvature_c0_v8_validation.json` for this candidate.
+[Continuous PI](ford_c1_minimal_pi.md) and its validation JSON record v7.
 [Proportional feedback](ford_c1_pi.md) and its validation JSON record v6.
 [Completed-unwind release](ford_unwind_catchup.md) and
 `ford_unwind_catchup_validation.json` record v5. [Changed-request release](ford_c1_request_release.md) and its

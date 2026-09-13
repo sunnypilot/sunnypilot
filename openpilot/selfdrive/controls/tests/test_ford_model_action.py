@@ -25,17 +25,18 @@ def straight(offset=0.):
   return make_model(x, np.full_like(x, offset), np.zeros_like(x))
 
 
-def test_selected_action_controls_heading_even_when_model_previews_another_turn():
+def test_selected_action_controls_both_fields_even_when_model_previews_another_turn():
   model = circle(.02)
   assert encode_model_action(model, 0., 20.).path_angle == 0.
   assert encode_model_action(model, -.004, 20.).path_angle == pytest.approx(-.08)
-  assert encode_model_action(model, 0., 20.).path_offset > 0.
+  assert encode_model_action(model, 0., 20.).path_offset == 0.
+  assert encode_model_action(model, -.004, 20.).path_offset < 0.
 
 
-def test_centering_information_is_independent_of_action_and_not_scaled_with_speed():
+def test_arc_offset_uses_selected_curvature_and_is_not_scaled_with_speed():
   for speed in (2., 7., 20., 35.):
     target = encode_model_action(straight(.4), 0., speed)
-    assert target == FordPath(True, .4, 0., 0., 0.)
+    assert target == FordPath(True, 0., 0., 0., 0.)
   for sign in (-1, 1):
     target = encode_model_action(circle(sign*.01), sign*.01, 20.)
     assert target.path_offset == pytest.approx(sign*(1-math.cos(.07))/.01, abs=1e-6)
@@ -74,7 +75,7 @@ def test_current_model_replacement_leaves_only_independent_actuator_slew():
   controller = ModelActionController()
   for _ in range(150):
     controller.update(straight(1.), .04, current_curvature=.04, speed=20., dt=.01)
-  # C0 starts at 1 + 7*(.8-.5) = 3.1 m, including the clipped heading.
+  # C0 starts near .974 + 7*(.8-.5) = 3.074 m, including heading overflow.
   for _ in range(78):
     out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out.path_offset == pytest.approx(0.)
@@ -126,9 +127,11 @@ def test_selected_core_reversal_through_float32_and_wire_keeps_sign_and_zero_c2(
     assert decoded['LatCtlCurv_No_Actl'] == decoded['LatCtlCrv_NoRate2_Actl'] == 0.
 
 
-def test_short_path_holds_available_endpoint_without_extrapolation():
+def test_short_valid_path_does_not_shorten_the_selected_curvature_arc():
   model = make_model([0., 1.], [0., .1], [0., 0.])
-  assert encode_model_action(model, .01, 20.) == FordPath(True, .1, .2, 0., 0.)
+  target = encode_model_action(model, .01, 20.)
+  assert target == encode_model_action(straight(), .01, 20.)
+  assert target.path_offset == pytest.approx((1-math.cos(.07))/.01)
 
 
 def test_overflowing_arc_resets_instead_of_publishing_invalid_geometry():
@@ -177,18 +180,31 @@ def test_domain_and_elapsed_time_boundaries(field, value, valid):
   assert ModelActionController().update(straight(.4), current_curvature=kwargs['desired_curvature'], **kwargs).valid == valid
 
 
-def test_arc_station_not_forward_x_or_model_heading_determines_offset():
+def test_unrelated_live_model_position_and_heading_do_not_change_selected_arc():
   x = np.array([0., 6., 12.])
   y = .4+x*.75
   target = encode_model_action(make_model(x, y, [2., -2., 1.]), -.01, 20.)
-  # Arc length is 1.25*x on this line, so y(arc=7)=.4+.75*(7/1.25).
-  assert target.path_offset == pytest.approx(4.6)
+  assert target.path_offset == pytest.approx(-(1-math.cos(.07))/.01)
   assert target.path_angle == pytest.approx(-.2)
 
 
 def test_duplicate_stations_keep_valid_geometry_and_first_cycle_slew():
   model = make_model([0., 0., 10.], [.4, .4, .4], [0., 0., 0.])
-  assert encode_model_action(model, .01, 20.) == FordPath(True, .4, .2, 0., 0.)
+  assert encode_model_action(model, .01, 20.) == encode_model_action(straight(), .01, 20.)
   out = ModelActionController().update(model, .01, current_curvature=.01, speed=20., dt=.002)
   assert out.path_offset == pytest.approx(.01)
   assert out.path_angle == pytest.approx(.001)
+
+
+@pytest.mark.parametrize('curvature', [-1., -.2, -.1, -.01, -.001, .001, .01, .1, .2, 1.])
+def test_desired_curvature_arc_matches_circle_geometry(curvature):
+  target = encode_model_action(straight(.4), curvature, 20.)
+  assert target.valid
+  assert target.path_offset == pytest.approx((1-math.cos(7.*curvature))/curvature, abs=1e-12)
+
+
+@pytest.mark.parametrize('curvature', [-1e-12, -1e-100, 0., 1e-100, 1e-12])
+def test_near_zero_arc_is_finite_continuous_and_keeps_direction(curvature):
+  target = encode_model_action(straight(.4), curvature, 20.)
+  assert target.valid and math.isfinite(target.path_offset)
+  assert target.path_offset == pytest.approx(24.5*curvature, rel=1e-12, abs=0.)

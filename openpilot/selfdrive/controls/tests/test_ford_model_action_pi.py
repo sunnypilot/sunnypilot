@@ -30,7 +30,7 @@ def test_aligned_feedback_does_not_replace_current_feedforward_or_path(sign):
   out = controller.update(straight(sign*.4), sign*.01, current_curvature=sign*.008,
                           feedback_curvature=sign*.008, speed=20., dt=.1)
   assert controller.proportional == controller.correction == 0.
-  assert out.path_offset == pytest.approx(sign*.4)
+  assert out.path_offset == pytest.approx(sign*(1-math.cos(.07))/.01, abs=.005)
   assert out.path_angle == pytest.approx(sign*.2)
   # Latest request is ahead of measured steering, but the delay-aligned target
   # has already been exceeded. P and I must use the explicit feedback target.

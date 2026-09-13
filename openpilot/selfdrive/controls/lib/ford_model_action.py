@@ -1,6 +1,6 @@
 """Opt-in Ford C2-free model mapping with measured-curvature PI feedback.
 
-C0 samples the model at 7 m, including clipped base-heading overflow. C1
+C0 samples a desired-curvature arc at 7 m, including base-heading overflow. C1
 combines the selected curvature's heading with proportional and integrated
 tracking error. Reference distance and gains are explicit trial choices.
 """
@@ -34,10 +34,10 @@ def _finite(*values):
 
 
 def encode_model_action(model, desired_curvature, speed):
-  """Encode y(7) and max(7, v*1s)*selected limited curvature.
+  """Encode a 7 m circular-arc offset and max(7, v*1s)*selected curvature.
 
-  Preserve the reviewed core's endpoint hold when the path ends before 7 m.
-  This samples the available geometry; it does not extrapolate an unseen path.
+  The arc starts at zero lateral position and heading. Original model geometry
+  remains a health gate; selected curvature supplies both path commands.
   """
   if not _finite(desired_curvature, speed) or not .3 <= speed <= 55 or abs(desired_curvature) > 1:
     return FordPath()
@@ -47,8 +47,10 @@ def encode_model_action(model, desired_curvature, speed):
     return FordPath()
   if path is None or not all(_finite(*values) for values in path):
     return FordPath()
-  station, _, lateral, _ = path
-  c0 = float(np.interp(min(OFFSET_STATION_M, station[-1]), station, lateral))
+  # (1-cos(S*k))/k, using sinc to avoid cancellation near zero curvature.
+  half_heading = .5*OFFSET_STATION_M*desired_curvature
+  sinc = math.sin(half_heading)/half_heading if half_heading else 1.
+  c0 = .5*desired_curvature*OFFSET_STATION_M**2*sinc**2
   c1 = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
   return FordPath(True, c0, c1, 0., 0.) if _finite(c0, c1) else FordPath()
 
@@ -127,7 +129,7 @@ class FordModelActionController:
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN):
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain)
-    self.hypothesis = 'model-action-c1-pi-v7'
+    self.hypothesis = 'model-action-curvature-c0-pi-v8'
     self.reset()
 
   def reset(self, status='inactive'):

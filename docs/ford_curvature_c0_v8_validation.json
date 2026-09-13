@@ -1,0 +1,890 @@
+{
+  "scope": "Curvature-derived C0 candidate on the continuous PI controller; fixed recorded motion, no physical tracking prediction.",
+  "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+  "branch": "codex/ford-curvature-c0-trial",
+  "deployment_at_evaluation": "local candidate; hiimisaac-dev remains v7",
+  "hypothesis": "model-action-curvature-c0-pi-v8",
+  "source_sha256": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc",
+  "kp": 0.5,
+  "ki": 0.25,
+  "station_m": 7.0,
+  "cycles": 1578250,
+  "route_count": 14,
+  "same_c1_and_integral_on_every_recorded_cycle": true,
+  "baseline_exactly_matches_archived_v7": true,
+  "c0_commands_match_prior_geometry_experiment": true,
+  "can_round_trips": 4794750,
+  "tests": {
+    "passed": 694,
+    "skipped": 178,
+    "subtests_passed": 9145,
+    "scope": "Same Ford controls, tracked PSCM lab, car status, Sunnylink, params, Ford car and safety suite as v7; historical untracked experiments excluded."
+  },
+  "ruff": "pass",
+  "ty_production": "pass",
+  "bins": [
+    {
+      "requested_wheel_angle_degrees": "0-5",
+      "seconds": 4863.242382185041,
+      "mean_abs_c0_m": [
+        0.013572257514406704,
+        0.007239040142159917
+      ],
+      "reduction_pct": 46.662962042417725
+    },
+    {
+      "requested_wheel_angle_degrees": "5-30",
+      "seconds": 1576.952442509967,
+      "mean_abs_c0_m": [
+        0.09652124113032315,
+        0.06077627429873566
+      ],
+      "reduction_pct": 37.03326481610879
+    },
+    {
+      "requested_wheel_angle_degrees": "30-90",
+      "seconds": 178.12595563801986,
+      "mean_abs_c0_m": [
+        0.5064290157685561,
+        0.2916269430470148
+      ],
+      "reduction_pct": 42.4150406144399
+    },
+    {
+      "requested_wheel_angle_degrees": "90-inf",
+      "seconds": 36.19569558700505,
+      "mean_abs_c0_m": [
+        2.6314148997254545,
+        1.528200796263899
+      ],
+      "reduction_pct": 41.92474944094366
+    }
+  ],
+  "examples": [
+    {
+      "route": "116",
+      "time": 112.00019806100002,
+      "desired_angle": 59.83296203613281,
+      "actual_angle": 60.900001525878906,
+      "c0_left_positive": [
+        0.7599999999999998,
+        0.33999999999999986
+      ],
+      "c1_both_left_positive": 0.13550000000000006,
+      "clean": true
+    },
+    {
+      "route": "117",
+      "time": 128.2721161039999,
+      "desired_angle": -226.72189331054688,
+      "actual_angle": -185.1999969482422,
+      "c0_left_positive": [
+        -2.5100000000000002,
+        -1.35
+      ],
+      "c1_both_left_positive": -0.427,
+      "clean": true
+    },
+    {
+      "route": "116",
+      "time": 673.6933639450001,
+      "desired_angle": -152.83456420898438,
+      "actual_angle": -272.1000061035156,
+      "c0_left_positive": [
+        -2.21,
+        -0.9199999999999999
+      ],
+      "c1_both_left_positive": -0.183,
+      "clean": true
+    },
+    {
+      "route": "117",
+      "time": 142.52000677500018,
+      "desired_angle": 6.6218461990356445,
+      "actual_angle": 40.599998474121094,
+      "c0_left_positive": [
+        0.2599999999999998,
+        0.040000000000000036
+      ],
+      "c1_both_left_positive": -0.024499999999999966,
+      "clean": true
+    },
+    {
+      "route": "117",
+      "time": 142.66993146999994,
+      "desired_angle": -2.186957597732544,
+      "actual_angle": 28.5,
+      "c0_left_positive": [
+        0.17999999999999972,
+        -0.019999999999999574
+      ],
+      "c1_both_left_positive": -0.04249999999999998,
+      "clean": true
+    }
+  ],
+  "replay_reports": [
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 108971,
+      "controller_updates": 217942,
+      "active_cycles_per_controller": 91414,
+      "can_round_trips": 217942,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 919.4963447830002,
+      "clean_seconds": 678.5721400560004,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/angles.npz": "9429813237b4988dd99a1461d1a9bd6f6d3056693a93a5dd1ec63567d19f2aa1",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 49614,
+      "controller_updates": 99228,
+      "active_cycles_per_controller": 27207,
+      "can_round_trips": 99228,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 273.884368861,
+      "clean_seconds": 195.66672679699968,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/angles.npz": "2f280a1b5973901d878f1e36564d6e7ae6d817cac176149f2cb898ab7591d65b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 61027,
+      "controller_updates": 122054,
+      "active_cycles_per_controller": 48419,
+      "can_round_trips": 122054,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 487.557504183,
+      "clean_seconds": 290.3177928490001,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/angles.npz": "63aa2ff6a21e8613519bda476690e2eda6f42cb5dcf108606bc6072c9e29408d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 40037,
+      "controller_updates": 80074,
+      "active_cycles_per_controller": 33976,
+      "can_round_trips": 80074,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 341.89711117800005,
+      "clean_seconds": 176.48340830000006,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/angles.npz": "71415b0f49efbfeda495ae52bde4beb7e16f31a1f5570af515a365e756056d3b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 68793,
+      "controller_updates": 137586,
+      "active_cycles_per_controller": 52456,
+      "can_round_trips": 137586,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 527.966444073,
+      "clean_seconds": 218.019997628,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/route.npz": "13df1d49edd0c92bd4a4236c766ee76baa6dad477824b9de4b79927c98410394",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/model_paths.npz": "85d1112b5e89340e8a955b7fe4040b3135cf1c91a54ff756826c6119cc9cc01d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/metadata.json": "d52fe63d013fa546524ad9522a26943d9372730d397d92d75dfd9d75c63ce766",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/angles.npz": "68e699e01c3ea291e6602ee53edf9cee27c0b461e16c57c3acc0ad12bf29b2aa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 27301,
+      "controller_updates": 54602,
+      "active_cycles_per_controller": 15841,
+      "can_round_trips": 54602,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 159.4681704720001,
+      "clean_seconds": 74.58932843500065,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/angles.npz": "0575b2d888a6848649b9fb1f7df7c72140f0abbceaa1c451b6eecd034729ef7b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 114582,
+      "controller_updates": 229164,
+      "active_cycles_per_controller": 105382,
+      "can_round_trips": 229164,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 1061.1945591,
+      "clean_seconds": 884.2159145080002,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/route.npz": "01ce8b0361c3154d07d5449525a650baa2cc261675095cb1f04ec9e37a9174d3",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/model_paths.npz": "5d0c69d10a6d13882b47d950ae64c4d98f7ca2b59eab27e4e9557eef3bc4917b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/metadata.json": "00496a11afbee475e9b5d66838a4d1663a3c0063cd562b4d1408cce6d71e586e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/angles.npz": "feb7b558d75292ab69ce8657540f3295bbc1b0c915d27f39d831bdece3fac534",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 71111,
+      "controller_updates": 142222,
+      "active_cycles_per_controller": 43430,
+      "can_round_trips": 142222,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 437.0644468180001,
+      "clean_seconds": 332.6767952400001,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/route.npz": "af4128d278be6be0042f72a02255ddbec96a8a5aa435b9852c8202e4a5cb39e5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/model_paths.npz": "5a5a7c4fc30c7b3bc7f2413daa8b11fe86b69dd3249e8df2d35b0a0636a49717",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/metadata.json": "cfecd240216e409a1e2591c6c2e6f0bad002ecd2a50c8f6dbf22a8f9174708da",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/angles.npz": "2424b32f02f7e5079f8ae6ffdd30a811820d1d1bfa5b17636c5457eb67d64ecb",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 38961,
+      "controller_updates": 77922,
+      "active_cycles_per_controller": 35677,
+      "can_round_trips": 77922,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 359.186785903,
+      "clean_seconds": 249.91415584299997,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/route.npz": "815d1e248ff5c3e5e5cfc11dfbd0690d0d13ddafe1436890e239975a72dae9b8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/model_paths.npz": "72e014b844322df6318f6af588c27175ce68d9a37bda62b70eafca5bdfe6dfe4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/metadata.json": "c533b06d1b7c598330b36b117bdb3624221bc4193ded8354246d5c86f36b2628",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/angles.npz": "5466a674cae3f63eca8758f9f370a8c6cdee3dbb6bcf115f85e3b2e95cf5c1fb",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 286319,
+      "controller_updates": 572638,
+      "active_cycles_per_controller": 152043,
+      "can_round_trips": 572638,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 1530.3877326270015,
+      "clean_seconds": 1093.2748892979992,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/angles.npz": "cfcc9743aacfadc7be97e9ca130453c2ee6f7870edc3e98ccf9a873dac6d4897",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 160431,
+      "controller_updates": 320862,
+      "active_cycles_per_controller": 68217,
+      "can_round_trips": 320862,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 686.4382411050101,
+      "clean_seconds": 390.78219015704235,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/angles.npz": "6f4ea54d101595a48d301a0914c940d6ad932249b14d4eaa4fd7e43a11dc6f92",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 90774,
+      "controller_updates": 181548,
+      "active_cycles_per_controller": 86474,
+      "can_round_trips": 181548,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 870.449417766,
+      "clean_seconds": 604.9269013949997,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/angles.npz": "ce16212d9b13e41993d2c8df3246ddfe21324ad0cb213310e62eee1d685b197b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 327448,
+      "controller_updates": 654896,
+      "active_cycles_per_controller": 118756,
+      "can_round_trips": 654896,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 1194.5832199259985,
+      "clean_seconds": 894.0687052669919,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/angles.npz": "1681bda6db7dac332abf627d97e7452acd7e0faef0c196b11e55e22291cad073",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    },
+    {
+      "scope": "Circular-arc C0 experiment against the pinned continuous PI v7 controller.\n\nBoth controllers run on identical recorded motion. Replace only the encoder's\nC0 target, retaining path validity, C1 overflow, continuous PI feedback and\noutput limits. No onroad selector or production module is modified.\n",
+      "baseline_revision": "08b3a14ad46260fda0f8d3a1c2cee2d272504153",
+      "baseline_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "proportional_gain": 0.5,
+      "integral_gain": 0.25,
+      "station_m": 7.0,
+      "cycles": 132881,
+      "controller_updates": 265762,
+      "active_cycles_per_controller": 64776,
+      "can_round_trips": 265762,
+      "same_activation_p_feedforward_overflow_and_feedback_gates": true,
+      "changed_c1_cycles": 0,
+      "max_abs_c1_change_rad": 0.0,
+      "changed_integral_cycles": 0,
+      "pscm_status_fresh_active_seconds": 651.3446633269996,
+      "clean_seconds": 571.0075301469988,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/route.npz": "8a4cfe53994988d053b47d9caadf21ebd064fd20e598fa05ddc2da245bd0e980",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/model_paths.npz": "d5dc6f72d91472b8f2fb1add1680cdaea1e122774ddd6d8519fd7673daf71bb5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/metadata.json": "9602e08efc2bd784133837c4156c075bb89bad3bedd6b309f15e884ed20e338a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/angles.npz": "82af2973ad40c1df392e11bdc5dd5895bfc6c170fc894735123af7704d95cd57",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_v7_replay.py": "fcd8a10db3d68024dbc836dce1b4c9a459912837b1a4234f61b2dd508c6d5e9f"
+      },
+      "limitations": [
+        "No new steering trace or physical tracking score: recorded motion stays fixed.",
+        "The baseline is v7 on every route, regardless of its recorded controller version.",
+        "C1 and integral state match exactly on fixed recorded motion; physical feedback may differ.",
+        "Publication time proxies computation time; full SubMaster state is unavailable.",
+        "The synthetic arc keeps the original model-health gates for a controlled comparison."
+      ]
+    }
+  ],
+  "production_parity": [
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "112",
+      "cycles": 108971,
+      "can_round_trips": 108971,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/112/report.json": "1be0b52e00e8f67043ce35e19cc6612f788d6e3853b40d1bc2dd372b2ff4e70d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/112/commands.npz": "3951aa6160295ee6c3835517b39c7c835074b93b1bda5fb013d4ef56f88b8f1e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "113",
+      "cycles": 49614,
+      "can_round_trips": 49614,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/113/report.json": "c6e98c0f2e6f43f1ede8d8104b77606a91fb3e95efa8348f7f089e01a4f6c823",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/113/commands.npz": "0a7aa93e8e3e64659022dac254b476e06fb95649c4b97e1de66e4808fae73d6f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "114",
+      "cycles": 61027,
+      "can_round_trips": 61027,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/114/report.json": "b7f1d341f4f33d2c16dcfa2694b36cafe0bf76405d0e7b61bc4e469caef6b1dc",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/114/commands.npz": "3b79d094ecb89d3f3554c492d83826ec60662c236d6854891feba95fffcd7bc7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "115",
+      "cycles": 40037,
+      "can_round_trips": 40037,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/115/report.json": "e66d2be86136b0f6fdbcc2998673b2d1e8487f0543f99e4618e46a2f429538e4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/115/commands.npz": "9a72eb6bab9116cc83210c92dfb12c5d63a2e4b3103ccdd3f5e70214f3f0e142",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "116",
+      "cycles": 68793,
+      "can_round_trips": 68793,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/route.npz": "13df1d49edd0c92bd4a4236c766ee76baa6dad477824b9de4b79927c98410394",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/model_paths.npz": "85d1112b5e89340e8a955b7fe4040b3135cf1c91a54ff756826c6119cc9cc01d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/metadata.json": "d52fe63d013fa546524ad9522a26943d9372730d397d92d75dfd9d75c63ce766",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/116/report.json": "501b944c65f41f6c1e05fccdc6c38f3a80450db6c4696adc35bf85640a04df94",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/116/commands.npz": "2469c545d0ce62894d59e07799942ebf40bec583693391aaa1dd9e75c218a396",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "117",
+      "cycles": 27301,
+      "can_round_trips": 27301,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/117/report.json": "896b30e7ded613f1b05b693067fc2f19155016b6a33f26f881bbfff2b193019d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/117/commands.npz": "6d88bfdb54fde00240954db9dbbf1f3e5059bfac9b6161c138f0069213ac35a8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a0",
+      "cycles": 114582,
+      "can_round_trips": 114582,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/route.npz": "01ce8b0361c3154d07d5449525a650baa2cc261675095cb1f04ec9e37a9174d3",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/model_paths.npz": "5d0c69d10a6d13882b47d950ae64c4d98f7ca2b59eab27e4e9557eef3bc4917b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/metadata.json": "00496a11afbee475e9b5d66838a4d1663a3c0063cd562b4d1408cce6d71e586e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a0/report.json": "52cd87929fbdc721450c735bd02ac049260cafa439af7dcdcd405e977dc9ea22",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a0/commands.npz": "0f718892b0802cbf754ba33c9c9c6da8a3e915e88fa7a4e008b9b33d63a429e0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a2",
+      "cycles": 71111,
+      "can_round_trips": 71111,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/route.npz": "af4128d278be6be0042f72a02255ddbec96a8a5aa435b9852c8202e4a5cb39e5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/model_paths.npz": "5a5a7c4fc30c7b3bc7f2413daa8b11fe86b69dd3249e8df2d35b0a0636a49717",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/metadata.json": "cfecd240216e409a1e2591c6c2e6f0bad002ecd2a50c8f6dbf22a8f9174708da",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a2/report.json": "fbaf59a1499df5dba0f790f76f211efefb3b68f327e9e49c763fb175f6f8e7a9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a2/commands.npz": "159f76d2d511af7f423941cc9d168c7112a8aec7a34e05bbd043f65a2324b325",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a5",
+      "cycles": 38961,
+      "can_round_trips": 38961,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/route.npz": "815d1e248ff5c3e5e5cfc11dfbd0690d0d13ddafe1436890e239975a72dae9b8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/model_paths.npz": "72e014b844322df6318f6af588c27175ce68d9a37bda62b70eafca5bdfe6dfe4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/metadata.json": "c533b06d1b7c598330b36b117bdb3624221bc4193ded8354246d5c86f36b2628",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a5/report.json": "ba9cedd6d9f2bbe2caa3ad0eeb298fa3334750ad60086422d7d48f3b690480f7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a5/commands.npz": "8ac5c77a29824b8f621c3071309990d320a1a61cc968ad55f76408a530680913",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a9",
+      "cycles": 286319,
+      "can_round_trips": 286319,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a9/report.json": "677a2f66ecc5696fa44190c5e3ee27cd3dc45f1deda9ffe3a2f330b4e1d0d20d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/a9/commands.npz": "e109e77124dc2296a00f65563c1b1ec3c960b414473a3cc7c6caaafbe7e65037",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "b8",
+      "cycles": 160431,
+      "can_round_trips": 160431,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/b8/report.json": "f48796acdfad87a0caaaddac2a41945c97311e85fa57f9fc73a1730d264ddba4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/b8/commands.npz": "554891332a496498ff64e08e4eba4210125fd5f2da8307231dd6d9377becfe0a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "b9",
+      "cycles": 90774,
+      "can_round_trips": 90774,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/b9/report.json": "3812983a690e5eafca93ea6af05620fe82e4e0cc8efc07e24505a63664444d66",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/b9/commands.npz": "2ffc685e29463a7b89d39bfb3583a37eb10a57d7201a24394550fcf9a89e3c4c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "ca",
+      "cycles": 327448,
+      "can_round_trips": 327448,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/ca/report.json": "753760c726ef1b85daf83b7108f758f9304dab408b49018f303616b99c96b81f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/ca/commands.npz": "3fa932ac86e14440d325a6cc4677b47cd75c5c6019b929d3a5d078a62c5590df",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived curvature-C0 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "raptor02",
+      "cycles": 132881,
+      "can_round_trips": 132881,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-curvature-c0-pi-v8",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/route.npz": "8a4cfe53994988d053b47d9caadf21ebd064fd20e598fa05ddc2da245bd0e980",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/model_paths.npz": "d5dc6f72d91472b8f2fb1add1680cdaea1e122774ddd6d8519fd7673daf71bb5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/metadata.json": "9602e08efc2bd784133837c4156c075bb89bad3bedd6b309f15e884ed20e338a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/raptor02/report.json": "af6b8fa4e4bfe3d5543794cdde4fbe4fd7560addf02717c2b6144c3987effafa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_curvature_c0_v7/raptor02/commands.npz": "99ee65b866eda85e5c5d54f8896a7f952504826753eca31a01a29c7cf36c6482",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_validate.py": "c91ead82b0320725276141b1bc9b84b132cd6345a144ea826ba2b7f069870932",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+      }
+    }
+  ],
+  "production_stress": {
+    "cycles": 20000,
+    "kp": 0.5,
+    "ki": 0.25,
+    "controller_updates": 60000,
+    "can_round_trips": 60000,
+    "seed": 20260913,
+    "independent_c0_comparisons": 20000,
+    "checks": "Independent scalar PI/unwind-first/anti-windup arithmetic, mirror symmetry, exact C0 independence, limits, slew, resets, CAN.",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/curvature_c0_production_stress.py": "4bf031a793efe9ebc066e5b6db6897ca8e844d5e34c6faecd4701a4d8f04132a",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc"
+    }
+  },
+  "limitations": [
+    "C1 parity applies only to fixed recorded inputs; changing C0 changes physical response and subsequent feedback.",
+    "Curvature arc omits independent live model position/heading; seven meters remains an engineering reference choice.",
+    "Smaller C0 is not proof of better or worse tracking; no candidate hardware drive has been performed."
+  ]
+}
