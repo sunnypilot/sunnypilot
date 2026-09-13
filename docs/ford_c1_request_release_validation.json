@@ -1,0 +1,214 @@
+{
+  "hypothesis": "model-action-c1-feedback-v4",
+  "baseline_revision": "17a86842f97f65216443a5d89648c8ace8518758",
+  "scope": "Software command delay and invariants only; no counterfactual wheel motion or proven physical tracking improvement. Hanging exits remain unresolved.",
+  "calibration_approved": false,
+  "tests": {
+    "passed": 717,
+    "subtests_passed": 9145,
+    "skipped": 178,
+    "log_sha256": "1864f8618b9d788f67e57766cf7b9ab9eda8e98a2ad0caf1c668bb9936b6eb7d",
+    "initial_regression": "4 failures on v3; same-turn command delay tests pass on v4",
+    "environment": "PARAMS_ROOT and LOG_ROOT point to dedicated temporary directories; initial sandbox path failures resolved without changing tests."
+  },
+  "feedback_stress": {
+    "cycles": 200000,
+    "mirrored_updates": 200000,
+    "can_round_trips": 200000,
+    "carryover_release_count": 165,
+    "baseline_revision": "17a86842f97f65216443a5d89648c8ace8518758",
+    "baseline_source_sha256": "167ae5a01fdd7ea014e6ad3fe9d0b6e31c67de8ba057ec5ecf18ab38fc16353f",
+    "request_release_cycles": 20454,
+    "exact_unchanged_state_and_commands_without_request_release": 179546,
+    "exact_v3_match_after_only_declared_retirement": 200000,
+    "checks": "Mirror symmetry, reset/override, amplitude, slew, correction bounds, bounded request retirement, carryover direction/confirmation, integration, PSCM limits, CAN.",
+    "scope": "Numerical software invariants only; no model of vehicle motion.",
+    "calibration_approved": false,
+    "controller_sha256": "5673630d31910fcfa5a3cc9a8d533b6b8fe9a76e2627bf1f67b52b3550ec7442"
+  },
+  "zero_error_stress": {
+    "seed": 20260912,
+    "random_cycles": 200000,
+    "mirrored_core_updates": 200000,
+    "invalid_or_inactive_resets": 3537,
+    "field_boundary_cases": 18138,
+    "float32_can_round_trips": 218138,
+    "analytic_targets_scalar_slew_and_mirror_checks_pass": true,
+    "direct_raw_float32_packing_matches_host_output": true,
+    "max_continuous_step_c0_c1": [
+      0.4000000000000019,
+      0.05000000000000002
+    ],
+    "calibration_approved": false,
+    "scope": "Zero-error numerical construction: measured equals requested curvature. No PSCM response claims.",
+    "opendbc_import_head": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/stress_model_action.py": "cec2619285dd41274562ac035ee8ea0a389269a0c4ef1b62efa6252ad1a714aa",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "1a4ce5f5f63b4d2f1f6e0537c9b2ca7c463ca44b427349d71d28fb8a1138b00f",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/model_action_replay.py": "af97c665f342c66b1be2502e188c63e6f3ee106d0a0d5e80997bc3040373ff9f"
+    }
+  },
+  "replays": {
+    "112": {
+      "baseline_revision": "17a86842f",
+      "baseline_source_sha256": "167ae5a01fdd7ea014e6ad3fe9d0b6e31c67de8ba057ec5ecf18ab38fc16353f",
+      "calibration_approved": false,
+      "cycles": 108971,
+      "active_cycles": 91414,
+      "validity_matches_baseline_exactly": true,
+      "status_counts": {
+        "inactive": 17557,
+        "active": 91414
+      },
+      "c0_matches_baseline_exactly": true,
+      "c0_changed_cycles": 0,
+      "max_abs_c0_change_m": 0.0,
+      "offset_overflow_seconds": 1.43945091800002,
+      "max_abs_offset_overflow_target_m": 0.5727187991142273,
+      "request_release_cycles": 414,
+      "request_release_seconds": 4.192443282002046,
+      "max_abs_request_release_rad": 0.008723706007003784,
+      "feedback_enabled_seconds": 840.7664582650004,
+      "pscm_limit_2_seconds": 14.441855805999936,
+      "c1_changed_cycles": 58152,
+      "max_abs_c1_change_rad": 0.023500000000000076,
+      "max_abs_correction_rad": 0.205313389369823,
+      "can_round_trips": 108971,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "2e9ea03d4947c7bb3a02c864e0dbc7c9bf031af51dba5e44a8aaa137c3aac6b2",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "5673630d31910fcfa5a3cc9a8d533b6b8fe9a76e2627bf1f67b52b3550ec7442"
+      },
+      "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+      "reference_limit": "Uses exact consumed model publication as reference; selected maneuver-plan messages are not reconstructed.",
+      "targeted_points": [
+        {
+          "time_s": 700.5553145380001,
+          "baseline_c0_c1": [
+            -0.34999999999999964,
+            0.010000000000000009
+          ],
+          "candidate_c0_c1": [
+            -0.34999999999999964,
+            0.008500000000000008
+          ]
+        }
+      ]
+    },
+    "113": {
+      "baseline_revision": "17a86842f",
+      "baseline_source_sha256": "167ae5a01fdd7ea014e6ad3fe9d0b6e31c67de8ba057ec5ecf18ab38fc16353f",
+      "calibration_approved": false,
+      "cycles": 49614,
+      "active_cycles": 27207,
+      "validity_matches_baseline_exactly": true,
+      "status_counts": {
+        "inactive": 22407,
+        "active": 27207
+      },
+      "c0_matches_baseline_exactly": true,
+      "c0_changed_cycles": 0,
+      "max_abs_c0_change_m": 0.0,
+      "offset_overflow_seconds": 2.7607263189997866,
+      "max_abs_offset_overflow_target_m": 0.6065444126725197,
+      "request_release_cycles": 119,
+      "request_release_seconds": 1.235422420998475,
+      "max_abs_request_release_rad": 0.009946223348379135,
+      "feedback_enabled_seconds": 243.3033761190004,
+      "pscm_limit_2_seconds": 14.003248144999816,
+      "c1_changed_cycles": 17825,
+      "max_abs_c1_change_rad": 0.027500000000000024,
+      "max_abs_correction_rad": 0.16966817302181283,
+      "can_round_trips": 49614,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "2e9ea03d4947c7bb3a02c864e0dbc7c9bf031af51dba5e44a8aaa137c3aac6b2",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "5673630d31910fcfa5a3cc9a8d533b6b8fe9a76e2627bf1f67b52b3550ec7442"
+      },
+      "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+      "reference_limit": "Uses exact consumed model publication as reference; selected maneuver-plan messages are not reconstructed.",
+      "old_correction_zero_s": 199.2531750590001,
+      "new_correction_zero_s": 198.62974550599984,
+      "earlier_correction_zero_s": 0.6234295530002782,
+      "targeted_points": [
+        {
+          "time_s": 198.64943081699994,
+          "baseline_c0_c1": [
+            2.16,
+            0.2925
+          ],
+          "candidate_c0_c1": [
+            2.16,
+            0.319
+          ]
+        },
+        {
+          "time_s": 481.56693996600006,
+          "baseline_c0_c1": [
+            0.5800000000000001,
+            -0.0645
+          ],
+          "candidate_c0_c1": [
+            0.5800000000000001,
+            -0.0645
+          ]
+        }
+      ]
+    },
+    "b9": {
+      "baseline_revision": "17a86842f",
+      "baseline_source_sha256": "167ae5a01fdd7ea014e6ad3fe9d0b6e31c67de8ba057ec5ecf18ab38fc16353f",
+      "calibration_approved": false,
+      "cycles": 90774,
+      "active_cycles": 86474,
+      "validity_matches_baseline_exactly": true,
+      "status_counts": {
+        "inactive": 4300,
+        "active": 86474
+      },
+      "c0_matches_baseline_exactly": true,
+      "c0_changed_cycles": 0,
+      "max_abs_c0_change_m": 0.0,
+      "offset_overflow_seconds": 5.703841178999909,
+      "max_abs_offset_overflow_target_m": 4.280821338295937,
+      "request_release_cycles": 440,
+      "request_release_seconds": 4.520361682000512,
+      "max_abs_request_release_rad": 0.017186015844345093,
+      "feedback_enabled_seconds": 816.0284774219999,
+      "pscm_limit_2_seconds": 9.308613716000167,
+      "c1_changed_cycles": 48629,
+      "max_abs_c1_change_rad": 0.03500000000000003,
+      "max_abs_correction_rad": 0.18457476562660308,
+      "can_round_trips": 90774,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "cd76c6106b2e41e905b752f1638d5b3e0feaa10ec21e038268df33183a91c640",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "1a4ce5f5f63b4d2f1f6e0537c9b2ca7c463ca44b427349d71d28fb8a1138b00f"
+      },
+      "timing_limit": "Controls publication time proxies the computation clock; full SubMaster checks are unavailable.",
+      "reference_limit": "Uses exact consumed model publication as reference; selected maneuver-plan messages are not reconstructed."
+    }
+  },
+  "float32_can_round_trips_excluding_integration_tests": 667497,
+  "checks": {
+    "ruff": true,
+    "controller_ty": true,
+    "settings_compilation": true,
+    "toggle_off_upstream_integration": true
+  },
+  "final_source_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "1a4ce5f5f63b4d2f1f6e0537c9b2ca7c463ca44b427349d71d28fb8a1138b00f",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_request_release.py": "4b4a69d67eba0ff9d5db0a50a4f868c5eb5f7c8c79d70832500554febc7d28fe",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action.py": "7b2429a5c40e5067b8edea4c11e9cdd4c6271d09f7982e30126eb42b93425a50",
+    "openpilot/selfdrive/controls/tests/test_ford_model_action_adapter.py": "5943a37f6e3865297ac543fb922a3c8b6e016c5af3eff589f518bd9615bbdb4f",
+    "openpilot/selfdrive/controls/tests/test_ford_controlsd_logging.py": "df883702a847465815feb6c4fbf88130c27e69d7e3e256c9962d99a9738ee353",
+    "tools/ford_pscm_lab/feedback_replay.py": "cd76c6106b2e41e905b752f1638d5b3e0feaa10ec21e038268df33183a91c640"
+  },
+  "source_note": "Controller comment/docstring cleanup followed feedback stress and routes 112/113. The recorded tested hashes are retained; b9 and zero-error stress record the final controller source. No executable controller change followed those runs."
+}

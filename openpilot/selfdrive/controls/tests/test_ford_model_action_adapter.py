@@ -294,31 +294,35 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 @pytest.mark.parametrize('maneuver', [False, True])
-def test_carryover_release_through_selected_limited_request_and_actual_can(pipeline, sign, maneuver):
+@pytest.mark.parametrize('same_turn', [False, True])
+def test_carryover_release_through_selected_limited_request_and_actual_can(pipeline, sign, maneuver, same_turn):
   call, publication = pipeline
   controls, sm = startup(), Subscriptions(maneuver)
   controls.sm, controls.desired_curvature = sm, sign*.004
   core = controls.ford_path_controller.core
   cc = structs.CarControl(latActive=True)
-  cs = SimpleNamespace(vEgo=20., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  speed = 10. if same_turn else 20.
+  cs = SimpleNamespace(vEgo=speed, yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
   cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
   downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
-  vehicle = SimpleNamespace(out=structs.CarState(vEgo=20., vEgoRaw=20.), acc_tja_status_stock_values=defaultdict(int),
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=speed, vEgoRaw=speed), acc_tja_status_stock_values=defaultdict(int),
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  request_releases = 0
   for frame in range(280):
     now = 1.+frame*.01
-    desired = sign*(.004 if frame < 200 else -.001)
-    model = straight(sign*(.2 if frame < 200 else -.2))
+    desired = sign*(.004 if frame < 200 else .01 if same_turn else -.001)
+    model = straight(sign*(.2 if frame < 200 or same_turn else -.2))
     model.action = SimpleNamespace(desiredCurvature=-desired if maneuver else desired)
     sm.messages['lateralManeuverPlan'].desiredCurvature = desired
-    controls.curvature = sign*(.004 if frame < 100 else .001 if frame < 200 else .003)
+    controls.curvature = sign*(.004 if frame < 100 else .006 if same_turn else .001 if frame < 200 else .003)
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9), lateralManeuverPlan=round(now*1e9))
     before = core.c0, core.c1
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    request_releases += core.request_release != 0.
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
     _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
@@ -333,13 +337,18 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
     packet = next(packet for packet in packets if packet[0] == address)
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
-      assert core.correction == pytest.approx(sign*.06)
+      assert core.correction == pytest.approx(sign*(-speed*.002 if same_turn else .06))
       assert core.carryover_release_count == 0
-  assert core.carryover_release_count == 1
-  assert controls.ford_path_controller.diagnostics['carryover_release_count'] == 1
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v3'
-  assert sign*controls.ford_path.path_angle < 0.
-  assert controls.ford_path.path_offset == pytest.approx(-sign*.2)
+  assert core.carryover_release_count == (0 if same_turn else 1)
+  assert controls.ford_path_controller.diagnostics['carryover_release_count'] == core.carryover_release_count
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v4'
+  if same_turn:
+    assert request_releases > 0
+    assert controls.desired_curvature == pytest.approx(sign*.01)
+    assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
+  else:
+    assert sign*controls.ford_path.path_angle < 0.
+  assert controls.ford_path.path_offset == pytest.approx(sign*(.2 if same_turn else -.2))
   controls.ford_path_controller.reset()
   assert core.carryover_release_count == 0
 

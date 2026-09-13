@@ -4,6 +4,7 @@ Selected only by its explicit toggle. The 7 m station and one-second scale are
 engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
 explicit feedback-strength choice, not an identified PSCM model or calibration.
 Opposed correction may be released when both path commands confirm the turn.
+Changed requests retire opposing correction only while measured error agrees.
 Base heading clipped by C1 is allocated to C0 at the existing 7 m reference.
 """
 import math
@@ -54,12 +55,12 @@ def encode_model_action(model, desired_curvature, speed):
 
 
 class ModelActionController:
-  """Unquantized C0/C1 slew positions and one C1 feedback correction.
+  """C0/C1 slew positions, C1 correction and the last feedback request.
 
   Feedback integrates requested minus measured curvature over traveled distance.
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
-  __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count')
+  __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count', 'last_feedback_desired', 'request_release')
 
   def __init__(self):
     self.reset()
@@ -67,6 +68,8 @@ class ModelActionController:
   def reset(self):
     self.c0 = self.c1 = self.correction = 0.
     self.carryover_release_count = 0  # Diagnostic only; never feeds the command law.
+    self.last_feedback_desired = None
+    self.request_release = 0.  # Diagnostic radians retired on this cycle.
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
              feedback_dt=None, feedback_enabled=True, pscm_limited=False):
@@ -86,9 +89,28 @@ class ModelActionController:
     self.c0 += float(np.clip(c0-self.c0, -4.*dt, 4.*dt))
     lower = max(-.5, self.c1-.5*dt)
     upper = min(.5, self.c1+.5*dt)
+    self.request_release = 0.
     if not feedback_enabled:
       self.correction = 0.
     else:
+      # A changed target can make old correction counterproductive before
+      # steering reverses. Retire at most the heading change, and only when
+      # fresh measured error calls for that same change, by at least a C1 DBC
+      # step. Never cross zero or discard a steady tracking correction just
+      # because error changes sign.
+      # Require the heading mismatch over the existing reference distance to
+      # cover the correction: small tracking noise must not erode a useful I.
+      # Evaluate both requests at today's speed so speed changes alone do not
+      # release anything. Duplicate measurements leave this history untouched.
+      if feedback_dt > 0. and self.last_feedback_desired is not None:
+        distance = max(OFFSET_STATION_M, speed*HEADING_TIME_S)
+        previous_base = float(np.clip(distance*self.last_feedback_desired, -.5, .5))
+        change = base_c1-previous_base
+        error = desired_curvature-current_curvature
+        if (abs(change) >= .0005 and change*error > 0. and change*self.correction < 0.
+            and abs(distance*error) >= abs(self.correction)):
+          self.request_release = float(np.clip(change, min(-self.correction, 0.), max(-self.correction, 0.)))
+          self.correction += self.request_release
       direction = math.copysign(1., base_c1)
       # Release only correction that prevents C1 from requesting the direction
       # shared by model C0, slewed C0 and base C1, while measured steering is
@@ -112,6 +134,8 @@ class ModelActionController:
       # never rewrite existing correction merely because the base changed.
       request = base_c1+self.correction
       self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
+    if self.last_feedback_desired is None or feedback_dt > 0. or not feedback_enabled:
+      self.last_feedback_desired = desired_curvature
     c1 = float(np.clip(base_c1+self.correction, -.5, .5))
     self.c1 += float(np.clip(c1-self.c1, -.5*dt, .5*dt))
     return FordPath(True, _packed(self.c0, .01, -5.12), _packed(self.c1, .0005, -.5), 0., 0.)
@@ -121,8 +145,8 @@ class FordModelActionController:
   """Input adapter for the opt-in selected-action controller.
 
   controlsd owns upstream selection/limiting and service health. This adapter
-  checks ages and clock order, then supplies elapsed time to the three-state
-  core. Feedback advances once per fresh steering measurement; repeated samples
+  checks ages and clock order, then supplies elapsed time to the core.
+  Feedback advances once per fresh steering measurement; repeated samples
   can still advance output slew. Raw model geometry is checked on every cycle.
 
   CAN yaw remains a health gate, not the feedback measurement. Driver override
@@ -136,7 +160,7 @@ class FordModelActionController:
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v3',
+    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v4',
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
@@ -178,7 +202,7 @@ class FordModelActionController:
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
     raw_heading = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
     base_heading = float(np.clip(raw_heading, -.5, .5))
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v3',
+    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v4',
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
@@ -186,6 +210,7 @@ class FordModelActionController:
                         'heading_feedforward': base_heading,
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
+                        'request_release': self.core.request_release,
                         'carryover_release_count': self.core.carryover_release_count,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}

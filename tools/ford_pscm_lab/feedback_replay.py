@@ -21,7 +21,7 @@ from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sam
 
 
 BASELINE = 'a7d70e2b0890184636827351e4789d866f2a7c97'
-FEEDBACK_V2 = '959ae3d6e76c479f48e081c060b0f3569a6f15f4'
+FEEDBACK_V3 = '17a86842f97f65216443a5d89648c8ace8518758'
 OPENDBC = '64aa61b9b3fd26e70a7caa915acab207ff3cd64a'
 
 
@@ -68,6 +68,7 @@ def replay(directory, output, baseline_revision=BASELINE):
   feedback_enabled = np.zeros(len(t), bool)
   pscm_limited = np.zeros(len(t), bool)
   offset_overflow = np.zeros(len(t))
+  request_release = np.zeros(len(t))
   reasons = Counter()
   releases = []
   for i, now in enumerate(t):
@@ -97,6 +98,7 @@ def replay(directory, output, baseline_revision=BASELINE):
     feedback_enabled[i] = d.get('feedback_enabled', False)
     pscm_limited[i] = d.get('pscm_limited', False)
     offset_overflow[i] = d.get('offset_overflow', 0.)
+    request_release[i] = d.get('request_release', 0.)
     if controller.core.carryover_release_count > previous_count:
       releases.append({'time_s': float(now-metadata['t0']), 'correction_before_rad': float(previous_correction),
                        'correction_after_rad': float(correction[i]), 'base_c1_rad': float(d['heading_feedforward']),
@@ -117,6 +119,9 @@ def replay(directory, output, baseline_revision=BASELINE):
             'max_abs_c0_change_m': float(abs(commands[:, 0]-baseline[:, 0]).max()),
             'offset_overflow_seconds': float(weight[offset_overflow != 0.].sum()),
             'max_abs_offset_overflow_target_m': float(abs(offset_overflow).max()),
+            'request_release_cycles': int(np.count_nonzero(request_release)),
+            'request_release_seconds': float(weight[request_release != 0.].sum()),
+            'max_abs_request_release_rad': float(abs(request_release).max()),
             'carryover_releases': releases,
             'feedback_enabled_seconds': float(weight[feedback_enabled].sum()),
             'pscm_limit_2_seconds': float(weight[pscm_limited & valid].sum()),
@@ -139,7 +144,8 @@ def replay(directory, output, baseline_revision=BASELINE):
   output.mkdir(parents=True, exist_ok=True)
   np.savez_compressed(output/'commands.npz', t=t-metadata['t0'], baseline=baseline, candidate=commands, valid=valid,
                       correction=correction, baseline_correction=baseline_correction, feedback_dt=feedback_dt,
-                      feedback_enabled=feedback_enabled, pscm_limited=pscm_limited, offset_overflow=offset_overflow)
+                      feedback_enabled=feedback_enabled, pscm_limited=pscm_limited, offset_overflow=offset_overflow,
+                      request_release=request_release)
   (output/'report.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
   print(json.dumps({k: v for k, v in report.items() if k not in ('source_sha256', 'carryover_releases')}
                    | {'carryover_release_count': len(releases)}, indent=2))
@@ -149,15 +155,17 @@ def stress(cycles, output):
   verify_dependency(OPENDBC)
   rng = np.random.default_rng(20260909)
   controller, mirror, wire = ModelActionController(), ModelActionController(), WireCheck()
-  old, baseline_hash = original_controller(FEEDBACK_V2)
+  old, baseline_hash = original_controller(FEEDBACK_V3)
   releases = 0
-  unchanged_without_overflow = 0
+  request_releases = 0
+  unchanged_without_request_release = 0
   for i in range(cycles):
     desired, measured = rng.uniform(-.1, .1, 2)
     speed, dt, offset = rng.uniform(.3, 55.), rng.uniform(.002, .1), rng.uniform(-8., 8.)
     active, enabled, limited = i % 211 != 0, i % 97 != 0, i % 7 == 0
     feedback_dt = 0. if i % 5 == 0 else rng.uniform(.002, .15)
     previous = controller.c0, controller.c1, controller.correction
+    previous_desired = controller.last_feedback_desired
     previous_count = controller.carryover_release_count
     args = {'speed': speed, 'dt': dt, 'feedback_dt': feedback_dt, 'active': active,
             'feedback_enabled': enabled, 'pscm_limited': limited}
@@ -168,25 +176,33 @@ def stress(cycles, output):
     # Clone the pre-update state to isolate this cycle's policy from the
     # different history that a previous release would otherwise create.
     old.core.c0, old.core.c1, old.core.correction = previous
+    retired = controller.request_release
+    # After just the declared retirement, the entire remaining command law
+    # must match the previously deployed implementation exactly.
+    old.core.correction += retired
     old.core.carryover_release_count = previous_count
     baseline_out = old.core.update(model(offset), desired, current_curvature=measured, **args)
     released = controller.carryover_release_count > previous_count
-    baseline_released = old.core.carryover_release_count > previous_count
-    raw_heading = max(7., speed)*desired
-    overflow = raw_heading-float(np.clip(raw_heading, -.5, .5))
-    if not active or overflow == 0.:
-      assert out == baseline_out
-      assert (controller.c0, controller.c1, controller.correction) == (old.core.c0, old.core.c1, old.core.correction)
-      unchanged_without_overflow += 1
-    if active:
-      expected_c0 = previous[0]+float(np.clip(np.clip(offset+7.*overflow, -5.11, 5.11)-previous[0], -4.*dt, 4.*dt))
-      assert abs(controller.c0-expected_c0) <= 1e-10
-    if released == baseline_released:
-      assert controller.c1 == old.core.c1 and controller.correction == old.core.correction
+    assert out == baseline_out
+    assert (controller.c0, controller.c1, controller.correction) == (old.core.c0, old.core.c1, old.core.correction)
+    assert controller.carryover_release_count == old.core.carryover_release_count
+    if retired:
+      request_releases += 1
+      assert active and enabled and feedback_dt > 0. and previous_desired is not None
+      distance = max(7., speed)
+      change = np.clip(distance*desired, -.5, .5)-np.clip(distance*previous_desired, -.5, .5)
+      assert abs(change) >= .0005
+      assert change*(desired-measured) > 0. and retired*previous[2] < 0.
+      assert abs(retired) <= min(abs(change), abs(previous[2]))+1e-10
+      assert abs(distance*(desired-measured)) >= abs(previous[2])
+      assert (previous[2]+retired)*previous[2] >= -1e-10
+    else:
+      unchanged_without_request_release += 1
     state = controller.c0, controller.c1, controller.correction
     mirrored = mirror.c0, mirror.c1, mirror.correction
     np.testing.assert_allclose(state, -np.array(mirrored), rtol=0., atol=1e-10)
     assert controller.carryover_release_count == mirror.carryover_release_count
+    assert abs(retired+mirror.request_release) <= 1e-10
     assert abs(controller.c0) <= 5.11+1e-10 and abs(controller.c1) <= .5+1e-10 and abs(controller.correction) <= 1.+1e-10
     if active:
       assert abs(controller.c0-previous[0]) <= 4.*dt+1e-10
@@ -196,7 +212,7 @@ def stress(cycles, output):
         if released:
           assert feedback_dt > 0. and desired*measured < 0. and previous[2]*desired < 0.
           assert offset*desired > 0. and controller.c0*desired > 0.
-        delta = controller.correction-(0. if released else previous[2])
+        delta = controller.correction-(0. if released else previous[2]+retired)
         request = (desired-measured)*speed*feedback_dt
         assert delta*request >= -1e-10 and abs(delta) <= abs(request)+1e-10
         assert (controller.correction-previous[2])*request >= -1e-10
@@ -211,9 +227,11 @@ def stress(cycles, output):
     wire.check(out)
   report = {'cycles': cycles, 'mirrored_updates': cycles, 'can_round_trips': wire.count,
             'carryover_release_count': releases,
-            'baseline_revision': FEEDBACK_V2, 'baseline_source_sha256': baseline_hash,
-            'exact_unchanged_state_and_commands_without_overflow': unchanged_without_overflow,
-            'checks': 'Mirror symmetry, reset/override, amplitude, slew, correction bounds, carryover direction/confirmation, integration, PSCM limits, CAN.',
+            'baseline_revision': FEEDBACK_V3, 'baseline_source_sha256': baseline_hash,
+            'request_release_cycles': request_releases,
+            'exact_unchanged_state_and_commands_without_request_release': unchanged_without_request_release,
+            'exact_v3_match_after_only_declared_retirement': cycles,
+            'checks': 'Symmetry, resets, amplitude/slew, bounded retirement, carryover confirmation, integration, PSCM limits, CAN.',
             'scope': 'Numerical software invariants only; no model of vehicle motion.', 'calibration_approved': False,
             'controller_sha256': hashlib.sha256(Path(ford_model_action.__file__).read_bytes()).hexdigest()}
   output.parent.mkdir(parents=True, exist_ok=True)
