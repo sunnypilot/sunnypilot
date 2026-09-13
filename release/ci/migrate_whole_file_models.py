@@ -9,7 +9,7 @@ type set and the selector version bumped; nothing else moves. Old clients keep r
 manifest and its chunks.
 
 Rerunnable: a model whose whole file is already stored with the right hash is not transferred
-again. The target manifest is only written when every selected model migrated, so it never lists
+again. The target manifest is only written when every model migrated, so it never lists
 a model that cannot be downloaded.
 
 Delete this script and its workflow once the catalog is on whole files.
@@ -151,20 +151,14 @@ def migrate_artifact(api: HfApi, session: requests.Session, hf_repo: str, name: 
 
 
 def migrate_manifest(src: dict, *, hf_repo: str, api: HfApi, session: requests.Session, selector_version: int, model_type: str,
-                     only: set[str] | None = None, limit: int | None = None, workers: int = 8, work_dir: Path | None = None,
+                     workers: int = 8, work_dir: Path | None = None,
                      dry_run: bool = False, log: Callable[[str], None] = lambda line: print(line, flush=True)) -> dict:
   """The whole-file manifest for src. Raises before anything is written if a model cannot be migrated."""
-  if not dry_run and (only is not None or limit is not None):
-    raise ValueError("--only/--limit would publish a manifest that drops every other model; use --dry-run for a partial run")
   if "tinygrad_ref" not in src:
     raise ValueError("source manifest has no tinygrad_ref; the client's manifest test requires one")
-  bundles = [bundle for bundle in src["bundles"] if only is None or bundle["short_name"] in only]
-  if only is not None and (missing := only - {bundle["short_name"] for bundle in bundles}):
-    raise ValueError(f"not in the source manifest: {', '.join(sorted(missing))}")
-  if limit is not None:
-    bundles = bundles[:limit]
+  bundles = src["bundles"]
   if not bundles:
-    raise ValueError("no bundles selected")
+    raise ValueError("source manifest has no bundles")
 
   work_dir = Path(tempfile.mkdtemp(prefix="migrate-", dir=work_dir))
   migrated = []
@@ -208,8 +202,6 @@ def main() -> int:
   parser.add_argument("--hf-repo", required=True, help="dataset that receives the whole files; chunks are read from the source manifest's URLs")
   parser.add_argument("--selector-version", type=int, default=20)
   parser.add_argument("--model-type", default="driving")
-  parser.add_argument("--only", default="", help="comma-separated short names; empty means every bundle")
-  parser.add_argument("--limit", type=int, default=None, help="stop after this many bundles (rehearsals)")
   parser.add_argument("--workers", type=int, default=8, help="parallel chunk downloads per model")
   parser.add_argument("--work-dir", type=Path, default=None, help="scratch space for one model at a time")
   parser.add_argument("--dry-run", action="store_true", help="download and verify only: no uploads, no manifest")
@@ -217,11 +209,9 @@ def main() -> int:
   disable_progress_bars()  # the upload bars are per-file tqdm output, unreadable in a CI log
 
   src = json.loads(args.src_json.read_text(encoding="utf-8"))
-  only = {name.strip() for name in args.only.split(",") if name.strip()} or None
   try:
     dst = migrate_manifest(src, hf_repo=args.hf_repo, api=HfApi(), session=requests.Session(), selector_version=args.selector_version,
-                           model_type=args.model_type, only=only, limit=args.limit, workers=args.workers, work_dir=args.work_dir,
-                           dry_run=args.dry_run)
+                           model_type=args.model_type, workers=args.workers, work_dir=args.work_dir, dry_run=args.dry_run)
   except Exception as e:
     print(f"migration stopped, nothing written: {e}", file=sys.stderr)
     return 1

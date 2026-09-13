@@ -40,11 +40,6 @@ on:
         required: true
         default: 'sunnypilot/sunnypilot-models'
         type: string
-      only:
-        description: 'Comma-separated short names to migrate (empty = whole catalog)'
-        required: false
-        default: ''
-        type: string
       dry_run:
         description: 'Download and verify only: no uploads, no manifest'
         required: true
@@ -81,14 +76,12 @@ jobs:
           DST_VERSION: ${{ inputs.dst_json_version }}
           HF_REPO: ${{ inputs.hf_repo }}
           SELECTOR_VERSION: ${{ inputs.selector_version }}
-          ONLY: ${{ inputs.only }}
         run: |
           python3 release/ci/migrate_whole_file_models.py \
             --src-json "docs/docs/${PREFIX}${SRC_VERSION}.json" \
             --dst-json "docs/docs/${PREFIX}${DST_VERSION}.json" \
             --hf-repo "$HF_REPO" \
             --selector-version "$SELECTOR_VERSION" \
-            --only "$ONLY" \
             --work-dir "${{ runner.temp }}" \
             ${{ inputs.dry_run && '--dry-run' || '' }}
 

@@ -179,20 +179,6 @@ class TestMigrateWholeFileModels(OpenpilotTestCase):
     assert self.api.uploads == [] and self.dst_files == {}
     assert "chunks" not in dst["bundles"][0]["models"][0]["artifact"]
 
-  def test_only_and_limit_select_bundles(self):
-    src = self.manifest(self.bundle("A", 1), self.bundle("B", 2), self.bundle("C", 3))
-    assert [b["short_name"] for b in self.run_migration(src, only={"C", "A"}, dry_run=True)["bundles"]] == ["A", "C"]
-    assert [b["short_name"] for b in self.run_migration(src, limit=2, dry_run=True)["bundles"]] == ["A", "B"]
-    with self.assertRaisesRegex(ValueError, "not in the source manifest: Z"):
-      self.run_migration(src, only={"Z"}, dry_run=True)
-
-  def test_partial_selection_is_refused_for_a_real_run(self):
-    src = self.manifest(self.bundle("A", 1), self.bundle("B", 2))
-    for kwargs in ({"only": {"A"}}, {"limit": 1}):
-      with self.assertRaisesRegex(ValueError, "drops every other model"):
-        self.run_migration(src, **kwargs)
-    assert self.api.uploads == []
-
   def test_unchunked_entry_needs_a_stored_file(self):
     plain = self.bundle()
     del plain["models"][0]["artifact"]["chunks"]
