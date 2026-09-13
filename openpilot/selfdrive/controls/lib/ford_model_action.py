@@ -5,6 +5,7 @@ engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
 explicit feedback-strength choice, not an identified PSCM model or calibration.
 Opposed correction may be released when both path commands confirm the turn.
 Changed requests retire opposing correction only while measured error agrees.
+Completed, direction-confirmed unwinds release dominant old correction.
 Base heading clipped by C1 is allocated to C0 at the existing 7 m reference.
 """
 import math
@@ -55,12 +56,13 @@ def encode_model_action(model, desired_curvature, speed):
 
 
 class ModelActionController:
-  """C0/C1 slew positions, C1 correction and the last feedback request.
+  """C0/C1 slew, C1 correction, last feedback request and unwind direction.
 
   Feedback integrates requested minus measured curvature over traveled distance.
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
-  __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count', 'last_feedback_desired', 'request_release')
+  __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count', 'last_feedback_desired', 'request_release',
+               'unwind_direction', 'unwind_release')
 
   def __init__(self):
     self.reset()
@@ -70,6 +72,8 @@ class ModelActionController:
     self.carryover_release_count = 0  # Diagnostic only; never feeds the command law.
     self.last_feedback_desired = None
     self.request_release = 0.  # Diagnostic radians retired on this cycle.
+    self.unwind_direction = 0.
+    self.unwind_release = 0.  # Diagnostic only; final output still obeys slew.
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
              feedback_dt=None, feedback_enabled=True, pscm_limited=False):
@@ -90,9 +94,30 @@ class ModelActionController:
     lower = max(-.5, self.c1-.5*dt)
     upper = min(.5, self.c1+.5*dt)
     self.request_release = 0.
+    self.unwind_release = 0.
     if not feedback_enabled:
       self.correction = 0.
+      self.unwind_direction = 0.
     else:
+      error = desired_curvature-current_curvature
+      if feedback_dt > 0.:
+        # Remember an unwind only when a relaxing request and excess measured
+        # steering call for leaving the old turn. This may precede accumulation
+        # while the output is still slewing. A steady request cannot arm it.
+        previous = self.last_feedback_desired
+        if (previous is not None and (desired_curvature-previous)*previous < 0.
+            and current_curvature*previous > 0. and error*previous < 0.):
+          self.unwind_direction = math.copysign(1., error)
+        direction = self.unwind_direction
+        if direction and error*direction <= 0.:
+          # Steering has caught the request. Retire dominant unwind memory only
+          # after the selected request crosses zero and both path offsets also
+          # confirm the new side. Catching a steady old-side bend retains I.
+          if (desired_curvature*direction >= 0. and self.correction*direction > abs(base_c1)
+              and min(target.path_offset*direction, self.c0*direction) >= .01):
+            self.unwind_release = self.correction
+            self.correction = 0.
+          self.unwind_direction = 0.
       # A changed target can make old correction counterproductive before
       # steering reverses. Retire at most the heading change, and only when
       # fresh measured error calls for that same change, by at least a C1 DBC
@@ -106,7 +131,6 @@ class ModelActionController:
         distance = max(OFFSET_STATION_M, speed*HEADING_TIME_S)
         previous_base = float(np.clip(distance*self.last_feedback_desired, -.5, .5))
         change = base_c1-previous_base
-        error = desired_curvature-current_curvature
         if (abs(change) >= .0005 and change*error > 0. and change*self.correction < 0.
             and abs(distance*error) >= abs(self.correction)):
           self.request_release = float(np.clip(change, min(-self.correction, 0.), max(-self.correction, 0.)))
@@ -134,6 +158,8 @@ class ModelActionController:
       # never rewrite existing correction merely because the base changed.
       request = base_c1+self.correction
       self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
+      if self.correction*self.unwind_direction < 0.:
+        self.unwind_direction = 0.
     if self.last_feedback_desired is None or feedback_dt > 0. or not feedback_enabled:
       self.last_feedback_desired = desired_curvature
     c1 = float(np.clip(base_c1+self.correction, -.5, .5))
@@ -160,7 +186,7 @@ class FordModelActionController:
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v4',
+    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v5',
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
@@ -202,7 +228,7 @@ class FordModelActionController:
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
     raw_heading = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
     base_heading = float(np.clip(raw_heading, -.5, .5))
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v4',
+    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v5',
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
@@ -211,6 +237,7 @@ class FordModelActionController:
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
                         'request_release': self.core.request_release,
+                        'unwind_direction': self.core.unwind_direction, 'unwind_release': self.core.unwind_release,
                         'carryover_release_count': self.core.carryover_release_count,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}

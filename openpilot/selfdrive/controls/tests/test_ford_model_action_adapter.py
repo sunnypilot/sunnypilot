@@ -341,7 +341,7 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
       assert core.carryover_release_count == 0
   assert core.carryover_release_count == (0 if same_turn else 1)
   assert controls.ford_path_controller.diagnostics['carryover_release_count'] == core.carryover_release_count
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v4'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v5'
   if same_turn:
     assert request_releases > 0
     assert controls.desired_curvature == pytest.approx(sign*.01)
@@ -351,6 +351,58 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
   assert controls.ford_path.path_offset == pytest.approx(sign*(.2 if same_turn else -.2))
   controls.ford_path_controller.reset()
   assert core.carryover_release_count == 0
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('maneuver', [False, True])
+def test_completed_unwind_release_through_selected_request_and_actual_can(pipeline, sign, maneuver):
+  call, publication = pipeline
+  controls, sm = startup(), Subscriptions(maneuver)
+  controls.sm, controls.desired_curvature = sm, -sign*.02
+  core = controls.ford_path_controller.core
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=4., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=4., vEgoRaw=4.), acc_tja_status_stock_values=defaultdict(int),
+                            lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  release_count = 0
+  for frame in range(180):
+    now = 1.+frame*.01
+    desired = -sign*(.02 if frame < 30 else .01 if frame < 80 else 0.)
+    controls.curvature = -sign*(.02 if frame < 30 else .04 if frame < 80 else .01 if frame < 130 else 0.)
+    model = straight(sign*(-.5 if frame < 80 else .05))
+    model.action = SimpleNamespace(desiredCurvature=-desired if maneuver else desired)
+    sm.messages['lateralManeuverPlan'].desiredCurvature = desired
+    sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9), lateralManeuverPlan=round(now*1e9))
+    before = core.c0, core.c1, core.correction
+    exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
+                'time': SimpleNamespace(monotonic=lambda now=now: now)})
+    assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    release_count += core.unwind_release != 0.
+    if frame == 129:
+      assert sign*core.correction > .04 and core.unwind_direction == sign
+    if frame == 130:
+      assert core.unwind_release == before[2] and core.correction == 0.
+      assert core.c1 == pytest.approx(before[1]-sign*.005)
+    msg = custom.CarControlSP.new_message()
+    exec(publication, {'self': controls, 'CC_SP': msg})
+    _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
+    received = parser.update([round(now*1e9), packets])
+    address = parser.dbc.name_to_msg['LateralMotionControl2'].address
+    assert address in received
+    wire = parser.vl['LateralMotionControl2']
+    assert wire['LatCtlPath_An_Actl'] == pytest.approx(-controls.ford_path.path_angle)
+    assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-controls.ford_path.path_offset)
+    assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
+    assert wire['LatCtl_D2_Rq'] == 2 and wire['LatCtlPath_No_Cnt'] == frame % 16
+    packet = next(packet for packet in packets if packet[0] == address)
+    assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
+  assert release_count == 1
+  assert controls.ford_path.path_angle == core.correction == 0.
+  assert controls.ford_path.path_offset == pytest.approx(sign*.05)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])

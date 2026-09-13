@@ -2,7 +2,8 @@
 
 The current experiment adds [measured-curvature C1 feedback](ford_c1_feedback.md)
 and [conditional correction release](ford_c1_carryover.md) to the restored
-original v1 mapping, with [base C1 overflow allocated to C0](ford_c1_overflow.md).
+original v1 mapping, with [base C1 overflow allocated to C0](ford_c1_overflow.md)
+and [completed-unwind correction release](ford_unwind_catchup.md).
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
@@ -20,7 +21,7 @@ turn-exit behavior and closed-loop stability remain unvalidated.
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-c1-feedback-v4`**. They report desired and
+identify **`hypothesis=model-action-c1-feedback-v5`**. They report desired and
 measured curvature, base heading, accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `carryover_release_count` counts
 conditional releases since the last controller reset; it does not control
@@ -29,6 +30,8 @@ amplitude and slew limits. `calibration_approved=false` remains.
 `request_release` reports correction retired on the current cycle when a changed
 request and sufficiently large measured error agree. Periodic logs can miss
 individual retirement cycles.
+`unwind_direction` remembers an unfinished unwind; `unwind_release` reports
+correction retired when a confirmed unwind catches the selected curvature.
 
 Turning the toggle off and completing another offroad-to-onroad cycle restores
 **upstream Ford curvature control**: 20 Hz steering messages, limited mode on
@@ -50,8 +53,11 @@ With fresh feedback, the controller can discard an opposing correction when
 it prevents C1 from following the direction shared by original model C0, applied C0
 and base C1, while measured curvature is still opposite. A separate bounded
 release now handles changed requests within the same turn when measured error
-also opposes the old correction. Matched curvature preserves correction; final
-output slew still applies. See the [current release rule](ford_c1_request_release.md).
+also opposes the old correction. V5 additionally retires dominant unwind memory
+at catch-up when the selected request reaches zero/new-side curvature and both
+C0 requests confirm that side. Steady requests cannot arm this release, and
+catching an old-side bend retains correction. Final output slew still applies.
+See [completed-unwind release](ford_unwind_catchup.md).
 
 C0 starts with the original 7 m model-path mapping. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
@@ -63,9 +69,10 @@ place. An explicit selection flag distinguishes upstream mode from an invalid
 experimental command; invalid experimental input cannot switch to upstream.
 The opendbc sender restores upstream behavior when that flag is false.
 
-See [changed-request release and validation](ford_c1_request_release.md) and
-`ford_c1_request_release_validation.json` for current evidence and reproduction
-commands. The [overflow specification](ford_c1_overflow.md) and
+See [completed-unwind release and validation](ford_unwind_catchup.md) and
+`ford_unwind_catchup_validation.json` for current evidence and reproduction
+commands. [Changed-request release](ford_c1_request_release.md) and its
+validation JSON record v4. The [overflow specification](ford_c1_overflow.md) and
 `ford_c1_overflow_validation.json` record v3. The carryover specification and `ford_c1_carryover_validation.json`
 record the previous experiment. `ford_c1_feedback_validation.json` records the initial feedback
 version at `5fbb583e5`. `ford_model_action_validation.json` and
