@@ -1,6 +1,6 @@
 # Ford selected-action drive-test branch
 
-This local v8 candidate uses [curvature-derived C0](ford_curvature_c0_v8.md)
+This v8 controller uses [curvature-derived C0](ford_curvature_c0_v8.md)
 and [continuous C1 PI feedback](ford_c1_minimal_pi.md)
 with **P=0.50 and I=0.25**.
 Only C0, C1 and accumulated error carry control history. C0 is now a 7 m circular arc from selected desired curvature.
@@ -10,9 +10,10 @@ through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
 
-The v8 implementation is on local branch `codex/ford-curvature-c0-trial`.
-This evaluation does not push it to `hiimisaac-dev`; the deployed v7 commit is
-`08b3a14ad`. The selection instructions below apply once a candidate is installed.
+The v8 implementation was introduced in `20485134e` for `sunnypilot/hiimisaac-dev`.
+It replaces v7 (`08b3a14ad`) once installed on the device. The gains remain
+P=0.50 and I=0.25, and PSCM `LimitReached` handling is unchanged. The separate
+offline experiment that ignores the reached-limit integration block is not included.
 
 ## Select and restore
 
