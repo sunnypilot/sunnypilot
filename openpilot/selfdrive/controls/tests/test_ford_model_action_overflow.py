@@ -59,7 +59,7 @@ def test_extra_offset_releases_at_existing_slew_without_stored_overflow(sign):
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_c1_feedback_saturation_does_not_spill_correction_into_c0(sign):
-  controller = ModelActionController()
+  controller = ModelActionController(proportional_gain=0., integral_gain=1.)
   for _ in range(200):
     out = controller.update(straight(sign*.2), sign*.02, current_curvature=0., speed=20., dt=.01)
   assert out.path_angle == pytest.approx(sign*.5)
@@ -77,14 +77,3 @@ def test_overflow_is_base_geometry_with_existing_feedback_gates(sign, enabled, l
   assert out.path_offset == pytest.approx(sign*.9)
   assert out.path_angle == pytest.approx(sign*.5)
   assert controller.correction == 0.
-
-
-@pytest.mark.parametrize('sign', [-1., 1.])
-def test_overflow_cannot_replace_model_centering_confirmation_for_carryover_release(sign):
-  controller = ModelActionController()
-  controller.c0, controller.c1, controller.correction = sign*.6, -sign*.1, -sign*.6
-  for _ in range(20):
-    controller.update(straight(-sign*.1), sign*.03, current_curvature=-sign*.002, speed=20., dt=.01)
-  assert sign*controller.c0 > 0.  # Overflow agrees with heading; model centering still opposes it.
-  assert controller.carryover_release_count == 0
-  assert sign*controller.correction < -.4

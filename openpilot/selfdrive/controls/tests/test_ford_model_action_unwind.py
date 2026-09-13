@@ -1,127 +1,78 @@
-"""Unwind correction must not become a new turn after a confirmed catch-up.
+import math
 
-These reproduce controller memory, not the PSCM's physical steering response.
-"""
 import pytest
 
-from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, ModelActionController
 from openpilot.selfdrive.controls.tests.test_ford_model_action import straight
+from openpilot.selfdrive.controls.lib.ford_model_action import ModelActionController
 
 
-def unwind(controller, sign):
-  for _ in range(30):
-    controller.update(straight(-sign*.5), -sign*.02, current_curvature=-sign*.02, speed=4., dt=.01)
-  # Selected curvature relaxes, but the wheel is still too far into the old
-  # turn. Feedback builds the same opposite-direction correction seen in 115.
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_existing_integral_can_unwind_while_output_slews(sign):
+  core = ModelActionController(.5, .25)
+  core.c1, core.correction = sign*.07, sign*.03
+  core.update(straight(), sign*.002, current_curvature=sign*.004, speed=20., dt=.01)
+  assert core.correction == pytest.approx(sign*.0299)
+  assert core.c1 == pytest.approx(sign*.065)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_unwinding_cannot_charge_opposite_correction_through_a_slew_limit(sign):
+  core = ModelActionController(.5, .25)
+  core.c1, core.correction = sign*.07, sign*.03
+  core.update(straight(), 0., current_curvature=sign*.5, speed=20., dt=.01, feedback_dt=.15)
+  assert core.correction == 0.
+  assert core.c1 == pytest.approx(sign*.065)
+
+
+@pytest.mark.parametrize('ki', [0., .25, .5, 1.])
+def test_integral_gain_scales_fresh_error_only(ki):
+  core = ModelActionController(0., ki)
+  core.c1 = .04
+  core.update(straight(), .002, current_curvature=.001, speed=20., dt=.01)
+  assert core.correction == pytest.approx(ki*.0002)
+  before = core.correction
+  core.update(straight(), 0., current_curvature=.001, speed=20., dt=.01, feedback_dt=0.)
+  assert core.correction == before
+
+
+def test_zero_error_does_not_erase_holding_correction():
+  core = ModelActionController(.5, .25)
+  core.c1, core.correction = .14, .1
   for _ in range(50):
-    controller.update(straight(-sign*.5), -sign*.01, current_curvature=-sign*.04, speed=4., dt=.01)
-  assert sign*controller.correction > .04
-  assert controller.unwind_direction == sign
-  for _ in range(30):
-    controller.update(straight(sign*.05), 0., current_curvature=-sign*.01, speed=4., dt=.01)
-  assert sign*controller.correction > .04
+    core.update(straight(), .002, current_curvature=.002, speed=20., dt=.01)
+    assert core.correction == .1
+
+
+@pytest.mark.parametrize('ki', [-1., math.inf, math.nan])
+def test_invalid_integral_gain_is_rejected(ki):
+  with pytest.raises(ValueError):
+    ModelActionController(.25, ki)
+
+
+def test_overflowing_integral_increment_resets():
+  core = ModelActionController(.25, 1e308)
+  assert not core.update(straight(), 1., current_curvature=0., speed=55., dt=.01).valid
+  assert core.c0 == core.c1 == core.correction == 0.
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-@pytest.mark.parametrize('requested', [0., .0001])
-def test_completed_unwind_does_not_keep_requesting_a_new_turn(sign, requested):
-  controller = ModelActionController()
-  unwind(controller, sign)
-  before = controller.c1
-  # The model path now confirms the unwind direction and actual steering has
-  # caught the near-zero/new-direction request. Allow the original output slew
-  # to finish; the old unwind correction must no longer prop up C1.
-  for _ in range(20):
-    out = controller.update(straight(sign*.05), sign*requested, current_curvature=sign*requested, speed=4., dt=.01)
-  assert abs(controller.c1-before) <= .100000001
-  assert out.path_offset == pytest.approx(sign*.05)
-  assert controller.correction == 0., 'Stored unwind correction remains after catch-up'
-  assert abs(out.path_angle-7.*sign*requested) <= .000500001
-  assert controller.unwind_direction == 0.
+def test_centering_cannot_gate_continuous_heading_correction(sign):
+  commands = []
+  for offset in (-.1, -.010001, -.01, -.009999, 0., .009999, .01, .010001, .1):
+    core = ModelActionController()
+    core.c0, core.c1, core.correction = offset, sign*.07, sign*.03
+    out = core.update(straight(offset), sign*.002, current_curvature=sign*.004, speed=20., dt=.01)
+    commands.append((out.path_angle, core.correction))
+  assert len(set(commands)) == 1
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-@pytest.mark.parametrize('case', ['not_caught', 'old_side_request', 'model_c0_old', 'model_c0_neutral', 'slewed_c0_old',
-                                  'correction_not_dominant', 'opposite_correction', 'no_unwind', 'duplicate'])
-def test_unwind_release_requires_catchup_and_confirmed_new_direction(sign, case):
-  controller = ModelActionController()
-  unwind(controller, sign)
-  desired = measured = 0.
-  offset, feedback_dt = sign*.05, .01
-  if case == 'not_caught':
-    measured = -sign*.005
-  elif case == 'old_side_request':
-    desired = measured = -sign*.001
-  elif case == 'model_c0_old':
-    offset = -sign*.05
-  elif case == 'model_c0_neutral':
-    offset = 0.
-  elif case == 'slewed_c0_old':
-    controller.c0 = -sign*.5
-  elif case == 'correction_not_dominant':
-    desired = measured = sign*.02
-  elif case == 'opposite_correction':
-    controller.correction = -sign*.01
-  elif case == 'no_unwind':
-    controller.unwind_direction = 0.
-  elif case == 'duplicate':
-    feedback_dt = 0.
-  before = controller.correction
-  controller.update(straight(offset), desired, current_curvature=measured, speed=4., dt=.01, feedback_dt=feedback_dt)
-  assert controller.unwind_release == 0.
-  assert abs(controller.correction-before) <= abs(desired-measured)*4.*feedback_dt+1e-10
-
-
-@pytest.mark.parametrize('sign', [-1., 1.])
-@pytest.mark.parametrize('desired', [0., .004])
-def test_steady_tracking_correction_survives_matched_steering_and_noise(sign, desired):
-  controller = ModelActionController()
-  controller.correction, controller.c1, controller.c0 = sign*.05, sign*(7.*desired+.05), sign*.05
-  for i in range(300):
-    measured = sign*(desired+(1 if i % 2 else -1)*.000001)
-    controller.update(straight(sign*.05), sign*desired, current_curvature=measured, speed=4., dt=.01)
-    assert controller.unwind_direction == controller.unwind_release == 0.
-  assert controller.correction == pytest.approx(sign*.05)
-
-
 @pytest.mark.parametrize('limited', [False, True])
-def test_catchup_release_uses_existing_slew_and_is_consumed_once(limited):
-  controller = ModelActionController()
-  unwind(controller, 1.)
-  before, correction = controller.c1, controller.correction
-  controller.update(straight(.05), 0., current_curvature=.001, speed=4., dt=.01, pscm_limited=limited)
-  assert controller.unwind_release == correction
-  assert controller.c1 == pytest.approx(before-.005)
-  assert controller.correction <= 0.  # Remaining feedback can only correct the overshoot.
-  assert controller.unwind_direction == 0.
-  controller.update(straight(.05), 0., current_curvature=.001, speed=4., dt=.01)
-  assert controller.unwind_release == 0.
-
-
-@pytest.mark.parametrize('override', ['driver', 'invalid', 'inactive'])
-def test_unwind_history_is_cleared_by_override_and_reset(override):
-  controller = ModelActionController()
-  unwind(controller, 1.)
-  kwargs = {'driver': {'feedback_enabled': False}, 'invalid': {'valid': False}, 'inactive': {'active': False}}[override]
-  controller.update(straight(.05), 0., current_curvature=0., speed=4., dt=.01, **kwargs)
-  assert controller.unwind_direction == controller.unwind_release == controller.correction == 0.
-
-
-def test_duplicate_adapter_measurement_cannot_consume_unwind_until_fresh_catchup():
-  controller = FordModelActionController()
-  for frame in range(130):
-    now = 1.+frame*.01
-    desired = -.02 if frame < 30 else -.01 if frame < 80 else 0.
-    measured = -.02 if frame < 30 else -.04 if frame < 80 else -.01
-    controller.update(straight(-.5 if frame < 80 else .05), desired, current_curvature=measured,
-                      speed=4., yaw_rate=0., now=now, measurement_time=now, model_time=now, reference_time=now, active=True)
-  assert controller.core.unwind_direction == 1.
-  before = controller.core.correction
-  for now, stamp in [(2.30, 2.29), (2.31, 2.31), (2.32, 2.31)]:
-    controller.update(straight(.05), 0., current_curvature=0., speed=4., yaw_rate=0., now=now,
-                      measurement_time=stamp, model_time=now, reference_time=now, active=True)
-    if now == 2.30:
-      assert controller.core.correction == before and controller.core.unwind_direction == 1.
-    else:
-      assert controller.core.correction == controller.core.unwind_direction == 0.
-    assert controller.diagnostics['unwind_release'] == (before if now == 2.31 else 0.)
+def test_duplicate_measurements_cannot_retire_integral(sign, limited):
+  core = ModelActionController()
+  core.c1, core.correction = sign*.07, sign*.03
+  core.update(straight(), -sign*.002, current_curvature=sign*.004, speed=20., dt=.01,
+              feedback_dt=0., pscm_limited=limited)
+  assert core.correction == sign*.03
+  assert core.proportional == pytest.approx(-sign*.06)
+  assert core.c1 == pytest.approx(sign*.065)

@@ -1,11 +1,9 @@
 # Ford selected-action drive-test branch
 
-The current experiment adds [measured-curvature C1 feedback](ford_c1_feedback.md)
-and [conditional correction release](ford_c1_carryover.md) to the restored
-original v1 mapping, with [base C1 overflow allocated to C0](ford_c1_overflow.md)
-and [completed-unwind correction release](ford_unwind_catchup.md).
-V6 adds [explicit proportional C1 feedback with P=0.25](ford_c1_pi.md), retaining
-the existing feedback timing. This is an initial drive-trial gain.
+The current v7 experiment uses [continuous C1 PI feedback](ford_c1_minimal_pi.md)
+with **P=0.50 and I=0.25**, replacing the earlier conditional-release rules.
+Only C0, C1 and accumulated error carry control history. The restored model
+mapping and [base C1 overflow allocation to C0](ford_c1_overflow.md) remain.
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
@@ -23,19 +21,12 @@ turn-exit behavior and closed-loop stability remain unvalidated.
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-c1-pi-v6`**. They report desired and
-measured curvature, base heading, proportional and accumulated correction, applied heading,
-feedback timing and driver/PSCM gating. `carryover_release_count` counts
-conditional releases since the last controller reset; it does not control
-steering. `offset_overflow` reports the extra C0 target in meters before C0
-amplitude and slew limits. `calibration_approved=false` remains.
-`request_release` reports correction retired on the current cycle when a changed
-request and sufficiently large measured error agree. Periodic logs can miss
-individual retirement cycles.
-`unwind_direction` remembers an unfinished unwind; `unwind_release` reports
-correction retired when a confirmed unwind catches the selected curvature.
-`heading_proportional`, `proportional_gain`, `feedback_curvature` and
-`feedback_error` separate the new P contribution and its reference from I.
+identify **`hypothesis=model-action-c1-pi-v7`**. They report desired and measured
+curvature, base heading, proportional and accumulated correction, applied heading,
+feedback timing and driver/PSCM gating. `proportional_gain=0.5` and
+`integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
+target in meters before C0 amplitude and slew limits. `calibration_approved=false`
+remains. The retired request/unwind/reversal diagnostic fields are removed.
 
 Turning the toggle off and completing another offroad-to-onroad cycle restores
 **upstream Ford curvature control**: 20 Hz steering messages, limited mode on
@@ -54,15 +45,11 @@ error without accumulating. Repeated publications may advance P and output slew
 but cannot integrate the same elapsed interval twice.
 Driver override clears P and I. A fresh PSCM reached-limit flag stops
 extra outward accumulation while preserving unwind and base model changes.
-With fresh feedback, the controller can discard an opposing correction when
-it prevents C1 from following the direction shared by original model C0, applied C0
-and base C1, while measured curvature is still opposite. A separate bounded
-release now handles changed requests within the same turn when measured error
-also opposes the old correction. V5 additionally retires dominant unwind memory
-at catch-up when the selected request reaches zero/new-side curvature and both
-C0 requests confirm that side. Steady requests cannot arm this release, and
-catching an old-side bend retains correction. Final output slew still applies.
-See [completed-unwind release](ford_unwind_catchup.md).
+With fresh feedback, the part of the error increment that cancels existing I
+is applied before the ordinary accumulation clamp. Any remainder must fit the
+combined feedforward/P/I amplitude and slew envelope. There is no C0 confirmation
+threshold or remembered turn direction. Zero error removes P and holds I; it
+does not trigger a release. Final command limits still apply.
 
 C0 starts with the original 7 m model-path mapping. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
@@ -74,8 +61,9 @@ place. An explicit selection flag distinguishes upstream mode from an invalid
 experimental command; invalid experimental input cannot switch to upstream.
 The opendbc sender restores upstream behavior when that flag is false.
 
-See [proportional feedback trial and validation](ford_c1_pi.md) and
-`ford_c1_pi_validation.json` for current evidence and reproduction commands.
+See [continuous PI trial and validation](ford_c1_minimal_pi.md) and
+`ford_c1_minimal_pi_validation.json` for current evidence and reproduction commands.
+[Proportional feedback](ford_c1_pi.md) and its validation JSON record v6.
 [Completed-unwind release](ford_unwind_catchup.md) and
 `ford_unwind_catchup_validation.json` record v5. [Changed-request release](ford_c1_request_release.md) and its
 validation JSON record v4. The [overflow specification](ford_c1_overflow.md) and

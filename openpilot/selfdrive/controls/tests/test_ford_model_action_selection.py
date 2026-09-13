@@ -9,7 +9,7 @@ import pytest
 
 from opendbc.car.ford.values import CAR, FordFlags
 from openpilot.common.params import Params, ParamKeyFlag, ParamKeyType
-from openpilot.selfdrive.controls.lib.ford_model_action import C1_PROPORTIONAL_GAIN, FordModelActionController, select_model_action_controller
+from openpilot.selfdrive.controls.lib.ford_model_action import C1_INTEGRAL_GAIN, C1_PROPORTIONAL_GAIN, FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 
 
@@ -46,8 +46,9 @@ def test_actual_startup_priority(candidate, observer, fingerprint):
   selected = startup(car_params(carFingerprint=fingerprint), params=SimpleNamespace(get_bool=settings.__getitem__))
   if candidate:
     assert type(selected.ford_path_controller) is FordModelActionController
-    assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .25
-    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-pi-v6'
+    assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .50
+    assert selected.ford_path_controller.core.integral_gain == C1_INTEGRAL_GAIN == .25
+    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-pi-v7'
   else:
     assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate

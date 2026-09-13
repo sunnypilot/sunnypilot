@@ -16,7 +16,7 @@ from types import ModuleType, SimpleNamespace
 import numpy as np
 
 from openpilot.selfdrive.controls.lib import ford_model_action
-from openpilot.selfdrive.controls.lib.ford_model_action import C1_PROPORTIONAL_GAIN, FordModelActionController, ModelActionController
+from openpilot.selfdrive.controls.lib.ford_model_action import C1_INTEGRAL_GAIN, C1_PROPORTIONAL_GAIN, FordModelActionController
 from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sample, table, verify_dependency
 
 
@@ -89,7 +89,7 @@ def replay(directory, output, baseline_revision=BASELINE):
     feedback = {'current_curvature': c['measured'][i], 'driver_pressed': bool(cs['pressed'][i]),
                 'driver_torque': cs['torque'][i], 'pscm_status': status}
     previous = old.update(model, c['desired'][i], **common, **(feedback if old_has_feedback else {}))
-    previous_count, previous_correction = controller.core.carryover_release_count, controller.core.correction
+    previous_count, previous_correction = getattr(controller.core, 'carryover_release_count', 0), controller.core.correction
     command = controller.update(model, c['desired'][i], **feedback, **common)
     for destination, result in ((baseline, previous), (commands, command)):
       destination[i] = result.path_offset, result.path_angle, result.curvature, result.curvature_rate
@@ -111,7 +111,7 @@ def replay(directory, output, baseline_revision=BASELINE):
                               'correction_after_rad': float(correction[i]), 'base_c1_rad': float(d['heading_feedforward']),
                               'desired_angle_deg': float(c['desired_angle'][i]), 'actual_angle_deg': float(c['actual_angle'][i]),
                               'baseline_c0_c1': baseline[i, :2].tolist(), 'candidate_c0_c1': commands[i, :2].tolist()})
-    if controller.core.carryover_release_count > previous_count:
+    if getattr(controller.core, 'carryover_release_count', 0) > previous_count:
       releases.append({'time_s': float(now-metadata['t0']), 'correction_before_rad': float(previous_correction),
                        'correction_after_rad': float(correction[i]), 'base_c1_rad': float(d['heading_feedforward']),
                        'desired_angle_deg': float(c['desired_angle'][i]), 'actual_angle_deg': float(c['actual_angle'][i]),
@@ -124,7 +124,8 @@ def replay(directory, output, baseline_revision=BASELINE):
   assert np.all(abs(correction) <= 1.+1e-10)
   weight = np.minimum(np.diff(t, append=t[-1]+.01), .03)
   report = {'scope': __doc__, 'baseline_revision': baseline_revision, 'baseline_source_sha256': baseline_hash,
-            'proportional_gain': C1_PROPORTIONAL_GAIN,
+            'proportional_gain': C1_PROPORTIONAL_GAIN, 'integral_gain': C1_INTEGRAL_GAIN,
+            'hypothesis': controller.hypothesis,
             'calibration_approved': False, 'cycles': len(t), 'active_cycles': int(valid.sum()),
             'validity_matches_baseline_exactly': True, 'status_counts': dict(reasons),
             'c0_matches_baseline_exactly': bool(np.array_equal(commands[:, 0], baseline[:, 0])),
@@ -170,7 +171,10 @@ def replay(directory, output, baseline_revision=BASELINE):
 def stress(cycles, output):
   verify_dependency(OPENDBC)
   rng = np.random.default_rng(20260913)
-  controller, mirror, wire = ModelActionController(), ModelActionController(), WireCheck()
+  # This historical stress compares v5's conditional release with v4.
+  candidate_revision = '22d188776cb557acea459a1fca70812bdb2df46c'
+  candidate, candidate_hash = original_controller(candidate_revision)
+  controller, mirror, wire = candidate.core, type(candidate.core)(), WireCheck()
   old, baseline_hash = original_controller(FEEDBACK_V4)
   releases = 0
   request_releases = 0
@@ -263,10 +267,11 @@ def stress(cycles, output):
             'request_release_cycles': request_releases,
             'unwind_release_cycles': unwind_releases,
             'exact_unchanged_state_and_commands_without_unwind_release': unchanged_without_unwind_release,
+            'candidate_revision': candidate_revision, 'candidate_source_sha256': candidate_hash,
             'exact_v4_match_after_only_declared_retirement': cycles,
             'checks': 'Symmetry, resets, amplitude/slew, bounded retirement, carryover confirmation, integration, PSCM limits, CAN.',
             'scope': 'Numerical software invariants only; no model of vehicle motion.', 'calibration_approved': False,
-            'controller_sha256': hashlib.sha256(Path(ford_model_action.__file__).read_bytes()).hexdigest()}
+            'controller_sha256': candidate_hash}
   output.parent.mkdir(parents=True, exist_ok=True)
   output.write_text(json.dumps(report, indent=2)+'\n')
   print(json.dumps(report, indent=2))

@@ -1,13 +1,8 @@
-"""Experimental Ford C2-free controller with measured-curvature C1 PI feedback.
+"""Opt-in Ford C2-free model mapping with measured-curvature PI feedback.
 
-Selected only by its explicit toggle. The 7 m station and one-second scale are
-engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
-explicit feedback-strength choice, not an identified PSCM model or calibration.
-The selected experiment adds an explicit proportional heading-error term.
-Opposed correction may be released when both path commands confirm the turn.
-Changed requests retire opposing correction only while measured error agrees.
-Completed, direction-confirmed unwinds release dominant old correction.
-Base heading clipped by C1 is allocated to C0 at the existing 7 m reference.
+C0 samples the model at 7 m, including clipped base-heading overflow. C1
+combines the selected curvature's heading with proportional and integrated
+tracking error. Reference distance and gains are explicit trial choices.
 """
 import math
 import struct
@@ -20,7 +15,8 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 OFFSET_STATION_M = 7.0
 HEADING_TIME_S = 1.0
-C1_PROPORTIONAL_GAIN = 0.25  # Initial drive-trial gain, not a learned calibration.
+C1_PROPORTIONAL_GAIN = 0.50  # Drive-trial gains, not a learned calibration.
+C1_INTEGRAL_GAIN = 0.25
 CALIBRATION_APPROVED = False
 
 
@@ -58,127 +54,62 @@ def encode_model_action(model, desired_curvature, speed):
 
 
 class ModelActionController:
-  """C0/C1 slew, C1 correction, last feedback request and unwind direction.
+  """Only C0 slew, C1 slew and integrated tracking error carry control history.
 
-  Feedback integrates requested minus measured curvature over traveled distance.
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
-  Zero P is the v5 reference; onroad selection supplies the explicit trial gain.
   """
-  __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count', 'last_feedback_desired', 'request_release',
-               'unwind_direction', 'unwind_release', 'proportional_gain', 'proportional', 'feedback_curvature')
+  __slots__ = ('c0', 'c1', 'correction', 'proportional_gain', 'integral_gain', 'proportional', 'feedback_curvature')
 
-  def __init__(self, proportional_gain=0.):
-    if not _finite(proportional_gain) or proportional_gain < 0.:
-      raise ValueError('Proportional gain must be finite and nonnegative')
-    self.proportional_gain = float(proportional_gain)
+  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN):
+    if not _finite(proportional_gain, integral_gain) or min(proportional_gain, integral_gain) < 0.:
+      raise ValueError('PI gains must be finite and nonnegative')
+    self.proportional_gain, self.integral_gain = float(proportional_gain), float(integral_gain)
     self.reset()
 
   def reset(self):
-    self.c0 = self.c1 = self.correction = 0.
-    self.carryover_release_count = 0  # Diagnostic only; never feeds the command law.
-    self.last_feedback_desired = None
-    self.request_release = 0.  # Diagnostic radians retired on this cycle.
-    self.unwind_direction = 0.
-    self.unwind_release = 0.  # Diagnostic only; final output still obeys slew.
-    self.proportional = self.feedback_curvature = 0.
+    self.c0 = self.c1 = self.correction = self.proportional = self.feedback_curvature = 0.
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
              feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None):
     feedback_dt = dt if feedback_dt is None else feedback_dt
-    feedback_curvature = desired_curvature if feedback_curvature is None else feedback_curvature
-    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, feedback_curvature) or not .002 <= dt <= .1
-        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1. or abs(feedback_curvature) > 1.):
+    reference = desired_curvature if feedback_curvature is None else feedback_curvature
+    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, reference) or not .002 <= dt <= .1
+        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1. or abs(reference) > 1.):
       self.reset()
       return FordPath()
     target = encode_model_action(model, desired_curvature, speed)
     if not target.valid:
       self.reset()
       return FordPath()
-    self.feedback_curvature = feedback_curvature
-    feedback_error = feedback_curvature-current_curvature
-    self.proportional = self.proportional_gain*max(OFFSET_STATION_M, speed*HEADING_TIME_S)*feedback_error if feedback_enabled else 0.
+    self.feedback_curvature = reference
+    error = reference-current_curvature
+    self.proportional = self.proportional_gain*max(OFFSET_STATION_M, speed*HEADING_TIME_S)*error if feedback_enabled else 0.
     if not _finite(self.proportional):
       self.reset()
       return FordPath()
-    base_c1 = float(np.clip(target.path_angle, -.5, .5))
-    # Preserve the linear path reference at 7 m when the base heading clips.
-    # This is instantaneous geometry, not stored error or C1 feedback spill.
-    c0 = float(np.clip(target.path_offset + OFFSET_STATION_M*(target.path_angle-base_c1), -5.11, 5.11))
-    self.c0 += float(np.clip(c0-self.c0, -4.*dt, 4.*dt))
-    lower = max(-.5, self.c1-.5*dt)
-    upper = min(.5, self.c1+.5*dt)
-    self.request_release = 0.
-    self.unwind_release = 0.
-    if not feedback_enabled:
-      self.correction = 0.
-      self.unwind_direction = 0.
-    else:
-      error = desired_curvature-current_curvature
-      if feedback_dt > 0.:
-        # Remember an unwind only when a relaxing request and excess measured
-        # steering call for leaving the old turn. This may precede accumulation
-        # while the output is still slewing. A steady request cannot arm it.
-        previous = self.last_feedback_desired
-        if (previous is not None and (desired_curvature-previous)*previous < 0.
-            and current_curvature*previous > 0. and error*previous < 0.):
-          self.unwind_direction = math.copysign(1., error)
-        direction = self.unwind_direction
-        if direction and error*direction <= 0.:
-          # Steering has caught the request. Retire dominant unwind memory only
-          # after the selected request crosses zero and both path offsets also
-          # confirm the new side. Catching a steady old-side bend retains I.
-          if (desired_curvature*direction >= 0. and self.correction*direction > abs(base_c1)
-              and min(target.path_offset*direction, self.c0*direction) >= .01):
-            self.unwind_release = self.correction
-            self.correction = 0.
-          self.unwind_direction = 0.
-      # A changed target can make old correction counterproductive before
-      # steering reverses. Retire at most the heading change, and only when
-      # fresh measured error calls for that same change, by at least a C1 DBC
-      # step. Never cross zero or discard a steady tracking correction just
-      # because error changes sign.
-      # Require the heading mismatch over the existing reference distance to
-      # cover the correction: small tracking noise must not erode a useful I.
-      # Evaluate both requests at today's speed so speed changes alone do not
-      # release anything. Duplicate measurements leave this history untouched.
-      if feedback_dt > 0. and self.last_feedback_desired is not None:
-        distance = max(OFFSET_STATION_M, speed*HEADING_TIME_S)
-        previous_base = float(np.clip(distance*self.last_feedback_desired, -.5, .5))
-        change = base_c1-previous_base
-        if (abs(change) >= .0005 and change*error > 0. and change*self.correction < 0.
-            and abs(distance*error) >= abs(self.correction)):
-          self.request_release = float(np.clip(change, min(-self.correction, 0.), max(-self.correction, 0.)))
-          self.correction += self.request_release
-      direction = math.copysign(1., base_c1)
-      # Release only correction that prevents C1 from requesting the direction
-      # shared by model C0, slewed C0 and base C1, while measured steering is
-      # still opposite. One DBC step confirms each request is nonzero. Matched
-      # steering, neutral/conflicting centering and duplicate samples retain I.
-      if (feedback_dt > 0. and abs(base_c1) >= .0005 and current_curvature*direction < 0.
-          and min(target.path_offset*direction, self.c0*direction) >= .01
-          and (base_c1+self.correction)*direction <= 0.):
-        self.correction = 0.
-        self.carryover_release_count += 1
-      increment = feedback_error*speed*feedback_dt
-      # LimitReached inhibits only extra demand in the measured turn direction.
-      # Opposing correction and changes to the model request remain available.
+    base = float(np.clip(target.path_angle, -.5, .5))
+    offset = float(np.clip(target.path_offset+OFFSET_STATION_M*(target.path_angle-base), -5.11, 5.11))
+    self.c0 += float(np.clip(offset-self.c0, -4.*dt, 4.*dt))
+    lower, upper = max(-.5, self.c1-.5*dt), min(.5, self.c1+.5*dt)
+    if feedback_enabled:
+      increment = self.integral_gain*error*speed*feedback_dt
+      if not _finite(increment):
+        self.reset()
+        return FordPath()
       direction = current_curvature if current_curvature else self.c1
       if pscm_limited and increment*direction > 0.:
-        # An old opposing correction may return to zero; don't trap it below
-        # the base request just because the PSCM now reports a limit.
         increment = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
-      # Include P in the available headroom so I cannot wind up behind it.
-      # Integrate only as far as this cycle's amplitude/slew envelope permits.
-      # If the base moved outside that envelope, allow increments toward it;
-      # never rewrite existing correction merely because the base changed.
-      request = base_c1+self.proportional+self.correction
+      # Retire existing I before limiting new accumulation; never cross zero
+      # through this step. The final command still obeys amplitude and slew.
+      relief = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
+      self.correction += relief
+      increment -= relief
+      request = base+self.proportional+self.correction
       self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
-      if self.correction*self.unwind_direction < 0.:
-        self.unwind_direction = 0.
-    if self.last_feedback_desired is None or feedback_dt > 0. or not feedback_enabled:
-      self.last_feedback_desired = desired_curvature
-    c1 = float(np.clip(base_c1+self.proportional+self.correction, -.5, .5))
-    self.c1 += float(np.clip(c1-self.c1, -.5*dt, .5*dt))
+    else:
+      self.correction = 0.
+    request = float(np.clip(base+self.proportional+self.correction, -.5, .5))
+    self.c1 += float(np.clip(request-self.c1, -.5*dt, .5*dt))
     return FordPath(True, _packed(self.c0, .01, -5.12), _packed(self.c1, .0005, -.5), 0., 0.)
 
 
@@ -194,9 +125,9 @@ class FordModelActionController:
   clears the correction. Fresh PSCM limits only inhibit outward integration;
   neither a limit nor a repeated measurement freezes the model request.
   """
-  def __init__(self, proportional_gain=0.):
-    self.core = ModelActionController(proportional_gain=proportional_gain)
-    self.hypothesis = 'model-action-c1-pi-v6' if proportional_gain else 'model-action-c1-feedback-v5'
+  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN):
+    self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain)
+    self.hypothesis = 'model-action-c1-pi-v7'
     self.reset()
 
   def reset(self, status='inactive'):
@@ -255,11 +186,8 @@ class FordModelActionController:
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
                         'heading_proportional': self.core.proportional, 'proportional_gain': self.core.proportional_gain,
-                        'feedback_curvature': self.core.feedback_curvature,
+                        'integral_gain': self.core.integral_gain, 'feedback_curvature': self.core.feedback_curvature,
                         'feedback_error': self.core.feedback_curvature-current_curvature,
-                        'request_release': self.core.request_release,
-                        'unwind_direction': self.core.unwind_direction, 'unwind_release': self.core.unwind_release,
-                        'carryover_release_count': self.core.carryover_release_count,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}
     return command
@@ -269,5 +197,5 @@ def select_model_action_controller(CP, enabled):
   """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
-    return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN)
+    return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN)
   return None

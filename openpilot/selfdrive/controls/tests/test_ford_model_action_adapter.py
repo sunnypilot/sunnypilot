@@ -180,9 +180,9 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   exec(call, environment)
   expected_curvature = (-1 if maneuver else 1)*.000125
   assert controls.desired_curvature == pytest.approx(expected_curvature)
-  assert controller.core.proportional == pytest.approx(.25*20.*expected_curvature)
+  assert controller.core.proportional == pytest.approx(.5*20.*expected_curvature)
   assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
-  assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.003)
+  assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0035)
   assert controls.ford_path.path_offset == pytest.approx(.04)
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
@@ -239,11 +239,11 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
   frame = 0
-  # A .005 rad P step consumes one slew interval before I can accumulate;
-  # going from -.005 to +.005 consumes two. Matched steering removes P only.
-  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.0198),
-                                           (sign*.004, 0., 100, sign*.0198), (sign*.005, 0., 100, 0.),
-                                           (sign*.003, 0., 100, sign*.0196), (0., 1.0625, 5, 0.)]:
+  # P spends output slew headroom before new I accumulates. Existing I can
+  # unwind throughout that slew. Matched steering removes P and preserves I.
+  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.0049),
+                                           (sign*.004, 0., 100, sign*.0049), (sign*.005, 0., 100, -sign*.0001),
+                                           (sign*.003, 0., 100, sign*.0048), (0., 1.0625, 5, 0.)]:
     for _ in range(count):
       now = 1.+frame*.01
       controls.curvature, cs.steeringTorque = measured, torque
@@ -268,7 +268,7 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
       assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
       frame += 1
     core = controls.ford_path_controller.core
-    expected_p = .25*20.*(sign*.004-measured) if torque == 0. else 0.
+    expected_p = .5*20.*(sign*.004-measured) if torque == 0. else 0.
     assert core.proportional == pytest.approx(expected_p)
     assert core.correction == pytest.approx(expected)
     assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
@@ -284,7 +284,7 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
   model.action = SimpleNamespace(desiredCurvature=.004)
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
-  for frame in range(102):
+  for frame in range(103):
     now = 1.+frame*.01
     controls.curvature = .004 if frame < 100 else .003
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
@@ -296,16 +296,16 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
                       'time': SimpleNamespace(monotonic=lambda now=now: now)})
   controller = controls.ford_path_controller
   assert controller.diagnostics['pscm_limited'] is service_valid
-  assert controller.core.proportional == pytest.approx(.005)
-  # First error sample spends the slew allowance on P; the second may add I.
-  assert controller.core.correction == pytest.approx(0. if service_valid else .0002)
+  assert controller.core.proportional == pytest.approx(.01)
+  # Two error samples spend the slew allowance on P; the third may add I.
+  assert controller.core.correction == pytest.approx(0. if service_valid else .00005)
   assert cc.latActive and controls.ford_path.valid
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 @pytest.mark.parametrize('maneuver', [False, True])
 @pytest.mark.parametrize('same_turn', [False, True])
-def test_carryover_release_through_selected_limited_request_and_actual_can(pipeline, sign, maneuver, same_turn):
+def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(pipeline, sign, maneuver, same_turn):
   call, publication = pipeline
   controls, sm = startup(), Subscriptions(maneuver)
   controls.sm, controls.desired_curvature = sm, sign*.004
@@ -318,7 +318,6 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
   vehicle = SimpleNamespace(out=structs.CarState(vEgo=speed, vEgoRaw=speed), acc_tja_status_stock_values=defaultdict(int),
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
-  request_releases = 0
   for frame in range(280):
     now = 1.+frame*.01
     desired = sign*(.004 if frame < 200 else .01 if same_turn else -.001)
@@ -327,12 +326,13 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
     sm.messages['lateralManeuverPlan'].desiredCurvature = desired
     controls.curvature = sign*(.004 if frame < 100 else .006 if same_turn else .001 if frame < 200 else .003)
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9), lateralManeuverPlan=round(now*1e9))
-    before = core.c0, core.c1
+    before = core.c0, core.c1, core.correction
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
-    request_releases += core.request_release != 0.
+    increment = .25*speed*(controls.desired_curvature-controls.curvature)*.01
+    assert abs(core.correction-before[2]) <= abs(increment)+1e-10
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
     _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
@@ -347,26 +347,21 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
     packet = next(packet for packet in packets if packet[0] == address)
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
-      # P spends one or three slew intervals before the remaining I updates.
-      assert core.correction == pytest.approx(sign*(-.0198 if same_turn else .0582))
-      assert core.carryover_release_count == 0
-  assert core.carryover_release_count == (0 if same_turn else 1)
-  assert controls.ford_path_controller.diagnostics['carryover_release_count'] == core.carryover_release_count
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-pi-v6'
+      assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-pi-v7'
   if same_turn:
-    assert request_releases > 0
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
   else:
     assert sign*controls.ford_path.path_angle < 0.
   assert controls.ford_path.path_offset == pytest.approx(sign*(.2 if same_turn else -.2))
   controls.ford_path_controller.reset()
-  assert core.carryover_release_count == 0
+  assert core.c0 == core.c1 == core.correction == 0.
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 @pytest.mark.parametrize('maneuver', [False, True])
-def test_completed_unwind_release_through_selected_request_and_actual_can(pipeline, sign, maneuver):
+def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, sign, maneuver):
   call, publication = pipeline
   controls, sm = startup(), Subscriptions(maneuver)
   controls.sm, controls.desired_curvature = sm, -sign*.02
@@ -378,7 +373,6 @@ def test_completed_unwind_release_through_selected_request_and_actual_can(pipeli
   vehicle = SimpleNamespace(out=structs.CarState(vEgo=4., vEgoRaw=4.), acc_tja_status_stock_values=defaultdict(int),
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
-  release_count = 0
   for frame in range(180):
     now = 1.+frame*.01
     desired = -sign*(.02 if frame < 30 else .01 if frame < 80 else 0.)
@@ -392,12 +386,12 @@ def test_completed_unwind_release_through_selected_request_and_actual_can(pipeli
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
-    release_count += core.unwind_release != 0.
     if frame == 129:
-      assert sign*core.correction > .04 and core.unwind_direction == sign
+      assert 0. < sign*core.correction < .02
     if frame == 130:
-      assert core.unwind_release == before[2] and core.correction == 0.
-      assert core.c1 == pytest.approx(before[1]-sign*.005)
+      # Zero measured error removes P, but does not arbitrarily erase I.
+      assert core.correction == before[2]
+      assert core.proportional == 0.
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
     _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
@@ -411,8 +405,8 @@ def test_completed_unwind_release_through_selected_request_and_actual_can(pipeli
     assert wire['LatCtl_D2_Rq'] == 2 and wire['LatCtlPath_No_Cnt'] == frame % 16
     packet = next(packet for packet in packets if packet[0] == address)
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
-  assert release_count == 1
-  assert controls.ford_path.path_angle == core.correction == 0.
+  assert controls.ford_path.path_angle == pytest.approx(core.correction, abs=.00025)
+  assert 0. < sign*core.correction < .02
   assert controls.ford_path.path_offset == pytest.approx(sign*.05)
 
 
@@ -438,7 +432,7 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
     # Match the selected request after its real upstream limiter, isolating base allocation.
     controls.curvature = clip_curvature(cs.vEgo, controls.desired_curvature, desired, 0.)[0]
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
-    before = core.c0, core.c1
+    before = core.c0, core.c1, core.correction
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})

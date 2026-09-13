@@ -7,19 +7,18 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from openpilot.selfdrive.controls.lib import ford_model_action
-from openpilot.selfdrive.controls.lib.ford_model_action import ModelActionController
 from tools.ford_pscm_lab.feedback_replay import OPENDBC, original_controller
 from tools.ford_pscm_lab.model_action_replay import WireCheck, verify_dependency
-from tools.ford_pscm_lab.pi_replay import BASELINE
+from tools.ford_pscm_lab.pi_replay import BASELINE, CANDIDATE
 
 
 def stress(cycles, gain, output):
   verify_dependency(OPENDBC)
   rng = np.random.default_rng(20260913)
-  controller = ModelActionController(proportional_gain=gain)
-  mirror = ModelActionController(proportional_gain=gain)
-  zero = ModelActionController()
+  candidate, candidate_hash = original_controller(CANDIDATE)
+  controller = type(candidate.core)(proportional_gain=gain)
+  mirror = type(candidate.core)(proportional_gain=gain)
+  zero = type(candidate.core)()
   original, original_hash = original_controller(BASELINE)
   wire = WireCheck()
   release_count = 0
@@ -75,12 +74,13 @@ def stress(cycles, gain, output):
     wire.check(out)
   report = {'cycles': cycles, 'gain': gain, 'seed': 20260913, 'mirrored_updates': cycles,
             'zero_gain_exact_v5_comparisons': cycles, 'can_round_trips': wire.count,
+            'candidate_revision': CANDIDATE, 'candidate_source_sha256': candidate_hash,
             'baseline_revision': BASELINE, 'baseline_source_sha256': original_hash,
             'release_cycles': release_count, 'calibration_approved': False,
             'checks':
             'Independent scalar PI arithmetic, combined anti-windup, mirror symmetry, slew/amplitude, driver/PSCM gates, resets, zero-P v5 parity and CAN.',
             'scope': __doc__, 'source_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in
-                                               (Path(__file__).resolve(), Path(ford_model_action.__file__).resolve())}}
+                                               (Path(__file__).resolve(),)}}
   output.parent.mkdir(parents=True, exist_ok=True)
   output.write_text(json.dumps(report, indent=2)+'\n')
   print(json.dumps(report, indent=2))

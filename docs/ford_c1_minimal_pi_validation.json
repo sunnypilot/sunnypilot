@@ -1,0 +1,332 @@
+{
+  "scope": "Production integration of the selected continuous PI drive trial; fixed recorded motion, not a physical tracking prediction.",
+  "parent_revision": "5e6993aab",
+  "previous_controller_revision": "bf00bc691def830e1beb15363d05416714c1dc42",
+  "hypothesis": "model-action-c1-pi-v7",
+  "kp": 0.5,
+  "ki": 0.25,
+  "control_history": [
+    "c0",
+    "c1",
+    "correction"
+  ],
+  "physical_lines": {
+    "module": 201,
+    "core_class": 58,
+    "core_update": 42
+  },
+  "production_source_sha256": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8",
+  "route_cycles": 1578250,
+  "production_can_round_trips": 1638250,
+  "tests": {
+    "passed": 679,
+    "skipped": 178,
+    "subtests_passed": 9145,
+    "log_sha256": "2bc3dfd7ba08d4985d3dea98f235eb1fc99b23e5bbb3927e823a2439c8e9a481",
+    "scope": "Ford controls, tracked PSCM lab tests, PSCM status, Sunnylink, params, Ford car and safety suites; historical untracked experiments excluded."
+  },
+  "ruff": "pass",
+  "ty_production": "pass",
+  "routes": [
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "112",
+      "cycles": 108971,
+      "can_round_trips": 108971,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/112/report.json": "d8cbcf8b676a67a90310390611da31783b4e025a0a965239ef4672caa47aae56",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/112/commands.npz": "8d91f449c7f8741ce465ec4326949a9d9527ed6b5de7a526ad7d30212f16c469",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "113",
+      "cycles": 49614,
+      "can_round_trips": 49614,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/113/report.json": "e2dfeba5d3fe8a1147f82bce9ddf2ad3f14271bda35fac1639d383f2a0189228",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/113/commands.npz": "3890c802072dd2d38b4cded5f9f80310d1f86eb8a8f3598138235a0e2cc16460",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "114",
+      "cycles": 61027,
+      "can_round_trips": 61027,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/114/report.json": "eb630bb5f35a43c8902e15a97b53d83db3dc3cfa843a14d09cb8a1e6dab89289",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/114/commands.npz": "899033d0c9eeffe7929aa1289bfbc0e7da5608833b03989ce10a87d975344d3d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "115",
+      "cycles": 40037,
+      "can_round_trips": 40037,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/115/report.json": "58cee499da3191808aedbd79a9497d9c1553f49007f24543c44bc2b58ff971fa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/115/commands.npz": "09c2da33dabbc0072c61578224cd5ab27ed44690394315350c1c33708b0a67bc",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "116",
+      "cycles": 68793,
+      "can_round_trips": 68793,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/route.npz": "13df1d49edd0c92bd4a4236c766ee76baa6dad477824b9de4b79927c98410394",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/model_paths.npz": "85d1112b5e89340e8a955b7fe4040b3135cf1c91a54ff756826c6119cc9cc01d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/metadata.json": "d52fe63d013fa546524ad9522a26943d9372730d397d92d75dfd9d75c63ce766",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/116/report.json": "01d2e608a53f9fd805baee853d18acc63b5506319e0f0ceeeb3e59a92bae0385",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/116/commands.npz": "2186a1a1fea2ea98390fb90c9df1288d321cd165f70e3aef0c268cbbd2fd8c95",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "117",
+      "cycles": 27301,
+      "can_round_trips": 27301,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/117/report.json": "80efcf48f018d3a887e8b9fdb36f67d9c5d9a57b09f117c8fdecd4d5556ff80b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/117/commands.npz": "c2056b5d9faf765cb4713f73e9c4937bb24c9eeb1d4dac0d21e141322d52609e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a0",
+      "cycles": 114582,
+      "can_round_trips": 114582,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/route.npz": "01ce8b0361c3154d07d5449525a650baa2cc261675095cb1f04ec9e37a9174d3",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/model_paths.npz": "5d0c69d10a6d13882b47d950ae64c4d98f7ca2b59eab27e4e9557eef3bc4917b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/metadata.json": "00496a11afbee475e9b5d66838a4d1663a3c0063cd562b4d1408cce6d71e586e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a0/report.json": "5f3ca84b700e019cc72201d9e4ff85c42fbd15e9a3850434caf1bac688b332d8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a0/commands.npz": "5c52d587ba45446117677686aabc6af81d5d2eacab5c04b02b53fe6fb95e36d0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a2",
+      "cycles": 71111,
+      "can_round_trips": 71111,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/route.npz": "af4128d278be6be0042f72a02255ddbec96a8a5aa435b9852c8202e4a5cb39e5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/model_paths.npz": "5a5a7c4fc30c7b3bc7f2413daa8b11fe86b69dd3249e8df2d35b0a0636a49717",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/metadata.json": "cfecd240216e409a1e2591c6c2e6f0bad002ecd2a50c8f6dbf22a8f9174708da",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a2/report.json": "de61021f0c13af16e98688b17aadae9d61c99d20be82329b7cc235836defa41a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a2/commands.npz": "fd263ab667b97905d840751577179ad75472421104cf20663e3ee51bf32dd2ee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a5",
+      "cycles": 38961,
+      "can_round_trips": 38961,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/route.npz": "815d1e248ff5c3e5e5cfc11dfbd0690d0d13ddafe1436890e239975a72dae9b8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/model_paths.npz": "72e014b844322df6318f6af588c27175ce68d9a37bda62b70eafca5bdfe6dfe4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/metadata.json": "c533b06d1b7c598330b36b117bdb3624221bc4193ded8354246d5c86f36b2628",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a5/report.json": "dc6c05043c5caef6bf12b12eff69ef53d213fe8606f59865859d2c475e0aa3ee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a5/commands.npz": "45f551b32a354a65bff585b81a89091abc5edad406b6ca100a8dcabc50c5dbe3",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "a9",
+      "cycles": 286319,
+      "can_round_trips": 286319,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a9/report.json": "17c41415b9fb9fcd8d72835347a205113c32d32d955c0de68850a9764968b3e9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/a9/commands.npz": "27af5f6fb8f6e08f31d54e24c90430d30c72d31b1448bc1fbcb31f35804afe8a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "b8",
+      "cycles": 160431,
+      "can_round_trips": 160431,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/b8/report.json": "5c6b52222abbb95147dc756a34e62ada97c42aa550b952fd6ae7b26d8d9639fa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/b8/commands.npz": "9c158eff98009bcb039a4e7c29b97b0d3a9c67d61160a4e4766a176174de52d7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "b9",
+      "cycles": 90774,
+      "can_round_trips": 90774,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/b9/report.json": "9eeda0c24ede7a55ef8a924e0ebe0bcb0dea7a9612457af0c5aff898a828c195",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/b9/commands.npz": "2dcc0865591c988d8a08671311a9631f3c4aa3ded4e90ee6f76d28b1654809ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "ca",
+      "cycles": 327448,
+      "can_round_trips": 327448,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/ca/report.json": "025f2f49f68ec2164a10474a4c6ec0eb1b6022990e135fc38134a052a8710dff",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/ca/commands.npz": "cbe9f63955a409495f57466dc5811d3eed65af2cf096ee060d924437488c3f76",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    },
+    {
+      "scope": "Verify production commands against the archived P=.50/I=.25 offline candidate.\n\nFixed recorded motion verifies integration parity, not physical tracking.\n",
+      "route": "raptor02",
+      "cycles": 132881,
+      "can_round_trips": 132881,
+      "production_matches_archived_trial_exactly": true,
+      "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+      "hypothesis": "model-action-c1-pi-v7",
+      "kp": 0.5,
+      "ki": 0.25,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/route.npz": "8a4cfe53994988d053b47d9caadf21ebd064fd20e598fa05ddc2da245bd0e980",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/model_paths.npz": "d5dc6f72d91472b8f2fb1add1680cdaea1e122774ddd6d8519fd7673daf71bb5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/metadata.json": "9602e08efc2bd784133837c4156c075bb89bad3bedd6b309f15e884ed20e338a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/raptor02/report.json": "2c2dda2a5e4e8a764a10852cca3e5caf319b62e3d1d841ef9e1b8c11be77ebf6",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_minimal_tuning/sweep/raptor02/commands.npz": "e0440d0a4035b975a9c4a47d85335b5b0f0903fcd00dd7e7c858856deffd1249",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_validate.py": "35b5334f52eb6069b79fc3ed3be71ceaa81a3db8e1f76e8b1ab6e363cd4f18ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+      }
+    }
+  ],
+  "production_stress": {
+    "cycles": 20000,
+    "kp": 0.5,
+    "ki": 0.25,
+    "controller_updates": 60000,
+    "can_round_trips": 60000,
+    "seed": 20260913,
+    "independent_c0_comparisons": 20000,
+    "checks": "Independent scalar PI/unwind-first/anti-windup arithmetic, mirror symmetry, exact C0 independence, limits, slew, resets, CAN.",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/minimal_pi_production_stress.py": "fa9058826512498be1938797efba25666df832080fb7ad6ff18788ee4bda333d",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "a899b8595e903d6fc4401392a8d123ef77725f6d6d7fa10392a7b3fe72e732b8"
+    }
+  },
+  "limits": [
+    "No hardware build, device boot or new physical drive performed.",
+    "Matched offline commands do not establish improved tracking or closed-loop stability.",
+    "Higher P can amplify measurement fluctuations; lower I can take longer to correct persistent error.",
+    "Toggle defaults off and off selects upstream Ford control; on applies to any Ford CAN FD."
+  ]
+}

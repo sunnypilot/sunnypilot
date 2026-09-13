@@ -12,13 +12,12 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from openpilot.selfdrive.controls.lib import ford_model_action
-from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
 from tools.ford_pscm_lab.feedback_replay import OPENDBC, original_controller
 from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sample, table, verify_dependency
 
 
 BASELINE = '22d188776cb557acea459a1fca70812bdb2df46c'
+CANDIDATE = 'bf00bc691def830e1beb15363d05416714c1dc42'
 GAINS = (0., .1, .25, .5)
 DELAYS = (0., .2, .4)
 
@@ -42,7 +41,8 @@ def replay(directory, output):
   np.testing.assert_array_equal(model_ns, r['model']['ns'])
   models = [SimpleNamespace(position=SimpleNamespace(x=p[0], y=p[1]), orientation=SimpleNamespace(z=p[2])) for p in paths]
   settings = [(gain, delay) for delay in DELAYS for gain in GAINS]
-  controllers = [FordModelActionController(proportional_gain=gain) for gain, _ in settings]
+  candidate, candidate_hash = original_controller(CANDIDATE)
+  controllers = [type(candidate)(proportional_gain=gain) for gain, _ in settings]
   reference, reference_hash = original_controller(BASELINE)
   delayed = {}
   for delay in DELAYS:
@@ -91,12 +91,13 @@ def replay(directory, output):
     assert np.all(integral[k, ~enabled[k]] == 0.)
     assert np.all(abs(integral[k]) <= 1.+1e-10)
   report = {'scope': __doc__, 'baseline_revision': BASELINE, 'baseline_source_sha256': reference_hash,
+            'candidate_revision': CANDIDATE, 'candidate_source_sha256': candidate_hash,
             'cycles': len(t), 'candidate_updates': len(settings)*len(t), 'can_round_trips': wire.count,
             'zero_gain_zero_delay_matches_v5_exactly': True, 'all_c0_and_activation_match_exactly': True,
             'calibration_approved': False, 'settings': [],
             'source_sha256': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in
                               (directory/'route.npz', directory/'model_paths.npz', directory/'metadata.json',
-                               Path(__file__).resolve(), Path(ford_model_action.__file__).resolve())},
+                               Path(__file__).resolve())},
             'limitations': ['Recorded model, steering, driver and PSCM inputs stay fixed; no tracking improvement score.',
                             '0.2/0.4 s are diagnostic timing alternatives, not fitted or validated PSCM delays.',
                             'Gain sweep does not identify a physically optimal or stable gain.',

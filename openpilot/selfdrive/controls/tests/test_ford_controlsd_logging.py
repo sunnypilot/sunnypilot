@@ -53,7 +53,7 @@ class TestFordControlsLogging(unittest.TestCase):
       controls = SimpleNamespace(ford_path_controller=controller, desired_curvature=.03, curvature=.015,
                                  sm=SimpleNamespace(logMonoTime={'modelV2': 123456789, 'carState': 123450000}))
       record = self.emit_controls_event('Ford C2-free path tracking', controls)
-      self.assertEqual(record['hypothesis'], 'model-action-c1-feedback-v5')
+      self.assertEqual(record['hypothesis'], 'model-action-c1-pi-v7')
       self.assertIs(record['calibration_approved'], False)
       self.assertEqual(record['command'][2:], [0., 0.])
       self.assertEqual(record['status'], controller.diagnostics['status'])

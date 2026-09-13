@@ -42,14 +42,12 @@ def test_centering_information_is_independent_of_action_and_not_scaled_with_spee
     assert target.path_angle == pytest.approx(sign*.2)  # No 10 m cap at highway speed.
 
 
-def test_five_control_states_are_sufficient_for_every_next_output():
+def test_three_control_states_are_sufficient_for_every_next_output():
   controller = ModelActionController()
   assert not hasattr(controller, '__dict__')
   for i in range(300):
     copied = ModelActionController()
     copied.c0, copied.c1, copied.correction = controller.c0, controller.c1, controller.correction
-    copied.last_feedback_desired = controller.last_feedback_desired
-    copied.unwind_direction = controller.unwind_direction
     model = straight(.2*math.sin(i*.1))
     kwargs = {'speed': 20., 'dt': .01}
     desired = .005*math.cos(i*.03)
