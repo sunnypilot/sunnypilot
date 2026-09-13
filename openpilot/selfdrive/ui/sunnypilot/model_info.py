@@ -4,10 +4,25 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import contextlib
+import os
+
+from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.sunnypilot.models.fetcher import get_cached_bundles
 from openpilot.sunnypilot.models.helpers import get_active_source, get_selected_bundle, resolve_bundle_by_ref
 from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL, DEFAULT_MODEL
+
+
+def model_cache_size_mb() -> float:
+  """Bytes on disk under the model cache directory, in MB."""
+  model_root = Paths.model_root()
+  total = 0
+  if os.path.isdir(model_root):
+    for name in os.listdir(model_root):
+      with contextlib.suppress(OSError):
+        total += os.path.getsize(os.path.join(model_root, name))
+  return total / (1024 ** 2)
 
 
 def active_source() -> str:
