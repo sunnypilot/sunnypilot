@@ -115,7 +115,7 @@ class ModelsLayout(Widget):
     if lagd_toggle:
       desc += f"<br>{tr('Live Steer Delay:')} {ui_state.sm['lateralDelay'].lateralDelay:.3f} s"
     elif ui_state.CP is not None:
-      sw = float(ui_state.params.get("LagdToggleDelay", "0.2"))
+      sw = float(ui_state.params.get("LagdToggleDelay", return_default=True))
       cp = ui_state.CP.steerActuatorDelay
       desc += f"<br>{tr('Actuator Delay:')} {cp:.2f} s + {tr('Software Delay:')} {sw:.2f} s = {tr('Total Delay:')} {cp + sw:.2f} s"
     self.lagd_toggle.set_description(desc)
