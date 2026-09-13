@@ -14,6 +14,7 @@ from tinygrad.tensor import Tensor
 
 from openpilot.common.parameterized import parameterized
 
+import openpilot.sunnypilot.modeld_v2.frame_resize as frame_resize_module
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 import openpilot.sunnypilot.modeld_v2.model_adapters as model_adapters
 from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
@@ -39,6 +40,12 @@ def _native_unified_jit(**kwargs):
 
 def _warp_jit(**kwargs):
   return None
+
+
+def missing_resize_library(monkeypatch):
+  load = Mock(side_effect=OSError("native resizer unavailable"))
+  monkeypatch.setattr(frame_resize_module, 'ctypes', SimpleNamespace(CDLL=load))
+  return load
 
 
 def cpu_queues(monkeypatch):
@@ -120,13 +127,18 @@ class TestUnifiedFrameResize(OpenpilotTestCase):
     with self.assertRaisesRegex(RuntimeError, "requires a compiled 1344x760 model entry"):
       unified_model_factory(include_target=False)
 
+  def test_missing_native_library_is_rejected(self, unified_model_factory, missing_resize_library):
+    with self.assertRaisesRegex(OSError, "native resizer unavailable"):
+      unified_model_factory()
+    missing_resize_library.assert_called_once()
+
   @parameterized.expand([
     (True, 'tici', (1928, 1208)),
     (True, 'mici', (1344, 760)),
     (False, 'pc', (1928, 1208)),
     (True, 'tizi', (1344, 760)),
   ], names=['comma_hardware', 'device_type', 'cam_size'])
-  def test_ineligible_models_keep_native_inputs(self, comma_hardware, device_type, cam_size, unified_model_factory):
+  def test_ineligible_models_keep_native_inputs(self, comma_hardware, device_type, cam_size, unified_model_factory, missing_resize_library):
     state = unified_model_factory(comma_hardware=comma_hardware, device_type=device_type, cam_size=cam_size, include_target=False)
     adapter = state.adapter
     self.assertIsNone(adapter.frame_resize)
@@ -141,9 +153,10 @@ class TestUnifiedFrameResize(OpenpilotTestCase):
       np.testing.assert_array_equal(adapter.frame_slots[key], source[:adapter.frame_copy_size])
     for key in ('tfm', 'big_tfm'):
       np.testing.assert_array_equal(state.numpy_inputs[key], transform)
+    missing_resize_library.assert_not_called()
 
   @parameterized.expand(['supercombo_non20hz', 'vision_policy_split'], names=['archetype'])
-  def test_separate_warp_is_not_resized(self, archetype, tmp_path, monkeypatch, patch_modeld, cpu_queues):
+  def test_separate_warp_is_not_resized(self, archetype, tmp_path, monkeypatch, patch_modeld, cpu_queues, missing_resize_library):
     from openpilot.common.hardware import hw
 
     arch = ARCHETYPES[archetype]
@@ -157,6 +170,7 @@ class TestUnifiedFrameResize(OpenpilotTestCase):
     self.assertEqual(state.DEV, 'AMD')
     self.assertIsNone(state.adapter.frame_resize)
     self.assertEqual(state.adapter.frame_copy_size, 3735552)
+    missing_resize_library.assert_not_called()
 
   def test_shared_vision_buffer_is_packed_before_enqueue(self, unified_model_factory):
     state = unified_model_factory()
