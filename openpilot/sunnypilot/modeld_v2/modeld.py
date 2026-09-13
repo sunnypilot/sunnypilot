@@ -17,7 +17,7 @@ from tinygrad.tensor import Tensor
 
 import openpilot.cereal.messaging as messaging
 from openpilot.common.hardware import COMMA_HARDWARE
-from openpilot.selfdrive.modeld.helpers import chestnut_present, load_oob
+from openpilot.selfdrive.modeld.helpers import chestnut_present
 from openpilot.cereal import log
 from opendbc.car.structs import car
 from openpilot.cereal.services import SERVICE_LIST
@@ -52,6 +52,7 @@ from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, ma
                                                            WARP_INPUTS, POLICY_INPUTS)
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
+from openpilot.sunnypilot.modeld_v2.helpers import load_oob
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 

@@ -1,0 +1,79 @@
+name: Test Models Compatibility With Tinygrad Changes
+on:
+  pull_request:
+    paths:
+      - 'tinygrad_repo'
+  workflow_dispatch:
+
+jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.set-matrix.outputs.models }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and Parse json
+        id: set-matrix
+        run: |
+          python3 -c '
+          import json, urllib.request, os, re
+
+          with open("openpilot/sunnypilot/models/fetcher.py", "r") as f:
+            urls = re.findall(r"MODEL_URL(?:_CHESTNUT)?\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", f.read())
+
+          artifacts = []
+          for url in urls:
+            data = json.loads(urllib.request.urlopen(url).read())
+            for bundle in data.get("bundles", []):
+              for model in bundle.get("models", []):
+                if "artifact" in model:
+                  artifacts.append(model["artifact"])
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"models={json.dumps(artifacts)}\n")
+          '
+
+  test-model:
+    name: Test ${{ matrix.artifact.file_name }}
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    container: ghcr.io/commaai/openpilot-base:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: ${{ fromJson(needs.generate-matrix.outputs.models) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Download Model Chunks in Parallel
+        run: |
+          mkdir -p /tmp/model_chunks
+          echo '${{ toJson(matrix.artifact.chunks) }}' > chunks.json
+
+          BASE_URL="${{ matrix.artifact.download_uri.url }}"
+          export BASE_DIR=$(dirname "$BASE_URL")
+
+          python3 -c '
+          import json, os
+          with open("chunks.json") as f:
+            chunks = json.load(f)
+          manifest_path = f"/tmp/model_chunks/${{ matrix.artifact.file_name }}.chunkmanifest"
+          with open(manifest_path, "w") as f:
+            f.write(str(len(chunks)))
+          base_dir = os.environ["BASE_DIR"]
+          with open("/tmp/curl_config.txt", "w") as f:
+            for c in chunks:
+              fn = c["file_name"]
+              f.write(f"url = \"{base_dir}/{fn}\"\noutput = \"/tmp/model_chunks/{fn}\"\n")
+          '
+          curl -Z --parallel-immediate --parallel-max 16 -s -S -f -L -K /tmp/curl_config.txt
+
+      - name: Run Model Compatibility Test
+        env:
+          MODEL_BASE_NAME: ${{ matrix.artifact.file_name }}
+          MODEL_CHUNK_DIR: "/tmp/model_chunks"
+          PYTHONPATH: ".:./tinygrad_repo"
+        run: |
+          python3 -m pytest openpilot/sunnypilot/modeld_v2/tests/test_models.py
