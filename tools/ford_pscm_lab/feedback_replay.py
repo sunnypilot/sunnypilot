@@ -16,7 +16,7 @@ from types import ModuleType, SimpleNamespace
 import numpy as np
 
 from openpilot.selfdrive.controls.lib import ford_model_action
-from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, ModelActionController
+from openpilot.selfdrive.controls.lib.ford_model_action import C1_PROPORTIONAL_GAIN, FordModelActionController, ModelActionController
 from tools.ford_pscm_lab.model_action_replay import WireCheck, field_checks, sample, table, verify_dependency
 
 
@@ -57,12 +57,13 @@ def replay(directory, output, baseline_revision=BASELINE):
   models = [SimpleNamespace(position=SimpleNamespace(x=p[0], y=p[1]), orientation=SimpleNamespace(z=p[2])) for p in paths]
   old, baseline_hash = original_controller(baseline_revision)
   old_has_feedback = 'current_curvature' in inspect.signature(old.update).parameters
-  controller, wire_check = FordModelActionController(), WireCheck()
+  controller, wire_check = FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN), WireCheck()
   baseline = np.zeros((len(t), 4))
   commands = np.zeros_like(baseline)
   old_valid = np.zeros(len(t), bool)
   valid = np.zeros(len(t), bool)
   correction = np.zeros(len(t))
+  proportional = np.zeros(len(t))
   baseline_correction = np.zeros(len(t))
   feedback_dt = np.zeros(len(t))
   feedback_enabled = np.zeros(len(t), bool)
@@ -96,6 +97,7 @@ def replay(directory, output, baseline_revision=BASELINE):
     d = controller.diagnostics
     reasons[d['status']] += 1
     correction[i] = controller.core.correction
+    proportional[i] = controller.core.proportional
     baseline_correction[i] = getattr(old.core, 'correction', 0.)
     feedback_dt[i] = d.get('feedback_dt', 0.)
     feedback_enabled[i] = d.get('feedback_enabled', False)
@@ -122,6 +124,7 @@ def replay(directory, output, baseline_revision=BASELINE):
   assert np.all(abs(correction) <= 1.+1e-10)
   weight = np.minimum(np.diff(t, append=t[-1]+.01), .03)
   report = {'scope': __doc__, 'baseline_revision': baseline_revision, 'baseline_source_sha256': baseline_hash,
+            'proportional_gain': C1_PROPORTIONAL_GAIN,
             'calibration_approved': False, 'cycles': len(t), 'active_cycles': int(valid.sum()),
             'validity_matches_baseline_exactly': True, 'status_counts': dict(reasons),
             'c0_matches_baseline_exactly': bool(np.array_equal(commands[:, 0], baseline[:, 0])),
@@ -156,7 +159,7 @@ def replay(directory, output, baseline_revision=BASELINE):
                                      'feedback_enabled': bool(feedback_enabled[i]), 'pscm_limited': bool(pscm_limited[i])})
   output.mkdir(parents=True, exist_ok=True)
   np.savez_compressed(output/'commands.npz', t=t-metadata['t0'], baseline=baseline, candidate=commands, valid=valid,
-                      correction=correction, baseline_correction=baseline_correction, feedback_dt=feedback_dt,
+                      correction=correction, proportional=proportional, baseline_correction=baseline_correction, feedback_dt=feedback_dt,
                       feedback_enabled=feedback_enabled, pscm_limited=pscm_limited, offset_overflow=offset_overflow,
                       request_release=request_release, unwind_release=unwind_release, unwind_direction=unwind_direction)
   (output/'report.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')

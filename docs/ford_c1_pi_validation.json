@@ -1,0 +1,373 @@
+{
+  "hypothesis": "model-action-c1-pi-v6",
+  "baseline_revision": "22d188776cb557acea459a1fca70812bdb2df46c",
+  "opendbc_revision": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a",
+  "selected_gain": 0.25,
+  "selected_feedback_delay_s": 0.0,
+  "calibration_approved": false,
+  "scope": "Frozen recorded steering, model, driver and PSCM inputs. Command checks only; no predicted wheel response or physical tracking improvement score.",
+  "controller_sha256": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+  "routes": {
+    "112": {
+      "route": "84865544361f55cb_00000112--ec2edd4afc",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 108971,
+      "candidate_updates": 1307652,
+      "sweep_can_round_trips": 1307652,
+      "selected_can_round_trips": 108971,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 655.2228206790003,
+      "ordinary_mean_abs_c1_change_rad": 0.0008885702173989647,
+      "ordinary_p95_abs_c1_change_rad": 0.0025000000000000022,
+      "ordinary_max_abs_c1_change_rad": 0.02400000000000002,
+      "all_valid_max_abs_c1_change_rad": 0.054500000000000104,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/angles.npz": "9429813237b4988dd99a1461d1a9bd6f6d3056693a93a5dd1ec63567d19f2aa1"
+      },
+      "sweep_report_sha256": "413e844d20d7591d32d95b1d48a14db11fa089800315cb899e9f5a32a3e630f5",
+      "selected_report_sha256": "ab4ced7ec6b628ac4a941fb968e6e18d06f9c616f8704f1a6abd0081a4fb0e65"
+    },
+    "113": {
+      "route": "84865544361f55cb_00000113--3947b0487c",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 49614,
+      "candidate_updates": 595368,
+      "sweep_can_round_trips": 595368,
+      "selected_can_round_trips": 49614,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 187.8263240149995,
+      "ordinary_mean_abs_c1_change_rad": 0.0015004664599222238,
+      "ordinary_p95_abs_c1_change_rad": 0.007000000000000006,
+      "ordinary_max_abs_c1_change_rad": 0.025000000000000022,
+      "all_valid_max_abs_c1_change_rad": 0.08250000000000002,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/angles.npz": "2f280a1b5973901d878f1e36564d6e7ae6d817cac176149f2cb898ab7591d65b"
+      },
+      "sweep_report_sha256": "a712fdbe0602404ade075b0ccb540d5f571e5a55d37723fc2674c79b5f62252f",
+      "selected_report_sha256": "0098ef5b1dd0b8b1f0b742cfb5f8e80211eb60718a08e471927c78b9a7c740b3"
+    },
+    "114": {
+      "route": "84865544361f55cb_00000114--03902c6e04",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 61027,
+      "candidate_updates": 732324,
+      "sweep_can_round_trips": 732324,
+      "selected_can_round_trips": 61027,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 263.004525574,
+      "ordinary_mean_abs_c1_change_rad": 0.0010481495632417845,
+      "ordinary_p95_abs_c1_change_rad": 0.003500000000000003,
+      "ordinary_max_abs_c1_change_rad": 0.010999999999999954,
+      "all_valid_max_abs_c1_change_rad": 0.0655,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/angles.npz": "63aa2ff6a21e8613519bda476690e2eda6f42cb5dcf108606bc6072c9e29408d"
+      },
+      "sweep_report_sha256": "138c522c4278d6827eb6192acc2052ba4832f652c3194e2ca330d3a4458a2f85",
+      "selected_report_sha256": "52cdc595248505301501d815d7f6219c47e8cdcac2a059dc345498b3ef707875"
+    },
+    "115": {
+      "route": "84865544361f55cb_00000115--899b9bf91d",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 40037,
+      "candidate_updates": 480444,
+      "sweep_can_round_trips": 480444,
+      "selected_can_round_trips": 40037,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 165.0304544679998,
+      "ordinary_mean_abs_c1_change_rad": 0.0009869321832509364,
+      "ordinary_p95_abs_c1_change_rad": 0.0030000000000000027,
+      "ordinary_max_abs_c1_change_rad": 0.034999999999999976,
+      "all_valid_max_abs_c1_change_rad": 0.09900000000000003,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/angles.npz": "71415b0f49efbfeda495ae52bde4beb7e16f31a1f5570af515a365e756056d3b"
+      },
+      "sweep_report_sha256": "cdb08fede1f86427174c1291e40f63a3ac18044dfb6276e98e0bc184bbff7dc5",
+      "selected_report_sha256": "92d3e720d12018599a5883ecfb3c2dd1330e22235e07b3cd0dcc9bbc0aa7c3dd"
+    },
+    "b9": {
+      "route": "84865544361f55cb_000000b9--5da7fe66ad",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 90774,
+      "candidate_updates": 1089288,
+      "sweep_can_round_trips": 1089288,
+      "selected_can_round_trips": 90774,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 577.3471252719997,
+      "ordinary_mean_abs_c1_change_rad": 0.001220959786299961,
+      "ordinary_p95_abs_c1_change_rad": 0.0050000000000000044,
+      "ordinary_max_abs_c1_change_rad": 0.02350000000000002,
+      "all_valid_max_abs_c1_change_rad": 0.10250000000000004,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/angles.npz": "ce16212d9b13e41993d2c8df3246ddfe21324ad0cb213310e62eee1d685b197b"
+      },
+      "sweep_report_sha256": "13c9b2c4c0f89ec580e9c7a70c7556b4e40873d4d98561c9edfa1c12a0855669",
+      "selected_report_sha256": "733c3eb657cbae29fcb809ca42b85ed6fc03ab44665c5fe31020e266717ce53c"
+    },
+    "ca": {
+      "route": "84865544361f55cb_000000ca--1f70b49ec6",
+      "fingerprint": "FORD_F_150_LIGHTNING_MK1",
+      "cycles": 327448,
+      "candidate_updates": 3929376,
+      "sweep_can_round_trips": 3929376,
+      "selected_can_round_trips": 327448,
+      "selected_matches_sweep_commands_p_i_valid_exactly": true,
+      "zero_gain_zero_delay_matches_v5_exactly": true,
+      "all_c0_and_activation_match_exactly": true,
+      "ordinary_clean_seconds": 892.0115341569954,
+      "ordinary_mean_abs_c1_change_rad": 0.0008244438245156879,
+      "ordinary_p95_abs_c1_change_rad": 0.0025000000000000022,
+      "ordinary_max_abs_c1_change_rad": 0.01200000000000001,
+      "all_valid_max_abs_c1_change_rad": 0.05149999999999999,
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/feedback_replay.py": "c7de9d9d7aefb27221ad6d964df723fbf9f2b0f820cdd7de4799c83984d05485",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/angles.npz": "1681bda6db7dac332abf627d97e7452acd7e0faef0c196b11e55e22291cad073"
+      },
+      "sweep_report_sha256": "4ced4be50569d4025c9de7fb8085714deebfb6098238ab63e5a2e4c88460a94b",
+      "selected_report_sha256": "db0edb05105600f211e7ff833a324887f4402dc64ddceb44ee8ddec911de7533"
+    }
+  },
+  "examples": [
+    {
+      "description": "Late left entry",
+      "route": "115",
+      "time_s": 207.908066963,
+      "desired_angle_deg": 94.1796646118164,
+      "actual_angle_deg": 51.20000076293945,
+      "speed_mph": 12.099885821086458,
+      "strict_clean": true,
+      "c0_m_left_positive": 0.96,
+      "c1_rad_left_positive": {
+        "v5": 0.16849999999999998,
+        "p_025": 0.1825,
+        "p_025_delay_04": 0.14200000000000002
+      },
+      "p_rad_left_positive": 0.018101743422448635,
+      "i_rad_left_positive": 0.015372994845796784
+    },
+    {
+      "description": "Entry continues",
+      "route": "115",
+      "time_s": 208.09921410900006,
+      "desired_angle_deg": 111.01296997070312,
+      "actual_angle_deg": 72.80000305175781,
+      "speed_mph": 12.297558204224886,
+      "strict_clean": true,
+      "c0_m_left_positive": 1.13,
+      "c1_rad_left_positive": {
+        "v5": 0.21050000000000002,
+        "p_025": 0.22450000000000003,
+        "p_025_delay_04": 0.18100000000000005
+      },
+      "p_rad_left_positive": 0.016087211202830076,
+      "i_rad_left_positive": 0.02176835685651445
+    },
+    {
+      "description": "Completed right-turn unwind",
+      "route": "115",
+      "time_s": 133.59461515599992,
+      "desired_angle_deg": 5.989600658416748,
+      "actual_angle_deg": 29.899999618530273,
+      "speed_mph": 5.890273288393662,
+      "strict_clean": false,
+      "c0_m_left_positive": 0.1900000000000004,
+      "c1_rad_left_positive": {
+        "v5": 0.010500000000000065,
+        "p_025": 0.0,
+        "p_025_delay_04": -0.0030000000000000027
+      },
+      "p_rad_left_positive": -0.010158478980883956,
+      "i_rad_left_positive": -0.0015653052344988395
+    },
+    {
+      "description": "Large left overshoot; nearby driver input",
+      "route": "114",
+      "time_s": 168.957705716,
+      "desired_angle_deg": 278.3920593261719,
+      "actual_angle_deg": 450.20001220703125,
+      "speed_mph": 7.027778014508665,
+      "strict_clean": true,
+      "c0_m_left_positive": 5.11,
+      "c1_rad_left_positive": {
+        "v5": 0.34099999999999997,
+        "p_025": 0.2875,
+        "p_025_delay_04": 0.3125
+      },
+      "p_rad_left_positive": -0.07201755233108997,
+      "i_rad_left_positive": -0.13527950258838367
+    },
+    {
+      "description": "Well-tracked left bend",
+      "route": "114",
+      "time_s": 473.085523785,
+      "desired_angle_deg": 57.32655334472656,
+      "actual_angle_deg": 56.29999923706055,
+      "speed_mph": 27.33261651794824,
+      "strict_clean": true,
+      "c0_m_left_positive": 0.6699999999999999,
+      "c1_rad_left_positive": {
+        "v5": 0.1855,
+        "p_025": 0.18500000000000005,
+        "p_025_delay_04": 0.15900000000000003
+      },
+      "p_rad_left_positive": 0.0007143015310955292,
+      "i_rad_left_positive": 0.022011912629614844
+    },
+    {
+      "description": "Hanging right exit",
+      "route": "113",
+      "time_s": 481.56693996600006,
+      "desired_angle_deg": -7.566320896148682,
+      "actual_angle_deg": -94.4000015258789,
+      "speed_mph": 11.959057581279636,
+      "strict_clean": true,
+      "c0_m_left_positive": -0.5800000000000001,
+      "c1_rad_left_positive": {
+        "v5": 0.0645,
+        "p_025": 0.08750000000000002,
+        "p_025_delay_04": 0.034499999999999975
+      },
+      "p_rad_left_positive": 0.03597008844371885,
+      "i_rad_left_positive": 0.06765882642510383
+    }
+  ],
+  "ordinary_cohort": "Existing interval-clean angle mask, valid replay and feedback enabled, absolute desired wheel angle <30 degrees.",
+  "weighting": "Extracted interval duration weights for seconds and mean absolute command changes; percentiles are cycle-weighted.",
+  "ordinary_clean_seconds": 2740.4427841649945,
+  "ordinary_mean_abs_c1_change_by_setting_rad": [
+    {
+      "kp": 0.0,
+      "delay_s": 0.0,
+      "mean_abs_delta_rad": 0.0
+    },
+    {
+      "kp": 0.1,
+      "delay_s": 0.0,
+      "mean_abs_delta_rad": 0.0003946011107110312
+    },
+    {
+      "kp": 0.25,
+      "delay_s": 0.0,
+      "mean_abs_delta_rad": 0.0010009008647461168
+    },
+    {
+      "kp": 0.5,
+      "delay_s": 0.0,
+      "mean_abs_delta_rad": 0.001961192031401653
+    },
+    {
+      "kp": 0.0,
+      "delay_s": 0.2,
+      "mean_abs_delta_rad": 0.006131012841938232
+    },
+    {
+      "kp": 0.1,
+      "delay_s": 0.2,
+      "mean_abs_delta_rad": 0.006179941022213607
+    },
+    {
+      "kp": 0.25,
+      "delay_s": 0.2,
+      "mean_abs_delta_rad": 0.006305419932002006
+    },
+    {
+      "kp": 0.5,
+      "delay_s": 0.2,
+      "mean_abs_delta_rad": 0.006643212063186747
+    },
+    {
+      "kp": 0.0,
+      "delay_s": 0.4,
+      "mean_abs_delta_rad": 0.010964264260175235
+    },
+    {
+      "kp": 0.1,
+      "delay_s": 0.4,
+      "mean_abs_delta_rad": 0.011070256870936306
+    },
+    {
+      "kp": 0.25,
+      "delay_s": 0.4,
+      "mean_abs_delta_rad": 0.011255438766715855
+    },
+    {
+      "kp": 0.5,
+      "delay_s": 0.4,
+      "mean_abs_delta_rad": 0.01162257561022028
+    }
+  ],
+  "totals": {
+    "cycles": 677871,
+    "candidate_updates": 8134452,
+    "sweep_can_round_trips": 8134452,
+    "selected_can_round_trips": 677871,
+    "can_round_trips_including_stress": 9012323
+  },
+  "stress": {
+    "cycles": 200000,
+    "gain": 0.25,
+    "seed": 20260913,
+    "mirrored_updates": 200000,
+    "zero_gain_exact_v5_comparisons": 200000,
+    "can_round_trips": 200000,
+    "baseline_revision": "22d188776cb557acea459a1fca70812bdb2df46c",
+    "baseline_source_sha256": "2ceb4cd8717bb3325f9b22189c78605ad5d42a1061dec9ca2e4dbb90fd256d1e",
+    "release_cycles": 91,
+    "calibration_approved": false,
+    "checks": "Independent scalar PI arithmetic, combined anti-windup, mirror symmetry, slew/amplitude, driver/PSCM gates, resets, zero-P v5 parity and CAN.",
+    "scope": "Check PI arithmetic and CAN invariants without a model of vehicle response.",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/pi_stress.py": "07f3bd99c56e2184ba3402d7b2f324506ac0b786c7a15e422e9e2392c934544a",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8eaf242a8627c398b732e9c185527640b2ae39b4726cbb138c0a10490a4b890f"
+    },
+    "formatting_only_final_source_ast_identical": true,
+    "final_script_sha256": "cff014beda81b0bfbaabd7219b8e2848464c5c45ac779669f80084d5be347a06"
+  },
+  "tests": {
+    "passed": 776,
+    "skipped": 178,
+    "subtests_passed": 9145,
+    "log_sha256": "5b9274e2557f41b630ad285b0426c916835c2997fc7f5c4fcad91aa4c6f64243",
+    "ruff": "passed",
+    "controller_ty": "passed",
+    "settings_compiler": "passed"
+  }
+}

@@ -1,8 +1,9 @@
-"""Experimental Ford C2-free controller with measured-curvature C1 feedback.
+"""Experimental Ford C2-free controller with measured-curvature C1 PI feedback.
 
 Selected only by its explicit toggle. The 7 m station and one-second scale are
 engineering choices. Feeding integrated heading mismatch into C1 at 1:1 is an
 explicit feedback-strength choice, not an identified PSCM model or calibration.
+The selected experiment adds an explicit proportional heading-error term.
 Opposed correction may be released when both path commands confirm the turn.
 Changed requests retire opposing correction only while measured error agrees.
 Completed, direction-confirmed unwinds release dominant old correction.
@@ -19,6 +20,7 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 OFFSET_STATION_M = 7.0
 HEADING_TIME_S = 1.0
+C1_PROPORTIONAL_GAIN = 0.25  # Initial drive-trial gain, not a learned calibration.
 CALIBRATION_APPROVED = False
 
 
@@ -60,11 +62,15 @@ class ModelActionController:
 
   Feedback integrates requested minus measured curvature over traveled distance.
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
+  Zero P is the v5 reference; onroad selection supplies the explicit trial gain.
   """
   __slots__ = ('c0', 'c1', 'correction', 'carryover_release_count', 'last_feedback_desired', 'request_release',
-               'unwind_direction', 'unwind_release')
+               'unwind_direction', 'unwind_release', 'proportional_gain', 'proportional', 'feedback_curvature')
 
-  def __init__(self):
+  def __init__(self, proportional_gain=0.):
+    if not _finite(proportional_gain) or proportional_gain < 0.:
+      raise ValueError('Proportional gain must be finite and nonnegative')
+    self.proportional_gain = float(proportional_gain)
     self.reset()
 
   def reset(self):
@@ -74,16 +80,24 @@ class ModelActionController:
     self.request_release = 0.  # Diagnostic radians retired on this cycle.
     self.unwind_direction = 0.
     self.unwind_release = 0.  # Diagnostic only; final output still obeys slew.
+    self.proportional = self.feedback_curvature = 0.
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
-             feedback_dt=None, feedback_enabled=True, pscm_limited=False):
+             feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None):
     feedback_dt = dt if feedback_dt is None else feedback_dt
-    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature) or not .002 <= dt <= .1
-        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1.):
+    feedback_curvature = desired_curvature if feedback_curvature is None else feedback_curvature
+    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, feedback_curvature) or not .002 <= dt <= .1
+        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1. or abs(feedback_curvature) > 1.):
       self.reset()
       return FordPath()
     target = encode_model_action(model, desired_curvature, speed)
     if not target.valid:
+      self.reset()
+      return FordPath()
+    self.feedback_curvature = feedback_curvature
+    feedback_error = feedback_curvature-current_curvature
+    self.proportional = self.proportional_gain*max(OFFSET_STATION_M, speed*HEADING_TIME_S)*feedback_error if feedback_enabled else 0.
+    if not _finite(self.proportional):
       self.reset()
       return FordPath()
     base_c1 = float(np.clip(target.path_angle, -.5, .5))
@@ -145,7 +159,7 @@ class ModelActionController:
           and (base_c1+self.correction)*direction <= 0.):
         self.correction = 0.
         self.carryover_release_count += 1
-      increment = (desired_curvature-current_curvature)*speed*feedback_dt
+      increment = feedback_error*speed*feedback_dt
       # LimitReached inhibits only extra demand in the measured turn direction.
       # Opposing correction and changes to the model request remain available.
       direction = current_curvature if current_curvature else self.c1
@@ -153,16 +167,17 @@ class ModelActionController:
         # An old opposing correction may return to zero; don't trap it below
         # the base request just because the PSCM now reports a limit.
         increment = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
+      # Include P in the available headroom so I cannot wind up behind it.
       # Integrate only as far as this cycle's amplitude/slew envelope permits.
       # If the base moved outside that envelope, allow increments toward it;
       # never rewrite existing correction merely because the base changed.
-      request = base_c1+self.correction
+      request = base_c1+self.proportional+self.correction
       self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
       if self.correction*self.unwind_direction < 0.:
         self.unwind_direction = 0.
     if self.last_feedback_desired is None or feedback_dt > 0. or not feedback_enabled:
       self.last_feedback_desired = desired_curvature
-    c1 = float(np.clip(base_c1+self.correction, -.5, .5))
+    c1 = float(np.clip(base_c1+self.proportional+self.correction, -.5, .5))
     self.c1 += float(np.clip(c1-self.c1, -.5*dt, .5*dt))
     return FordPath(True, _packed(self.c0, .01, -5.12), _packed(self.c1, .0005, -.5), 0., 0.)
 
@@ -179,18 +194,20 @@ class FordModelActionController:
   clears the correction. Fresh PSCM limits only inhibit outward integration;
   neither a limit nor a repeated measurement freezes the model request.
   """
-  def __init__(self):
-    self.core = ModelActionController()
+  def __init__(self, proportional_gain=0.):
+    self.core = ModelActionController(proportional_gain=proportional_gain)
+    self.hypothesis = 'model-action-c1-pi-v6' if proportional_gain else 'model-action-c1-feedback-v5'
     self.reset()
 
   def reset(self, status='inactive'):
     self.core.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
-    self.diagnostics = {'status': status, 'hypothesis': 'model-action-c1-feedback-v5',
+    self.diagnostics = {'status': status, 'hypothesis': self.hypothesis,
                         'calibration_approved': CALIBRATION_APPROVED, 'command': (0., 0., 0., 0.)}
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
-             reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None):
+             reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None,
+             feedback_curvature=None):
     reason = None
     if not active:
       reason = 'inactive'
@@ -221,14 +238,15 @@ class FordModelActionController:
                            or (status_fresh and pscm_status.limit == 3))
     feedback_enabled = not (driver_override or (status_fresh and (pscm_status.denied or pscm_status.lateralState != 2)))
     command = self.core.update(model, desired_curvature, current_curvature=current_curvature, speed=speed, dt=dt,
-                               feedback_dt=feedback_dt, feedback_enabled=feedback_enabled, pscm_limited=pscm_limited)
+                               feedback_dt=feedback_dt, feedback_enabled=feedback_enabled, pscm_limited=pscm_limited,
+                               feedback_curvature=feedback_curvature)
     if not command.valid:
       self.reset('invalid_path')
       return command
     self.last_time, self.last_measurement_time, self.last_model_time = now, measurement_time, model_time
     raw_heading = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
     base_heading = float(np.clip(raw_heading, -.5, .5))
-    self.diagnostics = {'status': 'active', 'hypothesis': 'model-action-c1-feedback-v5',
+    self.diagnostics = {'status': 'active', 'hypothesis': self.hypothesis,
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
@@ -236,6 +254,9 @@ class FordModelActionController:
                         'heading_feedforward': base_heading,
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
+                        'heading_proportional': self.core.proportional, 'proportional_gain': self.core.proportional_gain,
+                        'feedback_curvature': self.core.feedback_curvature,
+                        'feedback_error': self.core.feedback_curvature-current_curvature,
                         'request_release': self.core.request_release,
                         'unwind_direction': self.core.unwind_direction, 'unwind_release': self.core.unwind_release,
                         'carryover_release_count': self.core.carryover_release_count,
@@ -248,5 +269,5 @@ def select_model_action_controller(CP, enabled):
   """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
-    return FordModelActionController()
+    return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN)
   return None

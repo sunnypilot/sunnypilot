@@ -180,7 +180,9 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   exec(call, environment)
   expected_curvature = (-1 if maneuver else 1)*.000125
   assert controls.desired_curvature == pytest.approx(expected_curvature)
-  assert controls.ford_path.path_angle == pytest.approx(20.*expected_curvature)
+  assert controller.core.proportional == pytest.approx(.25*20.*expected_curvature)
+  assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
+  assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.003)
   assert controls.ford_path.path_offset == pytest.approx(.04)
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
@@ -237,9 +239,11 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
   frame = 0
-  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.02),
-                                           (sign*.004, 0., 100, sign*.02), (sign*.005, 0., 100, 0.),
-                                           (sign*.003, 0., 100, sign*.02), (0., 1.0625, 5, 0.)]:
+  # A .005 rad P step consumes one slew interval before I can accumulate;
+  # going from -.005 to +.005 consumes two. Matched steering removes P only.
+  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.0198),
+                                           (sign*.004, 0., 100, sign*.0198), (sign*.005, 0., 100, 0.),
+                                           (sign*.003, 0., 100, sign*.0196), (0., 1.0625, 5, 0.)]:
     for _ in range(count):
       now = 1.+frame*.01
       controls.curvature, cs.steeringTorque = measured, torque
@@ -263,8 +267,12 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
       packet = next(packet for packet in packets if packet[0] == address)
       assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
       frame += 1
-    assert controls.ford_path_controller.core.correction == pytest.approx(expected)
-    assert controls.ford_path.path_angle == pytest.approx(sign*.08+expected)
+    core = controls.ford_path_controller.core
+    expected_p = .25*20.*(sign*.004-measured) if torque == 0. else 0.
+    assert core.proportional == pytest.approx(expected_p)
+    assert core.correction == pytest.approx(expected)
+    assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
+    assert controls.ford_path.path_angle == pytest.approx(core.c1, abs=.00025)
     assert controls.ford_path.path_offset == pytest.approx(.4)
 
 
@@ -276,7 +284,7 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
   model.action = SimpleNamespace(desiredCurvature=.004)
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
-  for frame in range(101):
+  for frame in range(102):
     now = 1.+frame*.01
     controls.curvature = .004 if frame < 100 else .003
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
@@ -288,6 +296,8 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
                       'time': SimpleNamespace(monotonic=lambda now=now: now)})
   controller = controls.ford_path_controller
   assert controller.diagnostics['pscm_limited'] is service_valid
+  assert controller.core.proportional == pytest.approx(.005)
+  # First error sample spends the slew allowance on P; the second may add I.
   assert controller.core.correction == pytest.approx(0. if service_valid else .0002)
   assert cc.latActive and controls.ford_path.valid
 
@@ -337,11 +347,12 @@ def test_carryover_release_through_selected_limited_request_and_actual_can(pipel
     packet = next(packet for packet in packets if packet[0] == address)
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
-      assert core.correction == pytest.approx(sign*(-speed*.002 if same_turn else .06))
+      # P spends one or three slew intervals before the remaining I updates.
+      assert core.correction == pytest.approx(sign*(-.0198 if same_turn else .0582))
       assert core.carryover_release_count == 0
   assert core.carryover_release_count == (0 if same_turn else 1)
   assert controls.ford_path_controller.diagnostics['carryover_release_count'] == core.carryover_release_count
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-feedback-v5'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-c1-pi-v6'
   if same_turn:
     assert request_releases > 0
     assert controls.desired_curvature == pytest.approx(sign*.01)
