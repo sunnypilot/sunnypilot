@@ -474,6 +474,7 @@ def main(demo=False):
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
+      mdv2sp_send.valid = modelv2_send.valid
       mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
 
       fill_driving_model_data(drivingdata_send, modelv2_send)
