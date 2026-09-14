@@ -6,18 +6,37 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import io
-import requests
 
-from openpilot.common.file_chunker import get_chunk_name
 from openpilot.common.hardware import hw
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.modeld.helpers import dump_oob
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
 from openpilot.sunnypilot.modeld_v2.tests.helpers import DummyModel, DummyBundle, CAM_W, CAM_H
-from openpilot.sunnypilot.models.fetcher import ModelParser, ModelFetcher
+from openpilot.sunnypilot.models.fetcher import ModelParser
+from openpilot.sunnypilot.models.helpers import REQUIRED_JSON_VERSION
 
 tmp_path = tests_helpers.tmp_path
+
+
+def manifest_bundle(short_name: str, file_name: str, is_big: bool) -> dict:
+  """A whole-file manifest bundle as the fetcher parses it from driving_models_*.json."""
+  return {
+    "index": 0,
+    "short_name": short_name,
+    "display_name": short_name,
+    "generation": 1,
+    "environment": "release",
+    "runner": "tinygrad",
+    "is_big": is_big,
+    "minimum_selector_version": str(REQUIRED_JSON_VERSION),
+    "ref": short_name,
+    "overrides": {"lat": ".1", "long": ".3"},
+    "models": [{
+      "type": "supercombo",
+      "artifact": {"file_name": file_name, "download_uri": {"url": f"https://example.com/{file_name}", "sha256": "s"}},
+    }],
+  }
 
 
 class TestFallback(OpenpilotTestCase):
@@ -38,19 +57,15 @@ class TestFallback(OpenpilotTestCase):
 
   def test_download_models_and_init_modelstate_fallback(self, tmp_path, monkeypatch):
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
-    big_json = requests.get(ModelFetcher.MODEL_URL_CHESTNUT).json()
-    big_bundle = ModelParser.parse_models(big_json)[-1]
-    small_json = requests.get(ModelFetcher.MODEL_URL).json()
-    small_bundle = ModelParser.parse_models(small_json)[-1]
+    big_bundle = ModelParser.parse_models({"bundles": [manifest_bundle("big", "big_driving_test_tinygrad.pkl", True)]})[0]
+    small_bundle = ModelParser.parse_models({"bundles": [manifest_bundle("small", "driving_test_tinygrad.pkl", False)]})[0]
 
     buf = io.BytesIO()
     dump_oob(tests_helpers.make_pkl_data(tests_helpers.ARCHETYPES['supercombo_non20hz']), buf)
     oob_bytes = buf.getvalue()
 
     for bundle in (big_bundle, small_bundle):
-      artifact = bundle.models[0].artifact
-      for i in range(len(artifact.chunks)):
-        (tmp_path / get_chunk_name(artifact.fileName, i, len(artifact.chunks))).write_bytes(oob_bytes if i == 0 else b"")
+      (tmp_path / bundle.models[0].artifact.fileName).write_bytes(oob_bytes)
 
     monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: small_bundle)
     assert modeld_module.ModelState(CAM_W, CAM_H, chestnut=False).chestnut is False

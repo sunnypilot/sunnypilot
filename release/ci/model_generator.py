@@ -130,7 +130,8 @@ def generate_chunked_model(driving_pkl: Path) -> dict:
     artifact_data["chunks"] = chunks_config
 
   return {
-    "type": "chunked",
+    # "driving" is the whole combined pkl; "chunked" only while a chunk manifest is present (defaults pipeline)
+    "type": "driving" if not chunks_config else "chunked",
     "artifact": artifact_data,
   }
 

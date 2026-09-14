@@ -293,7 +293,6 @@ if __name__ == "__main__":
     else:
       raise RuntimeError("Chestnut not ready, skipping big model build")
 
-  from openpilot.common.file_chunker import chunk_file, get_chunk_targets
   from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
   from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
   from tinygrad.nn.onnx import OnnxRunner
@@ -384,8 +383,6 @@ if __name__ == "__main__":
   with open(args.output, "wb") as file:
     dump_oob(output_data, file)
 
+  # published whole: the model manager fetches it with parallel byte ranges
   pkl_size = os.path.getsize(args.output)
   print(f"Saved combined JIT to {args.output} ({pkl_size / 1e6:.2f} MB)")
-  chunk_targets = get_chunk_targets(args.output, pkl_size)
-  chunk_file(args.output, chunk_targets)
-  print(f"Chunked into {len(chunk_targets) - 1} file(s)")
