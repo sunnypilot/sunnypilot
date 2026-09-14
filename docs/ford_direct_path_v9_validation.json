@@ -1,0 +1,125 @@
+{
+  "version": "model-action-direct-c0-c1-pi-v9",
+  "baseline": "57ae29f257498f58170e2beec140c0f8103c1b43",
+  "tests": {
+    "passed": 358,
+    "subtests_passed": 23
+  },
+  "stress": {
+    "cycles": 20000,
+    "kp": 0.5,
+    "ki": 0.25,
+    "controller_updates": 60000,
+    "can_round_trips": 60000,
+    "seed": 20260913,
+    "independent_c0_comparisons": 20000,
+    "checks": "Independent scalar PI/unwind-first/anti-windup arithmetic, mirror symmetry, exact C0 independence, amplitude bounds, current commands, resets, CAN.",
+    "source_sha256": {
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/direct_path_production_stress.py": "ae0d0e3a32cddefc4072a58664f5afca84019067c8c5d9fa24e89dd1cbef2b99",
+      "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "fbc2309c15289db184aa54bda697feb7cfc26a218998b5b21f063381f47aad45"
+    }
+  },
+  "routes": {
+    "11c": {
+      "scope": "Compare v8 and direct C0/C1 on fixed logged inputs, without predicting motion.",
+      "baseline": "57ae29f257498f58170e2beec140c0f8103c1b43",
+      "baseline_source_sha256": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc",
+      "cycles": 54146,
+      "controller_updates": 108292,
+      "can_round_trips": 108292,
+      "status_counts": {
+        "inactive": 5066,
+        "active": 49080
+      },
+      "identical_validity_feedforward_p_and_feedback_gates": true,
+      "all_candidate_outputs_match_current_bounded_request": true,
+      "changed_c0_cycles": 73,
+      "changed_c1_cycles": 17133,
+      "max_abs_c0_change_m": 0.08999999999999986,
+      "max_abs_c1_change_rad": 0.16049999999999998,
+      "max_abs_integral_rad": 0.02639216769448115,
+      "limitations": [
+        "Recorded motion remains fixed; this cannot establish improved tracking or stability.",
+        "Publication time proxies computation time; reconstructed baseline is not exact onroad parity.",
+        "Synthetic reference freshness is approximated from valid publications; upstream selection itself is unchanged."
+      ],
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_maneuver_11c/analysis/route.npz": "1f3c37a7c7ae85ba69e9958435a9568f8244fa862f43ad1ee2a0192d1df13966",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_maneuver_11c/analysis/model_paths.npz": "0ff433da3dde1d4d7f10596cd53558ec5de9d56fbc49aec3e8afb4c9872377d5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/direct_path_replay.py": "2a1baff08152230929d56b23b8f7fb03e1ae9c2b30c5e152a2be431188fc20e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "fbc2309c15289db184aa54bda697feb7cfc26a218998b5b21f063381f47aad45"
+      }
+    },
+    "119": {
+      "scope": "Compare v8 and direct C0/C1 on fixed logged inputs, without predicting motion.",
+      "baseline": "57ae29f257498f58170e2beec140c0f8103c1b43",
+      "baseline_source_sha256": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc",
+      "cycles": 171423,
+      "controller_updates": 342846,
+      "can_round_trips": 342846,
+      "status_counts": {
+        "inactive": 87482,
+        "active": 83941
+      },
+      "identical_validity_feedforward_p_and_feedback_gates": true,
+      "all_candidate_outputs_match_current_bounded_request": true,
+      "changed_c0_cycles": 199,
+      "changed_c1_cycles": 16426,
+      "max_abs_c0_change_m": 2.42,
+      "max_abs_c1_change_rad": 0.495,
+      "max_abs_integral_rad": 0.05010140673563736,
+      "limitations": [
+        "Recorded motion remains fixed; this cannot establish improved tracking or stability.",
+        "Publication time proxies computation time; reconstructed baseline is not exact onroad parity.",
+        "Synthetic reference freshness is approximated from valid publications; upstream selection itself is unchanged."
+      ],
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route119/route.npz": "415a099935fef152123b7422870442d6cfe6302bab9b8983ce3b3ffc71a7702b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route119/model_paths.npz": "dfd41383bea486ccd0a476e94e612921a44a099a0c1213ff132ab81df3aa94d7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/direct_path_replay.py": "2a1baff08152230929d56b23b8f7fb03e1ae9c2b30c5e152a2be431188fc20e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "fbc2309c15289db184aa54bda697feb7cfc26a218998b5b21f063381f47aad45"
+      }
+    },
+    "11a": {
+      "scope": "Compare v8 and direct C0/C1 on fixed logged inputs, without predicting motion.",
+      "baseline": "57ae29f257498f58170e2beec140c0f8103c1b43",
+      "baseline_source_sha256": "6f8c4a6f7fa54fa2e23f32f1e83ace83da5f0b6f45011941f1902a1dae778ffc",
+      "cycles": 235771,
+      "controller_updates": 471542,
+      "can_round_trips": 471542,
+      "status_counts": {
+        "inactive": 103039,
+        "active": 132732
+      },
+      "identical_validity_feedforward_p_and_feedback_gates": true,
+      "all_candidate_outputs_match_current_bounded_request": true,
+      "changed_c0_cycles": 689,
+      "changed_c1_cycles": 16106,
+      "max_abs_c0_change_m": 3.3600000000000003,
+      "max_abs_c1_change_rad": 0.371,
+      "max_abs_integral_rad": 0.05163860736233724,
+      "limitations": [
+        "Recorded motion remains fixed; this cannot establish improved tracking or stability.",
+        "Publication time proxies computation time; reconstructed baseline is not exact onroad parity.",
+        "Synthetic reference freshness is approximated from valid publications; upstream selection itself is unchanged."
+      ],
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route11a/route.npz": "428c203d090731386f06bf9fdeefe608f1999c43c52ff39cab7ee86ec0ac804f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route11a/model_paths.npz": "e2b827fd7c3dfbf66d7872a56b57eaec13c600a9a48e12dae59be81c31b0978f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/direct_path_replay.py": "2a1baff08152230929d56b23b8f7fb03e1ae9c2b30c5e152a2be431188fc20e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "fbc2309c15289db184aa54bda697feb7cfc26a218998b5b21f063381f47aad45"
+      }
+    }
+  },
+  "limits_removed": [
+    "C0 4 m/s extra slew",
+    "C1 0.5 rad/s extra slew and associated integral slew headroom"
+  ],
+  "limits_preserved": [
+    "upstream selected-curvature acceleration/jerk/curvature bounds",
+    "C0/C1 magnitude and wire packing bounds",
+    "driver/fault/validity/freshness/PSCM feedback gates"
+  ],
+  "physical_tracking_validated": false,
+  "note": "Replay/stress script hashes identify their execution versions before formatting-only lint cleanup; production controller is unchanged after validation."
+}

@@ -20,10 +20,17 @@ from opendbc.car.ford.values import CAR, CarControllerParams, FordFlags
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
-from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
+from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, encode_model_action
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from openpilot.selfdrive.controls.tests.test_ford_model_action import circle, straight
 from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import CANFD_CARS, car_params, startup
+
+
+def assert_current_request(core, desired, speed):
+  target = encode_model_action(straight(), desired, speed)
+  base = min(.5, max(-.5, target.path_angle))
+  assert core.c0 == pytest.approx(min(5.11, max(-5.11, target.path_offset+7.*(target.path_angle-base))))
+  assert core.c1 == pytest.approx(min(.5, max(-.5, base+core.proportional+core.correction)))
 
 
 def update(controller, now=1., **overrides):
@@ -36,12 +43,12 @@ def update(controller, now=1., **overrides):
 
 @pytest.mark.parametrize('field', ['model_time', 'measurement_time', 'reference_time'])
 @pytest.mark.parametrize('age', [.151, -.006])
-def test_stale_or_future_service_clears_commands_and_reengages_from_zero(field, age):
+def test_stale_or_future_service_clears_commands_and_reengages_with_current_request(field, age):
   controller = FordModelActionController()
   update(controller)
   assert update(controller, 1.01, **{field: 1.01-age}) == FordPath()
   assert controller.diagnostics['status'] == 'stale_input'
-  assert update(controller, 1.02).path_offset == pytest.approx(.04)
+  assert update(controller, 1.02).path_offset == pytest.approx(.24)
 
 
 @pytest.mark.parametrize('change,reason', [
@@ -66,7 +73,7 @@ def test_invalid_cycle_never_keeps_a_previous_active_request(change, reason):
   assert update(controller, **dict(change, now=now)) == FordPath()
   assert controller.diagnostics['status'] == reason
   assert (controller.core.c0, controller.core.c1) == (0., 0.)
-  assert update(controller, now+1.).path_angle == pytest.approx(.005)
+  assert update(controller, now+1.).path_angle == pytest.approx(.2)
 
 
 @pytest.mark.parametrize('field', ['now', 'measurement_time', 'model_time', 'reference_time', 'speed', 'yaw_rate', 'desired_curvature'])
@@ -79,12 +86,12 @@ def test_nonfinite_input_never_raises_or_leaks_into_diagnostics(field, value):
   json.dumps(controller.diagnostics, allow_nan=False)
 
 
-def test_repeated_measurements_do_not_freeze_slew_or_cache_invalid_model_geometry():
+def test_repeated_measurements_use_current_request_and_revalidate_model_geometry():
   controller = FordModelActionController()
   for i in range(10):
     result = update(controller, 1.+i*.01, measurement_time=1., model_time=1., reference_time=1.)
   assert result.path_offset == pytest.approx(.24)
-  assert result.path_angle == pytest.approx(.05)
+  assert result.path_angle == pytest.approx(.2)
   broken = straight(.4)
   broken.position.y[5] = math.nan
   assert update(controller, 1.1, model=broken, model_time=1., measurement_time=1.) == FordPath()
@@ -239,11 +246,11 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
   frame = 0
-  # P spends output slew headroom before new I accumulates. Existing I can
-  # unwind throughout that slew. Matched steering removes P and preserves I.
-  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.0049),
-                                           (sign*.004, 0., 100, sign*.0049), (sign*.005, 0., 100, -sign*.0001),
-                                           (sign*.003, 0., 100, sign*.0048), (0., 1.0625, 5, 0.)]:
+  # Every fresh error sample integrates within amplitude headroom.
+  # Matched steering removes P and preserves I.
+  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.005),
+                                           (sign*.004, 0., 100, sign*.005), (sign*.005, 0., 100, 0.),
+                                           (sign*.003, 0., 100, sign*.005), (0., 1.0625, 5, 0.)]:
     for _ in range(count):
       now = 1.+frame*.01
       controls.curvature, cs.steeringTorque = measured, torque
@@ -297,8 +304,8 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
   controller = controls.ford_path_controller
   assert controller.diagnostics['pscm_limited'] is service_valid
   assert controller.core.proportional == pytest.approx(.01)
-  # Two error samples spend the slew allowance on P; the third may add I.
-  assert controller.core.correction == pytest.approx(0. if service_valid else .00005)
+  # All three fresh samples may integrate unless the valid PSCM limit blocks it.
+  assert controller.core.correction == pytest.approx(0. if service_valid else .00015)
   assert cc.latActive and controls.ford_path.valid
 
 
@@ -330,7 +337,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     increment = .25*speed*(controls.desired_curvature-controls.curvature)*.01
     assert abs(core.correction-before[2]) <= abs(increment)+1e-10
     msg = custom.CarControlSP.new_message()
@@ -348,7 +355,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-pi-v8'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-direct-c0-c1-pi-v9'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
@@ -385,7 +392,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     if frame == 129:
       assert 0. < sign*core.correction < .02
     if frame == 130:
@@ -432,11 +439,10 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
     # Match the selected request after its real upstream limiter, isolating base allocation.
     controls.curvature = clip_curvature(cs.vEgo, controls.desired_curvature, desired, 0.)[0]
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
-    before = core.c0, core.c1, core.correction
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert abs(core.c0-before[0]) <= .0400000001 and abs(core.c1-before[1]) <= .0050000001
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     assert core.correction == 0.
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})

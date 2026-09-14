@@ -1,17 +1,17 @@
 # Ford selected-action drive-test branch
 
-This v8 controller uses [curvature-derived C0](ford_curvature_c0_v8.md)
+This v9 controller removes the extra C0/C1 slew limits and uses [curvature-derived C0](ford_curvature_c0_v8.md)
 and [continuous C1 PI feedback](ford_c1_minimal_pi.md)
 with **P=0.50 and I=0.25**.
-Only C0, C1 and accumulated error carry control history. C0 is now a 7 m circular arc from selected desired curvature.
+Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 is now a 7 m circular arc from selected desired curvature.
 [Base C1 overflow allocation to C0](ford_c1_overflow.md) remains.
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
 
-The v8 implementation was introduced in `20485134e` for `sunnypilot/hiimisaac-dev`.
-It replaces v7 (`08b3a14ad`) once installed on the device. The gains remain
+The v9 change follows the v8 maneuver route recorded on `57ae29f25`.
+See [direct C0/C1 commands and validation](ford_direct_path_v9.md). The gains remain
 P=0.50 and I=0.25, and PSCM `LimitReached` handling is unchanged. The separate
 offline experiment that ignores the reached-limit integration block is not included.
 
@@ -27,11 +27,11 @@ offline experiment that ignores the reached-limit integration block is not inclu
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-curvature-c0-pi-v8`**. They report desired and measured
+identify **`hypothesis=model-action-direct-c0-c1-pi-v9`**. They report desired and measured
 curvature, base heading, proportional and accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `proportional_gain=0.5` and
 `integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
-target in meters before C0 amplitude and slew limits. `calibration_approved=false`
+target in meters before C0 amplitude limits. `calibration_approved=false`
 remains. The retired request/unwind/reversal diagnostic fields are removed.
 
 Turning the toggle off and completing another offroad-to-onroad cycle restores
@@ -47,13 +47,13 @@ See [toggle-off validation](ford_upstream_fallback.md).
 `controlsd` supplies the selected, upstream-limited desired curvature and the
 measured steering-derived curvature already used in its tracking diagnostics.
 Fresh steering publications advance C1 integration. P responds to the current
-error without accumulating. Repeated publications may advance P and output slew
+error without accumulating. Repeated publications use current feedforward and P
 but cannot integrate the same elapsed interval twice.
 Driver override clears P and I. A fresh PSCM reached-limit flag stops
 extra outward accumulation while preserving unwind and base model changes.
 With fresh feedback, the part of the error increment that cancels existing I
 is applied before the ordinary accumulation clamp. Any remainder must fit the
-combined feedforward/P/I amplitude and slew envelope. There is no C0 confirmation
+combined feedforward/P/I amplitude envelope. There is no C0 confirmation
 threshold or remembered turn direction. Zero error removes P and holds I; it
 does not trigger a release. Final command limits still apply.
 
@@ -62,15 +62,15 @@ add independent live model-path position or heading. Valid model geometry is
 still required as a health gate. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
 Accumulated C1 feedback does not spill into C0. The extra target returns to zero
-as the base heading falls below the cap; applied C0 still follows its 4 m/s slew.
+as the base heading falls below the cap. Applied C0 changes in that same update.
 C2 and C3 remain zero. The
-existing output limits, 100 Hz custom sender and Float32 publication remain in
+existing field bounds, 100 Hz custom sender and Float32 publication remain in
 place. An explicit selection flag distinguishes upstream mode from an invalid
 experimental command; invalid experimental input cannot switch to upstream.
 The opendbc sender restores upstream behavior when that flag is false.
 
-See [curvature-C0 trial and validation](ford_curvature_c0_v8.md) and
-`ford_curvature_c0_v8_validation.json` for this candidate.
+See [direct-command validation](ford_direct_path_v9.md) for this candidate.
+[Curvature-C0](ford_curvature_c0_v8.md) and its validation JSON record v8.
 [Continuous PI](ford_c1_minimal_pi.md) and its validation JSON record v7.
 [Proportional feedback](ford_c1_pi.md) and its validation JSON record v6.
 [Completed-unwind release](ford_unwind_catchup.md) and

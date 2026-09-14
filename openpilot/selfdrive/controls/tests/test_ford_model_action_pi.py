@@ -42,12 +42,11 @@ def test_aligned_feedback_does_not_replace_current_feedforward_or_path(sign):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_pi_combined_request_obeys_slew_and_does_not_wind_up_behind_p(sign):
+def test_pi_combined_request_obeys_amplitude_and_does_not_wind_up_behind_p(sign):
   controller = ModelActionController(proportional_gain=.5)
   for _ in range(200):
-    before = controller.c1
     out = controller.update(straight(), sign*.01, current_curvature=-sign*.1, speed=20., dt=.01)
-    assert abs(controller.c1-before) <= .0050000001
+    assert controller.c1 == pytest.approx(sign*.5)
     assert abs(out.path_angle) <= .50000001
     assert controller.correction == 0.  # Feedforward + P alone exceeds the cap.
   assert out.path_angle == pytest.approx(sign*.5)

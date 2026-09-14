@@ -7,21 +7,21 @@ from openpilot.selfdrive.controls.lib.ford_model_action import ModelActionContro
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_existing_integral_can_unwind_while_output_slews(sign):
+def test_existing_integral_unwinds_in_current_output(sign):
   core = ModelActionController(.5, .25)
   core.c1, core.correction = sign*.07, sign*.03
   core.update(straight(), sign*.002, current_curvature=sign*.004, speed=20., dt=.01)
   assert core.correction == pytest.approx(sign*.0299)
-  assert core.c1 == pytest.approx(sign*.065)
+  assert core.c1 == pytest.approx(sign*.0499)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_unwinding_cannot_charge_opposite_correction_through_a_slew_limit(sign):
+def test_unwinding_cannot_charge_opposite_correction_beyond_amplitude_limit(sign):
   core = ModelActionController(.5, .25)
   core.c1, core.correction = sign*.07, sign*.03
   core.update(straight(), 0., current_curvature=sign*.5, speed=20., dt=.01, feedback_dt=.15)
   assert core.correction == 0.
-  assert core.c1 == pytest.approx(sign*.065)
+  assert core.c1 == pytest.approx(-sign*.5)
 
 
 @pytest.mark.parametrize('ki', [0., .25, .5, 1.])
@@ -75,4 +75,4 @@ def test_duplicate_measurements_cannot_retire_integral(sign, limited):
               feedback_dt=0., pscm_limited=limited)
   assert core.correction == sign*.03
   assert core.proportional == pytest.approx(-sign*.06)
-  assert core.c1 == pytest.approx(sign*.065)
+  assert core.c1 == pytest.approx(-sign*.07)

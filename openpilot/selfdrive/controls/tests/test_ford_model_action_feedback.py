@@ -38,16 +38,15 @@ def test_feedback_builds_holds_and_unwinds_without_changing_c0(sign):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_amplitude_and_slew_limits_do_not_store_unavailable_feedback(sign):
+def test_amplitude_limit_does_not_store_unavailable_feedback(sign):
   controller = ModelActionController(proportional_gain=0., integral_gain=1.)
-  # The unchanged model request is already ahead of the output slew.
-  for _ in range(10):
+  # Fresh error accumulates immediately while the combined command has room.
+  for i in range(10):
     tick(controller, sign*.01, 0.)
-    assert controller.correction == 0.
+    assert controller.correction == pytest.approx(sign*.002*(i+1))
   for _ in range(1000):
-    before = controller.c1
     tick(controller, sign*.01, -sign*.9)
-    assert abs(controller.c1-before) <= .0050000001
+    assert controller.c1 == pytest.approx(sign*.2+controller.correction)
     assert abs(controller.correction) <= .3000000001
   assert controller.c1 == pytest.approx(sign*.5)
   assert controller.correction == pytest.approx(sign*.3)
@@ -69,7 +68,7 @@ def test_pscm_limit_only_blocks_feedback_further_into_measured_turn(sign):
   assert controller.correction == 0.
   out = tick(controller, sign*.004, sign*.005, pscm_limited=True)
   assert sign*controller.correction < 0.
-  # A limit cannot stall the new model request itself or its unwind slew.
+  # A limit cannot stall the new model request itself or its unwind command.
   for _ in range(100):
     out = tick(controller, 0., 0., pscm_limited=True)
   assert abs(out.path_angle) < .001
@@ -87,17 +86,16 @@ def test_pscm_limit_cannot_trap_old_correction_below_the_model_request(sign):
   assert out.path_angle == pytest.approx(sign*.08)
 
 
-def test_driver_intervention_clears_feedback_through_existing_output_slew():
+def test_driver_intervention_clears_feedback_in_current_command():
   controller = ModelActionController(proportional_gain=0., integral_gain=1.)
   for _ in range(100):
     tick(controller, .004, .004)
   for _ in range(100):
     tick(controller, .004, .003)
   assert controller.correction > 0.
-  previous = controller.c1
   tick(controller, .004, -.01, feedback_enabled=False)
   assert controller.correction == 0.
-  assert abs(controller.c1-previous) <= .0050000001
+  assert controller.c1 == pytest.approx(.08)
   for _ in range(100):
     out = tick(controller, .004, -.01, feedback_enabled=False)
   assert controller.correction == 0.
@@ -128,7 +126,7 @@ def status(now, **overrides):
   return SimpleNamespace(**fields)
 
 
-def test_repeated_steering_samples_only_advance_output_slew():
+def test_repeated_steering_samples_do_not_reintegrate_error():
   controller = FordModelActionController(proportional_gain=0., integral_gain=1.)
   for i in range(100):
     adapter_tick(controller, 1.+i*.01, current_curvature=.004)

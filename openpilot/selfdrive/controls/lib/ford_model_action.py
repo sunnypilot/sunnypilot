@@ -3,6 +3,7 @@
 C0 samples a desired-curvature arc at 7 m, including base-heading overflow. C1
 combines the selected curvature's heading with proportional and integrated
 tracking error. Reference distance and gains are explicit trial choices.
+Commands use the current bounded request without an additional C0/C1 slew.
 """
 import math
 import struct
@@ -56,7 +57,7 @@ def encode_model_action(model, desired_curvature, speed):
 
 
 class ModelActionController:
-  """Only C0 slew, C1 slew and integrated tracking error carry control history.
+  """Integrated tracking error is the only accumulated correction.
 
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
@@ -91,8 +92,7 @@ class ModelActionController:
       return FordPath()
     base = float(np.clip(target.path_angle, -.5, .5))
     offset = float(np.clip(target.path_offset+OFFSET_STATION_M*(target.path_angle-base), -5.11, 5.11))
-    self.c0 += float(np.clip(offset-self.c0, -4.*dt, 4.*dt))
-    lower, upper = max(-.5, self.c1-.5*dt), min(.5, self.c1+.5*dt)
+    self.c0 = offset
     if feedback_enabled:
       increment = self.integral_gain*error*speed*feedback_dt
       if not _finite(increment):
@@ -102,16 +102,15 @@ class ModelActionController:
       if pscm_limited and increment*direction > 0.:
         increment = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
       # Retire existing I before limiting new accumulation; never cross zero
-      # through this step. The final command still obeys amplitude and slew.
+      # through this step. New I is bounded by the combined command's range.
       relief = float(np.clip(increment, min(-self.correction, 0.), max(-self.correction, 0.)))
       self.correction += relief
       increment -= relief
       request = base+self.proportional+self.correction
-      self.correction += float(np.clip(increment, min(lower-request, 0.), max(upper-request, 0.)))
+      self.correction += float(np.clip(increment, min(-.5-request, 0.), max(.5-request, 0.)))
     else:
       self.correction = 0.
-    request = float(np.clip(base+self.proportional+self.correction, -.5, .5))
-    self.c1 += float(np.clip(request-self.c1, -.5*dt, .5*dt))
+    self.c1 = float(np.clip(base+self.proportional+self.correction, -.5, .5))
     return FordPath(True, _packed(self.c0, .01, -5.12), _packed(self.c1, .0005, -.5), 0., 0.)
 
 
@@ -121,7 +120,7 @@ class FordModelActionController:
   controlsd owns upstream selection/limiting and service health. This adapter
   checks ages and clock order, then supplies elapsed time to the core.
   Feedback advances once per fresh steering measurement; repeated samples
-  can still advance output slew. Raw model geometry is checked on every cycle.
+  still use the current request. Raw model geometry is checked on every cycle.
 
   CAN yaw remains a health gate, not the feedback measurement. Driver override
   clears the correction. Fresh PSCM limits only inhibit outward integration;
@@ -129,7 +128,7 @@ class FordModelActionController:
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN):
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain)
-    self.hypothesis = 'model-action-curvature-c0-pi-v8'
+    self.hypothesis = 'model-action-direct-c0-c1-pi-v9'
     self.reset()
 
   def reset(self, status='inactive'):

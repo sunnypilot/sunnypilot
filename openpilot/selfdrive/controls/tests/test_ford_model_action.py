@@ -25,6 +25,23 @@ def straight(offset=0.):
   return make_model(x, np.full_like(x, offset), np.zeros_like(x))
 
 
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('dt', [.002, .01, .1])
+def test_reversal_sends_current_bounded_request_in_same_cycle(sign, dt):
+  controller = ModelActionController()
+  model = straight()
+  for _ in range(100):
+    controller.update(model, sign*.005, current_curvature=sign*.005, speed=20., dt=.01)
+  # A new opposite request must not retain the previous command's sign while
+  # an extra actuator ramp catches up. Matched feedback isolates that ramp.
+  out = controller.update(model, -sign*.005, current_curvature=-sign*.005, speed=20., dt=dt)
+  target = encode_model_action(model, -sign*.005, 20.)
+  assert out.path_angle == pytest.approx(-sign*.1)
+  assert out.path_offset == pytest.approx(target.path_offset, abs=.005)
+  out = controller.update(model, 0., current_curvature=0., speed=20., dt=dt)
+  assert out == FordPath(True, 0., 0., 0., 0.)
+
+
 def test_selected_action_controls_both_fields_even_when_model_previews_another_turn():
   model = circle(.02)
   assert encode_model_action(model, 0., 20.).path_angle == 0.
@@ -71,17 +88,12 @@ def test_held_turn_releases_without_a_bias_tail_or_sign_reversal():
     assert out == FordPath(True, 0., 0., 0., 0.)
 
 
-def test_current_model_replacement_leaves_only_independent_actuator_slew():
+def test_current_request_releases_both_outputs_in_one_cycle():
   controller = ModelActionController()
   for _ in range(150):
     controller.update(straight(1.), .04, current_curvature=.04, speed=20., dt=.01)
   # C0 starts near .974 + 7*(.8-.5) = 3.074 m, including heading overflow.
-  for _ in range(78):
-    out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
-  assert out.path_offset == pytest.approx(0.)
-  assert out.path_angle > 0.  # C1 cannot hold C0 during its longer release.
-  for _ in range(22):
-    out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
+  out = controller.update(straight(), 0., current_curvature=0., speed=20., dt=.01)
   assert out == FordPath(True, 0., 0., 0., 0.)
 
 
@@ -107,14 +119,12 @@ def test_selected_core_reversal_through_float32_and_wire_keeps_sign_and_zero_c2(
   packer = CANPacker('ford_lincoln_base_pt')
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], 0)
   bus = CanBus(fingerprint={0: {}})
-  previous = np.zeros(2)
   for i in range(600):
     sign = 1. if i < 300 else -1.
     out = controller.update(straight(sign*8.), sign*.1, current_curvature=sign*.1, speed=30., dt=.01)
     fields = np.array([out.path_offset, out.path_angle])
     assert (abs(fields) <= [5.1100001, .5000001]).all()
-    assert (abs(fields-previous) <= [.0500001, .0055001]).all()
-    previous = fields
+    np.testing.assert_allclose(fields, sign*np.array([5.11, .5]), atol=1e-7)
     message = custom.CarControlSP.new_message()
     message.fordLateralPath.pathOffset = out.path_offset
     message.fordLateralPath.pathAngle = out.path_angle
@@ -188,12 +198,12 @@ def test_unrelated_live_model_position_and_heading_do_not_change_selected_arc():
   assert target.path_angle == pytest.approx(-.2)
 
 
-def test_duplicate_stations_keep_valid_geometry_and_first_cycle_slew():
+def test_duplicate_stations_keep_valid_geometry_and_current_request():
   model = make_model([0., 0., 10.], [.4, .4, .4], [0., 0., 0.])
   assert encode_model_action(model, .01, 20.) == encode_model_action(straight(), .01, 20.)
   out = ModelActionController().update(model, .01, current_curvature=.01, speed=20., dt=.002)
-  assert out.path_offset == pytest.approx(.01)
-  assert out.path_angle == pytest.approx(.001)
+  assert out.path_offset == pytest.approx(.24)
+  assert out.path_angle == pytest.approx(.2)
 
 
 @pytest.mark.parametrize('curvature', [-1., -.2, -.1, -.01, -.001, .001, .01, .1, .2, 1.])

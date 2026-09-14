@@ -43,21 +43,19 @@ def test_overflow_uses_existing_reference_with_short_model_path(sign):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_extra_offset_releases_at_existing_slew_without_stored_overflow(sign):
+def test_extra_offset_releases_immediately_without_stored_overflow(sign):
   controller = ModelActionController()
   for _ in range(200):
     controller.update(straight(sign*.2), sign*.04, current_curvature=sign*.04, speed=20., dt=.01)
   start = sign*((1-math.cos(.28))/.04+2.1)
   target = sign*(1-math.cos(.14))/.02
   assert controller.c0 == pytest.approx(start)
-  for i in range(70):
+  for _ in range(70):
     before = controller.c0
     out = controller.update(straight(sign*.2), sign*.02, current_curvature=sign*.02, speed=20., dt=.01)
     assert sign*controller.c0 >= sign*target-1e-10
     assert sign*controller.c0 <= sign*before+1e-10
-    assert abs(controller.c0-before) <= .04+1e-10
-    if i == 0:
-      assert controller.c0 == pytest.approx(start-sign*.04)
+    assert controller.c0 == pytest.approx(target)
   assert out.path_offset == pytest.approx(sign*(1-math.cos(.14))/.02, abs=.005)
   assert out.path_angle == pytest.approx(sign*.4)
   assert controller.correction == 0.
