@@ -1,6 +1,4 @@
 """C1 overflow allocation and release; no assumptions about PSCM response."""
-import math
-
 import pytest
 
 from openpilot.selfdrive.controls.lib.ford_model_action import ModelActionController
@@ -16,11 +14,10 @@ def test_clipped_base_heading_preserves_the_seven_metre_reference(sign, speed, h
   for _ in range(150):
     out = controller.update(straight(sign*.2), desired, current_curvature=desired, speed=speed, dt=.01)
   assert controller.correction == 0.
-  arc = (1-math.cos(7.*desired))/desired
-  assert controller.c0 == pytest.approx(arc+sign*7.*max(heading-.5, 0.))
+  assert controller.c0 == pytest.approx(sign*(.2+7.*max(heading-.5, 0.)))
   assert out.path_offset == pytest.approx(controller.c0, abs=.005)
   assert out.path_angle == pytest.approx(sign*min(heading, .5))
-  assert out.path_offset+7.*out.path_angle == pytest.approx(arc+sign*7.*heading, abs=.005)
+  assert out.path_offset+7.*out.path_angle == pytest.approx(sign*(.2+7.*heading), abs=.005)
   assert out.curvature == out.curvature_rate == 0.
 
 
@@ -39,7 +36,7 @@ def test_overflow_uses_existing_reference_with_short_model_path(sign):
   model = make_model([0., 1.], [0., sign*.2], [0., 0.])
   for _ in range(150):
     out = controller.update(model, sign*.03, current_curvature=sign*.03, speed=20., dt=.01)
-  assert out.path_offset == pytest.approx(sign*((1-math.cos(.21))/.03+.7), abs=.005)
+  assert out.path_offset == pytest.approx(sign*.9)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
@@ -47,8 +44,8 @@ def test_extra_offset_releases_immediately_without_stored_overflow(sign):
   controller = ModelActionController()
   for _ in range(200):
     controller.update(straight(sign*.2), sign*.04, current_curvature=sign*.04, speed=20., dt=.01)
-  start = sign*((1-math.cos(.28))/.04+2.1)
-  target = sign*(1-math.cos(.14))/.02
+  start = sign*2.3
+  target = sign*.2
   assert controller.c0 == pytest.approx(start)
   for _ in range(70):
     before = controller.c0
@@ -56,7 +53,7 @@ def test_extra_offset_releases_immediately_without_stored_overflow(sign):
     assert sign*controller.c0 >= sign*target-1e-10
     assert sign*controller.c0 <= sign*before+1e-10
     assert controller.c0 == pytest.approx(target)
-  assert out.path_offset == pytest.approx(sign*(1-math.cos(.14))/.02, abs=.005)
+  assert out.path_offset == pytest.approx(sign*.2)
   assert out.path_angle == pytest.approx(sign*.4)
   assert controller.correction == 0.
 
@@ -68,7 +65,7 @@ def test_c1_feedback_saturation_does_not_spill_correction_into_c0(sign):
     out = controller.update(straight(sign*.2), sign*.02, current_curvature=0., speed=20., dt=.01)
   assert out.path_angle == pytest.approx(sign*.5)
   assert controller.correction == pytest.approx(sign*.1)
-  assert out.path_offset == pytest.approx(sign*(1-math.cos(.14))/.02, abs=.005)
+  assert out.path_offset == pytest.approx(sign*.2)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
@@ -78,6 +75,6 @@ def test_overflow_is_base_geometry_with_existing_feedback_gates(sign, enabled, l
   for _ in range(150):
     out = controller.update(straight(sign*.2), sign*.03, current_curvature=sign*.02, speed=20., dt=.01,
                             feedback_enabled=enabled, pscm_limited=limited)
-  assert out.path_offset == pytest.approx(sign*((1-math.cos(.21))/.03+.7), abs=.005)
+  assert out.path_offset == pytest.approx(sign*.9)
   assert out.path_angle == pytest.approx(sign*.5)
   assert controller.correction == 0.

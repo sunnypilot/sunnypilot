@@ -14,8 +14,8 @@ sections:
     widget: toggle
     needs_onroad_cycle: true
     title: Selected-Action Path Tracking (Experimental)
-    description: Follow the selected desired curvature using path-offset and heading commands with measured steering feedback on any Ford CAN FD vehicle.
-    details: Derives path offset and heading from the same selected desired curvature and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
+    description: Follow the selected steering plan using model-path centering and measured steering feedback on any Ford CAN FD vehicle.
+    details: Uses the nearby model path for centering and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
     enablement:
     - $ref: '#/macros/offroad'
 - id: hyundai
