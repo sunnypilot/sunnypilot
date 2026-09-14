@@ -26,8 +26,8 @@ from openpilot.selfdrive.controls.tests.test_ford_model_action import circle, st
 from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import CANFD_CARS, car_params, startup
 
 
-def assert_current_request(core, model, desired, speed):
-  target = encode_model_action(model, desired, speed)
+def assert_current_request(core, desired, speed):
+  target = encode_model_action(straight(), desired, speed)
   base = min(.5, max(-.5, target.path_angle))
   assert core.c0 == pytest.approx(min(5.11, max(-5.11, target.path_offset+7.*(target.path_angle-base))))
   assert core.c1 == pytest.approx(min(.5, max(-.5, base+core.proportional+core.correction)))
@@ -48,7 +48,7 @@ def test_stale_or_future_service_clears_commands_and_reengages_with_current_requ
   update(controller)
   assert update(controller, 1.01, **{field: 1.01-age}) == FordPath()
   assert controller.diagnostics['status'] == 'stale_input'
-  assert update(controller, 1.02).path_offset == pytest.approx(.4)
+  assert update(controller, 1.02).path_offset == pytest.approx(.24)
 
 
 @pytest.mark.parametrize('change,reason', [
@@ -90,7 +90,7 @@ def test_repeated_measurements_use_current_request_and_revalidate_model_geometry
   controller = FordModelActionController()
   for i in range(10):
     result = update(controller, 1.+i*.01, measurement_time=1., model_time=1., reference_time=1.)
-  assert result.path_offset == pytest.approx(.4)
+  assert result.path_offset == pytest.approx(.24)
   assert result.path_angle == pytest.approx(.2)
   broken = straight(.4)
   broken.position.y[5] = math.nan
@@ -113,18 +113,18 @@ def test_reference_source_can_change_to_an_older_but_fresh_publication():
   assert update(controller, 1.01, reference_time=.98).valid
 
 
-def test_relaxing_selected_request_releases_heading_while_offset_follows_model_path():
+def test_relaxing_selected_request_releases_both_fields_despite_growing_model_path():
   for sign in (-1., 1.):
     controller = FordModelActionController()
     for i in range(100):
       before = update(controller, 1.+i*.01, model=circle(sign*.01), desired_curvature=sign*.005)
     for i in range(100):
       after = update(controller, 2.+i*.01, model=circle(sign*.02), desired_curvature=sign*.004)
-    assert abs(after.path_offset) > abs(before.path_offset)
+    assert abs(after.path_offset) < abs(before.path_offset)
     assert abs(after.path_angle) < abs(before.path_angle)
     for i in range(100):
       released = update(controller, 3.+i*.01, model=circle(sign*.02), desired_curvature=0.)
-    assert released.path_offset == after.path_offset
+    assert released.path_offset == pytest.approx(0.)
     assert released.path_angle == pytest.approx(0.)
 
 
@@ -190,7 +190,7 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   assert controller.core.proportional == pytest.approx(.5*20.*expected_curvature)
   assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
   assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0035)
-  assert controls.ford_path.path_offset == pytest.approx(.4)  # Model centering survives either reference selection.
+  assert controls.ford_path.path_offset == pytest.approx(0.)  # Limited curvature arc is below one C0 step.
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
 
@@ -280,7 +280,7 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
     assert core.correction == pytest.approx(expected)
     assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
     assert controls.ford_path.path_angle == pytest.approx(core.c1, abs=.00025)
-    assert controls.ford_path.path_offset == pytest.approx(.4)
+    assert controls.ford_path.path_offset == pytest.approx(sign*.1)
 
 
 @pytest.mark.parametrize('service_valid', [False, True])
@@ -337,7 +337,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert_current_request(core, model, controls.desired_curvature, cs.vEgo)
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     increment = .25*speed*(controls.desired_curvature-controls.curvature)*.01
     assert abs(core.correction-before[2]) <= abs(increment)+1e-10
     msg = custom.CarControlSP.new_message()
@@ -355,13 +355,13 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-model-path-c0-direct-pi-v10'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-direct-pi-v11'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
   else:
     assert sign*controls.ford_path.path_angle < 0.
-  assert controls.ford_path.path_offset == pytest.approx(sign*(.2 if same_turn else -.2))
+  assert controls.ford_path.path_offset == pytest.approx(sign*(.24 if same_turn else -.02))
   controls.ford_path_controller.reset()
   assert core.c0 == core.c1 == core.correction == 0.
 
@@ -392,7 +392,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert_current_request(core, model, controls.desired_curvature, cs.vEgo)
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     if frame == 129:
       assert 0. < sign*core.correction < .02
     if frame == 130:
@@ -414,7 +414,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
   assert controls.ford_path.path_angle == pytest.approx(core.correction, abs=.00025)
   assert 0. < sign*core.correction < .02
-  assert controls.ford_path.path_offset == pytest.approx(sign*.05)
+  assert controls.ford_path.path_offset == pytest.approx(0.)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
@@ -442,7 +442,7 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
-    assert_current_request(core, model, controls.desired_curvature, cs.vEgo)
+    assert_current_request(core, controls.desired_curvature, cs.vEgo)
     assert core.correction == 0.
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
@@ -459,10 +459,10 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 149:
       assert controls.desired_curvature == pytest.approx(sign*.1)
-      assert controls.ford_path.path_offset == pytest.approx(sign*1.6)
+      assert controls.ford_path.path_offset == pytest.approx(sign*((1-math.cos(.7))/.1+1.4), abs=.005)
       assert controls.ford_path.path_angle == pytest.approx(sign*.5)
       assert controls.ford_path_controller.diagnostics['offset_overflow'] == pytest.approx(sign*1.4)
-  assert controls.ford_path.path_offset == pytest.approx(sign*.2)
+  assert controls.ford_path.path_offset == pytest.approx(sign*(1-math.cos(.28))/.04, abs=.005)
   assert controls.ford_path.path_angle == pytest.approx(sign*.28)
   assert controls.ford_path_controller.diagnostics['offset_overflow'] == 0.
 

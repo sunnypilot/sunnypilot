@@ -48,7 +48,7 @@ def test_actual_startup_priority(candidate, observer, fingerprint):
     assert type(selected.ford_path_controller) is FordModelActionController
     assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .50
     assert selected.ford_path_controller.core.integral_gain == C1_INTEGRAL_GAIN == .25
-    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-model-path-c0-direct-pi-v10'
+    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-direct-pi-v11'
   else:
     assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate

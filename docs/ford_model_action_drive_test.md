@@ -1,17 +1,17 @@
 # Ford selected-action drive-test branch
 
-This v10 controller restores model-path C0 at 7 m and keeps direct C0/C1 requests
+This v11 controller restores [curvature-derived C0](ford_curvature_c0_v8.md) and retains direct C0/C1 requests
 and [continuous C1 PI feedback](ford_c1_minimal_pi.md)
 with **P=0.50 and I=0.25**.
-Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 samples lateral position 7 m along the model path, holding the endpoint for shorter paths.
+Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 is now a 7 m circular arc from selected desired curvature.
 [Base C1 overflow allocation to C0](ford_c1_overflow.md) remains.
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
 
-V10 restores the C0 method used before `20485134e` and retains the
-[direct C0/C1 commands](ford_direct_path_v9.md) introduced in v9. The gains remain
+V11 restores the v9 command law after the model-path C0 trial in `5db3e3c9a`.
+Both base commands use selected, upstream-limited desired curvature. The gains remain
 P=0.50 and I=0.25, and PSCM `LimitReached` handling is unchanged. The separate
 offline experiment that ignores the reached-limit integration block is not included.
 
@@ -27,7 +27,7 @@ offline experiment that ignores the reached-limit integration block is not inclu
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-model-path-c0-direct-pi-v10`**. They report desired and measured
+identify **`hypothesis=model-action-curvature-c0-direct-pi-v11`**. They report desired and measured
 curvature, base heading, proportional and accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `proportional_gain=0.5` and
 `integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
@@ -57,9 +57,9 @@ combined feedforward/P/I amplitude envelope. There is no C0 confirmation
 threshold or remembered turn direction. Zero error removes P and holds I; it
 does not trigger a release. Final command limits still apply.
 
-C0 starts with model lateral position interpolated at 7 m of path arc length.
-Short paths hold their final lateral position without extrapolation. Selected
-desired curvature supplies C1 base heading. When the raw base heading
+C0 starts with the 7 m circular arc of selected desired curvature. It does not
+add independent live model-path position or heading. Valid model geometry is
+still required as a health gate. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.
 Accumulated C1 feedback does not spill into C0. The extra target returns to zero
 as the base heading falls below the cap. Applied C0 changes in that same update.
@@ -69,7 +69,7 @@ place. An explicit selection flag distinguishes upstream mode from an invalid
 experimental command; invalid experimental input cannot switch to upstream.
 The opendbc sender restores upstream behavior when that flag is false.
 
-[Direct-command validation](ford_direct_path_v9.md) records v9 with curvature-derived C0.
+[Direct-command validation](ford_direct_path_v9.md) records the same command law introduced in v9.
 [Curvature-C0](ford_curvature_c0_v8.md) and its validation JSON record v8.
 [Continuous PI](ford_c1_minimal_pi.md) and its validation JSON record v7.
 [Proportional feedback](ford_c1_pi.md) and its validation JSON record v6.

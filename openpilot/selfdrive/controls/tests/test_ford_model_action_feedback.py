@@ -25,7 +25,7 @@ def test_feedback_builds_holds_and_unwinds_without_changing_c0(sign):
     baseline = tick(matched, sign*.004, sign*.004)
   assert controller.correction == pytest.approx(sign*.02)
   assert out.path_angle == pytest.approx(sign*.1)
-  assert out.path_offset == baseline.path_offset == pytest.approx(.4)
+  assert out.path_offset == baseline.path_offset == pytest.approx(sign*.1)
   for _ in range(100):
     out = tick(controller, sign*.004, sign*.004)
   assert controller.correction == pytest.approx(sign*.02)
@@ -72,7 +72,7 @@ def test_pscm_limit_only_blocks_feedback_further_into_measured_turn(sign):
   for _ in range(100):
     out = tick(controller, 0., 0., pscm_limited=True)
   assert abs(out.path_angle) < .001
-  assert out.path_offset == pytest.approx(.4)
+  assert out.path_offset == pytest.approx(0.)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
