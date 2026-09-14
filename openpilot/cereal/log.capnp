@@ -1220,6 +1220,18 @@ struct DriverAssistance {
 
 struct LateralManeuverPlan {
   desiredCurvature @0 :Float32;  # 1/m
+  fordChannelTest @1 :FordChannelTest;
+
+  struct FordChannelTest {
+    runId @0 :UInt32;
+    channel @1 :Channel;
+    phase @2 :Phase;
+    delta @3 :Float32;  # added to the captured command: meters for C0, radians for C1
+    speed @4 :Float32;  # target m/s
+
+    enum Channel { none @0; c0 @1; c1 @2; }
+    enum Phase { waiting @0; baseline @1; pulse @2; release @3; complete @4; aborted @5; }
+  }
 }
 
 struct LongitudinalPlan @0xe00b5b3eba12876c {

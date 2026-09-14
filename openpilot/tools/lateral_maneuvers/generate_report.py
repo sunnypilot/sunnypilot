@@ -18,6 +18,7 @@ from openpilot.tools.lib.logreader import LogReader
 from openpilot.common.hardware.hw import Paths
 from openpilot.common.constants import CV
 from openpilot.tools.longitudinal_maneuvers.generate_report import format_car_params
+from openpilot.tools.lateral_maneuvers.ford_report import ChannelRuns, report as ford_channel_report
 
 
 def lat_accel(curvature, v):
@@ -233,8 +234,10 @@ if __name__ == '__main__':
   maneuvers: list[tuple[str, list[list]]] = []
   active_prev = False
   description_prev = None
+  channel_runs = ChannelRuns()
 
   for msg in lr:
+    channel_runs.add(msg)
     if msg.which() == 'alertDebug':
       active = 'Active' in msg.alertDebug.alertText1 or msg.alertDebug.alertText1 == 'Complete'
       if active and not active_prev:
@@ -248,4 +251,9 @@ if __name__ == '__main__':
     if active_prev:
       maneuvers[-1][1][-1].append(msg)
 
-  report(platform, args.route, args.description, CP, ID, maneuvers)
+  if channel_runs.runs:
+    output = ford_channel_report(platform, args.route, CP, ID, channel_runs.runs)
+    print(f'Opening Ford channel report: {output}')
+    webbrowser.open_new_tab(str(output))
+  else:
+    report(platform, args.route, args.description, CP, ID, maneuvers)

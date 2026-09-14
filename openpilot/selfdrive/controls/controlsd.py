@@ -16,6 +16,7 @@ from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
+from openpilot.selfdrive.controls.lib.ford_channel_test import FordChannelTest, is_channel_plan, selected as ford_channel_test_selected
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -58,6 +59,7 @@ class Controls(ControlsExt):
     self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
                                                               c0_time_based=self.params.get_bool("FordC0TimeBased"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
+    self.ford_channel_test = FordChannelTest() if ford_channel_test_selected(self.CP, self.params) else None
     if self.CP.brand == "ford":
       cloudlog.event("Ford path controller selected",
                      controller=type(self.ford_path_controller).__name__ if self.ford_model_action else "upstream")
@@ -149,7 +151,7 @@ class Controls(ControlsExt):
 
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
-    if self.sm.valid['lateralManeuverPlan']:
+    if self.sm.valid['lateralManeuverPlan'] and not is_channel_plan(self.sm['lateralManeuverPlan']):
       new_desired_curvature = self.sm['lateralManeuverPlan'].desiredCurvature if CC.latActive else self.curvature
     else:
       new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
@@ -168,7 +170,8 @@ class Controls(ControlsExt):
     if self.CP.brand == "ford":
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
       if self.ford_model_action:
-        reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
+        reference_service = ('lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] and
+                             not is_channel_plan(self.sm['lateralManeuverPlan']) else 'modelV2')
         self.ford_path = self.ford_path_controller.update(
           ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
@@ -178,6 +181,22 @@ class Controls(ControlsExt):
           driver_pressed=CS.steeringPressed, driver_torque=CS.steeringTorque,
           pscm_status=self.sm['carStateSP'].fordPscmStatus if self.sm.valid['carStateSP'] else None,
         )
+        if self.ford_channel_test is not None:
+          override = self.ford_channel_test.update(
+            self.sm['lateralManeuverPlan'], plan_valid=self.sm.valid['lateralManeuverPlan'],
+            plan_time=self.sm.logMonoTime['lateralManeuverPlan']*1e-9, now=time.monotonic(),
+            normal=self.ford_path, active=CC.latActive,
+            healthy=CS.cruiseState.enabled and self.sm.all_checks(['carStateSP', 'carState', 'vehicleParameters', 'modelV2']),
+            driver_input=CS.steeringPressed or not math.isfinite(CS.steeringTorque) or abs(CS.steeringTorque) > 1. or CS.gasPressed or CS.brakePressed,
+            speed=CS.vEgo, angle=CS.steeringAngleDeg, curvature=self.curvature,
+            pscm=self.sm['carStateSP'].fordPscmStatus,
+          )
+          if override is not None:
+            self.ford_path = override
+            self.ford_path_controller.reset('channel_test')
+            self.ford_path_controller.diagnostics['command'] = (override.path_offset, override.path_angle, 0., 0.)
+            if self.sm.frame % 20 == 0:
+              cloudlog.event('Ford channel test command', **self.ford_channel_test.diagnostics)
         if not self.ford_path.valid:
           CC.latActive = False
         if self.sm.frame % 20 == 0:

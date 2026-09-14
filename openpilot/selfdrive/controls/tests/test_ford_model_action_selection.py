@@ -11,6 +11,7 @@ from opendbc.car.ford.values import CAR, FordFlags
 from openpilot.common.params import Params, ParamKeyFlag, ParamKeyType
 from openpilot.selfdrive.controls.lib.ford_model_action import C1_INTEGRAL_GAIN, C1_PROPORTIONAL_GAIN, FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
+from openpilot.selfdrive.controls.lib.ford_channel_test import FordChannelTest, selected as ford_channel_test_selected
 
 
 CANFD_CARS = [car for car in CAR if car.config.flags & FordFlags.CANFD]
@@ -34,6 +35,7 @@ def startup(cp=None, params=None):
   environment = {'self': controls, 'FordFlags': FordFlags, 'FordPath': FordPath,
                  'FordModelActionController': FordModelActionController,
                  'select_model_action_controller': select_model_action_controller,
+                 'FordChannelTest': FordChannelTest, 'ford_channel_test_selected': ford_channel_test_selected,
                  'cloudlog': SimpleNamespace(event=lambda *args, **kwargs: None)}
   exec(compile(ast.Module(body=body[start:end+1], type_ignores=[]), str(filename), 'exec'), environment)
   return controls
