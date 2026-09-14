@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sunnypilot.com/schemas/sdui/page.schema.json",
+  "title": "Settings UI page (panel) YAML",
+  "description": "Validates pages/<id>.yaml. Each page describes one settings panel (or the vehicle namespace via kind: vehicle).",
+  "type": "object",
+  "required": ["id"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string"},
+    "label": {"type": "string"},
+    "icon": {"type": "string"},
+    "order": {"type": "integer"},
+    "remote_configurable": {"type": "boolean"},
+    "description": {"type": "string"},
+    "kind": {
+      "type": "string",
+      "enum": ["panel", "vehicle"],
+      "description": "panel (default) or vehicle (compiles to settings_ui.json#vehicle_settings)."
+    },
+    "sections": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Section"}
+    },
+    "items": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/Item"}
+    },
+    "sub_panels": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/SubPanel"}
+    }
+  },
+  "$defs": {
+    "Section": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "order": {"type": "integer"},
+        "attestation_required": {"type": "boolean"},
+        "visibility": {"type": "array", "items": {"$ref": "rule.schema.json"}},
+        "enablement": {"type": "array", "items": {"$ref": "rule.schema.json"}},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}},
+        "sub_panels": {"type": "array", "items": {"$ref": "#/$defs/SubPanel"}}
+      }
+    },
+    "SubPanel": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string"},
+        "label": {"type": "string"},
+        "trigger_key": {"type": ["string", "null"]},
+        "trigger_condition": {"$ref": "rule.schema.json"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}
+      }
+    },
+    "Item": {
+      "type": "object",
+      "required": ["key", "widget"],
+      "additionalProperties": false,
+      "properties": {
+        "key": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$"},
+        "widget": {"type": "string", "enum": ["toggle", "option", "multiple_button", "button", "info"]},
+        "title": {"type": "string"},
+        "description": {"type": "string", "description": "Inline body text under the title. May be omitted when only details is used."},
+        "details": {"type": "string", "description": "Extended help shown in a modal when the user taps the info (i) button. Independent of description; either, both, or neither may be present."},
+        "title_param_suffix": {"type": "object"},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "step": {"type": "number"},
+        "unit": {
+          "oneOf": [
+            {"type": "string"},
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["metric", "imperial"],
+              "properties": {
+                "metric": {"type": "string"},
+                "imperial": {"type": "string"}
+              }
+            }
+          ]
+        },
+        "needs_onroad_cycle": {"type": "boolean"},
+        "requires_attestation": {"type": "boolean"},
+        "blocked": {"type": "boolean"},
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "value": {},
+              "label": {"type": "string"},
+              "enablement": {"type": "array", "items": {"$ref": "rule.schema.json"}}
+            }
+          }
+        },
+        "visibility": {"type": "array", "items": {"$ref": "rule.schema.json"}},
+        "enablement": {"type": "array", "items": {"$ref": "rule.schema.json"}},
+        "sub_items": {"type": "array", "items": {"$ref": "#/$defs/Item"}}
+      }
+    }
+  }
+}
