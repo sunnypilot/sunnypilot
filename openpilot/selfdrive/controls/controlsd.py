@@ -16,7 +16,7 @@ from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
-from openpilot.selfdrive.controls.lib.ford_channel_test import FordChannelTest, is_channel_plan, selected as ford_channel_test_selected
+from openpilot.selfdrive.controls.lib.ford_channel_test import FordChannelTest, use_maneuver_reference, selected as ford_channel_test_selected
 from openpilot.selfdrive.controls.lib.latcontrol import LatControl
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle, STEER_ANGLE_SATURATION_THRESHOLD
@@ -151,7 +151,7 @@ class Controls(ControlsExt):
 
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
-    if self.sm.valid['lateralManeuverPlan'] and not is_channel_plan(self.sm['lateralManeuverPlan']):
+    if use_maneuver_reference(self.sm['lateralManeuverPlan'], self.sm.valid['lateralManeuverPlan'], self.ford_channel_test is not None):
       new_desired_curvature = self.sm['lateralManeuverPlan'].desiredCurvature if CC.latActive else self.curvature
     else:
       new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
@@ -170,8 +170,8 @@ class Controls(ControlsExt):
     if self.CP.brand == "ford":
       ford_model = model_v2 if self.sm.valid['modelV2'] else None
       if self.ford_model_action:
-        reference_service = ('lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] and
-                             not is_channel_plan(self.sm['lateralManeuverPlan']) else 'modelV2')
+        reference_service = ('lateralManeuverPlan' if use_maneuver_reference(self.sm['lateralManeuverPlan'],
+                             self.sm.valid['lateralManeuverPlan'], self.ford_channel_test is not None) else 'modelV2')
         self.ford_path = self.ford_path_controller.update(
           ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
@@ -188,12 +188,10 @@ class Controls(ControlsExt):
             normal=self.ford_path, active=CC.latActive,
             healthy=CS.cruiseState.enabled and self.sm.all_checks(['carStateSP', 'carState', 'vehicleParameters', 'modelV2']),
             driver_input=CS.steeringPressed or not math.isfinite(CS.steeringTorque) or abs(CS.steeringTorque) > 1. or CS.gasPressed or CS.brakePressed,
-            speed=CS.vEgo, angle=CS.steeringAngleDeg, curvature=self.curvature,
-            pscm=self.sm['carStateSP'].fordPscmStatus,
+            speed=CS.vEgo,
           )
           if override is not None:
             self.ford_path = override
-            self.ford_path_controller.reset('channel_test')
             self.ford_path_controller.diagnostics['command'] = (override.path_offset, override.path_angle, 0., 0.)
             if self.sm.frame % 20 == 0:
               cloudlog.event('Ford channel test command', **self.ford_channel_test.diagnostics)

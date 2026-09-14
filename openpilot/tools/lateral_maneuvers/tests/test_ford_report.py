@@ -7,9 +7,12 @@ from opendbc.can import CANPacker
 from opendbc.car import structs
 from opendbc.car.ford.fordcan import CanBus, create_lat_ctl2_msg
 from openpilot.cereal import messaging
-from openpilot.selfdrive.controls.lib.ford_channel_test import AMPLITUDE, SPEEDS
+from openpilot.selfdrive.controls.lib.ford_channel_test import SPEEDS
 from openpilot.tools.lateral_maneuvers.ford_report import ChannelRuns, analyze, first_sustained, report
 
+
+# Archived raw-pulse routes remain readable after replacing the diagnostic.
+AMPLITUDE = {'c0': 1.28, 'c1': .125}
 
 def event(kind, t):
   m = messaging.new_message(kind, size=1 if kind == 'sendcan' else None)
@@ -114,3 +117,75 @@ def test_incomplete_missing_and_bad_checksum():
 def test_single_sample_and_gap_cannot_count_as_onset():
   assert first_sustained([0., .01, .02, .03], [False, True, False, False]) is None
   assert first_sustained([0., .5], [True, True]) is None
+
+
+@pytest.mark.parametrize('channel', ['c0', 'c1'])
+def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, tmp_path, monkeypatch):
+  from pathlib import Path
+  from openpilot.tools.lateral_maneuvers import generate_report as generator
+  from openpilot.tools.lateral_maneuvers.ford_report import channel_commands
+
+  cp = structs.CarParams(carFingerprint='FORD_SYNTHETIC_REPORT_TEST', steerControlType=structs.CarParams.SteerControlType.curvature,
+                        safetyConfigs=[structs.CarParams.SafetyConfig()])
+  packer, bus = CANPacker('ford_lincoln_base_pt'), CanBus(cp)
+  messages = []
+  speed = SPEEDS[0]
+  for i in range(250):
+    t = 10.+i*.01
+    curvature = (.5 if i < 105 else -.5)/speed**2
+    if i % 5 == 0:
+      m = event('lateralManeuverPlan', t)
+      m.lateralManeuverPlan.desiredCurvature = curvature
+      m.lateralManeuverPlan.fordChannelTest = {'runId': 1, 'channel': channel, 'phase': 'maneuver', 'speed': speed}
+      messages.append(m)
+    m = event('carState', t)
+    m.carState.vEgo, m.carState.steeringAngleDeg = speed, 16. if i < 110 else -16.
+    messages.append(m)
+    m = event('controlsState', t)
+    m.controlsState.curvature = curvature*.8 if i > 10 else 0.
+    m.controlsState.desiredCurvature = curvature
+    messages.append(m)
+    m = event('carControl', t)
+    m.carControl.latActive = True
+    m.carControl.orientationNED = [0., 0., 0.]
+    messages.append(m)
+    messages.append(event('carOutput', t))
+    c0, c1 = (24.5*curvature, 0.) if channel == 'c0' else (0., speed*curvature)
+    address, data, src = create_lat_ctl2_msg(packer, bus, 2, -c0, -c1, 0., 0., i % 16)
+    m = event('sendcan', t)
+    m.sendcan[0].address, m.sendcan[0].dat, m.sendcan[0].src = address, data, src
+    messages.append(m)
+  m = event('alertDebug', 12.5)
+  m.alertDebug.alertText1 = 'Complete'
+  messages.append(m)
+  commands, problems = channel_commands(messages, cp, channel, 10_000_000_000)
+  assert not problems
+  legacy_collector = ChannelRuns()
+  for msg in messages:
+    legacy_collector.add(msg)
+  assert not legacy_collector.runs  # CLI dispatches these targets to the normal report
+  assert (commands[:, 2 if channel == 'c0' else 1] == 0.).all()
+  captured = []
+  savefig = generator.plt.Figure.savefig
+
+  def capture_figure(fig, *args, **kwargs):
+    captured.append([axis.get_ylabel() for axis in fig.axes])
+    # Render the real figure at preview resolution to keep this check fast.
+    savefig(fig, *args, **(kwargs | {'dpi': 40}))
+
+  monkeypatch.setattr(generator.plt.Figure, 'savefig', capture_figure)
+  opened = []
+  monkeypatch.setattr(generator.webbrowser, 'open_new_tab', opened.append)
+  monkeypatch.setattr(generator, '__file__', str(tmp_path/'generate_report.py'))
+  generator.report('FORD_SYNTHETIC_REPORT_TEST', f'synthetic-{channel}', None, cp,
+                   SimpleNamespace(gitCommit='synthetic only', gitBranch='test', gitRemote='local'),
+                   [(f'step right 15mph {channel.upper()}', [messages])])
+  output = Path(opened[0])
+  html = output.read_text()
+  output.rename(tmp_path/output.name)
+  assert f'Normal maneuver target through {channel.upper()} only' in html
+  assert 'invalid maneuver!' not in html
+  assert captured == [['Lateral Accel (m/s^2)', 'Wheel angle (deg)', 'Velocity (mph)', 'Jerk (m/s^3)', 'Roll (deg)', 'C0 sent (m)', 'C1 sent (rad)']]
+  assert 'data:image/webp;base64,' in html
+  # A live nonzero unused field must invalidate the isolated-channel measurement.
+  assert 'channel isolation failed' in channel_commands(messages, cp, 'c1' if channel == 'c0' else 'c0', 10_000_000_000)[1]

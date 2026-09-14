@@ -211,3 +211,35 @@ def report(platform, route, CP, ID, runs, output_dir=None):
     html.append(f'<img alt="{escape(title)} command and wheel response" src="data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}">')
   output.write_text(''.join(html))
   return output
+
+
+def channel_commands(msgs, CP, channel, start_time):
+  """Decode the actual output for normal maneuver reports, in left-positive units."""
+  bus = CanBus(CP).main
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], bus)
+  address = parser.dbc.name_to_msg['LateralMotionControl2'].address
+  samples, problems = [], set()
+  for msg in msgs:
+    if msg.which() != 'sendcan':
+      continue
+    for packet in msg.sendcan:
+      if packet.address != address or packet.src != bus:
+        continue
+      parser.update([msg.logMonoTime, [(packet.address, packet.dat, packet.src)]])
+      wire = parser.vl['LateralMotionControl2']
+      t = (msg.logMonoTime-start_time)*1e-9
+      samples.append((t, -wire['LatCtlPathOffst_L_Actl'], -wire['LatCtlPath_An_Actl']))
+      if t >= .06:  # initial plan delivery to the controller/sender
+        if not msg.valid or wire['LatCtl_D2_Rq'] != 2:
+          problems.add('inactive/invalid CAN output')
+        other = wire['LatCtlPath_An_Actl'] if channel == 'c0' else wire['LatCtlPathOffst_L_Actl']
+        if abs(other) > 1e-7 or wire['LatCtlCurv_No_Actl'] != 0. or wire['LatCtlCrv_NoRate2_Actl'] != 0.:
+          problems.add('channel isolation failed')
+        if wire['LatCtlPath_No_Cs'] != calculate_lat_ctl2_checksum(int(wire['LatCtl_D2_Rq']), int(wire['LatCtlPath_No_Cnt']), packet.dat):
+          problems.add('CAN checksum')
+  data = np.asarray(samples).reshape(-1, 3)
+  if len(data) < 2:
+    problems.add('missing CAN output')
+  elif np.max(np.diff(data[:, 0])) > .1:
+    problems.add('CAN data gap')
+  return data, problems

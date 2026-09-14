@@ -9,6 +9,7 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.controls.lib.drive_helpers import MIN_SPEED
+from openpilot.selfdrive.controls.lib.ford_channel_test import SPEEDS
 from openpilot.tools.longitudinal_maneuvers.maneuversd import Action, Maneuver as _Maneuver
 
 # thresholds for starting maneuvers
@@ -20,6 +21,7 @@ TIMER = 2.0 # sec stable conditions before starting maneuver
 @dataclass
 class Maneuver(_Maneuver):
   _baseline_curvature: float = 0.0
+  channel: str = 'none'
 
   def get_accel(self, v_ego: float, lat_active: bool, curvature: float, roll: float) -> float:
     self._run_completed = False
@@ -100,21 +102,34 @@ MANEUVERS = [
 ]
 
 
-def main():
+def channel_maneuvers():
+  # Reuse the normal action arrays, timing, repeat count and readiness logic.
+  templates = [m for m in MANEUVERS if m.initial_speed == MANEUVERS[0].initial_speed]
+  return [Maneuver(f'{m.description.rsplit(" ", 1)[0]} {speed*CV.MS_TO_MPH:.0f}mph {channel.upper()}',
+                   m.actions, repeat=m.repeat, initial_speed=speed, channel=channel)
+          for speed in SPEEDS for channel in ('c0', 'c1') for m in templates]
+
+
+def main(ford_channels=False):
   params = Params()
   cloudlog.info("lateral_maneuversd is waiting for CarParams")
   messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
 
-  sm = messaging.SubMaster(['carState', 'carControl', 'controlsState', 'selfdriveState', 'modelV2'], poll='modelV2')
+  services = ['carState', 'carControl', 'controlsState', 'selfdriveState', 'modelV2']
+  if ford_channels:
+    services += ['carStateSP', 'vehicleParameters']
+  sm = messaging.SubMaster(services, poll='modelV2')
   pm = messaging.PubMaster(['lateralManeuverPlan', 'alertDebug'])
 
-  maneuvers = iter(MANEUVERS)
+  maneuvers = iter(channel_maneuvers() if ford_channels else MANEUVERS)
   maneuver = None
   complete_cnt = 0
   aborted_cnt = 0
   abort_reason = ''
   display_holdoff = 0
   prev_text = ''
+  run_id = 0
+  was_active = False
 
   while True:
     sm.update()
@@ -138,16 +153,19 @@ def main():
     elif maneuver is not None:
       # any driver input aborts the maneuver
       CS = sm['carState']
-      if CS.steeringPressed or CS.gasPressed:
+      invalid = ford_channels and (not sm.all_checks() or not CS.canValid or not CS.cruiseState.enabled
+                                    or not sm['carControl'].latActive or CS.steerFaultTemporary or CS.steerFaultPermanent)
+      if CS.steeringPressed or CS.gasPressed or (ford_channels and CS.brakePressed) or invalid:
         aborted_cnt = int(1.0 / DT_MDL)
-        abort_reason = ('steering pressed' if CS.steeringPressed else 'gas pressed').ljust(20)
+        abort_reason = ('Waiting: engage ACC/lateral; valid data' if invalid else
+                        ('steering pressed' if CS.steeringPressed else ('brake pressed' if CS.brakePressed else 'gas pressed'))).ljust(20)
       aborted = aborted_cnt > 0
       speed_out_of_range = maneuver.active and abs(v_ego - maneuver.initial_speed) > MAX_SPEED_DEV
       if aborted or speed_out_of_range:
         maneuver.reset()
 
       roll = sm['carControl'].orientationNED[0] if len(sm['carControl'].orientationNED) == 3 else 0.0
-      accel = maneuver.get_accel(v_ego, sm['carControl'].latActive, curvature, roll)
+      accel = maneuver.get_accel(v_ego, sm['carControl'].latActive and not (ford_channels and (invalid or aborted)), curvature, roll)
 
       if maneuver._run_completed:
         complete_cnt = int(1.0 / DT_MDL)
@@ -191,9 +209,18 @@ def main():
 
     pm.send('alertDebug', alert_msg)
 
-    plan_send.valid = maneuver is not None and maneuver.active and complete_cnt == 0
+    plan_send.valid = maneuver is not None and maneuver.active and complete_cnt == 0 and (not ford_channels or not maneuver.finished)
     if plan_send.valid:
       plan_send.lateralManeuverPlan.desiredCurvature = maneuver._baseline_curvature + accel / max(v_ego, MIN_SPEED) ** 2
+    if ford_channels:
+      if plan_send.valid and not was_active:
+        run_id += 1
+      test = plan_send.lateralManeuverPlan.fordChannelTest
+      test.runId = run_id
+      test.channel = maneuver.channel if maneuver is not None else 'none'
+      test.speed = maneuver.initial_speed if maneuver is not None else 0.
+      test.phase = 'maneuver' if plan_send.valid else ('complete' if complete_cnt > 0 else 'waiting')
+    was_active = plan_send.valid
     pm.send('lateralManeuverPlan', plan_send)
 
     if maneuver is not None and maneuver.finished and complete_cnt == 0:

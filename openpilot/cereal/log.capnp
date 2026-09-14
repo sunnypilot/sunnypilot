@@ -1226,11 +1226,11 @@ struct LateralManeuverPlan {
     runId @0 :UInt32;
     channel @1 :Channel;
     phase @2 :Phase;
-    delta @3 :Float32;  # added to the captured command: meters for C0, radians for C1
+    delta @3 :Float32;  # legacy raw-pulse increment; zero for normal channel maneuvers
     speed @4 :Float32;  # target m/s
 
     enum Channel { none @0; c0 @1; c1 @2; }
-    enum Phase { waiting @0; baseline @1; pulse @2; release @3; complete @4; aborted @5; }
+    enum Phase { waiting @0; baseline @1; pulse @2; release @3; complete @4; aborted @5; maneuver @6; }
   }
 }
 

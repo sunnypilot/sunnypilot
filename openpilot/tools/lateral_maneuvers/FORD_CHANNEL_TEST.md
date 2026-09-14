@@ -1,23 +1,23 @@
-# Ford C0 / C1 comparison
+# Ford lateral maneuvers, one output channel at a time
 
-This separate diagnostic measures the wheel response to C0 and C1 pulses at **15 and 20 mph**. It requires the Ford model-action controller and a CAN FD Ford. It makes no change to normal controller tuning.
+Enable **Settings → Developer → Ford C0 / C1 test** on comma four while offroad. The Ford model-action controller must be enabled on a CAN FD Ford. This runs the existing lateral maneuver tool with a single output channel selected.
 
-1. While offroad, enable **Settings → Developer → Ford C0 / C1 test** on comma four. This selects the test for the next onroad session and turns off the other maneuver/joystick modes.
-2. Use a clear, straight test area with room for a lateral deviation. Engage ACC and lateral control, then hold the speed shown on screen. Testing requires two continuous seconds of steady, nearly straight driving without steering or pedal input. It will not start if you are manually holding the accelerator.
-3. At 15 mph it runs **C0 right, C0 left, C1 right, C1 left**. Repeat those four trials at 20 mph. Each trial holds the starting commands for 0.5 seconds, pulses one field for 1 second, then restores the starting commands for 2 seconds to observe release.
-4. Follow the displayed phase and target speed. Normal model tracking resumes between trials and after completion. If a trial aborts, **disengage and reengage** to retry it; clearing steering input alone does not restart the pulse. Stop if the area no longer provides room for the test.
-5. After “Ford tests finished,” end the route and upload all logs. The test toggle clears when the device returns offroad or the manager restarts.
+The suite uses the **normal lateral-acceleration targets**, converted to desired curvature by the normal maneuver tool. That request goes through the existing curvature/jerk limits and the normal Ford controller. **C0-only sends its normal C0 output with C1 zero. C1-only sends its normal C1 output, including P/I feedback, with C0 zero.** C2/C3 stay zero. The diagnostic does not replace the controller mapping, freeze a starting command, reset feedback, or inject a percentage of the field range.
 
-The pulse is **25% of each field's maximum magnitude**: **±1.28 m C0** (25% of 5.11 m, rounded to the 1 cm CAN step) or **±0.125 rad C1** (25% of 0.5 rad), added to the captured starting command. These are path fields, not wheel angles or percentages of steering torque. The amplitudes and duration were increased after the initial 0.03 m / 0.01 rad, 0.5-second probes produced little reported wheel movement. Equal percentages are not assumed to produce equivalent steering. The other field remains fixed. C2/C3 stay zero, and PI correction does not modify the test commands. Release returns to the captured baseline; it does not deliberately countersteer or promise that the wheel immediately centers.
+At **15 mph**, it runs the standard step right, step left, 0.5 Hz sine and jitter through C0, then through C1. It repeats the same sequence at **20 mph**. Each maneuver retains the standard three runs: **48 completed runs total**.
 
-Driver input, lost ACC/lateral engagement, invalid or stale inputs, PSCM denial/limit status, or excessive response abort the test. The diagnostic additionally stops requesting test control above 15° wheel movement from baseline or 1 m/s² measured lateral acceleration. A pulse may therefore abort before its full second. These thresholds trigger an abort after measured movement; they do not guarantee the physical response cannot overshoot them, model the PSCM, or change normal driving limits.
+The step includes the normal opposite-direction command; the sine and jitter keep the existing action arrays and timing. These tests therefore exercise turn-in and reversal through the real controller. Equal desired acceleration does not guarantee that either channel alone can achieve it. This measures the controller and vehicle together with one output selected, not the PSCM channel in isolation from controller feedback.
 
-Generate the report with the existing command:
+Use the same clear, straight test area as the regular lateral maneuver suite. Set ACC to the displayed speed and engage lateral control. The normal maneuver readiness/countdown checks apply. Driver input, disengagement or invalid inputs stop the attempted run. **Completed runs remain completed; the interrupted run retries when the standard readiness conditions recover.** After steering intervention alone, another disengagement is not required. Brake/ACC disengagement requires reengaging ACC and lateral control.
+
+The former pulse-specific 15° wheel and 1 m/s² aborts are gone. They would cut off normal maneuvers. Normal controller limits, vehicle fault handling, field bounds, driver intervention and a stale-plan watchdog remain. PSCM limit-reached uses the normal controller behavior, including its integral anti-windup, rather than terminating the maneuver.
+
+When “Maneuvers Finished” appears, finish the route and upload all logs. Going offroad or restarting clears the test toggle and resets suite progress.
+
+Generate the report as usual:
 
 ```sh
 python openpilot/tools/lateral_maneuvers/generate_report.py DEVICE/ROUTE
 ```
 
-The generator detects channel trials and plots **C0 sent, C1 sent, actual wheel movement and speed**. It measures thresholded movement onset from the changed CAN packet, peak movement, and residual angle at the end of release. It flags incomplete, intervened, limited, stale, or non-isolated trials for exclusion. Standard lateral maneuver reports keep their existing behavior.
-
-One run in each direction provides a first comparison, not a reliable universal plant model. Compare timing alongside response strength: a larger response can cross a movement threshold sooner even with identical delay. These short pulses do not validate sustained intersection turns.
+Channel runs use the standard lateral maneuver report, grouped by maneuver, speed and channel. It shows desired versus measured lateral acceleration, actual wheel angle, speed/jerk/roll, and decoded C0/C1 CAN commands. The report checks that the unused field remained zero. Archived raw-pulse routes still use their original report.
