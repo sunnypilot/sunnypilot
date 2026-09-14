@@ -120,7 +120,8 @@ def test_single_sample_and_gap_cannot_count_as_onset():
 
 
 @pytest.mark.parametrize('channel', ['c0', 'c1'])
-def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, tmp_path, monkeypatch):
+@pytest.mark.parametrize('keyboard', [False, True])
+def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, keyboard, tmp_path, monkeypatch):
   from pathlib import Path
   from openpilot.tools.lateral_maneuvers import generate_report as generator
   from openpilot.tools.lateral_maneuvers.ford_report import channel_commands
@@ -136,7 +137,9 @@ def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, tmp
     if i % 5 == 0:
       m = event('lateralManeuverPlan', t)
       m.lateralManeuverPlan.desiredCurvature = curvature
-      m.lateralManeuverPlan.fordChannelTest = {'runId': 1, 'channel': channel, 'phase': 'maneuver', 'speed': speed}
+      m.lateralManeuverPlan.fordChannelTest = {'runId': 1, 'channel': channel, 'phase': 'maneuver', 'speed': speed,
+                                              'keyboardRequestId': 1 if keyboard else 0,
+                                              'keyboardPhase': 'pulse' if i < 105 else 'release'}
       messages.append(m)
     m = event('carState', t)
     m.carState.vEgo, m.carState.steeringAngleDeg = speed, 16. if i < 110 else -16.
@@ -150,6 +153,10 @@ def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, tmp
     m.carControl.orientationNED = [0., 0., 0.]
     messages.append(m)
     messages.append(event('carOutput', t))
+    if keyboard:
+      m = event('carStateSP', t)
+      m.carStateSP.fordPscmStatus = {'valid': True, 'canMonoTime': m.logMonoTime, 'lateralState': 2, 'limit': 2 if 70 < i < 90 else 0}
+      messages.append(m)
     c0, c1 = (24.5*curvature, 0.) if channel == 'c0' else (0., speed*curvature)
     address, data, src = create_lat_ctl2_msg(packer, bus, 2, -c0, -c1, 0., 0., i % 16)
     m = event('sendcan', t)
@@ -185,7 +192,10 @@ def test_normal_channel_report_uses_real_targets_and_decoded_output(channel, tmp
   output.rename(tmp_path/output.name)
   assert f'Normal maneuver target through {channel.upper()} only' in html
   assert 'invalid maneuver!' not in html
-  assert captured == [['Lateral Accel (m/s^2)', 'Wheel angle (deg)', 'Velocity (mph)', 'Jerk (m/s^3)', 'Roll (deg)', 'C0 sent (m)', 'C1 sent (rad)']]
+  expected = ['Lateral Accel (m/s^2)', 'Wheel angle (deg)', 'Velocity (mph)', 'Jerk (m/s^3)', 'Roll (deg)', 'C0 sent (m)', 'C1 sent (rad)']
+  assert captured == [expected + (['PSCM limit\n2 = reached'] if keyboard else [])]
+  if keyboard:
+    assert 'Keyboard-triggered step' in html and 'Accelerator input is allowed with MADS' in html
   assert 'data:image/webp;base64,' in html
   # A live nonzero unused field must invalidate the isolated-channel measurement.
   assert 'channel isolation failed' in channel_commands(messages, cp, 'c1' if channel == 'c0' else 'c0', 10_000_000_000)[1]

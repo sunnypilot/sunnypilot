@@ -167,6 +167,7 @@ class DeveloperLayout(Widget):
     self._params.put_bool("SshEnabled", state, block=True)
 
   def _on_joystick_debug_mode(self, state: bool):
+    self._params.put_bool('FordChannelKeyboardMode', False, block=True)
     self._params.put_bool("JoystickDebugMode", state, block=True)
     self._params.put_bool("LongitudinalManeuverMode", False, block=True)
     self._long_maneuver_toggle.action_item.set_state(False)
@@ -174,6 +175,7 @@ class DeveloperLayout(Widget):
     self._lat_maneuver_toggle.action_item.set_state(False)
 
   def _on_long_maneuver_mode(self, state: bool):
+    self._params.put_bool('FordChannelKeyboardMode', False, block=True)
     self._params.put_bool("LongitudinalManeuverMode", state, block=True)
     self._params.put_bool("JoystickDebugMode", False, block=True)
     self._joystick_toggle.action_item.set_state(False)
@@ -181,6 +183,7 @@ class DeveloperLayout(Widget):
     self._lat_maneuver_toggle.action_item.set_state(False)
 
   def _on_lat_maneuver_mode(self, state: bool):
+    self._params.put_bool('FordChannelKeyboardMode', False, block=True)
     self._params.put_bool("LateralManeuverMode", state, block=True)
     self._params.put_bool("ExperimentalMode", False, block=True)
     self._params.put_bool("JoystickDebugMode", False, block=True)

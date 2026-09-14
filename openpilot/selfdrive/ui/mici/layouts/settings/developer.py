@@ -203,9 +203,11 @@ class DeveloperLayoutMici(NavScroller):
 
   def _clear_ford_channel_test(self):
     ui_state.params.put_bool('FordChannelTestMode', False, block=True)
+    ui_state.params.put_bool('FordChannelKeyboardMode', False, block=True)
     self._ford_channel_test_toggle.set_checked(False)
 
   def _on_ford_channel_test(self, state: bool):
+    ui_state.params.put_bool('FordChannelKeyboardMode', False, block=True)
     ui_state.params.put_bool('FordChannelTestMode', state, block=True)
     for key, toggle in (('LateralManeuverMode', self._lat_maneuver_toggle),
                         ('LongitudinalManeuverMode', self._long_maneuver_toggle), ('JoystickDebugMode', self._joystick_toggle)):

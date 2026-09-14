@@ -1228,6 +1228,9 @@ struct LateralManeuverPlan {
     phase @2 :Phase;
     delta @3 :Float32;  # legacy raw-pulse increment; zero for normal channel maneuvers
     speed @4 :Float32;  # target m/s
+    keyboardRequestId @5 :UInt64;  # nonzero for a manually triggered normal-controller step
+    keyboardPhase @6 :Phase;  # baseline/pulse/release inside phase=maneuver
+    targetAccel @7 :Float32;  # signed keyboard step amplitude, m/s^2 (not a raw field increment)
 
     enum Channel { none @0; c0 @1; c1 @2; }
     enum Phase { waiting @0; baseline @1; pulse @2; release @3; complete @4; aborted @5; maneuver @6; }
@@ -2131,6 +2134,16 @@ struct Joystick {
   # convenient for debug and live tuning
   axes @0: List(Float32);
   buttons @1: List(Bool);
+  fordKeyboard @2 :FordKeyboard;
+
+  struct FordKeyboard {
+    requestId @0 :UInt64;  # changes only for a new action; heartbeats repeat the same request
+    channel @1 :LateralManeuverPlan.FordChannelTest.Channel;
+    speed @2 :Float32;
+    accel @3 :Float32;
+    action @4 :Action;
+    enum Action { idle @0; left @1; right @2; cancel @3; }
+  }
 }
 
 struct DriverStateV2 {

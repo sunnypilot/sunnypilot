@@ -61,6 +61,7 @@ def report(platform, route, _description, CP, ID, maneuvers):
       t_lateralPlan, lateralPlan = zip(*[(m.logMonoTime, m.lateralManeuverPlan) for m in msgs if m.which() == 'lateralManeuverPlan' and m.valid], strict=True)
       t_carOutput, carOutput = zip(*[(m.logMonoTime, m.carOutput) for m in msgs if m.which() == 'carOutput'], strict=True)
       channel = str(lateralPlan[0].fordChannelTest.channel) if is_channel_maneuver(lateralPlan[0]) else None
+      keyboard = bool(channel and lateralPlan[0].fordChannelTest.keyboardRequestId)
       origin = t_lateralPlan[0]
       commands, command_problems = channel_commands(msgs, CP, channel, origin) if channel else (None, set())
 
@@ -81,6 +82,10 @@ def report(platform, route, _description, CP, ID, maneuvers):
       builder.append(f"<details {_open}><summary><h3 style='display: inline-block;'>{title}</h3></summary>\n")
       if channel:
         builder.append(f'<p>Normal maneuver target through {channel.upper()} only; normal controller feedback remains active.</p>')
+        if keyboard:
+          builder.append('<p>Keyboard-triggered step: baseline, one-second target, then return to the baseline target. '
+                         + 'C1 feedback can remain nonzero during release. Accelerator input is allowed with MADS. '
+                         + 'The PSCM limit plot records limitReached=2; this does not by itself abort the step.</p>')
         if command_problems:
           builder.append(f'<p>CAN validation: {", ".join(sorted(command_problems))}</p>')
 
@@ -141,8 +146,9 @@ def report(platform, route, _description, CP, ID, maneuvers):
             target_cross_times.setdefault(description, [])
 
       plt.rcParams['font.size'] = 40
-      fig = plt.figure(figsize=(30, 50 if channel else 40))
-      ax = fig.subplots(7 if channel else 5, 1, sharex=True, gridspec_kw={'height_ratios': [5, 5, 3, 3, 3] + ([3, 3] if channel else [])})
+      fig = plt.figure(figsize=(30, 55 if keyboard else (50 if channel else 40)))
+      ratios = [5, 5, 3, 3, 3] + ([3, 3] if channel else []) + ([2] if keyboard else [])
+      ax = fig.subplots(len(ratios), 1, sharex=True, gridspec_kw={'height_ratios': ratios})
 
       ax[0].grid(linewidth=4)
       desired_label = 'lateralManeuverPlan.desiredCurvature * vEgo^2'
@@ -182,6 +188,24 @@ def report(platform, route, _description, CP, ID, maneuvers):
           ax[4+idx].set_ylabel(label)
           ax[4+idx].grid(linewidth=4)
           ax[4+idx].legend(prop={'size': 30})
+        if keyboard:
+          pscm = [(float((m.logMonoTime-origin)*1e-9), m.carStateSP.fordPscmStatus.limit)
+                  for m in msgs if m.which() == 'carStateSP' and m.valid and m.carStateSP.fordPscmStatus.valid]
+          if pscm:
+            times, limits = zip(*pscm, strict=True)
+            ax[7].step(times, limits, where='post', linewidth=6, label='PSCM limit status')
+          else:
+            ax[7].text(.05, .5, 'No valid PSCM status logged', transform=ax[7].transAxes)
+          ax[7].set_yticks([0, 1, 2, 3])
+          ax[7].set_ylabel('PSCM limit\n2 = reached')
+          ax[7].grid(linewidth=4)
+          previous_phase = None
+          for t, plan in zip(t_lateralPlan, lateralPlan, strict=True):
+            phase = str(plan.fordChannelTest.keyboardPhase)
+            if phase != previous_phase:
+              for axis in ax:
+                axis.axvline(t, color='#777777', linestyle='--', linewidth=2)
+              previous_phase = phase
 
       ax[2].grid(linewidth=4)
       ax[2].plot(t_carState, [v * CV.MS_TO_MPH for v in v_ego], label='carState.vEgo', linewidth=6)

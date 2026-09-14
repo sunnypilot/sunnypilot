@@ -59,7 +59,8 @@ class Controls(ControlsExt):
     self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
                                                               c0_time_based=self.params.get_bool("FordC0TimeBased"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
-    self.ford_channel_test = FordChannelTest() if ford_channel_test_selected(self.CP, self.params) else None
+    self.ford_channel_test = (FordChannelTest(keyboard=self.params.get_bool('FordChannelKeyboardMode'))
+                              if ford_channel_test_selected(self.CP, self.params) else None)
     if self.CP.brand == "ford":
       cloudlog.event("Ford path controller selected",
                      controller=type(self.ford_path_controller).__name__ if self.ford_model_action else "upstream")
@@ -186,8 +187,10 @@ class Controls(ControlsExt):
             self.sm['lateralManeuverPlan'], plan_valid=self.sm.valid['lateralManeuverPlan'],
             plan_time=self.sm.logMonoTime['lateralManeuverPlan']*1e-9, now=time.monotonic(),
             normal=self.ford_path, active=CC.latActive,
-            healthy=CS.cruiseState.enabled and self.sm.all_checks(['carStateSP', 'carState', 'vehicleParameters', 'modelV2']),
-            driver_input=CS.steeringPressed or not math.isfinite(CS.steeringTorque) or abs(CS.steeringTorque) > 1. or CS.gasPressed or CS.brakePressed,
+            healthy=(CS.cruiseState.enabled or self.ford_channel_test.keyboard)
+                    and self.sm.all_checks(['carStateSP', 'carState', 'vehicleParameters', 'modelV2']),
+            driver_input=CS.steeringPressed or not math.isfinite(CS.steeringTorque) or abs(CS.steeringTorque) > 1.
+                         or (CS.gasPressed and not self.ford_channel_test.keyboard) or CS.brakePressed,
             speed=CS.vEgo,
           )
           if override is not None:

@@ -6,15 +6,16 @@ from openpilot.common.constants import CV
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
 
 PARAM = 'FordChannelTestMode'
+KEYBOARD_PARAM = 'FordChannelKeyboardMode'
 CONFLICTS = ('LateralManeuverMode', 'LongitudinalManeuverMode', 'JoystickDebugMode')
 SPEEDS = (15.*CV.MPH_TO_MS, 20.*CV.MPH_TO_MS)
 MAX_SPEED_ERROR = .7
-MAX_RUN_S = 4.  # 2.6 s nominal, with room for the accepted 16–24 Hz model cadence
+MAX_RUN_S = 4.  # normal suite ~2.6 s, keyboard step 3 s; allow scheduling/cadence variation
 
 
 def selected(CP, params):
   return bool(CP.brand == 'ford' and CP.flags & FordFlags.CANFD and params.get_bool('FordModelActionController')
-              and params.get_bool(PARAM) and not any(params.get_bool(key) for key in CONFLICTS))
+              and (params.get_bool(PARAM) or params.get_bool(KEYBOARD_PARAM)) and not any(params.get_bool(key) for key in CONFLICTS))
 
 
 def is_channel_plan(plan):
@@ -36,7 +37,8 @@ class FordChannelTest:
   The normal curvature limiter, model mapping and PI feedback run unchanged.
   This class supplies no waveform, captured command, gain or feedback reset.
   """
-  def __init__(self):
+  def __init__(self, keyboard=False):
+    self.keyboard = keyboard
     self.clear()
 
   def clear(self):
@@ -59,7 +61,7 @@ class FordChannelTest:
       return FordPath()
     if not fresh or not plan_valid:
       return self.fail('stale maneuver plan')
-    if not is_channel_maneuver(plan) or test.runId == 0 or test.delta != 0.:
+    if not is_channel_maneuver(plan) or test.runId == 0 or test.delta != 0. or bool(test.keyboardRequestId) != self.keyboard:
       return self.fail('invalid maneuver identity')
     if not active or not healthy or not normal.valid or driver_input:
       return self.fail('driver input, disengagement or invalid service')
@@ -76,5 +78,7 @@ class FordChannelTest:
     command = FordPath(True, normal.path_offset if self.channel == 'c0' else 0., normal.path_angle if self.channel == 'c1' else 0., 0., 0.)
     self.diagnostics = {'status': 'active', 'run_id': self.run_id, 'channel': self.channel,
                         'desired_curvature': plan.desiredCurvature, 'target_speed': test.speed,
+                        'keyboard_request_id': test.keyboardRequestId, 'keyboard_phase': str(test.keyboardPhase),
+                        'target_accel': test.targetAccel,
                         'command': (command.path_offset, command.path_angle, 0., 0.)}
     return command

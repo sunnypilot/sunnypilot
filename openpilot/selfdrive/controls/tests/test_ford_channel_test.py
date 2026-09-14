@@ -21,9 +21,9 @@ from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import 
 from openpilot.tools.lateral_maneuvers import lateral_maneuversd as daemon
 
 
-def plan(channel='c0', phase='maneuver', speed=SPEEDS[0], run_id=1, curvature=.01):
+def plan(channel='c0', phase='maneuver', speed=SPEEDS[0], run_id=1, curvature=.01, keyboard_request_id=0):
   msg = log.LateralManeuverPlan.new_message(desiredCurvature=curvature)
-  msg.fordChannelTest = {'runId': run_id, 'channel': channel, 'phase': phase, 'speed': speed}
+  msg.fordChannelTest = {'runId': run_id, 'channel': channel, 'phase': phase, 'speed': speed, 'keyboardRequestId': keyboard_request_id}
   with log.LateralManeuverPlan.from_bytes(msg.to_bytes()) as reader:
     return reader.as_builder()
 
@@ -88,10 +88,12 @@ def test_mode_selection_and_transient_parameter(tmp_path):
 @pytest.mark.parametrize('channel', ['c0', 'c1'])
 @pytest.mark.parametrize('speed', SPEEDS)
 @pytest.mark.parametrize('limited', [False, True])
-def test_real_injection_and_wire_match_normal_controller_on_selected_channel(pipeline, channel, speed, limited):  # noqa: F811
+@pytest.mark.parametrize('keyboard', [False, True])
+def test_real_injection_and_wire_match_normal_controller_on_selected_channel(pipeline, channel, speed, limited, keyboard):  # noqa: F811
   call, publication = pipeline
   normal = startup()
-  isolated = startup(params=SimpleNamespace(get_bool=lambda key: key in ('FordModelActionController', 'FordChannelTestMode')))
+  mode = 'FordChannelKeyboardMode' if keyboard else 'FordChannelTestMode'
+  isolated = startup(params=SimpleNamespace(get_bool=lambda key: key in ('FordModelActionController', mode)))
   controllers = (normal, isolated)
   cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint=normal.CP.carFingerprint)
   sender = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
@@ -103,13 +105,16 @@ def test_real_injection_and_wire_match_normal_controller_on_selected_channel(pip
   model = straight()
   model.action = SimpleNamespace(desiredCurvature=-.15)  # opposite model must lose to the actual maneuver injection
   cs = SimpleNamespace(vEgo=speed, yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.,
-                       gasPressed=False, brakePressed=False, cruiseState=SimpleNamespace(enabled=True))
+                       gasPressed=keyboard, brakePressed=False, cruiseState=SimpleNamespace(enabled=not keyboard))
   for i in range(251):
     now = 10.+i*.01
     request = (.5 if i < 100 else -.5)/speed**2
+    if keyboard:
+      request = (.5 if 50 <= i < 150 else 0.)/speed**2
     for control in controllers:
       sm = control.sm
-      sm.messages['lateralManeuverPlan'] = plan(channel=channel if control is isolated else 'none', curvature=request, speed=speed)
+      sm.messages['lateralManeuverPlan'] = plan(channel=channel if control is isolated else 'none', curvature=request, speed=speed,
+                                               keyboard_request_id=1 if keyboard and control is isolated else 0)
       sm.logMonoTime = dict.fromkeys(sm.logMonoTime, round(now*1e9))
       status = sm['carStateSP'].fordPscmStatus
       status.valid, status.canMonoTime, status.lateralState, status.limit = True, round(now*1e9), 2, 2 if limited else 0
@@ -137,7 +142,10 @@ def test_real_injection_and_wire_match_normal_controller_on_selected_channel(pip
     if i == 50:
       assert isolated.desired_curvature > 0.
     if i == 200:
-      assert isolated.desired_curvature < 0.
+      if keyboard:
+        assert isolated.desired_curvature == 0.
+      else:
+        assert isolated.desired_curvature < 0.
 
 
 def run_daemon(monkeypatch, interrupt=False):
