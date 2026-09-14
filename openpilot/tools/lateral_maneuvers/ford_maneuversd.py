@@ -102,7 +102,7 @@ class Sequence:
 def main():
   services = ['carState', 'carStateSP', 'carControl', 'carControlSP', 'controlsState', 'selfdriveState',
               'selfdriveStateSP', 'modelV2', 'vehicleParameters']
-  sm = messaging.SubMaster(services)
+  sm = messaging.SubMaster(services, frequency=20)
   pm = messaging.PubMaster(['lateralManeuverPlan', 'alertDebug'])
   sequence = Sequence()
   rk = Ratekeeper(20)

@@ -231,21 +231,27 @@ def test_daemon_publishes_both_speeds_and_real_schema(monkeypatch):
   plans, alerts = [], []
   clock = [10.]
 
-  class SM(dict):
-    def __init__(self, services):
-      super().__init__((s, getattr(messaging.new_message(s), s)) for s in services)
+  subscribers = []
+
+  class SM(messaging.SubMaster):
+    def __init__(self, services, **kwargs):
+      super().__init__(services, **kwargs)
+      self.events = {s: messaging.new_message(s) for s in services}
+      subscribers.append(self)
 
     def update(self, _timeout):
-      cs = self['carState']
+      cs = self.events['carState'].carState
       cs.vEgo = plans[-1].lateralManeuverPlan.fordChannelTest.speed if plans else SPEEDS[0]
       cs.canValid, cs.cruiseState.enabled = True, True
-      self['selfdriveState'].enabled = clock[0] > 10.
-      self['carControl'].latActive = clock[0] > 10.
-      self['carControlSP'].fordLateralPath = {'enabled': True, 'valid': True}
-      self['carStateSP'].fordPscmStatus = {'valid': True, 'canMonoTime': round(clock[0]*1e9), 'lateralState': 2}
-
-    def all_checks(self, _services):
-      return True
+      self.events['selfdriveState'].selfdriveState.enabled = clock[0] > 10.
+      self.events['carControl'].carControl.latActive = clock[0] > 10.
+      self.events['carControlSP'].carControlSP.fordLateralPath = {'enabled': True, 'valid': True}
+      self.events['carStateSP'].carStateSP.fordPscmStatus = {'valid': True, 'canMonoTime': round(clock[0]*1e9), 'lateralState': 2}
+      for msg in self.events.values():
+        msg.valid, msg.logMonoTime = True, round(clock[0]*1e9)
+      # SubMaster conflates 100 Hz services to the daemon's 20 Hz polling rate.
+      # Keep its real frequency/alive/valid checks instead of assuming health.
+      self.update_msgs(clock[0], [m.as_reader() for m in self.events.values()])
 
   class PM:
     def __init__(self, _services):
@@ -263,7 +269,7 @@ def test_daemon_publishes_both_speeds_and_real_schema(monkeypatch):
 
     def keep_time(self):
       clock[0] += .05
-      assert clock[0] < 75.
+      assert clock[0] < 75., f'Test never completed; frequency checks: {subscribers[0].freq_ok}'
 
   monkeypatch.setattr(daemon.messaging, 'SubMaster', SM)
   monkeypatch.setattr(daemon.messaging, 'PubMaster', PM)
