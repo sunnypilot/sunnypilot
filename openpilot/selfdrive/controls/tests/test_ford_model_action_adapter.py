@@ -355,7 +355,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-direct-pi-v11'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v12'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
@@ -473,7 +473,7 @@ def test_toggle_off_preserves_upstream_actuators_and_can(pipeline, fingerprint, 
   call, publication = pipeline
   settings = {'FordModelActionController': False, 'FordPscmObserver': observer}
   flags = CAR(fingerprint).config.flags
-  controls = startup(car_params(carFingerprint=fingerprint, flags=flags), SimpleNamespace(get_bool=settings.__getitem__))
+  controls = startup(car_params(carFingerprint=fingerprint, flags=flags), SimpleNamespace(get_bool=lambda key: settings.get(key, False)))
   assert controls.ford_path_controller is None
   sm = Subscriptions(False)
   controls.sm, controls.desired_curvature, controls.curvature = sm, .004, 0.

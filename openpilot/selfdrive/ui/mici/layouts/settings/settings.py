@@ -16,11 +16,13 @@ class SettingsBigButton(BigButton):
 
 
 class SettingsLayout(NavScroller):
+  toggles_layout = TogglesLayoutMici
+
   def __init__(self):
     super().__init__()
     self._params = Params()
 
-    toggles_panel = TogglesLayoutMici()
+    toggles_panel = self.toggles_layout()
     toggles_btn = SettingsBigButton("toggles", "", gui_app.texture("icons_mici/settings.png", 64, 64))
     toggles_btn.set_click_callback(lambda: gui_app.push_widget(toggles_panel))
 

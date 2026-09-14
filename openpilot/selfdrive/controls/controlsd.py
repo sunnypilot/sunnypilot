@@ -55,7 +55,8 @@ class Controls(ControlsExt):
     self.steer_limited_by_safety = False
     self.curvature = 0.0
     self.desired_curvature = 0.0
-    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"))
+    self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
+                                                              c0_time_based=self.params.get_bool("FordC0TimeBased"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":
       cloudlog.event("Ford path controller selected",

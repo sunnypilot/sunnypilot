@@ -51,6 +51,14 @@ class ControlsExt(ModelStateBase):
     if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
       self.blinker_pause_lateral.get_params()
 
+      if getattr(self, 'ford_model_action', False) and sm.all_checks(['selfdriveState', 'selfdriveStateSP']):
+        mads = sm['selfdriveStateSP'].mads
+        # Use the engagement state, not a temporary pause from blinkers or a
+        # standstill/fault gate, so a pause cannot swap the command mapping.
+        lateral_engaged = mads.enabled if mads.available else sm['selfdriveState'].enabled
+        if self.ford_path_controller.set_c0_time_based(self.params.get_bool('FordC0TimeBased'), lateral_engaged=lateral_engaged):
+          cloudlog.event('Ford C0 distance changed', c0_time_based=self.ford_path_controller.core.c0_time_based)
+
       if self.CP.lateralTuning.which() == 'torque':
         self.lat_delay = get_lat_delay(self.params, sm["lateralDelay"].lateralDelay)
 

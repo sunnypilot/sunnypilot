@@ -1,16 +1,16 @@
 # Ford selected-action drive-test branch
 
-This v11 controller restores [curvature-derived C0](ford_curvature_c0_v8.md) and retains direct C0/C1 requests
+This v12 controller restores [curvature-derived C0](ford_curvature_c0_v8.md) and retains direct C0/C1 requests
 and [continuous C1 PI feedback](ford_c1_minimal_pi.md)
 with **P=0.50 and I=0.25**.
-Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 is now a 7 m circular arc from selected desired curvature.
+Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 defaults to a 7 m circular arc from selected desired curvature. An on-device toggle can instead use max(7 m, speed × 1 second).
 [Base C1 overflow allocation to C0](ford_c1_overflow.md) remains.
 It is selectable on **any Ford CAN FD vehicle**
 through the existing persistent, default-off Sunnylink
 toggle. Offline checks establish software behavior; physical tracking,
 turn-exit behavior and closed-loop stability remain unvalidated.
 
-V11 restores the v9 command law after the model-path C0 trial in `5db3e3c9a`.
+V12 retains the v11/v9 command law by default after the model-path C0 trial in `5db3e3c9a`.
 Both base commands use selected, upstream-limited desired curvature. The gains remain
 P=0.50 and I=0.25, and PSCM `LimitReached` handling is unchanged. The separate
 offline experiment that ignores the reached-limit integration block is not included.
@@ -27,7 +27,7 @@ offline experiment that ignores the reached-limit integration block is not inclu
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-curvature-c0-direct-pi-v11`**. They report desired and measured
+identify **`hypothesis=model-action-curvature-c0-distance-pi-v12`**. They report desired and measured
 curvature, base heading, proportional and accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `proportional_gain=0.5` and
 `integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
@@ -41,6 +41,41 @@ overshoot handling. Stored observer or retired controller settings cannot select
 a custom controller. The observer toggle is no longer exposed. The experiment
 only runs on Ford CAN FD vehicles; legacy Ford uses upstream control as well.
 See [toggle-off validation](ford_upstream_fallback.md).
+
+## C0 distance toggle on comma four
+
+With the experimental Ford controller enabled, open **Settings → toggles → C0: 1 second**.
+The toggle is visible for Ford CAN FD vehicles and can be changed while disengaged.
+
+- **Off (default):** C0 uses a fixed 7 m arc.
+- **On:** C0 uses a distance of max(7 m, speed × 1 second), matching the base C1 distance.
+
+Disengage assistance, change the toggle, and remain disengaged for at least three seconds
+before reengaging. This setting uses the existing three-second runtime parameter refresh;
+**no ignition cycle or controlsd restart is required**. Engaged or paused MADS and stale
+engagement messages prevent applying a change. A mode change resets the PI correction and
+adapter timestamps. Reapplying the same value does not reset anything.
+
+The persistent parameter is `FordC0TimeBased`. It cannot enable the experimental controller
+by itself. The existing Sunnylink controller-selection toggle still requires an onroad cycle.
+C1, the gains, the 7 m heading-overflow allocation, the upstream reference limits and the CAN
+field bounds are unchanged. Below 7 m/s (about 15.7 mph), both distance modes are identical.
+At 20/30/60 mph the enabled distance is approximately 8.9/13.4/26.8 m, respectively; C0 can
+therefore be substantially larger, especially at higher speeds. Its release still follows the
+current selected curvature immediately, with no additional slew.
+
+The `Ford C0 distance changed` event records an applied switch. Periodic tracking events
+include `c0_time_based` and the actual `offset_distance` in meters, including the default mode.
+Offline checks verify selection, runtime switching, resets, unchanged C1 and CAN encoding;
+they do not establish which distance the PSCM follows better.
+
+Validation on 2026-09-14: 410 tests and 25 subtests passed, plus Ruff and the local comma four
+UI construction/write/refresh/visibility/render check. The 54,146-cycle maneuver-route replay
+(`84865544361f55cb/0000011c--99f4537696`) matched `775012167` exactly with the new toggle off.
+With it on, C0 changed in 35,668 cycles (maximum difference 0.74 m), while C1 and accumulated
+correction remained identical on the same recorded motion. The two comparisons completed
+216,584 controller updates and CAN round trips. No vehicle build, installation or road test
+was performed for this change.
 
 ## Wiring and validation
 
@@ -57,7 +92,7 @@ combined feedforward/P/I amplitude envelope. There is no C0 confirmation
 threshold or remembered turn direction. Zero error removes P and holds I; it
 does not trigger a release. Final command limits still apply.
 
-C0 starts with the 7 m circular arc of selected desired curvature. It does not
+C0 starts with the selected-distance circular arc of selected desired curvature. It does not
 add independent live model-path position or heading. Valid model geometry is
 still required as a health gate. When the raw base heading
 exceeds ±0.5 rad, C0 additionally receives 7 m times the clipped-away heading.

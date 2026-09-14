@@ -43,12 +43,12 @@ def startup(cp=None, params=None):
 @pytest.mark.parametrize('fingerprint', [*CANFD_CARS, 'FORD_FUTURE_CANFD'])
 def test_actual_startup_priority(candidate, observer, fingerprint):
   settings = {'FordModelActionController': candidate, 'FordPscmObserver': observer}
-  selected = startup(car_params(carFingerprint=fingerprint), params=SimpleNamespace(get_bool=settings.__getitem__))
+  selected = startup(car_params(carFingerprint=fingerprint), params=SimpleNamespace(get_bool=lambda key: settings.get(key, False)))
   if candidate:
     assert type(selected.ford_path_controller) is FordModelActionController
     assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .50
     assert selected.ford_path_controller.core.integral_gain == C1_INTEGRAL_GAIN == .25
-    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-direct-pi-v11'
+    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v12'
   else:
     assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate
@@ -59,7 +59,7 @@ def test_actual_startup_priority(candidate, observer, fingerprint):
 @pytest.mark.parametrize('observer', [False, True])
 def test_other_vehicles_always_use_upstream(overrides, observer):
   settings = {'FordModelActionController': False, 'FordPscmObserver': observer}
-  params = SimpleNamespace(get_bool=settings.__getitem__)
+  params = SimpleNamespace(get_bool=lambda key: settings.get(key, False))
   before = startup(car_params(**overrides), params)
   settings['FordModelActionController'] = True
   after = startup(car_params(**overrides), params)
