@@ -2119,6 +2119,9 @@ struct Joystick {
   # convenient for debug and live tuning
   axes @0: List(Float32);
   buttons @1: List(Bool);
+  fordChannel @2 :FordChannel;
+
+  enum FordChannel { standard @0; c0 @1; c1 @2; }
 }
 
 struct DriverStateV2 {

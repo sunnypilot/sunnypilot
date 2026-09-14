@@ -15,7 +15,7 @@ EXPO = 0.4
 
 
 class Keyboard:
-  def __init__(self):
+  def __init__(self, ford_channel='standard'):
     self.kb = KBHit()
     self.axis_increment = 0.05  # 5% of full actuation each key press
     self.axes_map = {'w': 'gb', 's': 'gb',
@@ -23,12 +23,17 @@ class Keyboard:
     self.axes_values = {'gb': 0., 'steer': 0.}
     self.axes_order = ['gb', 'steer']
     self.cancel = False
+    self.ford_channel = ford_channel
+    self.ford_keys = ford_channel != 'standard'
 
   def update(self):
     key = self.kb.getch().lower()
     self.cancel = False
     if key == 'r':
       self.axes_values = dict.fromkeys(self.axes_values, 0.)
+    elif self.ford_keys and key in ('0', '1', '2'):
+      self.axes_values['steer'] = 0.
+      self.ford_channel = {'0': 'standard', '1': 'c0', '2': 'c1'}[key]
     elif key == 'c':
       self.cancel = True
     elif key in self.axes_map:
@@ -41,7 +46,8 @@ class Keyboard:
 
 
 class Joystick:
-  def __init__(self):
+  def __init__(self, ford_channel='standard'):
+    self.ford_channel = ford_channel
     # This class supports a PlayStation 5 DualSense controller on the comma 3X
     # TODO: find a way to get this from API or detect gamepad/PC, perhaps "inputs" doesn't support it
     self.cancel_button = 'BTN_NORTH'  # BTN_NORTH=X/triangle
@@ -99,10 +105,13 @@ def send_thread(joystick):
   while True:
     if rk.frame % 20 == 0:
       print('\n' + ', '.join(f'{name}: {round(v, 3)}' for name, v in joystick.axes_values.items()))
+      if joystick.ford_channel != 'standard':
+        print(f'Ford {joystick.ford_channel.upper()} only (direct field command)')
 
     joystick_msg = messaging.new_message('testJoystick')
     joystick_msg.valid = True
     joystick_msg.testJoystick.axes = [joystick.axes_values[ax] for ax in joystick.axes_order]
+    joystick_msg.testJoystick.fordChannel = joystick.ford_channel
 
     pm.send('testJoystick', joystick_msg)
 
@@ -126,6 +135,8 @@ if __name__ == '__main__':
                                                'a PlayStation 5 DualSense controller on the comma 3X.',
                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
   parser.add_argument('--keyboard', action='store_true', help='Use your keyboard instead of a joystick')
+  parser.add_argument('--ford-channel', choices=('standard', 'c0', 'c1'), default='standard',
+                      help='CAN FD Ford only: directly control one path field; default keeps normal joystick steering')
   args = parser.parse_args()
 
   if not Params().get_bool("IsOffroad") and "ZMQ" not in os.environ:
@@ -139,9 +150,14 @@ if __name__ == '__main__':
     print('Buttons')
     print('- `R`: Resets axes')
     print('- `C`: Cancel cruise control')
+    if args.ford_channel != 'standard':
+      print('- `1`: C0 only; `2`: C1 only; `0`: normal joystick steering (switching zeros steering)')
   else:
     print('Using joystick, make sure to run openpilot/cereal/messaging/bridge on your device if running over the network!')
     print('If not running on a comma device, the mapping may need to be adjusted.')
 
-  joystick = Keyboard() if args.keyboard else Joystick()
+  if args.ford_channel != 'standard':
+    print('Ford direct fields: 100% = 5.11m C0 or 0.5rad C1; 5% = about 0.26m C0 or 0.025rad C1.')
+    print('Start centered. After disengagement or input loss, reset/center before steering again.')
+  joystick = Keyboard(args.ford_channel) if args.keyboard else Joystick(args.ford_channel)
   joystick_control_thread(joystick)

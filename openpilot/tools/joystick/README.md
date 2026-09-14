@@ -19,6 +19,24 @@ openpilot/tools/joystick/joystick_control.py --keyboard
 
 The available buttons and axes will print showing their key mappings. In general, the WASD keys control gas and brakes and steering torque in 5% increments.
 
+### Ford C0 / C1 independently
+
+Use the existing **Settings → Developer → Joystick Debug Mode** toggle, while offroad. On a CAN FD Ford, start the existing keyboard tool with an explicit channel:
+
+```shell
+python openpilot/tools/joystick/joystick_control.py --keyboard --ford-channel c0
+```
+
+`1` selects C0 only, `2` selects C1 only, and `0` returns to standard joystick steering. Switching zeros the steering axis. The comma screen shows **Joystick Mode — C0 only** or **C1 only**, the commanded field value, and measured wheel angle. The terminal also names the selected channel.
+
+`A`/`D` retain their normal 5% steering-axis increments. Full scale directly commands ±5.11 metres of C0 or ±0.5 radians of C1; one increment is approximately 0.26 m or 0.025 rad. The other path fields, including C2/C3, are zero. `R` resets the axes. Gas/brake keys and joystick engagement remain unchanged. With a gamepad, use the same `--ford-channel` option without `--keyboard`.
+
+There is no target-speed check or timed waveform. This includes zero speed if normal joystick engagement and the vehicle permit it. These are direct field commands, not desired wheel angles or the model-following controller's formulas. No MADS engagement or brake behavior is added. The existing hardware safety checks remain in force.
+
+Start with the steering axis centered. After a channel change, disengagement, or lost/invalid input, the receiver requires a fresh centered input before applying another command. A lost joystick stream removes the Ford steering request after the existing 0.2 s timeout; a held nonzero command cannot restart on reconnection. `R` resets commands; it does not disengage joystick mode.
+
+Without `--ford-channel`, the original keyboard/gamepad behavior remains the default. The normal lateral maneuver tools are unchanged.
+
 ### Joystick on your comma three
 
 Plug the joystick into your comma three aux USB-C port. Then, SSH into the device and start `joystick_control.py`.

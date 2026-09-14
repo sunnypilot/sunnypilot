@@ -175,7 +175,20 @@ def modeld_lagging_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubM
   return NormalPermanentAlert("Driving Model Lagging", f"{sm['modelV2'].frameDropPerc:.1f}% frames dropped")
 
 
+def ford_joystick_alert(CP, sm):
+  ad = sm['alertDebug']
+  if CP.brand == 'ford' and sm.valid['alertDebug'] and ad.alertText1 in ('Joystick Mode — C0 only', 'Joystick Mode — C1 only'):
+    return NormalPermanentAlert(ad.alertText1, ad.alertText2)
+  return None
+
+
+def joystick_permanent_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  return ford_joystick_alert(CP, sm) or NormalPermanentAlert("Joystick Mode")
+
+
 def joystick_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
+  if alert := ford_joystick_alert(CP, sm):
+    return alert
   gb = sm['carControl'].actuators.accel / 4.
   steer = sm['carControl'].actuators.torque
   vals = f"Gas: {round(gb * 100.)}%, Steer: {round(steer * 100.)}%"
@@ -220,7 +233,7 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.joystickDebug: {
     ET.WARNING: joystick_alert,
-    ET.PERMANENT: NormalPermanentAlert("Joystick Mode"),
+    ET.PERMANENT: joystick_permanent_alert,
   },
 
   EventName.longitudinalManeuver: {
