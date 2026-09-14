@@ -1,10 +1,10 @@
 # Ford C0 / C1 comparison
 
-This separate diagnostic measures the wheel response to small C0 and C1 pulses at **10 and 20 mph**. It requires the Ford model-action controller and a CAN FD Ford. It makes no change to normal controller tuning.
+This separate diagnostic measures the wheel response to small C0 and C1 pulses at **15 and 20 mph**. It requires the Ford model-action controller and a CAN FD Ford. It makes no change to normal controller tuning.
 
 1. While offroad, enable **Settings → Developer → Ford C0 / C1 test** on comma four. This selects the test for the next onroad session and turns off the other maneuver/joystick modes.
 2. Use a clear, straight test area with room for a small lateral deviation. Engage ACC and lateral control, then hold the speed shown on screen. Testing requires two continuous seconds of steady, nearly straight driving without steering or pedal input. It will not start if you are manually holding the accelerator.
-3. At 10 mph it runs **C0 right, C0 left, C1 right, C1 left**. Repeat those four trials at 20 mph. Each trial holds the starting commands for 0.5 seconds, pulses one field for 0.5 seconds, then restores the starting commands for 2 seconds to observe release.
+3. At 15 mph it runs **C0 right, C0 left, C1 right, C1 left**. Repeat those four trials at 20 mph. Each trial holds the starting commands for 0.5 seconds, pulses one field for 0.5 seconds, then restores the starting commands for 2 seconds to observe release.
 4. Follow the displayed phase and target speed. Normal model tracking resumes between trials and after completion. If a trial aborts, **disengage and reengage** to retry it; clearing steering input alone does not restart the pulse. Stop if the area no longer provides room for the test.
 5. After “Ford tests finished,” end the route and upload all logs. The test toggle clears when the device returns offroad or the manager restarts.
 

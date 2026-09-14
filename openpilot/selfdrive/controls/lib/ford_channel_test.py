@@ -7,7 +7,7 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath
 
 PARAM = 'FordChannelTestMode'
 CONFLICTS = ('LateralManeuverMode', 'LongitudinalManeuverMode', 'JoystickDebugMode')
-SPEEDS = (10.*CV.MPH_TO_MS, 20.*CV.MPH_TO_MS)
+SPEEDS = (15.*CV.MPH_TO_MS, 20.*CV.MPH_TO_MS)
 AMPLITUDE = {'c0': .03, 'c1': .01}
 BASELINE_S, PULSE_S, RELEASE_S = .5, .5, 2.
 TOTAL_S = BASELINE_S + PULSE_S + RELEASE_S

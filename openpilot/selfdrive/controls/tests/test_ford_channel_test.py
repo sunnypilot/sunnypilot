@@ -129,6 +129,8 @@ def test_full_suite_with_serialized_20hz_plans_and_100hz_receiver():
   assert all(stages == {'baseline', 'pulse', 'release'} for stages in phases.values())
   assert all(45 <= counts[run, 'pulse'] <= 55 and 195 <= counts[run, 'release'] <= 205 for run in phases)
   assert {(t.speed, t.channel, t.direction) for t in TRIALS} == {(v, c, s) for v in SPEEDS for c in AMPLITUDE for s in (1, -1)}
+  assert [t.description for t in TRIALS] == [f'{channel} {direction} {mph} mph'
+                                          for mph in (15, 20) for channel in ('C0', 'C1') for direction in ('right', 'left')]
 
 
 @pytest.mark.parametrize('changes', [{'driver_input': True}, {'healthy': False}, {'lat_active': False},
