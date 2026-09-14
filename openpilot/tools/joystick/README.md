@@ -5,9 +5,6 @@
 With joystick_control, you can connect your laptop to your comma device over the network and debug controls using a joystick or keyboard.
 joystick_control uses [inputs](https://pypi.org/project/inputs) which supports many common gamepads and joysticks.
 
-For the custom Ford C0/C1 controller, use the [Ford keyboard channel test](../lateral_maneuvers/FORD_CHANNEL_TEST.md#keyboard-triggered-steps-acc-or-mads).
-It preserves the normal controller and ACC/MADS, unlike stock Joystick Debug Mode below.
-
 ## Usage
 
 The car must be off, and openpilot must be offroad before starting `joystick_control`.

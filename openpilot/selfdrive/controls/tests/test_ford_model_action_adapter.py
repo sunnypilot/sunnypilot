@@ -22,7 +22,6 @@ from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController, encode_model_action
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
-from openpilot.selfdrive.controls.lib.ford_channel_test import use_maneuver_reference
 from openpilot.selfdrive.controls.tests.test_ford_model_action import circle, straight
 from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import CANFD_CARS, car_params, startup
 
@@ -141,7 +140,7 @@ def pipeline():
   controls_file = root/'selfdrive/controls/controlsd.py'
   body = _method(controls_file, 'Controls', 'state_control').body
   # Execute the actual source choice, upstream limiter and Ford integration.
-  selection = next(n for n in body if isinstance(n, ast.If) and "self.sm.valid['lateralManeuverPlan']" in ast.unparse(n.test))
+  selection = next(n for n in body if isinstance(n, ast.If) and ast.unparse(n.test) == "self.sm.valid['lateralManeuverPlan']")
   limiter = next(n for n in body if isinstance(n, ast.Assign) and isinstance(n.value, ast.Call) and
                  isinstance(n.value.func, ast.Name) and n.value.func.id == 'clip_curvature')
   branch = next(n for n in body if isinstance(n, ast.If) and ast.unparse(n.test) == "self.CP.brand == 'ford'")
@@ -184,7 +183,7 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=-.0072, canValid=True, steeringPressed=False, steeringTorque=0.)
   environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model, 'lp': SimpleNamespace(roll=0.),
-                     'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)}
+                     'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)}
   exec(call, environment)
   expected_curvature = (-1 if maneuver else 1)*.000125
   assert controls.desired_curvature == pytest.approx(expected_curvature)
@@ -228,7 +227,7 @@ def test_actual_controlsd_service_gates(pipeline, maneuver, failed):
   model = straight()
   model.action = SimpleNamespace(desiredCurvature=.1)
   exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model, 'lp': SimpleNamespace(roll=0.),
-                         'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
+                         'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
   assert controls.ford_path.valid == cc.latActive == (failed == 'lateralManeuverPlan' and not maneuver)
 
 
@@ -257,7 +256,7 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
       controls.curvature, cs.steeringTorque = measured, torque
       sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
       environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                     'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature,
+                     'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                      'time': SimpleNamespace(monotonic=lambda now=now: now)}
       exec(call, environment)
       msg = custom.CarControlSP.new_message()
@@ -300,7 +299,7 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
     status = sm['carStateSP'].fordPscmStatus
     status.valid, status.canMonoTime, status.limit, status.lateralState = True, round(now*1e9), 2, 2
     exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                      'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature,
+                      'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                       'time': SimpleNamespace(monotonic=lambda now=now: now)})
   controller = controls.ford_path_controller
   assert controller.diagnostics['pscm_limited'] is service_valid
@@ -336,7 +335,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9), lateralManeuverPlan=round(now*1e9))
     before = core.c0, core.c1, core.correction
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert_current_request(core, controls.desired_curvature, cs.vEgo)
     increment = .25*speed*(controls.desired_curvature-controls.curvature)*.01
@@ -391,7 +390,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9), lateralManeuverPlan=round(now*1e9))
     before = core.c0, core.c1, core.correction
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert_current_request(core, controls.desired_curvature, cs.vEgo)
     if frame == 129:
@@ -441,7 +440,7 @@ def test_heading_overflow_and_release_through_actual_can(pipeline, sign, fingerp
     controls.curvature = clip_curvature(cs.vEgo, controls.desired_curvature, desired, 0.)[0]
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert_current_request(core, controls.desired_curvature, cs.vEgo)
     assert core.correction == 0.
@@ -498,7 +497,7 @@ def test_toggle_off_preserves_upstream_actuators_and_can(pipeline, fingerprint, 
     now = 1.+frame*.01
     sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
-                'lp': SimpleNamespace(roll=0.), 'use_maneuver_reference': use_maneuver_reference, 'clip_curvature': clip_curvature})
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature})
     assert cc.actuators.curvature == before and cc.latActive == active
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})

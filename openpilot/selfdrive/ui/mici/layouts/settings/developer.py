@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from opendbc.car.ford.values import FordFlags
 from openpilot.common.time_helpers import system_time_valid
 from openpilot.system.ui.widgets.scroller import NavScroller
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle, BigParamControl, BigCircleParamControl, GreyBigButton
@@ -80,9 +79,6 @@ class DeveloperLayoutMici(NavScroller):
     self._lat_maneuver_toggle = BigToggle("lateral maneuver mode",
                                           initial_state=ui_state.params.get_bool("LateralManeuverMode"),
                                           toggle_callback=self._on_lat_maneuver_mode)
-    self._ford_channel_test_toggle = BigToggle("Ford C0 / C1 test",
-                                               initial_state=ui_state.params.get_bool("FordChannelTestMode"),
-                                               toggle_callback=self._on_ford_channel_test)
     self._alpha_long_toggle = BigToggle("alpha longitudinal",
                                         initial_state=ui_state.params.get_bool("AlphaLongitudinalEnabled"),
                                         toggle_callback=self._on_alpha_long_enabled)
@@ -97,7 +93,6 @@ class DeveloperLayoutMici(NavScroller):
       self._joystick_toggle,
       self._long_maneuver_toggle,
       self._lat_maneuver_toggle,
-      self._ford_channel_test_toggle,
       self._alpha_long_toggle,
       self._debug_mode_toggle,
     ])
@@ -109,13 +104,11 @@ class DeveloperLayoutMici(NavScroller):
       ("JoystickDebugMode", self._joystick_toggle),
       ("LongitudinalManeuverMode", self._long_maneuver_toggle),
       ("LateralManeuverMode", self._lat_maneuver_toggle),
-      ("FordChannelTestMode", self._ford_channel_test_toggle),
       ("AlphaLongitudinalEnabled", self._alpha_long_toggle),
       ("ShowDebugInfo", self._debug_mode_toggle),
     )
     onroad_blocked_toggles = (self._adb_toggle, self._joystick_toggle)
-    release_blocked_toggles = (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle,
-                               self._ford_channel_test_toggle, self._alpha_long_toggle)
+    release_blocked_toggles = (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle)
     engaged_blocked_toggles = (self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle)
 
     # Hide non-release toggles on release builds
@@ -125,8 +118,6 @@ class DeveloperLayoutMici(NavScroller):
     # Disable toggles that require offroad
     for item in onroad_blocked_toggles:
       item.set_enabled(lambda: ui_state.is_offroad())
-    self._ford_channel_test_toggle.set_enabled(lambda: ui_state.is_offroad())
-    self._ford_channel_test_toggle.set_visible(False)  # revealed after CarParams gating on show
 
     # Disable toggles that require not engaged
     for item in engaged_blocked_toggles:
@@ -149,9 +140,6 @@ class DeveloperLayoutMici(NavScroller):
 
   def _update_toggles(self):
     ui_state.update_params()
-    cp = ui_state.CP
-    self._ford_channel_test_toggle.set_visible(bool(cp is not None and cp.brand == 'ford' and cp.flags & FordFlags.CANFD
-                                                    and not ui_state.is_release and ui_state.params.get_bool('FordModelActionController')))
 
     # CP gating
     if ui_state.CP is not None:
@@ -175,7 +163,6 @@ class DeveloperLayoutMici(NavScroller):
       item.set_checked(ui_state.params.get_bool(key))
 
   def _on_joystick_debug_mode(self, state: bool):
-    self._clear_ford_channel_test()
     ui_state.params.put_bool("JoystickDebugMode", state, block=True)
     ui_state.params.put_bool("LongitudinalManeuverMode", False, block=True)
     self._long_maneuver_toggle.set_checked(False)
@@ -183,7 +170,6 @@ class DeveloperLayoutMici(NavScroller):
     self._lat_maneuver_toggle.set_checked(False)
 
   def _on_long_maneuver_mode(self, state: bool):
-    self._clear_ford_channel_test()
     ui_state.params.put_bool("LongitudinalManeuverMode", state, block=True)
     ui_state.params.put_bool("JoystickDebugMode", False, block=True)
     self._joystick_toggle.set_checked(False)
@@ -192,28 +178,12 @@ class DeveloperLayoutMici(NavScroller):
     restart_needed_callback()
 
   def _on_lat_maneuver_mode(self, state: bool):
-    self._clear_ford_channel_test()
     ui_state.params.put_bool("LateralManeuverMode", state, block=True)
     ui_state.params.put_bool("ExperimentalMode", False, block=True)
     ui_state.params.put_bool("JoystickDebugMode", False, block=True)
     self._joystick_toggle.set_checked(False)
     ui_state.params.put_bool("LongitudinalManeuverMode", False, block=True)
     self._long_maneuver_toggle.set_checked(False)
-    restart_needed_callback()
-
-  def _clear_ford_channel_test(self):
-    ui_state.params.put_bool('FordChannelTestMode', False, block=True)
-    ui_state.params.put_bool('FordChannelKeyboardMode', False, block=True)
-    self._ford_channel_test_toggle.set_checked(False)
-
-  def _on_ford_channel_test(self, state: bool):
-    ui_state.params.put_bool('FordChannelKeyboardMode', False, block=True)
-    ui_state.params.put_bool('FordChannelTestMode', state, block=True)
-    for key, toggle in (('LateralManeuverMode', self._lat_maneuver_toggle),
-                        ('LongitudinalManeuverMode', self._long_maneuver_toggle), ('JoystickDebugMode', self._joystick_toggle)):
-      ui_state.params.put_bool(key, False, block=True)
-      toggle.set_checked(False)
-    ui_state.params.put_bool('ExperimentalMode', False, block=True)
     restart_needed_callback()
 
   def _on_alpha_long_enabled(self, state: bool):

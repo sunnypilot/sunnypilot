@@ -5,8 +5,6 @@
 
 Test your vehicle's lateral control tuning with this tool. The tool will test the vehicle's ability to follow a few lateral maneuvers and includes a tool to generate a report from the route.
 
-Ford CAN FD with the model-action controller also has a separate [C0 / C1 comparison](FORD_CHANNEL_TEST.md) at 15 and 20 mph.
-
 ## Instructions
 
 1. Check out a development branch such as `master` on your comma device.

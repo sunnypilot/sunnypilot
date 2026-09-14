@@ -14,12 +14,10 @@ from openpilot.common.utils import tabulate
 from opendbc.car.structs import car
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LP_FILTER_CUTOFF_HZ
-from openpilot.selfdrive.controls.lib.ford_channel_test import is_channel_maneuver
 from openpilot.tools.lib.logreader import LogReader
 from openpilot.common.hardware.hw import Paths
 from openpilot.common.constants import CV
 from openpilot.tools.longitudinal_maneuvers.generate_report import format_car_params
-from openpilot.tools.lateral_maneuvers.ford_report import ChannelRuns, channel_commands, report as ford_channel_report
 
 
 def lat_accel(curvature, v):
@@ -60,47 +58,33 @@ def report(platform, route, _description, CP, ID, maneuvers):
       t_controlsState, controlsState = zip(*[(m.logMonoTime, m.controlsState) for m in msgs if m.which() == 'controlsState'], strict=True)
       t_lateralPlan, lateralPlan = zip(*[(m.logMonoTime, m.lateralManeuverPlan) for m in msgs if m.which() == 'lateralManeuverPlan' and m.valid], strict=True)
       t_carOutput, carOutput = zip(*[(m.logMonoTime, m.carOutput) for m in msgs if m.which() == 'carOutput'], strict=True)
-      channel = str(lateralPlan[0].fordChannelTest.channel) if is_channel_maneuver(lateralPlan[0]) else None
-      keyboard = bool(channel and lateralPlan[0].fordChannelTest.keyboardRequestId)
-      origin = t_lateralPlan[0]
-      commands, command_problems = channel_commands(msgs, CP, channel, origin) if channel else (None, set())
 
       # make time relative seconds
-      t_carControl = [(t - (origin if channel else t_carControl[0])) / 1e9 for t in t_carControl]
-      t_carState = [(t - (origin if channel else t_carState[0])) / 1e9 for t in t_carState]
-      t_controlsState = [(t - (origin if channel else t_controlsState[0])) / 1e9 for t in t_controlsState]
+      t_carControl = [(t - t_carControl[0]) / 1e9 for t in t_carControl]
+      t_carState = [(t - t_carState[0]) / 1e9 for t in t_carState]
+      t_controlsState = [(t - t_controlsState[0]) / 1e9 for t in t_controlsState]
       t_lateralPlan = [(t - t_lateralPlan[0]) / 1e9 for t in t_lateralPlan]
-      t_carOutput = [(t - (origin if channel else t_carOutput[0])) / 1e9 for t in t_carOutput]
+      t_carOutput = [(t - t_carOutput[0]) / 1e9 for t in t_carOutput]
 
       # maneuver validity
       latActive = [m.latActive for m in carControl]
-      maneuver_valid = all(latActive) and not any(cs.steeringPressed for cs in carState) and not command_problems
+      maneuver_valid = all(latActive) and not any(cs.steeringPressed for cs in carState)
 
       _open = 'open' if maneuver_valid else ''
       title = f'Run #{int(run)+1}' + (' <span style="color: red">(invalid maneuver!)</span>' if not maneuver_valid else '')
 
       builder.append(f"<details {_open}><summary><h3 style='display: inline-block;'>{title}</h3></summary>\n")
-      if channel:
-        builder.append(f'<p>Normal maneuver target through {channel.upper()} only; normal controller feedback remains active.</p>')
-        if keyboard:
-          builder.append('<p>Keyboard-triggered step: baseline, one-second target, then return to the baseline target. '
-                         + 'C1 feedback can remain nonzero during release. Accelerator input is allowed with MADS. '
-                         + 'The PSCM limit plot records limitReached=2; this does not by itself abort the step.</p>')
-        if command_problems:
-          builder.append(f'<p>CAN validation: {", ".join(sorted(command_problems))}</p>')
 
       baseline_accel = lat_accel(controlsState[0].curvature, carState[0].vEgo)
       v_ego = [m.vEgo for m in carState]
-      v_plan = np.interp(t_lateralPlan, t_carState, v_ego) if channel else v_ego
-      v_controls = np.interp(t_controlsState, t_carState, v_ego) if channel else v_ego
       cross_markers = []
 
       if description.startswith(('sine', 'jitter')):
         amplitude = max(abs(lat_accel(lp.desiredCurvature, v) - baseline_accel)
-                        for lp, v in zip(lateralPlan, v_plan, strict=False))
+                        for lp, v in zip(lateralPlan, v_ego, strict=False))
         threshold = amplitude * 0.5
         builder.append('<h3 style="font-weight: normal">50% peak')
-        for t, cs, v in zip(t_controlsState, controlsState, v_controls, strict=False):
+        for t, cs, v in zip(t_controlsState, controlsState, v_ego, strict=False):
           actual = lat_accel(cs.curvature, v) - baseline_accel
           if abs(actual) > threshold:
             builder.append(f', <strong>crossed in {t:.3f}s</strong>')
@@ -114,10 +98,10 @@ def report(platform, route, _description, CP, ID, maneuvers):
         if maneuver_valid:
           target_cross_times.setdefault(description, [])
       else:
-        action_targets = [(0, lat_accel(lateralPlan[0].desiredCurvature, v_plan[0]) - baseline_accel)]
-        for i in range(1, min(len(lateralPlan), len(v_plan))):
+        action_targets = [(0, lat_accel(lateralPlan[0].desiredCurvature, v_ego[0]) - baseline_accel)]
+        for i in range(1, min(len(lateralPlan), len(v_ego))):
           if abs(lateralPlan[i].desiredCurvature - lateralPlan[i - 1].desiredCurvature) > 0.001:
-            desired = lat_accel(lateralPlan[i].desiredCurvature, v_plan[i]) - baseline_accel
+            desired = lat_accel(lateralPlan[i].desiredCurvature, v_ego[i]) - baseline_accel
             action_targets.append((i, desired))
 
         for j, (start_i, act_target) in enumerate(action_targets):
@@ -126,7 +110,7 @@ def report(platform, route, _description, CP, ID, maneuvers):
 
           builder.append(f'<h3 style="font-weight: normal">aTarget: {round(act_target, 1)} m/s^2')
           prev_crossed = False
-          for t, cs, v in zip(t_controlsState, controlsState, v_controls, strict=False):
+          for t, cs, v in zip(t_controlsState, controlsState, v_ego, strict=False):
             if not (start_time <= t <= end_time):
               continue
             actual_accel = lat_accel(cs.curvature, v) - baseline_accel
@@ -146,20 +130,19 @@ def report(platform, route, _description, CP, ID, maneuvers):
             target_cross_times.setdefault(description, [])
 
       plt.rcParams['font.size'] = 40
-      fig = plt.figure(figsize=(30, 55 if keyboard else (50 if channel else 40)))
-      ratios = [5, 5, 3, 3, 3] + ([3, 3] if channel else []) + ([2] if keyboard else [])
-      ax = fig.subplots(len(ratios), 1, sharex=True, gridspec_kw={'height_ratios': ratios})
+      fig = plt.figure(figsize=(30, 40))
+      ax = fig.subplots(5, 1, sharex=True, gridspec_kw={'height_ratios': [5, 5, 3, 3, 3]})
 
       ax[0].grid(linewidth=4)
       desired_label = 'lateralManeuverPlan.desiredCurvature * vEgo^2'
-      desired_lat_accel = [lat_accel(m.desiredCurvature, v) for m, v in zip(lateralPlan, v_plan, strict=False)]
+      desired_lat_accel = [lat_accel(m.desiredCurvature, v) for m, v in zip(lateralPlan, v_ego, strict=False)]
       if description.startswith(('sine', 'jitter')):
         ax[0].plot(t_lateralPlan[:len(desired_lat_accel)], desired_lat_accel, 'C1', label=desired_label, linewidth=6)
       else:
         t_desired = [t_lateralPlan[0]] + t_lateralPlan[:len(desired_lat_accel)]
         desired_lat_accel = [baseline_accel] + desired_lat_accel
         ax[0].step(t_desired, desired_lat_accel, 'C1', label=desired_label, linewidth=6, where='post')
-      actual_lat_accel = [lat_accel(cs.curvature, v) for cs, v in zip(controlsState, v_controls, strict=False)]
+      actual_lat_accel = [lat_accel(cs.curvature, v) for cs, v in zip(controlsState, v_ego, strict=False)]
       ax[0].plot(t_controlsState[:len(actual_lat_accel)], actual_lat_accel, 'g', label='controlsState.curvature * vEgo^2', linewidth=6)
       ax[0].set_ylabel('Lateral Accel (m/s^2)')
       for ct, cv in cross_markers:
@@ -177,35 +160,6 @@ def report(platform, route, _description, CP, ID, maneuvers):
       ax[1].plot(t_carOutput, [getattr(m.actuatorsOutput, steer_field) for m in carOutput], 'g', label=f'carOutput.actuatorsOutput.{steer_field}', linewidth=6)
       ax[1].set_ylabel(steer_ylabel)
       ax[1].legend(prop={'size': 30})
-      if channel:
-        ax[1].clear()
-        ax[1].grid(linewidth=4)
-        ax[1].plot(t_carState, [cs.steeringAngleDeg for cs in carState], 'g', label='Actual wheel angle', linewidth=6)
-        ax[1].set_ylabel('Wheel angle (deg)')
-        ax[1].legend(prop={'size': 30})
-        for idx, label in ((1, 'C0 sent (m)'), (2, 'C1 sent (rad)')):
-          ax[4+idx].step(commands[:, 0], commands[:, idx], where='post', linewidth=6, label=label)
-          ax[4+idx].set_ylabel(label)
-          ax[4+idx].grid(linewidth=4)
-          ax[4+idx].legend(prop={'size': 30})
-        if keyboard:
-          pscm = [(float((m.logMonoTime-origin)*1e-9), m.carStateSP.fordPscmStatus.limit)
-                  for m in msgs if m.which() == 'carStateSP' and m.valid and m.carStateSP.fordPscmStatus.valid]
-          if pscm:
-            times, limits = zip(*pscm, strict=True)
-            ax[7].step(times, limits, where='post', linewidth=6, label='PSCM limit status')
-          else:
-            ax[7].text(.05, .5, 'No valid PSCM status logged', transform=ax[7].transAxes)
-          ax[7].set_yticks([0, 1, 2, 3])
-          ax[7].set_ylabel('PSCM limit\n2 = reached')
-          ax[7].grid(linewidth=4)
-          previous_phase = None
-          for t, plan in zip(t_lateralPlan, lateralPlan, strict=True):
-            phase = str(plan.fordChannelTest.keyboardPhase)
-            if phase != previous_phase:
-              for axis in ax:
-                axis.axvline(t, color='#777777', linestyle='--', linewidth=2)
-              previous_phase = phase
 
       ax[2].grid(linewidth=4)
       ax[2].plot(t_carState, [v * CV.MS_TO_MPH for v in v_ego], label='carState.vEgo', linewidth=6)
@@ -279,10 +233,8 @@ if __name__ == '__main__':
   maneuvers: list[tuple[str, list[list]]] = []
   active_prev = False
   description_prev = None
-  channel_runs = ChannelRuns()
 
   for msg in lr:
-    channel_runs.add(msg)
     if msg.which() == 'alertDebug':
       active = 'Active' in msg.alertDebug.alertText1 or msg.alertDebug.alertText1 == 'Complete'
       if active and not active_prev:
@@ -296,9 +248,4 @@ if __name__ == '__main__':
     if active_prev:
       maneuvers[-1][1][-1].append(msg)
 
-  if channel_runs.runs:
-    output = ford_channel_report(platform, args.route, CP, ID, channel_runs.runs)
-    print(f'Opening Ford channel report: {output}')
-    webbrowser.open_new_tab(str(output))
-  else:
-    report(platform, args.route, args.description, CP, ID, maneuvers)
+  report(platform, args.route, args.description, CP, ID, maneuvers)

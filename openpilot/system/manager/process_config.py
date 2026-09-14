@@ -8,7 +8,6 @@ from openpilot.common.params import Params
 from openpilot.common.hardware import PC, COMMA_HARDWARE
 from openpilot.system.manager.process import PythonProcess, NativeProcess, DaemonProcess
 from openpilot.common.hardware.hw import Paths
-from openpilot.selfdrive.controls.lib.ford_channel_test import selected as ford_channel_test_selected
 
 from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH
 
@@ -50,9 +49,6 @@ def long_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
 
 def lat_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and params.get_bool("LateralManeuverMode")
-
-def ford_channel_test(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return started and ford_channel_test_selected(CP, params)
 
 def not_long_maneuver(started: bool, params: Params, CP: car.CarParams) -> bool:
   return started and not params.get_bool("LongitudinalManeuverMode")
@@ -150,7 +146,6 @@ procs = [
   PythonProcess("plannerd", "openpilot.selfdrive.controls.plannerd", not_long_maneuver),
   PythonProcess("maneuversd", "openpilot.tools.longitudinal_maneuvers.maneuversd", long_maneuver),
   PythonProcess("lateral_maneuversd", "openpilot.tools.lateral_maneuvers.lateral_maneuversd", lat_maneuver),
-  PythonProcess("ford_maneuversd", "openpilot.tools.lateral_maneuvers.ford_maneuversd", ford_channel_test),
   PythonProcess("radard", "openpilot.selfdrive.controls.radard", only_onroad),
   PythonProcess("hardwared", "openpilot.system.hardware.hardwared", always_run),
   PythonProcess("modem", "openpilot.common.hardware.comma.modem", always_run, enabled=COMMA_HARDWARE),
