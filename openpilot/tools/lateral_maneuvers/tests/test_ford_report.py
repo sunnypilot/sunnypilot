@@ -17,22 +17,24 @@ def event(kind, t):
   return m
 
 
-def fixture(channel='c0', direction=1, other_changes=False, response=True, abort=False):
+def fixture(channel='c0', direction=1, other_changes=False, response=True, abort=False, pulse_frames=100, amplitude=None):
   collector = ChannelRuns()
   packer = CANPacker('ford_lincoln_base_pt')
   cp = structs.CarParams(safetyConfigs=[structs.CarParams.SafetyConfig()])
   bus = CanBus(cp)
-  for i in range(301):
+  amplitude = AMPLITUDE[channel] if amplitude is None else amplitude
+  release_frame, complete_frame = 50+pulse_frames, 250+pulse_frames
+  for i in range(complete_frame+1):
     t = 10.+i*.01
     if i % 5 == 0:
       p = event('lateralManeuverPlan', t)
-      phase = 'baseline' if i < 50 else ('pulse' if i < 100 else 'release')
-      if i == 300:
+      phase = 'baseline' if i < 50 else ('pulse' if i < release_frame else 'release')
+      if i == complete_frame:
         phase, p.valid = ('aborted' if abort else 'complete'), False
       p.lateralManeuverPlan.fordChannelTest = {'runId': 1, 'channel': channel, 'phase': phase,
-                                              'delta': direction*AMPLITUDE[channel] if phase == 'pulse' else 0., 'speed': SPEEDS[0]}
+                                              'delta': direction*amplitude if phase == 'pulse' else 0., 'speed': SPEEDS[0]}
       collector.add(p)
-    delta = direction*AMPLITUDE[channel] if 50 <= i < 100 else 0.
+    delta = direction*amplitude if 50 <= i < release_frame else 0.
     c0, c1 = (.01+delta, .002) if channel == 'c0' else (.01, .002+delta)
     if other_changes and 70 <= i < 90:
       if channel == 'c0':
@@ -46,7 +48,7 @@ def fixture(channel='c0', direction=1, other_changes=False, response=True, abort
     m = event('carState', t)
     m.carState.canValid, m.carState.vEgo = True, SPEEDS[0]
     m.carState.cruiseState.enabled = True
-    m.carState.steeringAngleDeg = (direction*2. if response and 70 <= i < 150 else 0.)
+    m.carState.steeringAngleDeg = (direction*2. if response and 70 <= i < release_frame+50 else 0.)
     collector.add(m)
     m = event('carControl', t)
     m.carControl.latActive = True
@@ -60,16 +62,19 @@ def fixture(channel='c0', direction=1, other_changes=False, response=True, abort
 
 @pytest.mark.parametrize('channel', ['c0', 'c1'])
 @pytest.mark.parametrize('direction', [-1, 1])
-def test_command_aligned_metrics(channel, direction):
-  cp, run = fixture(channel, direction)
+@pytest.mark.parametrize('legacy', [False, True])
+def test_command_aligned_metrics(channel, direction, legacy):
+  amplitude = {'c0': .03, 'c1': .01}[channel] if legacy else AMPLITUDE[channel]
+  pulse_frames = 50 if legacy else 100
+  cp, run = fixture(channel, direction, pulse_frames=pulse_frames, amplitude=amplitude)
   d = analyze(run, cp)
   assert not d['problems']
   assert d['onset'] == pytest.approx(.2)
   assert d['wire_on'] == pytest.approx(10.5)
-  assert d['wire_off'] == pytest.approx(11.)
+  assert d['wire_off'] == pytest.approx(10.5+pulse_frames*.01)
   assert d['peak'] == pytest.approx(2.)
   assert d['residual'] == pytest.approx(0.)
-  assert d['delta'] == pytest.approx(direction*AMPLITUDE[channel])
+  assert d['delta'] == pytest.approx(direction*amplitude)
 
 
 @pytest.mark.parametrize('channel', ['c0', 'c1'])

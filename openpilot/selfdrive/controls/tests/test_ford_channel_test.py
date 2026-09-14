@@ -41,7 +41,7 @@ def update(test, now=10., msg=None, **changes):
 
 def pulse(test):
   for i in range(51):
-    result = update(test, 10.+i*.01, plan(phase='pulse', delta=.03) if i == 50 else plan())
+    result = update(test, 10.+i*.01, plan(phase='pulse', delta=AMPLITUDE['c0']) if i == 50 else plan())
   assert result.valid
   return result
 
@@ -56,16 +56,16 @@ def pulse(test):
 def test_active_faults_zero_output_and_latch(changes):
   test = FordChannelTest()
   pulse(test)
-  assert update(test, 10.51, plan(phase='pulse', delta=.03), **changes) == FordPath()
+  assert update(test, 10.51, plan(phase='pulse', delta=AMPLITUDE['c0']), **changes) == FordPath()
   assert test.aborted
-  assert update(test, 10.52, plan(phase='pulse', delta=.03)) == FordPath()
+  assert update(test, 10.52, plan(phase='pulse', delta=AMPLITUDE['c0'])) == FordPath()
   assert update(test, 10.53, plan(phase='aborted'), plan_valid=False) is None
 
 
 @pytest.mark.parametrize('msg', [
-  plan('c1', 'pulse', .01), plan('c0', 'pulse', -.03), plan('c0', 'pulse', .04),
-  plan('c0', 'pulse', math.nan), plan('c0', 'pulse', .03, run_id=2), plan('c0', 'baseline'),
-  plan('c0', 'pulse', .03, speed=SPEEDS[1]), plan('c0', 'release'),
+  plan('c1', 'pulse', AMPLITUDE['c1']), plan('c0', 'pulse', -AMPLITUDE['c0']), plan('c0', 'pulse', AMPLITUDE['c0']+.01),
+  plan('c0', 'pulse', math.nan), plan('c0', 'pulse', AMPLITUDE['c0'], run_id=2), plan('c0', 'baseline'),
+  plan('c0', 'pulse', AMPLITUDE['c0'], speed=SPEEDS[1]), plan('c0', 'release'),
 ])
 def test_midpulse_identity_or_phase_changes_abort(msg):
   test = FordChannelTest()
@@ -73,7 +73,7 @@ def test_midpulse_identity_or_phase_changes_abort(msg):
   assert update(test, 10.51, msg) == FordPath()
 
 
-@pytest.mark.parametrize('phase,delta', [('pulse', .03), ('release', 0.)])
+@pytest.mark.parametrize('phase,delta', [('pulse', AMPLITUDE['c0']), ('release', 0.)])
 def test_cannot_start_midrun(phase, delta):
   assert update(FordChannelTest(), msg=plan(phase=phase, delta=delta)) == FordPath()
 
@@ -82,9 +82,9 @@ def test_cannot_start_midrun(phase, delta):
 def test_frozen_phase_times_out_even_with_fresh_timestamps(phase):
   test = FordChannelTest()
   result = None
-  for i in range(350):
-    stage = 'baseline' if i < 50 or phase == 'baseline' else ('pulse' if i < 100 or phase == 'pulse' else 'release')
-    result = update(test, 10.+i*.01, plan(phase=stage, delta=.03 if stage == 'pulse' else 0.))
+  for i in range(400):
+    stage = 'baseline' if i < 50 or phase == 'baseline' else ('pulse' if i < 150 or phase == 'pulse' else 'release')
+    result = update(test, 10.+i*.01, plan(phase=stage, delta=AMPLITUDE['c0'] if stage == 'pulse' else 0.))
     if not result.valid:
       break
   assert result == FordPath() and test.aborted
@@ -127,7 +127,8 @@ def test_full_suite_with_serialized_20hz_plans_and_100hz_receiver():
   assert seq.index == 8
   assert len(phases) == 8
   assert all(stages == {'baseline', 'pulse', 'release'} for stages in phases.values())
-  assert all(45 <= counts[run, 'pulse'] <= 55 and 195 <= counts[run, 'release'] <= 205 for run in phases)
+  assert AMPLITUDE == {'c0': 1.28, 'c1': .125}
+  assert all(95 <= counts[run, 'pulse'] <= 105 and 195 <= counts[run, 'release'] <= 205 for run in phases)
   assert {(t.speed, t.channel, t.direction) for t in TRIALS} == {(v, c, s) for v in SPEEDS for c in AMPLITUDE for s in (1, -1)}
   assert [t.description for t in TRIALS] == [f'{channel} {direction} {mph} mph'
                                           for mph in (15, 20) for channel in ('C0', 'C1') for direction in ('right', 'left')]
@@ -172,7 +173,8 @@ def test_mode_selection_and_transient_parameter(tmp_path):
 
 
 @pytest.mark.parametrize('trial', TRIALS)
-def test_actual_controlsd_and_wire_isolate_release_then_abort(pipeline, trial):  # noqa: F811
+@pytest.mark.parametrize('abort_kind,abort_frame', [('brake', 200), ('angle', 75), ('pscm', 75)])
+def test_actual_controlsd_and_wire_isolate_release_then_abort(pipeline, trial, abort_kind, abort_frame):  # noqa: F811
   call, publication = pipeline
   params = SimpleNamespace(get_bool=lambda key: key in ('FordModelActionController', 'FordChannelTestMode'))
   controls = startup(params=params)
@@ -189,15 +191,17 @@ def test_actual_controlsd_and_wire_isolate_release_then_abort(pipeline, trial): 
                             lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
   parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], sender.CAN.main)
   baseline = None
-  for i in range(151):
+  for i in range(abort_frame+1):
     now = 10.+i*.01
-    phase = 'baseline' if i < 50 else ('pulse' if i < 100 else 'release')
+    phase = 'baseline' if i < 50 else ('pulse' if i < 150 else 'release')
     delta = trial.direction*AMPLITUDE[trial.channel] if phase == 'pulse' else 0.
     sm.messages['lateralManeuverPlan'] = plan(trial.channel, phase, delta, trial.speed)
     sm.logMonoTime = dict.fromkeys(sm.logMonoTime, round(now*1e9))
     pscm = sm['carStateSP'].fordPscmStatus
     pscm.valid, pscm.canMonoTime, pscm.lateralState = True, round(now*1e9), 2
-    cs.brakePressed = i == 150
+    cs.brakePressed = abort_kind == 'brake' and i == abort_frame
+    cs.steeringAngleDeg = 15.01 if abort_kind == 'angle' and i == abort_frame else 0.
+    pscm.limit = 2 if abort_kind == 'pscm' and i == abort_frame else 0
     if i > 0:
       model.action.desiredCurvature = .03  # normal PI/model requests cannot leak into the held fields
     exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model, 'lp': SimpleNamespace(roll=0.),
@@ -210,7 +214,7 @@ def test_actual_controlsd_and_wire_isolate_release_then_abort(pipeline, trial): 
     if baseline is None:
       baseline = (wire['LatCtlPathOffst_L_Actl'], wire['LatCtlPath_An_Actl'])
     actual = (wire['LatCtlPathOffst_L_Actl'], wire['LatCtlPath_An_Actl'])
-    if i == 150:
+    if i == abort_frame:
       assert wire['LatCtl_D2_Rq'] == 0 and actual == (0., 0.) and not cc.latActive
     else:
       expected = (baseline[0]-delta, baseline[1]) if trial.channel == 'c0' else (baseline[0], baseline[1]-delta)
@@ -292,7 +296,7 @@ def test_daemon_publishes_both_speeds_and_real_schema(monkeypatch):
 def test_enabled_channel_payload_is_ignored_when_toggle_off(pipeline):  # noqa: F811
   controls = startup()
   sm = Subscriptions(True)
-  sm.messages['lateralManeuverPlan'] = plan(phase='pulse', delta=.03)
+  sm.messages['lateralManeuverPlan'] = plan(phase='pulse', delta=AMPLITUDE['c0'])
   sm.messages['lateralManeuverPlan'].desiredCurvature = -.1
   controls.sm, controls.desired_curvature, controls.curvature = sm, 0., 0.
   model = straight()

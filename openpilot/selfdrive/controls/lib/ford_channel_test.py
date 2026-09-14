@@ -8,8 +8,9 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath
 PARAM = 'FordChannelTestMode'
 CONFLICTS = ('LateralManeuverMode', 'LongitudinalManeuverMode', 'JoystickDebugMode')
 SPEEDS = (15.*CV.MPH_TO_MS, 20.*CV.MPH_TO_MS)
-AMPLITUDE = {'c0': .03, 'c1': .01}
-BASELINE_S, PULSE_S, RELEASE_S = .5, .5, 2.
+# 25% of the controller's symmetric field limits, rounded to the CAN steps.
+AMPLITUDE = {'c0': round(.25*5.11, 2), 'c1': .25*.5}
+BASELINE_S, PULSE_S, RELEASE_S = .5, 1., 2.
 TOTAL_S = BASELINE_S + PULSE_S + RELEASE_S
 MAX_SPEED_ERROR = .7
 MAX_BASE_C0, MAX_BASE_C1 = .03, .015
