@@ -112,7 +112,12 @@ class IntelligentCruiseButtonManagement:
     ready = CC.enabled and not CC.cruiseControl.override and not CC.cruiseControl.cancel and not CC.cruiseControl.resume
     button_pressed = any(self.cruise_button_timers[k] > 0 for k in self.cruise_button_timers)
 
-    self.is_ready = ready and not button_pressed
+    
+    cruise_speed_valid = self.v_cruise_cluster >= self.v_cruise_min
+    target_speed_valid = self.v_target >= self.v_cruise_min
+
+    self.is_ready = ready and not button_pressed and cruise_speed_valid and target_speed_valid
+    
 
   def run(self, CS: car.CarState, CC: car.CarControl, LP_SP: custom.LongitudinalPlanSP, is_metric: bool) -> None:
     if self.CP_SP.pcmCruiseSpeed:
