@@ -19,6 +19,8 @@ openpilot/tools/joystick/joystick_control.py --keyboard
 
 The available buttons and axes will print showing their key mappings. In general, the WASD keys control gas and brakes and steering torque in 5% increments.
 
+Keep this terminal running when you start the car. The automatic onroad gamepad process waits while this local input tool is running; a second manual instance exits without replacing it. Stop the tool with `Ctrl+C` before starting another instance. Starting the tool enables `JoystickDebugMode` automatically. To disable the mode, go offroad, stop the tool, and turn off **Joystick Debug Mode** in Settings.
+
 ### Ford C0 / C1 independently
 
 Use the existing **Settings → Developer → Joystick Debug Mode** toggle, while offroad. On a CAN FD Ford, start the existing keyboard tool with an explicit channel:

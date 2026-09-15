@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import argparse
+import fcntl
 import threading
 import numpy as np
 from inputs import UnpluggedError, get_gamepad
@@ -9,6 +10,7 @@ from openpilot.cereal import messaging
 from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.hardware import HARDWARE
+from openpilot.common.hardware.hw import Paths
 from openpilot.tools.lib.kbhit import KBHit
 
 EXPO = 0.4
@@ -97,12 +99,13 @@ class Joystick:
     return True
 
 
-def send_thread(joystick):
+def send_thread(joystick, stop_event=None):
+  stop_event = stop_event or threading.Event()
   pm = messaging.PubMaster(['testJoystick'])
 
   rk = Ratekeeper(100, print_delay_threshold=None)
 
-  while True:
+  while not stop_event.is_set():
     if rk.frame % 20 == 0:
       print('\n' + ', '.join(f'{name}: {round(v, 3)}' for name, v in joystick.axes_values.items()))
       if joystick.ford_channel != 'standard':
@@ -118,15 +121,31 @@ def send_thread(joystick):
     rk.keep_time()
 
 
-def joystick_control_thread(joystick):
-  Params().put_bool('JoystickDebugMode', True, block=True)
-  threading.Thread(target=send_thread, args=(joystick,), daemon=True).start()
-  while True:
-    joystick.update()
+def joystick_control_thread(joystick, wait_for_lock=False):
+  # The manager starts this module again onroad. Keep that gamepad publisher
+  # from replacing an offroad-started keyboard publisher on the same device.
+  lock_path = os.path.join(Paths.shm_path(), 'joystick_control' + os.environ.get('OPENPILOT_PREFIX', '') + '.lock')
+  with open(lock_path, 'a') as lock:
+    try:
+      fcntl.flock(lock, fcntl.LOCK_EX | (0 if wait_for_lock else fcntl.LOCK_NB))
+    except BlockingIOError:
+      print('Joystick input is already running. Stop the other joystick_control process first.')
+      return
+
+    Params().put_bool('JoystickDebugMode', True, block=True)
+    stop_event = threading.Event()
+    sender = threading.Thread(target=send_thread, args=(joystick, stop_event), daemon=True)
+    sender.start()
+    try:
+      while sender.is_alive():
+        joystick.update()
+    finally:
+      stop_event.set()
+      sender.join()  # Release the publisher before another input process can acquire the lock.
 
 
 def main():
-  joystick_control_thread(Joystick())
+  joystick_control_thread(Joystick(), wait_for_lock=True)
 
 
 if __name__ == '__main__':
