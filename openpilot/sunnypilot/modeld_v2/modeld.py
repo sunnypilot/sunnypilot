@@ -36,12 +36,9 @@ from openpilot.system import sentry
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, smooth_value
-from openpilot.selfdrive.modeld.modeld import ChestnutState
+from openpilot.selfdrive.modeld.modeld import ChestnutGpuState
 
-from openpilot.selfdrive.modeld.compile_modeld import (
-  MODELD_INPUTS,
-  make_input_queues as make_stock_input_queues,
-)
+from openpilot.selfdrive.modeld.compile_modeld import make_input_queues
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
@@ -50,6 +47,7 @@ from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelp
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
                                                            make_supercombo_input_queues, nv12_copy_size,
                                                            WARP_INPUTS, POLICY_INPUTS)
+from openpilot.sunnypilot.modeld_v2.stock_dependencies import make_legacy_stock_input_queues
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_oob
@@ -141,8 +139,14 @@ class ModelState(ModelStateBase):
       self._vision_input_names = [key for key in self.input_shapes if 'img' in key]
       self.frame_skip = derive_frame_skip({}, self.input_shapes)
       if self.is_run_model:
-        self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
-          self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
+        self.state_pairs = model_metadata.get('state_pairs', {})
+        self.is_new_model = len(self.state_pairs) > 0
+        if self.is_new_model:
+          self.input_queues, self.numpy_inputs, self.frame_buffers = make_input_queues(self.input_shapes, self.state_pairs,
+                                                                                       device=self.DEV, frame_copy_size=self.frame_copy_size)
+        else:
+          self.input_queues, self.numpy_inputs, self.frame_buffers = make_legacy_stock_input_queues(self.input_shapes, self.frame_skip, device=self.DEV,
+                                                                                                    frame_copy_size=self.frame_copy_size)
         self.frame_views, self.npy = self.frame_buffers, self.numpy_inputs
         self.run_model, self.run_policy, self.warp = jits['run_model'][(cam_w, cam_h)], None, None
       else:
@@ -191,8 +195,12 @@ class ModelState(ModelStateBase):
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     self.run(dummy_frames, transforms, dummy_inputs)
     if self.is_run_model:
-      self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
-        self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
+      if self.is_new_model:
+        self.input_queues, self.numpy_inputs, self.frame_buffers = make_input_queues(self.input_shapes, self.state_pairs, device=self.DEV,
+                                                                                     frame_copy_size=self.frame_copy_size)
+      else:
+        self.input_queues, self.numpy_inputs, self.frame_buffers = make_legacy_stock_input_queues(self.input_shapes, self.frame_skip, device=self.DEV,
+                                                                                                  frame_copy_size=self.frame_copy_size)
       self.frame_views = self.frame_buffers
       self.npy = self.numpy_inputs
     else:
@@ -242,7 +250,10 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
 
     if self.run_model is not None:
-      outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
+      if self.is_new_model:
+        outs, = self.run_model(**self.input_queues)
+      else:
+        outs, = self.run_model(**{k: self.input_queues[k] for k in POLICY_INPUTS})
       raw_outputs = outs
     else:
       assert self.warp is not None and self.run_policy is not None
@@ -373,11 +384,7 @@ def main(demo=False):
     loader.start()
     loader.join(BIG_MODEL_TIMEOUT)
     model = big_model
-    if model is None:
-      params.put_bool("ChestnutModelError", True)
     params.put_bool("ChestnutActive", model is not None)
-    if model is not None:
-      params.remove("ChestnutModelError")
 
   small_model = ModelState(cam_w=vipc_client_main.width, cam_h=vipc_client_main.height, chestnut=False) if model is None or CHESTNUT else None
   if model is None:
@@ -387,12 +394,12 @@ def main(demo=False):
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging
-  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutState"] if CHESTNUT else [])
+  pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutGpuState"] if CHESTNUT else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState", "carControl", "lateralDelay"])
 
   publish_state = PublishState()
-  chestnut_state = ChestnutState(pm, model.chestnut) if CHESTNUT else None
+  chestnut_state = ChestnutGpuState(pm, model.chestnut) if CHESTNUT else None
 
   # setup filter to track dropped frames
   frame_dropped_filter = FirstOrderFilter(0., 10., 1. / model.constants.MODEL_FREQ)
@@ -514,13 +521,12 @@ def main(demo=False):
     mt1 = time.perf_counter()
     try:
       send_chestnut = (chestnut_state is not None and
-                       run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutState'].frequency) == 0)
+                       run_count % round(model.constants.MODEL_FREQ / SERVICE_LIST['chestnutGpuState'].frequency) == 0)
       model_output = model.run(bufs, transforms, inputs, chestnut_state.send if send_chestnut else None)
     except Exception:
       if not params.get_bool("ChestnutActive"):
         raise
       cloudlog.exception("chestnut failed, falling back to small")
-      params.put_bool("ChestnutModelError", True)
       params.put_bool("ChestnutActive", False)
       assert small_model is not None
       model = small_model

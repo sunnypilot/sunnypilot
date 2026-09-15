@@ -33,6 +33,7 @@ def _patch_tinygrad_fetch_fw():
 _patch_tinygrad_fetch_fw()
 
 import openpilot.selfdrive.modeld.compile_modeld as stock
+import openpilot.sunnypilot.modeld_v2.stock_dependencies as legacy
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
@@ -41,7 +42,7 @@ from tinygrad.tensor import Tensor
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']
 POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
-nv12_copy_size = stock.nv12_copy_size
+
 
 def _detect_desire_key(shapes: dict) -> str | None:
   return next((key for key in shapes if key.startswith('desire')), None)
@@ -152,8 +153,8 @@ def make_warp_queues(device=Device.DEFAULT):
 
 
 def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, frame_skip: int, input_shapes: dict):
-  sample_skip_fn = partial(stock.sample_skip, frame_skip=frame_skip)
-  sample_desire_fn = partial(stock.sample_desire, frame_skip=frame_skip)
+  sample_skip_fn = partial(legacy.sample_skip, frame_skip=frame_skip)
+  sample_desire_fn = partial(legacy.sample_desire, frame_skip=frame_skip)
 
   desire_key = _detect_desire_key(input_shapes)
   road_key, wide_key = _detect_vision_keys(input_shapes)
@@ -170,14 +171,14 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
-    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
+    img = legacy.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
+    big_img = legacy.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
 
     desire_dev = unpacked_dict['desire']
-    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
+    desire_buf = legacy.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
 
     inputs = {desire_key: desire_buf}
     for key, tensor_val in unpacked_dict.items():
@@ -186,13 +187,13 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
+      inputs['features_buffer'] = legacy.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
 
     if vision_runner:
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
-        inputs['features_buffer'] = stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+        inputs['features_buffer'] = legacy.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
       policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
@@ -203,7 +204,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').realize()
     if 'features_buffer' not in inputs and features_slice is not None:
       new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
-      stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
+      legacy.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
 
   return run_policy
@@ -330,16 +331,32 @@ if __name__ == "__main__":
     output_data['run_model'] = {}
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
     model_runner = OnnxRunner(args.supercombo_onnx)
-    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
-    for cam_w, cam_h in args.camera_resolutions:
-      print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
-      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-      make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
-                                  frame_copy_size=frame_copy_size)
-      warp = stock.make_warp(nv12, model_w, model_h)
-      run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
-      output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
+    new_img_model = 'new_img' in model_runner.graph_inputs
+
+    if new_img_model:
+      input_shapes = {name: (spec.shape, spec.dtype) for name, spec in model_runner.graph_inputs.items()}
+      state_pairs = {name: f'next_{name}' for name in input_shapes if f'next_{name}' in model_runner.graph_outputs}
+      output_data['metadata'] = {'model': model_metadata, **model_metadata, 'input_shapes': input_shapes, 'state_pairs': state_pairs}
+      for cam_w, cam_h in args.camera_resolutions:
+        print(f"Compiling unified run_model JIT for {cam_w}x{cam_h} (new architecture)...")
+        nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+        frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+        make_model_queues = partial(stock.make_input_queues, input_shapes, state_pairs, frame_copy_size=frame_copy_size)
+        warp = stock.make_warp(nv12, model_w, model_h)
+        run_model_jit = TinyJit(stock.make_run_model(warp, model_runner, input_shapes, state_pairs, frame_copy_size), prune=True)
+        output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, list(state_pairs.keys()) + ['packed_npy_inputs'], make_model_queues,
+                                                               benchmark_runs=args.benchmark_runs)
+    else:
+      run_policy = legacy.make_legacy_run_policy(model_runner, model_metadata, derived_frame_skip)
+      for cam_w, cam_h in args.camera_resolutions:
+        print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
+        nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+        frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+        make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+                                    frame_copy_size=frame_copy_size)
+        warp = stock.make_warp(nv12, model_w, model_h)
+        run_model_jit = TinyJit(legacy.make_legacy_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+        output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, POLICY_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
   else:
     vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
     if args.model_type == 'vision_policy':
@@ -355,13 +372,12 @@ if __name__ == "__main__":
         output_data['metadata'][name] = make_metadata_dict(runner_arg)
 
     policy_keys = [key for key in output_data['metadata'].keys() if key != 'vision']
-    first_policy_meta = output_data['metadata'][policy_keys[0]] if policy_keys else {}
-    vision_meta = output_data['metadata'].get('vision', {})
+    first_policy_meta: dict = output_data['metadata'][policy_keys[0]] if policy_keys else {}
+    vision_meta: dict = output_data['metadata'].get('vision', {})
 
     derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
     all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
-    feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('policy')
-    assert feat_meta is not None
+    feat_meta: dict = vision_meta or first_policy_meta
     features_slice = feat_meta['output_slices']['hidden_state']
 
     print(f"Compiling run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})...")
