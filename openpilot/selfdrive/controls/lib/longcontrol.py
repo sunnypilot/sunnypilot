@@ -69,7 +69,7 @@ class LongControl(LongControlSP):
       if output_accel > self.CP.stopAccel and not LongControlSP.should_hold_stopping(self, CS, a_target):
         output_accel = min(output_accel, 0.0)
         # TODO: can we just go straight to stopAccel?
-        output_accel -= np.interp(CS.vEgo, [0.0, 1.0, 3.0], [0.0, 0.25, 0.5]) * DT_CTRL
+        output_accel -= self.stopping_decel_rate(CS.vEgo) * DT_CTRL
       self.reset()
 
     else:  # LongCtrlState.pid
