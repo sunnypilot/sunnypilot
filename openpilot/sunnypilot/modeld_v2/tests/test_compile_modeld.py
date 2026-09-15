@@ -5,6 +5,8 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import ast
+import importlib.util
 import os
 import tempfile
 import unittest
@@ -282,3 +284,19 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
       assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)
 
 
+class TestNoImportTimeDeviceProbe(OpenpilotTestCase):
+  def test_device_default_is_not_a_default_argument(self):
+    # Device.DEFAULT in a default argument runs at import time, and tinygrad's device selection opens each
+    # candidate backend to test it (AMD before QCOM). On a comma four that opens the eGPU over USB before the
+    # link is up, and the failed open keeps tinygrad's lock and USB claim, so the real load later in the same
+    # process cannot succeed. Resolve the device in the body instead.
+    spec = importlib.util.find_spec("openpilot.sunnypilot.modeld_v2.compile_modeld")
+    assert spec is not None and spec.origin is not None
+    src = Path(spec.origin).read_text()
+    tree = ast.parse(src)
+    for node in ast.walk(tree):
+      if not isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+        continue
+      for default in list(node.args.defaults) + [d for d in node.args.kw_defaults if d is not None]:
+        segment = ast.get_source_segment(src, default) or ""
+        assert "Device.DEFAULT" not in segment, f"{node.name}() evaluates Device.DEFAULT at import time"
