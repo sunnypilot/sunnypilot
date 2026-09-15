@@ -68,11 +68,12 @@ def test_centering_cannot_gate_continuous_heading_correction(sign):
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 @pytest.mark.parametrize('limited', [False, True])
-def test_duplicate_measurements_cannot_retire_integral(sign, limited):
-  core = ModelActionController()
+@pytest.mark.parametrize('gain', [.5, .75])
+def test_duplicate_measurements_cannot_retire_integral(sign, limited, gain):
+  core = ModelActionController(gain, .25)
   core.c1, core.correction = sign*.07, sign*.03
   core.update(straight(), -sign*.002, current_curvature=sign*.004, speed=20., dt=.01,
               feedback_dt=0., pscm_limited=limited)
   assert core.correction == sign*.03
-  assert core.proportional == pytest.approx(-sign*.06)
-  assert core.c1 == pytest.approx(-sign*.07)
+  assert core.proportional == pytest.approx(-sign*.12*gain)
+  assert core.c1 == pytest.approx(-sign*(.01+.12*gain))

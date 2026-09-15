@@ -17,7 +17,7 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 OFFSET_STATION_M = 7.0
 HEADING_TIME_S = 1.0
-C1_PROPORTIONAL_GAIN = 0.50  # Drive-trial gains, not a learned calibration.
+C1_PROPORTIONAL_GAIN = 0.75  # Drive-trial gains, not a learned calibration.
 C1_INTEGRAL_GAIN = 0.25
 CALIBRATION_APPROVED = False
 
@@ -131,7 +131,7 @@ class FordModelActionController:
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False):
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based)
-    self.hypothesis = 'model-action-curvature-c0-distance-pi-v12'
+    self.hypothesis = 'model-action-curvature-c0-distance-pi-v13'
     self.reset()
 
   def set_c0_time_based(self, enabled, *, lateral_engaged):

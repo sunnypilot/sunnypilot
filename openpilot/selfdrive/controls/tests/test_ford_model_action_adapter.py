@@ -187,9 +187,9 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   exec(call, environment)
   expected_curvature = (-1 if maneuver else 1)*.000125
   assert controls.desired_curvature == pytest.approx(expected_curvature)
-  assert controller.core.proportional == pytest.approx(.5*20.*expected_curvature)
+  assert controller.core.proportional == pytest.approx(.75*20.*expected_curvature)
   assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
-  assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0035)
+  assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0045)
   assert controls.ford_path.path_offset == pytest.approx(0.)  # Limited curvature arc is below one C0 step.
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
@@ -275,7 +275,7 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
       assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
       frame += 1
     core = controls.ford_path_controller.core
-    expected_p = .5*20.*(sign*.004-measured) if torque == 0. else 0.
+    expected_p = .75*20.*(sign*.004-measured) if torque == 0. else 0.
     assert core.proportional == pytest.approx(expected_p)
     assert core.correction == pytest.approx(expected)
     assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
@@ -303,7 +303,7 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
                       'time': SimpleNamespace(monotonic=lambda now=now: now)})
   controller = controls.ford_path_controller
   assert controller.diagnostics['pscm_limited'] is service_valid
-  assert controller.core.proportional == pytest.approx(.01)
+  assert controller.core.proportional == pytest.approx(.015)
   # All three fresh samples may integrate unless the valid PSCM limit blocks it.
   assert controller.core.correction == pytest.approx(0. if service_valid else .00015)
   assert cc.latActive and controls.ford_path.valid
@@ -355,7 +355,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v12'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v13'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.

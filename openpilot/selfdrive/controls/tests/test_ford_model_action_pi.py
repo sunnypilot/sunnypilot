@@ -8,7 +8,7 @@ from openpilot.selfdrive.controls.lib.ford_path import FordPath
 from openpilot.selfdrive.controls.tests.test_ford_model_action import straight
 
 
-@pytest.mark.parametrize('gain', [.1, .25, .5])
+@pytest.mark.parametrize('gain', [.1, .25, .5, .75])
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_p_responds_without_waiting_for_integral_and_disappears_at_catchup(gain, sign):
   controller = ModelActionController(proportional_gain=gain)
@@ -42,8 +42,9 @@ def test_aligned_feedback_does_not_replace_current_feedforward_or_path(sign):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_pi_combined_request_obeys_amplitude_and_does_not_wind_up_behind_p(sign):
-  controller = ModelActionController(proportional_gain=.5)
+@pytest.mark.parametrize('gain', [.5, .75])
+def test_pi_combined_request_obeys_amplitude_and_does_not_wind_up_behind_p(sign, gain):
+  controller = ModelActionController(proportional_gain=gain)
   for _ in range(200):
     out = controller.update(straight(), sign*.01, current_curvature=-sign*.1, speed=20., dt=.01)
     assert controller.c1 == pytest.approx(sign*.5)

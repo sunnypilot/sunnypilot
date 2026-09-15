@@ -1,0 +1,707 @@
+{
+  "routes": 21,
+  "cycles": 2275248,
+  "can_round_trips": 4550496,
+  "scope": "Fixed-motion production controller and CAN replay. No predicted wheel motion or stability claim.",
+  "cohorts": {
+    "all": {
+      "seconds": 11128.798286258982,
+      "mean_abs_c1_change": 0.0014142689534451223,
+      "p95_abs_c1_change": 0.004500000000000004,
+      "max_abs_c1_change": 0.09299999999999997,
+      "c1_bound_seconds": [
+        21.296853938993763,
+        22.66821589999995
+      ],
+      "mean_abs_integral": [
+        0.00598675347437431,
+        0.005984439210041702
+      ]
+    },
+    "small": {
+      "seconds": 9051.37332302302,
+      "mean_abs_c1_change": 0.0008801267467942443,
+      "p95_abs_c1_change": 0.0025000000000000022,
+      "max_abs_c1_change": 0.09299999999999997,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.005708567029833155,
+        0.005708567029833155
+      ]
+    },
+    "bend": {
+      "seconds": 1631.677856559975,
+      "mean_abs_c1_change": 0.0024991973101179256,
+      "p95_abs_c1_change": 0.008999999999999897,
+      "max_abs_c1_change": 0.08899999999999997,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.006396022651557497,
+        0.006396128425459091
+      ]
+    },
+    "turn": {
+      "seconds": 445.74710667598833,
+      "mean_abs_c1_change": 0.008289169314090508,
+      "p95_abs_c1_change": 0.031000000000000028,
+      "max_abs_c1_change": 0.08000000000000002,
+      "c1_bound_seconds": [
+        21.296853938993763,
+        22.66821589999995
+      ],
+      "mean_abs_integral": [
+        0.01013747903479613,
+        0.010079312488152544
+      ]
+    },
+    "releasing": {
+      "seconds": 106.96494071107061,
+      "mean_abs_c1_change": 0.005058356779798081,
+      "p95_abs_c1_change": 0.025500000000000023,
+      "max_abs_c1_change": 0.08899999999999997,
+      "c1_bound_seconds": [
+        0.009879735000026812,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.006354435594257913,
+        0.006350676023352573
+      ]
+    }
+  },
+  "baseline_commit": "b720e9f1bb805c69e5560f13dd86034d4bf50260",
+  "gains": [
+    0.5,
+    0.75
+  ],
+  "integral_gain": 0.25,
+  "c0_time_based": false,
+  "hypothesis": "model-action-curvature-c0-distance-pi-v13",
+  "tests": {
+    "passed": 455,
+    "subtests_passed": 25,
+    "ruff": "passed",
+    "diff_check": "passed"
+  },
+  "replay_command_invariants_passed": true,
+  "physical_tracking_or_stability_validated": false,
+  "route_results": [
+    {
+      "route": "112",
+      "cycles": 108971,
+      "can_round_trips": 217942,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0679107408662434,
+          "p95": 0.26000000476837126,
+          "max": 3.119999904632568
+        },
+        "c1": {
+          "mean": 0.005686226432883118,
+          "p95": 0.014999999850988377,
+          "max": 0.18949999547004703
+        }
+      },
+      "clean_seconds": 732.0411244650002,
+      "c1_bound_seconds": [
+        0.0,
+        0.021201738000058867
+      ],
+      "source_sha256": {
+        ".cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        ".cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "113",
+      "cycles": 49614,
+      "can_round_trips": 99228,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1281940820409913,
+          "p95": 0.897999979019158,
+          "max": 3.260000095367432
+        },
+        "c1": {
+          "mean": 0.006052000019791209,
+          "p95": 0.033500000965595265,
+          "max": 0.13200000381469723
+        }
+      },
+      "clean_seconds": 212.64164745499875,
+      "c1_bound_seconds": [
+        1.2653679959998954,
+        1.2653679959998954
+      ],
+      "source_sha256": {
+        ".cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        ".cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        ".cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "114",
+      "cycles": 61027,
+      "can_round_trips": 122054,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.11075714097529091,
+          "p95": 0.3999999904632565,
+          "max": 3.500000133514404
+        },
+        "c1": {
+          "mean": 0.006464089004288734,
+          "p95": 0.01899999927878381,
+          "max": 0.17200000238418578
+        }
+      },
+      "clean_seconds": 336.37317285400025,
+      "c1_bound_seconds": [
+        0.26486993000000325,
+        0.26486993000000325
+      ],
+      "source_sha256": {
+        ".cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        ".cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        ".cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "115",
+      "cycles": 40037,
+      "can_round_trips": 80074,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.08961574629129629,
+          "p95": 0.3500000071525573,
+          "max": 2.7699999141693112
+        },
+        "c1": {
+          "mean": 0.006259665157786696,
+          "p95": 0.0225000038146973,
+          "max": 0.10550000000000004
+        }
+      },
+      "clean_seconds": 213.9659020539998,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        ".cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        ".cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "116",
+      "cycles": 68793,
+      "can_round_trips": 137586,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1229211861673407,
+          "p95": 0.40999998092651335,
+          "max": 3.539999895095825
+        },
+        "c1": {
+          "mean": 0.00492455679344663,
+          "p95": 0.01600000357627862,
+          "max": 0.12550000327825545
+        }
+      },
+      "clean_seconds": 286.72210779700015,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_route116/route.npz": "13df1d49edd0c92bd4a4236c766ee76baa6dad477824b9de4b79927c98410394",
+        ".cache/ford_route116/model_paths.npz": "85d1112b5e89340e8a955b7fe4040b3135cf1c91a54ff756826c6119cc9cc01d",
+        ".cache/ford_route116/metadata.json": "d52fe63d013fa546524ad9522a26943d9372730d397d92d75dfd9d75c63ce766",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "117",
+      "cycles": 27301,
+      "can_round_trips": 54602,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1466742382755,
+          "p95": 0.6379999847412033,
+          "max": 4.270000057220459
+        },
+        "c1": {
+          "mean": 0.00582792986837905,
+          "p95": 0.024499997889995594,
+          "max": 0.05100000405311583
+        }
+      },
+      "clean_seconds": 97.48647941900026,
+      "c1_bound_seconds": [
+        0.9928339700004472,
+        1.080442829000276
+      ],
+      "source_sha256": {
+        ".cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        ".cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        ".cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "119",
+      "cycles": 171423,
+      "can_round_trips": 342846,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.06276063585086782,
+          "p95": 0.22999999165535012,
+          "max": 4.129999866485596
+        },
+        "c1": {
+          "mean": 0.00042448693421451755,
+          "p95": 0.0024999996423721305,
+          "max": 0.035999999776482605
+        }
+      },
+      "clean_seconds": 616.4493080259994,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_route119/route.npz": "415a099935fef152123b7422870442d6cfe6302bab9b8983ce3b3ffc71a7702b",
+        ".cache/ford_route119/model_paths.npz": "dfd41383bea486ccd0a476e94e612921a44a099a0c1213ff132ab81df3aa94d7",
+        ".cache/ford_route119/metadata.json": "d61bd3351912f2f1a3c51f6061beffe89b430ebc50178c35abff8d1ecc1fc04d",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "11a",
+      "cycles": 235771,
+      "can_round_trips": 471542,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.060649023224496834,
+          "p95": 0.17000000953674288,
+          "max": 3.7
+        },
+        "c1": {
+          "mean": 0.00018421321567653392,
+          "p95": 0.0005000000949949013,
+          "max": 0.045000003814697265
+        }
+      },
+      "clean_seconds": 1085.65972405699,
+      "c1_bound_seconds": [
+        0.0811529149996204,
+        0.0811529149996204
+      ],
+      "source_sha256": {
+        ".cache/ford_route11a/route.npz": "428c203d090731386f06bf9fdeefe608f1999c43c52ff39cab7ee86ec0ac804f",
+        ".cache/ford_route11a/model_paths.npz": "e2b827fd7c3dfbf66d7872a56b57eaec13c600a9a48e12dae59be81c31b0978f",
+        ".cache/ford_route11a/metadata.json": "b7b10ccb1c0fa740779a1cf977faa4ae6714c9f9d7a0ffc39f3684680c16ae2a",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "120",
+      "cycles": 56704,
+      "can_round_trips": 113408,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.07882976760905562,
+          "p95": 0.3099999999999996,
+          "max": 3.3499999046325684
+        },
+        "c1": {
+          "mean": 6.576444779324904e-10,
+          "p95": 3.218650845848714e-09,
+          "max": 1.478195188475695e-08
+        }
+      },
+      "clean_seconds": 325.62925950599976,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_route120/route.npz": "ca40b52257af313ed0abd1109a33115a0a3227bd3438367faf282467e807a34a",
+        ".cache/ford_route120/model_paths.npz": "9b4a21357de4076c555e8776ed36b1d5728da1307d739268a3f84e84593e12b4",
+        ".cache/ford_route120/metadata.json": "110fe2016561722743064f2619e32f1b69164cc86015ef01c0a9fd2dd7f24bba",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "124",
+      "cycles": 5820,
+      "can_round_trips": 11640,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 2.909556870453723e-10,
+          "p95": 6.70552502413102e-10,
+          "max": 4.76837147544984e-09
+        },
+        "c1": {
+          "mean": 2.2964119221745972e-10,
+          "p95": 8.344650526126429e-10,
+          "max": 3.3974647539736225e-09
+        }
+      },
+      "clean_seconds": 22.732139372000063,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_c0_response_124_125/route124/route.npz": "26f8cf284e54c5f80bc7414c1302c429d4c10d54147e137fc5b8a348249e4fe5",
+        ".cache/ford_c0_response_124_125/route124/model_paths.npz": "898d75cc80f29fc50a818c29614961ca8fdf56d1e8908993662c6e92e54ebf6f",
+        ".cache/ford_c0_response_124_125/route124/metadata.json": "8f93b186178c89a95e56177dda7f0aba740bc57dfb832cde6d5c3fd3f43a8126",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "125",
+      "cycles": 41717,
+      "can_round_trips": 83434,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 3.143796501787139e-10,
+          "p95": 1.3411041166477844e-09,
+          "max": 4.76837147544984e-09
+        },
+        "c1": {
+          "mean": 0.001590841778388488,
+          "p95": 0.004000000216066835,
+          "max": 0.0040000033974647575
+        }
+      },
+      "clean_seconds": 400.6387703520005,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_c0_response_124_125/route125/route.npz": "8dcf304871bf5c6bf1ce206c788d7034bf5f056522faded0aa7948ff1cccbb75",
+        ".cache/ford_c0_response_124_125/route125/model_paths.npz": "4be9c7809dabbcb52296ba93b4743146dc941e49a32aca07f008b75757703e49",
+        ".cache/ford_c0_response_124_125/route125/metadata.json": "1f2b812d3c2cc8e5a2246098756940d6f8989a2591daf4d74b1ef4c8555e2d57",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "146",
+      "cycles": 53229,
+      "can_round_trips": 106458,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 3.47655752720815e-10,
+          "p95": 1.3411041166477844e-09,
+          "max": 2.8610229740877458e-08
+        },
+        "c1": {
+          "mean": 2.782228297198912e-10,
+          "p95": 1.19209286886246e-09,
+          "max": 1.3351440397713077e-08
+        }
+      },
+      "clean_seconds": 388.4780471659999,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_model_replay_146/full/route.npz": "b01db5bdd1c3b9fb83418a298571c98e60b5eb0509800d86cdaf07bafcdc6d63",
+        ".cache/ford_model_replay_146/full/model_paths.npz": "11e0e9c8ce2959aac72d2f8a9cc4f6a025480034d5cd8b59b68a41b2ae3cf4a8",
+        ".cache/ford_model_replay_146/full/metadata.json": "2be1254dd1eee422f3b2c2011faa91a21ab431751998525105381c2886df15ca",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "149",
+      "cycles": 132334,
+      "can_round_trips": 264668,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 1.604709350643841e-09,
+          "p95": 7.152557657263969e-09,
+          "max": 5.7220459037665705e-08
+        },
+        "c1": {
+          "mean": 6.774543859790247e-10,
+          "p95": 3.0994415922691587e-09,
+          "max": 1.478195188475695e-08
+        }
+      },
+      "clean_seconds": 868.9707798709996,
+      "c1_bound_seconds": [
+        0.2315784860001031,
+        0.6131428530001415
+      ],
+      "source_sha256": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/model_paths.npz": "19827800b8fb5983f3d6b72fcfaf36e35a40170bb17cd7c1e49374744fb449fb",
+        ".cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "a0",
+      "cycles": 114582,
+      "can_round_trips": 229164,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.02570244338167474,
+          "p95": 0.08000000059604684,
+          "max": 1.4500001144409183
+        },
+        "c1": {
+          "mean": 0.01759150615156611,
+          "p95": 0.0444999985605478,
+          "max": 0.1095000026226044
+        }
+      },
+      "clean_seconds": 926.827608547,
+      "c1_bound_seconds": [
+        7.083908395000037,
+        7.184738287000073
+      ],
+      "source_sha256": {
+        ".cache/ford_routea0/route.npz": "01ce8b0361c3154d07d5449525a650baa2cc261675095cb1f04ec9e37a9174d3",
+        ".cache/ford_routea0/model_paths.npz": "5d0c69d10a6d13882b47d950ae64c4d98f7ca2b59eab27e4e9557eef3bc4917b",
+        ".cache/ford_routea0/metadata.json": "00496a11afbee475e9b5d66838a4d1663a3c0063cd562b4d1408cce6d71e586e",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "a2",
+      "cycles": 71111,
+      "can_round_trips": 142222,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.04191847719972587,
+          "p95": 0.11000001072883592,
+          "max": 2.5599999904632567
+        },
+        "c1": {
+          "mean": 0.018344418527189366,
+          "p95": 0.06350000252127648,
+          "max": 0.10950000333786014
+        }
+      },
+      "clean_seconds": 362.6477764930001,
+      "c1_bound_seconds": [
+        4.459983808000175,
+        4.459983808000175
+      ],
+      "source_sha256": {
+        ".cache/ford_routea2/route.npz": "af4128d278be6be0042f72a02255ddbec96a8a5aa435b9852c8202e4a5cb39e5",
+        ".cache/ford_routea2/model_paths.npz": "5a5a7c4fc30c7b3bc7f2413daa8b11fe86b69dd3249e8df2d35b0a0636a49717",
+        ".cache/ford_routea2/metadata.json": "cfecd240216e409a1e2591c6c2e6f0bad002ecd2a50c8f6dbf22a8f9174708da",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "a5",
+      "cycles": 38961,
+      "can_round_trips": 77922,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0678814615486646,
+          "p95": 0.23999999046325726,
+          "max": 2.549999809265137
+        },
+        "c1": {
+          "mean": 0.010050927104249109,
+          "p95": 0.02549999953061341,
+          "max": 0.11449999988079068
+        }
+      },
+      "clean_seconds": 281.78537111799994,
+      "c1_bound_seconds": [
+        3.117821645999925,
+        3.1221818889999327
+      ],
+      "source_sha256": {
+        ".cache/ford_routea5/route.npz": "815d1e248ff5c3e5e5cfc11dfbd0690d0d13ddafe1436890e239975a72dae9b8",
+        ".cache/ford_routea5/model_paths.npz": "72e014b844322df6318f6af588c27175ce68d9a37bda62b70eafca5bdfe6dfe4",
+        ".cache/ford_routea5/metadata.json": "c533b06d1b7c598330b36b117bdb3624221bc4193ded8354246d5c86f36b2628",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "a9",
+      "cycles": 286319,
+      "can_round_trips": 572638,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0574873679806263,
+          "p95": 0.24000002861022907,
+          "max": 1.8600000095367433
+        },
+        "c1": {
+          "mean": 0.012787646152435335,
+          "p95": 0.04100000113248825,
+          "max": 0.20099999380111694
+        }
+      },
+      "clean_seconds": 1231.1594245750002,
+      "c1_bound_seconds": [
+        0.945385510000051,
+        1.1985475469998619
+      ],
+      "source_sha256": {
+        ".cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        ".cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        ".cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "b8",
+      "cycles": 160431,
+      "can_round_trips": 320862,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.09075655656311847,
+          "p95": 0.3199999809265135,
+          "max": 3.8600001049041746
+        },
+        "c1": {
+          "mean": 0.014587774875948546,
+          "p95": 0.047500000029802314,
+          "max": 0.2005000000223518
+        }
+      },
+      "clean_seconds": 465.3759713629988,
+      "c1_bound_seconds": [
+        1.233373995994043,
+        1.536421163000341
+      ],
+      "source_sha256": {
+        ".cache/ford_routeb8/route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        ".cache/ford_routeb8/model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        ".cache/ford_routeb8/metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "b9",
+      "cycles": 90774,
+      "can_round_trips": 181548,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0779309579021297,
+          "p95": 0.3100000107288361,
+          "max": 4.5400001907348635
+        },
+        "c1": {
+          "mean": 0.007145982184135228,
+          "p95": 0.020500003129243882,
+          "max": 0.14649999999999996
+        }
+      },
+      "clean_seconds": 680.5921192759997,
+      "c1_bound_seconds": [
+        0.7494592899999759,
+        0.9690469479999706
+      ],
+      "source_sha256": {
+        ".cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        ".cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        ".cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "ca",
+      "cycles": 327448,
+      "can_round_trips": 654896,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.015992715429034462,
+          "p95": 0.05000000029802365,
+          "max": 1.0699999809265135
+        },
+        "c1": {
+          "mean": 0.0030197859214003767,
+          "p95": 0.00799999958276748,
+          "max": 0.10800000715255731
+        }
+      },
+      "clean_seconds": 999.6971771089911,
+      "c1_bound_seconds": [
+        0.871117996999601,
+        0.871117996999601
+      ],
+      "source_sha256": {
+        ".cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        ".cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        ".cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    },
+    {
+      "route": "raptor02",
+      "cycles": 132881,
+      "can_round_trips": 265762,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.01159572992270899,
+          "p95": 0.06918421261012586,
+          "max": 0.39572428941726656
+        },
+        "c1": {
+          "mean": 0.017327589689457763,
+          "p95": 0.04501086750242392,
+          "max": 0.10240508272871374
+        }
+      },
+      "clean_seconds": 592.9243753840037,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "source_sha256": {
+        ".cache/ford_raptor_route02/route.npz": "8a4cfe53994988d053b47d9caadf21ebd064fd20e598fa05ddc2da245bd0e980",
+        ".cache/ford_raptor_route02/model_paths.npz": "d5dc6f72d91472b8f2fb1add1680cdaea1e122774ddd6d8519fd7673daf71bb5",
+        ".cache/ford_raptor_route02/metadata.json": "9602e08efc2bd784133837c4156c075bb89bad3bedd6b309f15e884ed20e338a",
+        "tools/ford_pscm_lab/proportional_replay.py": "0296fedbc134c3e11022c51e0b94cc16e1135b620fd278bf381ce040e953a7ed",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "0c07b85db9c5cb0f42433116aea5d270fb244d8840119b4d7e8a526ec5b090d1"
+      }
+    }
+  ],
+  "selected_runtime_source_sha256": "a653b9c16ff8e5ac91e7c1751eaeb7a77b50701d185ce426fe1074d1a58a07b4",
+  "opendbc_commit": "64aa61b9b3fd26e70a7caa915acab207ff3cd64a"
+}

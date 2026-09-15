@@ -46,9 +46,9 @@ def test_actual_startup_priority(candidate, observer, fingerprint):
   selected = startup(car_params(carFingerprint=fingerprint), params=SimpleNamespace(get_bool=lambda key: settings.get(key, False)))
   if candidate:
     assert type(selected.ford_path_controller) is FordModelActionController
-    assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .50
+    assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .75
     assert selected.ford_path_controller.core.integral_gain == C1_INTEGRAL_GAIN == .25
-    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v12'
+    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v13'
   else:
     assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate
