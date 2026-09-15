@@ -12,7 +12,7 @@ STOPPED_SPEED = 0.02
 STOPPING_TIME = 2.5
 MIN_STOPPING_HOLD_ACCEL = -0.2
 STOPPING_DECEL_RATE = 0.3
-STOPPED_DECEL_RATE = 0.3
+STOPPED_DECEL_RATE = 0.05
 
 
 class LongControlSP:
@@ -22,4 +22,4 @@ class LongControlSP:
 
   @staticmethod
   def stopping_decel_rate(v_ego: float) -> float:
-    return float(np.interp(v_ego, [0.0, STOPPED_SPEED], [STOPPED_DECEL_RATE, STOPPING_DECEL_RATE]))
+    return float(np.interp(v_ego, [0.0, 0.5, 1.5], [STOPPED_DECEL_RATE, 0.15, STOPPING_DECEL_RATE]))
