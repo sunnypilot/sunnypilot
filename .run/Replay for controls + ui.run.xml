@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Replay for controls + ui" type="Multirun" separateTabs="false" reuseTabsWithFailures="false" startOneByOne="true" markFailedProcess="true" hideSuccessProcess="false" delayTime="0.0">
+    <runConfiguration name="replay for controls" type="Native Application" />
+    <runConfiguration name="Build Debug" type="Custom Build Application" />
+    <method v="2" />
+  </configuration>
+</component>
