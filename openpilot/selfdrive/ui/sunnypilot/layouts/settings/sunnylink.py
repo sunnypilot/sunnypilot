@@ -223,14 +223,14 @@ class SunnylinkLayout(Widget):
       gui_app.push_widget(self._sunnylink_pairing_dialog)
 
   def _handle_backup_btn(self):
-    backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text="Backup",
+    backup_dialog = ConfirmDialog(text=tr("Are you sure you want to backup your current sunnypilot settings?"), confirm_text=tr("Backup"),
                                   callback=self._backup_handler)
     gui_app.push_widget(backup_dialog)
 
   def _handle_restore_btn(self):
     self._restore_btn.set_enabled(False)
     restore_dialog = ConfirmDialog(text=tr("Are you sure you want to restore the last backed up sunnypilot settings?"),
-                                   confirm_text="Restore", callback=self._restore_handler)
+                                   confirm_text=tr("Restore"), callback=self._restore_handler)
     gui_app.push_widget(restore_dialog)
 
   def _backup_handler(self, dialog_result: int):
@@ -259,7 +259,7 @@ class SunnylinkLayout(Widget):
 
       if backup_status == custom.BackupManagerSP.Status.inProgress:
         self._backup_in_progress = True
-        text = tr(f"Backing up {backup_progress}%")
+        text = tr("Backing up {progress}%").format(progress=backup_progress)
         self._backup_btn.set_text(text)
 
       elif backup_status == custom.BackupManagerSP.Status.failed:
@@ -280,7 +280,7 @@ class SunnylinkLayout(Widget):
 
       if restore_status == custom.BackupManagerSP.Status.inProgress:
         self._restore_in_progress = True
-        text = tr(f"Restoring {restore_progress}%")
+        text = tr("Restoring {progress}%").format(progress=restore_progress)
         self._restore_btn.set_text(text)
 
       elif restore_status == custom.BackupManagerSP.Status.failed:
