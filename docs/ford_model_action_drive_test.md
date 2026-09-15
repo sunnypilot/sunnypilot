@@ -1,7 +1,7 @@
 # Ford selected-action drive-test branch
 
-This v13 trial increases C1's proportional gain from 0.50 to **0.75**, retaining
-I=0.25, [curvature-derived C0](ford_curvature_c0_v8.md), direct C0/C1 requests,
+This v14 trial increases C1's integral gain from 0.25 to **1.0**, retaining
+P=0.75, [curvature-derived C0](ford_curvature_c0_v8.md), direct C0/C1 requests,
 and [continuous C1 PI feedback](ford_c1_minimal_pi.md).
 Only integrated tracking error accumulates correction; C0/C1 reflect the current bounded request. C0 defaults to a 7 m circular arc from selected desired curvature. An on-device toggle can instead use max(7 m, speed × 1 second).
 [Base C1 overflow allocation to C0](ford_c1_overflow.md) remains.
@@ -12,9 +12,10 @@ turn-exit behavior and closed-loop stability remain unvalidated.
 
 Both base commands use selected, upstream-limited desired curvature. The +0.40 s
 low-speed model preview from `b720e9f1b` remains: full offset at 15 mph and below,
-tapering to zero at 30 mph. The trial changes only the immediate error correction;
-PSCM `LimitReached` handling, integral gain, field bounds, and selection are retained.
-See [P=0.75 replay results](ford_c1_p75_trial.md) for scope, tradeoffs, and reproduction.
+tapering to zero at 30 mph. The trial multiplies each fresh integral error increment
+by four, for both accumulation and retirement. P, PSCM `LimitReached` handling,
+integral arithmetic, field bounds, and selection are retained.
+See [I=1.0 replay results](ford_c1_i1_trial.md) for scope, tradeoffs, and reproduction.
 
 ## Select and restore
 
@@ -28,10 +29,10 @@ See [P=0.75 replay results](ford_c1_p75_trial.md) for scope, tradeoffs, and repr
 
 The startup event `Ford path controller selected` should report
 `FordModelActionController`. Periodic `Ford C2-free path tracking` events
-identify **`hypothesis=model-action-curvature-c0-distance-pi-v13`**. They report desired and measured
+identify **`hypothesis=model-action-curvature-c0-distance-pi-v14`**. They report desired and measured
 curvature, base heading, proportional and accumulated correction, applied heading,
 feedback timing and driver/PSCM gating. `proportional_gain=0.75` and
-`integral_gain=0.25` identify the trial. `offset_overflow` reports the extra C0
+`integral_gain=1.0` identify the trial. `offset_overflow` reports the extra C0
 target in meters before C0 amplitude limits. `calibration_approved=false`
 remains. The retired request/unwind/reversal diagnostic fields are removed.
 

@@ -1,0 +1,5837 @@
+{
+  "baseline_commit": "9a1d06061b175cc25cc325ffb2508c4d2f21459d",
+  "hypothesis": "model-action-curvature-c0-distance-pi-v14",
+  "baseline": {
+    "kp": 0.75,
+    "ki": 0.25
+  },
+  "candidate": {
+    "kp": 0.75,
+    "ki": 1.0
+  },
+  "scope": "Fixed-motion production controller and CAN replay. No predicted wheel motion or stability claim.",
+  "routes": 22,
+  "cycles": 2600956,
+  "can_round_trips": 5201912,
+  "cohorts": {
+    "all": {
+      "seconds": 12213.616273924978,
+      "mean_abs_c1_change": 0.016849810711951685,
+      "p95_abs_c1_change": 0.07850000000000001,
+      "max_abs_c1_change": 0.239,
+      "c1_bound_seconds": [
+        22.66821589999995,
+        25.13438382699823
+      ],
+      "mean_abs_integral": [
+        0.005625360617709507,
+        0.022487914174616062
+      ]
+    },
+    "small": {
+      "seconds": 10008.602198541013,
+      "mean_abs_c1_change": 0.015952114897351852,
+      "p95_abs_c1_change": 0.07900000000000007,
+      "max_abs_c1_change": 0.20850000000000002,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.0053172340986086634,
+        0.021268936394434654
+      ]
+    },
+    "bend": {
+      "seconds": 1743.6797518499732,
+      "mean_abs_c1_change": 0.018616031110278024,
+      "p95_abs_c1_change": 0.07500000000000001,
+      "max_abs_c1_change": 0.22099999999999997,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.006205265502463879,
+        0.024821062009855517
+      ]
+    },
+    "turn": {
+      "seconds": 461.3343235339901,
+      "mean_abs_c1_change": 0.02964954673099481,
+      "p95_abs_c1_change": 0.08550000000000002,
+      "max_abs_c1_change": 0.239,
+      "c1_bound_seconds": [
+        22.66821589999995,
+        25.13438382699823
+      ],
+      "mean_abs_integral": [
+        0.010118300434279815,
+        0.040115046251029886
+      ]
+    },
+    "releasing": {
+      "seconds": 112.67652746710208,
+      "mean_abs_c1_change": 0.018610171438042056,
+      "p95_abs_c1_change": 0.07450000000000001,
+      "max_abs_c1_change": 0.236,
+      "c1_bound_seconds": [
+        0.0,
+        0.0
+      ],
+      "mean_abs_integral": [
+        0.006206144066984275,
+        0.0248186267254064
+      ]
+    }
+  },
+  "tests": {
+    "passed": 468,
+    "subtests_passed": 25,
+    "red_before_gain_change": {
+      "test": "test_feedback_through_actual_controlsd_publication_and_100hz_sender",
+      "stored_i_obtained_rad": -0.005,
+      "stored_i_expected_rad": -0.02
+    }
+  },
+  "checks": [
+    "Identical C0, validity, P, feedforward, overflow and feedback/driver/PSCM gates in paired replay",
+    "Finite bounded commands, inactive zero output, zero C2/C3",
+    "Per-cycle Float32 and CAN field/mode/counter checks",
+    "Selection, downstream checksums, current references, feedback buildup/hold/release, duplicate measurements, overrides and PSCM limits in tests"
+  ],
+  "route_results": [
+    {
+      "route": "112",
+      "cycles": 108971,
+      "can_round_trips": 217942,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0679107408662434,
+          "p95": 0.26000000476837126,
+          "max": 3.119999904632568
+        },
+        "c1": {
+          "mean": 0.0062633318398034364,
+          "p95": 0.018000000536441796,
+          "max": 0.22350000000000003
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 732.0411244650002,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.021201738000058867,
+              "abs_c1": {
+                "mean": 0.024515210849581606,
+                "p95": 0.10099999999999998,
+                "max": 0.49950000000000006
+              },
+              "abs_integral": {
+                "mean": 0.0026230364363757676,
+                "p95": 0.006496550681469008,
+                "max": 0.05875507417907323
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.007871016942165793,
+                "p95": 0.019499999999999962,
+                "max": 0.1765
+              },
+              "c1_bound_seconds": 0.021201738000058867,
+              "abs_c1": {
+                "mean": 0.02962034021737638,
+                "p95": 0.11299999999999999,
+                "max": 0.49950000000000006
+              },
+              "abs_integral": {
+                "mean": 0.01049214574550307,
+                "p95": 0.025986202725876033,
+                "max": 0.23502029671629293
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 575.5544739950002,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009810255648557507,
+                "p95": 0.02949999999999997,
+                "max": 0.12450000000000006
+              },
+              "abs_integral": {
+                "mean": 0.0017324942307173103,
+                "p95": 0.0052401088157802735,
+                "max": 0.0510588071043498
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005199547416429307,
+                "p95": 0.015500000000000014,
+                "max": 0.15300000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.013642983207227363,
+                "p95": 0.033499999999999974,
+                "max": 0.276
+              },
+              "abs_integral": {
+                "mean": 0.006929976922869241,
+                "p95": 0.020960435263121094,
+                "max": 0.2042352284173992
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.7987097480011016,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.009259293000013713,
+              "abs_c1": {
+                "mean": 0.17704150943396227,
+                "p95": 0.37829999999999986,
+                "max": 0.49950000000000006
+              },
+              "abs_integral": {
+                "mean": 0.007933846904137579,
+                "p95": 0.036629439291405115,
+                "max": 0.04644093115201861
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.02383018867924528,
+                "p95": 0.11,
+                "max": 0.13949999999999996
+              },
+              "c1_bound_seconds": 0.009259293000013713,
+              "abs_c1": {
+                "mean": 0.1952867924528302,
+                "p95": 0.4065,
+                "max": 0.49950000000000006
+              },
+              "abs_integral": {
+                "mean": 0.031735387616550315,
+                "p95": 0.14651775716562046,
+                "max": 0.18576372460807444
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 11.51671385500319,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0689068100358423,
+                "p95": 0.18450000000000005,
+                "max": 0.31700000000000006
+              },
+              "abs_integral": {
+                "mean": 0.007232563102969342,
+                "p95": 0.03973685922174465,
+                "max": 0.05875243714742033
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.02169220430107527,
+                "p95": 0.11912499999999998,
+                "max": 0.1765
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08014471326164874,
+                "p95": 0.20325000000000004,
+                "max": 0.29700000000000004
+              },
+              "abs_integral": {
+                "mean": 0.02893025241187737,
+                "p95": 0.1589474368869786,
+                "max": 0.23500974858968132
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "113",
+      "cycles": 49614,
+      "can_round_trips": 99228,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1281940820409913,
+          "p95": 0.897999979019158,
+          "max": 3.260000095367432
+        },
+        "c1": {
+          "mean": 0.007644213034826094,
+          "p95": 0.0409999988079071,
+          "max": 0.1840000034570694
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 212.64164745499875,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 1.2653679959998954,
+              "abs_c1": {
+                "mean": 0.024863124260355043,
+                "p95": 0.11389999999999963,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.0023534810312514473,
+                "p95": 0.009971273107924313,
+                "max": 0.05281195032399969
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.007060142011834324,
+                "p95": 0.030000000000000027,
+                "max": 0.15850000000000009
+              },
+              "c1_bound_seconds": 1.2653679959998954,
+              "abs_c1": {
+                "mean": 0.02756752662721895,
+                "p95": 0.15400000000000003,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.00941392412500579,
+                "p95": 0.03988509243169725,
+                "max": 0.21124780129599877
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 179.12188794299846,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.006130156232437915,
+                "p95": 0.021499999999999964,
+                "max": 0.13250000000000006
+              },
+              "abs_integral": {
+                "mean": 0.0014916178534382584,
+                "p95": 0.0024270179349643738,
+                "max": 0.04252095608588342
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0044749353714735336,
+                "p95": 0.007499999999999951,
+                "max": 0.12749999999999995
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009410194447566606,
+                "p95": 0.026499999999999968,
+                "max": 0.248
+              },
+              "abs_integral": {
+                "mean": 0.005966471413753034,
+                "p95": 0.009708071739857495,
+                "max": 0.17008382434353367
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.47135535000234086,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.09318321500040838,
+              "abs_c1": {
+                "mean": 0.3889482758620689,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.01049436027302336,
+                "p95": 0.027734184191952515,
+                "max": 0.028179996860782888
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03148275862068966,
+                "p95": 0.08315000000000002,
+                "max": 0.08449999999999996
+              },
+              "c1_bound_seconds": 0.09318321500040838,
+              "abs_c1": {
+                "mean": 0.3574655172413793,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.04197744109209344,
+                "p95": 0.11093673676781006,
+                "max": 0.11271998744313155
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 2.0154650780009433,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08262182741116751,
+                "p95": 0.23519999999999994,
+                "max": 0.2915
+              },
+              "abs_integral": {
+                "mean": 0.006427684316988394,
+                "p95": 0.027552559210518864,
+                "max": 0.03378295979757318
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.019276649746192892,
+                "p95": 0.08269999999999994,
+                "max": 0.10149999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08616243654822334,
+                "p95": 0.20909999999999998,
+                "max": 0.2935
+              },
+              "abs_integral": {
+                "mean": 0.025710737267953577,
+                "p95": 0.11021023684207545,
+                "max": 0.13513183919029273
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "114",
+      "cycles": 61027,
+      "can_round_trips": 122054,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.11075714097529091,
+          "p95": 0.3999999904632565,
+          "max": 3.500000133514404
+        },
+        "c1": {
+          "mean": 0.006950018004599992,
+          "p95": 0.020000001311302196,
+          "max": 0.1435000023841858
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/route.npz": "83524f07d61104b84b004ddc46bb751ca7f61da67798aa47db56d307765f5b3e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/model_paths.npz": "14d14362d1a3e46398edd8e22b7cc4e36277a7596a73f546192d0e14c6642b07",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route114/metadata.json": "ec677b9275c1707e477ebd0ffa235d49b5ec63a1ee717b16040c3acdbcd3bdc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 336.37317285400025,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.26486993000000325,
+              "abs_c1": {
+                "mean": 0.03221699299443148,
+                "p95": 0.14849999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.00222240805300447,
+                "p95": 0.0066445507710706665,
+                "max": 0.07974432788478826
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0066456649302437006,
+                "p95": 0.019500000000000073,
+                "max": 0.239
+              },
+              "c1_bound_seconds": 0.26486993000000325,
+              "abs_c1": {
+                "mean": 0.03335981378360578,
+                "p95": 0.15900000000000003,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.008880955177855044,
+                "p95": 0.026147226684010788,
+                "max": 0.31897731153915304
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 240.46462314200022,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.007993822507015132,
+                "p95": 0.026499999999999968,
+                "max": 0.04700000000000004
+              },
+              "abs_integral": {
+                "mean": 0.0010263377903728282,
+                "p95": 0.0025266965151189372,
+                "max": 0.00722483486731534
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0030782971060015945,
+                "p95": 0.007500000000000007,
+                "max": 0.02200000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.00949625162290071,
+                "p95": 0.025999999999999968,
+                "max": 0.0645
+              },
+              "abs_integral": {
+                "mean": 0.004105351161491313,
+                "p95": 0.010106786060475749,
+                "max": 0.02889933946926136
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 3.8705651200000943,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.008836637999991126,
+              "abs_c1": {
+                "mean": 0.15352884615384615,
+                "p95": 0.26869999999999994,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.005880229500760485,
+                "p95": 0.015681274178234592,
+                "max": 0.021191918878447746
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.017554945054945054,
+                "p95": 0.04692499999999997,
+                "max": 0.0635
+              },
+              "c1_bound_seconds": 0.008836637999991126,
+              "abs_c1": {
+                "mean": 0.17085027472527475,
+                "p95": 0.30177499999999996,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.023490293500177707,
+                "p95": 0.06272509671293837,
+                "max": 0.08476767551379098
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 6.825343429000725,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08524206349206348,
+                "p95": 0.283775,
+                "max": 0.44600000000000006
+              },
+              "abs_integral": {
+                "mean": 0.006561577705735799,
+                "p95": 0.02788836032365187,
+                "max": 0.07861034449414574
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01969444444444445,
+                "p95": 0.08377499999999996,
+                "max": 0.236
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07982539682539684,
+                "p95": 0.21279999999999974,
+                "max": 0.38450000000000006
+              },
+              "abs_integral": {
+                "mean": 0.026246310822943195,
+                "p95": 0.11155344129460748,
+                "max": 0.31444137797658295
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "115",
+      "cycles": 40037,
+      "can_round_trips": 80074,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.08961574629129629,
+          "p95": 0.3500000071525573,
+          "max": 2.7699999141693112
+        },
+        "c1": {
+          "mean": 0.0072399821574947966,
+          "p95": 0.025999999523162842,
+          "max": 0.16600000059604647
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/route.npz": "e0df32d9e80f1c6b7d56327b37cf07af60070ffc212b8d111e343306148bff23",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/model_paths.npz": "52f3ed9e188e4947618a57a3ed872fd1966a887fe1014999df741553b6c13bc0",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route115/metadata.json": "d3c73035bad8eb5059e07962fd274c19cb70c8952b6f1514835d312d08b87a16",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 213.9659020539998,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.02696841783463457,
+                "p95": 0.128,
+                "max": 0.40249999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0028207935883975024,
+                "p95": 0.009055045874121797,
+                "max": 0.04108202593787511
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.008459246543128586,
+                "p95": 0.02749999999999997,
+                "max": 0.12349999999999994
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.03399990593547174,
+                "p95": 0.15849999999999997,
+                "max": 0.4145
+              },
+              "abs_integral": {
+                "mean": 0.01128317435359001,
+                "p95": 0.03622018349648719,
+                "max": 0.16432810375150045
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 163.5339389000004,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0074491447206497825,
+                "p95": 0.020000000000000018,
+                "max": 0.14350000000000002
+              },
+              "abs_integral": {
+                "mean": 0.0015983326979535743,
+                "p95": 0.003196107161509928,
+                "max": 0.030609220503551117
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004791041102633521,
+                "p95": 0.009499999999999953,
+                "max": 0.09200000000000008
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.011377645828205772,
+                "p95": 0.027224999999999454,
+                "max": 0.1995
+              },
+              "abs_integral": {
+                "mean": 0.006393330791814297,
+                "p95": 0.012784428646039712,
+                "max": 0.12243688201420447
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 1.816277430000241,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.16265945945945945,
+                "p95": 0.3188,
+                "max": 0.3435
+              },
+              "abs_integral": {
+                "mean": 0.008435998673505477,
+                "p95": 0.026209742355926314,
+                "max": 0.027929691252007473
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.025256756756756753,
+                "p95": 0.0784,
+                "max": 0.08399999999999996
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.18763513513513516,
+                "p95": 0.3674999999999999,
+                "max": 0.4115
+              },
+              "abs_integral": {
+                "mean": 0.03374399469402191,
+                "p95": 0.10483896942370526,
+                "max": 0.1117187650080299
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 2.8176726450002434,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0687280701754386,
+                "p95": 0.13150000000000006,
+                "max": 0.3875
+              },
+              "abs_integral": {
+                "mean": 0.0073796435043296795,
+                "p95": 0.027099744564434074,
+                "max": 0.040061562337451014
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.022136842105263163,
+                "p95": 0.0817,
+                "max": 0.12
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0848157894736842,
+                "p95": 0.17580000000000012,
+                "max": 0.3775
+              },
+              "abs_integral": {
+                "mean": 0.029518574017318718,
+                "p95": 0.1083989782577363,
+                "max": 0.16024624934980405
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "116",
+      "cycles": 68793,
+      "can_round_trips": 137586,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1229211861673407,
+          "p95": 0.40999998092651335,
+          "max": 3.539999895095825
+        },
+        "c1": {
+          "mean": 0.006079936824616176,
+          "p95": 0.01800000053048133,
+          "max": 0.13800000166893012
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/route.npz": "13df1d49edd0c92bd4a4236c766ee76baa6dad477824b9de4b79927c98410394",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/model_paths.npz": "85d1112b5e89340e8a955b7fe4040b3135cf1c91a54ff756826c6119cc9cc01d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route116/metadata.json": "d52fe63d013fa546524ad9522a26943d9372730d397d92d75dfd9d75c63ce766",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 286.72210779700015,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.030503001579778838,
+                "p95": 0.15300000000000002,
+                "max": 0.47650000000000003
+              },
+              "abs_integral": {
+                "mean": 0.0033524737202658963,
+                "p95": 0.014387561459565466,
+                "max": 0.07497182743948401
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009763770405476565,
+                "p95": 0.04299999999999998,
+                "max": 0.1845
+              },
+              "c1_bound_seconds": 0.671435592000023,
+              "abs_c1": {
+                "mean": 0.038242548709847286,
+                "p95": 0.199,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.013294234034174379,
+                "p95": 0.05755024583826186,
+                "max": 0.24631540621529077
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 210.98123509700002,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.008697895791583176,
+                "p95": 0.02200000000000002,
+                "max": 0.26650000000000007
+              },
+              "abs_integral": {
+                "mean": 0.0019982514293625823,
+                "p95": 0.006189819056899103,
+                "max": 0.027835628610971677
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005994059547666763,
+                "p95": 0.018500000000000016,
+                "max": 0.08349999999999991
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.013663946941502058,
+                "p95": 0.03649999999999998,
+                "max": 0.3205
+              },
+              "abs_integral": {
+                "mean": 0.00799300571745033,
+                "p95": 0.02475927622759641,
+                "max": 0.11134251444388671
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.5120789049994983,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.18606225680933852,
+                "p95": 0.3932,
+                "max": 0.473
+              },
+              "abs_integral": {
+                "mean": 0.014441379380472718,
+                "p95": 0.05100087066704865,
+                "max": 0.06895642801494907
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.037663424124513616,
+                "p95": 0.11069999999999994,
+                "max": 0.14700000000000002
+              },
+              "c1_bound_seconds": 0.13305248500012112,
+              "abs_c1": {
+                "mean": 0.223352140077821,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.05586547803758553,
+                "p95": 0.20136291428082484,
+                "max": 0.20136291428082484
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 3.7052241390005634,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08363648293963256,
+                "p95": 0.28,
+                "max": 0.4085
+              },
+              "abs_integral": {
+                "mean": 0.0060461685627225615,
+                "p95": 0.03048710479586786,
+                "max": 0.06157885155382269
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.018118110236220474,
+                "p95": 0.09100000000000008,
+                "max": 0.1845
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.09571784776902886,
+                "p95": 0.3115,
+                "max": 0.41000000000000003
+              },
+              "abs_integral": {
+                "mean": 0.024184674250890246,
+                "p95": 0.12194841918347143,
+                "max": 0.24631540621529077
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "117",
+      "cycles": 27301,
+      "can_round_trips": 54602,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.1466742382755,
+          "p95": 0.6379999847412033,
+          "max": 4.270000057220459
+        },
+        "c1": {
+          "mean": 0.0067975736498682255,
+          "p95": 0.02689999570846522,
+          "max": 0.1329999965429306
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 97.48647941900026,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 1.080442829000276,
+              "abs_c1": {
+                "mean": 0.03877728446050594,
+                "p95": 0.15499999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.0030258376269067582,
+                "p95": 0.010756124307827682,
+                "max": 0.04168730118324128
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.008995611770779557,
+                "p95": 0.03249999999999997,
+                "max": 0.125
+              },
+              "c1_bound_seconds": 1.1439440850003848,
+              "abs_c1": {
+                "mean": 0.0444916365513681,
+                "p95": 0.1795,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.012103350507627033,
+                "p95": 0.04302449723131073,
+                "max": 0.16674920473296512
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 64.59073125800023,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009182356608478815,
+                "p95": 0.022499999999999964,
+                "max": 0.3285
+              },
+              "abs_integral": {
+                "mean": 0.0018851228234443979,
+                "p95": 0.004136844270015985,
+                "max": 0.04168730118324128
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005659756857855361,
+                "p95": 0.012499999999999956,
+                "max": 0.125
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.012464931421446394,
+                "p95": 0.03249999999999997,
+                "max": 0.4485
+              },
+              "abs_integral": {
+                "mean": 0.0075404912937775915,
+                "p95": 0.01654737708006394,
+                "max": 0.16674920473296512
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 1.5604805509990456,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.1968370499998855,
+              "abs_c1": {
+                "mean": 0.21193103448275863,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.006039442388397505,
+                "p95": 0.01609851645031733,
+                "max": 0.019066524733270116
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.017024137931034484,
+                "p95": 0.048199999999999965,
+                "max": 0.05750000000000005
+              },
+              "c1_bound_seconds": 0.20686121700009608,
+              "abs_c1": {
+                "mean": 0.22895517241379307,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.02415776955359002,
+                "p95": 0.06439406580126932,
+                "max": 0.07626609893308046
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 1.5627055010002096,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05500680272108844,
+                "p95": 0.20954999999999974,
+                "max": 0.493
+              },
+              "abs_integral": {
+                "mean": 0.00604764439369993,
+                "p95": 0.01770734930480814,
+                "max": 0.021750473140390313
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.018146258503401357,
+                "p95": 0.05320000000000002,
+                "max": 0.0655
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06847959183673469,
+                "p95": 0.26879999999999976,
+                "max": 0.493
+              },
+              "abs_integral": {
+                "mean": 0.02419057757479972,
+                "p95": 0.07082939721923256,
+                "max": 0.08700189256156125
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "119",
+      "cycles": 171423,
+      "can_round_trips": 342846,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.06276063585086782,
+          "p95": 0.22999999165535012,
+          "max": 4.129999866485596
+        },
+        "c1": {
+          "mean": 0.001700052316074203,
+          "p95": 0.005499999810010203,
+          "max": 0.07549999868869783
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route119/route.npz": "415a099935fef152123b7422870442d6cfe6302bab9b8983ce3b3ffc71a7702b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route119/model_paths.npz": "dfd41383bea486ccd0a476e94e612921a44a099a0c1213ff132ab81df3aa94d7",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route119/metadata.json": "d61bd3351912f2f1a3c51f6061beffe89b430ebc50178c35abff8d1ecc1fc04d",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 616.4493080259994,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.022879044633819838,
+                "p95": 0.08849999999999997,
+                "max": 0.477
+              },
+              "abs_integral": {
+                "mean": 0.0035557028858735867,
+                "p95": 0.011533295833514612,
+                "max": 0.05010140673563736
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.010665932020765986,
+                "p95": 0.034499999999999975,
+                "max": 0.15049999999999997
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.03157016684624678,
+                "p95": 0.11299999999999999,
+                "max": 0.477
+              },
+              "abs_integral": {
+                "mean": 0.014222811543494347,
+                "p95": 0.04613318333405845,
+                "max": 0.20040562694254943
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 504.4894339889995,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009659965296475807,
+                "p95": 0.02849999999999997,
+                "max": 0.20650000000000002
+              },
+              "abs_integral": {
+                "mean": 0.003073537151304355,
+                "p95": 0.010357409587787084,
+                "max": 0.050052809883656686
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009219180677715945,
+                "p95": 0.030999999999999972,
+                "max": 0.15049999999999997
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.017190201240551272,
+                "p95": 0.043999999999999984,
+                "max": 0.324
+              },
+              "abs_integral": {
+                "mean": 0.01229414860521742,
+                "p95": 0.04142963835114834,
+                "max": 0.20021123953462674
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.4135442239995655,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.1889979338842975,
+                "p95": 0.4579750000000001,
+                "max": 0.477
+              },
+              "abs_integral": {
+                "mean": 0.006304682420922449,
+                "p95": 0.020959730189572038,
+                "max": 0.02877058225056138
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.018944214876033053,
+                "p95": 0.06297499999999999,
+                "max": 0.08649999999999997
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.20338429752066117,
+                "p95": 0.4579750000000001,
+                "max": 0.477
+              },
+              "abs_integral": {
+                "mean": 0.025218729683689795,
+                "p95": 0.08383892075828815,
+                "max": 0.11508232900224552
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 4.947533782996743,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.054997,
+                "p95": 0.17204999999999995,
+                "max": 0.3095
+              },
+              "abs_integral": {
+                "mean": 0.00708041193333067,
+                "p95": 0.035556266760510095,
+                "max": 0.050096451230684375
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.021237999999999996,
+                "p95": 0.1066499999999999,
+                "max": 0.1499999999999999
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06943899999999999,
+                "p95": 0.2005,
+                "max": 0.3095
+              },
+              "abs_integral": {
+                "mean": 0.02832164773332268,
+                "p95": 0.14222506704204038,
+                "max": 0.2003858049227375
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "11a",
+      "cycles": 235771,
+      "can_round_trips": 471542,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.060649023224496834,
+          "p95": 0.17000000953674288,
+          "max": 3.7
+        },
+        "c1": {
+          "mean": 0.0012888821849429979,
+          "p95": 0.003499999776482521,
+          "max": 0.09000000083446502
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route11a/route.npz": "428c203d090731386f06bf9fdeefe608f1999c43c52ff39cab7ee86ec0ac804f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route11a/model_paths.npz": "e2b827fd7c3dfbf66d7872a56b57eaec13c600a9a48e12dae59be81c31b0978f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route11a/metadata.json": "b7b10ccb1c0fa740779a1cf977faa4ae6714c9f9d7a0ffc39f3684680c16ae2a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 1085.65972405699,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0811529149996204,
+              "abs_c1": {
+                "mean": 0.028872780681270627,
+                "p95": 0.10299999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.0031525548137315137,
+                "p95": 0.009779860818470466,
+                "max": 0.05163860736233724
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009458226768968457,
+                "p95": 0.02949999999999997,
+                "max": 0.15450000000000008
+              },
+              "c1_bound_seconds": 0.0811529149996204,
+              "abs_c1": {
+                "mean": 0.03569595796730791,
+                "p95": 0.119,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.012610219254926055,
+                "p95": 0.039119443273881865,
+                "max": 0.20655442944934896
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 792.9897990920017,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.010998972550611405,
+                "p95": 0.034999999999999976,
+                "max": 0.14949999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0025263047200907445,
+                "p95": 0.008629716867667322,
+                "max": 0.03206209248127505
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.007579722461819473,
+                "p95": 0.025999999999999968,
+                "max": 0.09599999999999997
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.016614478157187078,
+                "p95": 0.046999999999999986,
+                "max": 0.21499999999999997
+              },
+              "abs_integral": {
+                "mean": 0.010105218880362978,
+                "p95": 0.03451886747066929,
+                "max": 0.1282483699251002
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.9525639839994255,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.1818034482758621,
+                "p95": 0.41705,
+                "max": 0.43800000000000006
+              },
+              "abs_integral": {
+                "mean": 0.009706908185546342,
+                "p95": 0.042376135732293665,
+                "max": 0.04989226346837769
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.02911379310344827,
+                "p95": 0.126925,
+                "max": 0.15000000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.20653448275862069,
+                "p95": 0.42305,
+                "max": 0.44400000000000006
+              },
+              "abs_integral": {
+                "mean": 0.03882763274218537,
+                "p95": 0.16950454292917466,
+                "max": 0.19956905387351076
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 16.958117468991986,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06595942647956071,
+                "p95": 0.12959999999999997,
+                "max": 0.485
+              },
+              "abs_integral": {
+                "mean": 0.0044412602325470205,
+                "p95": 0.01082797677155659,
+                "max": 0.05086216268590863
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01332275777913362,
+                "p95": 0.032149999999999894,
+                "max": 0.15250000000000008
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07262507626601586,
+                "p95": 0.13804999999999998,
+                "max": 0.48450000000000004
+              },
+              "abs_integral": {
+                "mean": 0.017765040930188082,
+                "p95": 0.04331190708622636,
+                "max": 0.20344865074363452
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "120",
+      "cycles": 56704,
+      "can_round_trips": 113408,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.07882976760905562,
+          "p95": 0.3099999999999996,
+          "max": 3.3499999046325684
+        },
+        "c1": {
+          "mean": 0.0017259615889606086,
+          "p95": 0.004500000354275116,
+          "max": 0.08100000369548799
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route120/route.npz": "ca40b52257af313ed0abd1109a33115a0a3227bd3438367faf282467e807a34a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route120/model_paths.npz": "9b4a21357de4076c555e8776ed36b1d5728da1307d739268a3f84e84593e12b4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route120/metadata.json": "110fe2016561722743064f2619e32f1b69164cc86015ef01c0a9fd2dd7f24bba",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 325.62925950599976,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.030654464506554548,
+                "p95": 0.15199999999999997,
+                "max": 0.33499999999999996
+              },
+              "abs_integral": {
+                "mean": 0.003955517823862945,
+                "p95": 0.011444388830362194,
+                "max": 0.05046007412564802
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.011865755627009648,
+                "p95": 0.034499999999999975,
+                "max": 0.15100000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.040620145931239186,
+                "p95": 0.1745,
+                "max": 0.4655
+              },
+              "abs_integral": {
+                "mean": 0.01582207129545178,
+                "p95": 0.045777555321448775,
+                "max": 0.20184029650259208
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 246.66445160599977,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009893204081632665,
+                "p95": 0.024999999999999967,
+                "max": 0.265
+              },
+              "abs_integral": {
+                "mean": 0.0032108240462498496,
+                "p95": 0.01003601672697885,
+                "max": 0.02773810400429211
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009632612244897958,
+                "p95": 0.030000000000000027,
+                "max": 0.08350000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.018172061224489805,
+                "p95": 0.04749999999999999,
+                "max": 0.3215
+              },
+              "abs_integral": {
+                "mean": 0.012843296184999398,
+                "p95": 0.0401440669079154,
+                "max": 0.11095241601716845
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.9512319169996317,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.16425245901639346,
+                "p95": 0.3097000000000001,
+                "max": 0.3285
+              },
+              "abs_integral": {
+                "mean": 0.008348102231228657,
+                "p95": 0.02975370515424344,
+                "max": 0.0500930606959291
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.02503934426229508,
+                "p95": 0.08920000000000003,
+                "max": 0.1499999999999999
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.18691475409836067,
+                "p95": 0.3882000000000001,
+                "max": 0.46499999999999997
+              },
+              "abs_integral": {
+                "mean": 0.03339240892491463,
+                "p95": 0.11901482061697376,
+                "max": 0.2003722427837164
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 2.2964860450003357,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07013771186440677,
+                "p95": 0.25025,
+                "max": 0.2985
+              },
+              "abs_integral": {
+                "mean": 0.006312382382329442,
+                "p95": 0.01305741504001599,
+                "max": 0.027364456315956413
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.018949152542372893,
+                "p95": 0.03899999999999995,
+                "max": 0.08200000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08518432203389832,
+                "p95": 0.254125,
+                "max": 0.3175
+              },
+              "abs_integral": {
+                "mean": 0.025249529529317766,
+                "p95": 0.05222966016006396,
+                "max": 0.10945782526382565
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "124",
+      "cycles": 5820,
+      "can_round_trips": 11640,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 2.909556870453723e-10,
+          "p95": 6.70552502413102e-10,
+          "max": 4.76837147544984e-09
+        },
+        "c1": {
+          "mean": 0.00037943271030374564,
+          "p95": 0.0010000001136213632,
+          "max": 0.0020000013113021797
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route124/route.npz": "26f8cf284e54c5f80bc7414c1302c429d4c10d54147e137fc5b8a348249e4fe5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route124/model_paths.npz": "898d75cc80f29fc50a818c29614961ca8fdf56d1e8908993662c6e92e54ebf6f",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route124/metadata.json": "8f93b186178c89a95e56177dda7f0aba740bc57dfb832cde6d5c3fd3f43a8126",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 22.732139372000063,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.010041666666666678,
+                "p95": 0.03700000000000003,
+                "max": 0.07550000000000001
+              },
+              "abs_integral": {
+                "mean": 0.0017320141082915628,
+                "p95": 0.004423945035936417,
+                "max": 0.005067714543711175
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.00520789007092199,
+                "p95": 0.013499999999999956,
+                "max": 0.015499999999999958
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.014251773049645403,
+                "p95": 0.050000000000000044,
+                "max": 0.09050000000000002
+              },
+              "abs_integral": {
+                "mean": 0.006928056433166251,
+                "p95": 0.01769578014374567,
+                "max": 0.0202708581748447
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 21.80528958800005,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.007855360443622932,
+                "p95": 0.026499999999999968,
+                "max": 0.04049999999999998
+              },
+              "abs_integral": {
+                "mean": 0.0016034443543127776,
+                "p95": 0.003182323559005106,
+                "max": 0.004554243430739982
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004823475046210727,
+                "p95": 0.009500000000000008,
+                "max": 0.013500000000000068
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01163863216266175,
+                "p95": 0.03200000000000003,
+                "max": 0.05400000000000005
+              },
+              "abs_integral": {
+                "mean": 0.00641377741725111,
+                "p95": 0.012729294236020424,
+                "max": 0.01821697372295993
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.0,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": null,
+              "c1_bound_seconds": 0.0,
+              "abs_c1": null,
+              "abs_integral": null
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": null,
+              "c1_bound_seconds": 0.0,
+              "abs_c1": null,
+              "abs_integral": null
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 0.11336761400002615,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05983333333333335,
+                "p95": 0.0714,
+                "max": 0.07250000000000001
+              },
+              "abs_integral": {
+                "mean": 0.0047767084201065695,
+                "p95": 0.004983897352200447,
+                "max": 0.005026227732320711
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.014250000000000004,
+                "p95": 0.014725000000000044,
+                "max": 0.015000000000000013
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07408333333333335,
+                "p95": 0.086125,
+                "max": 0.08750000000000002
+              },
+              "abs_integral": {
+                "mean": 0.019106833680426278,
+                "p95": 0.019935589408801788,
+                "max": 0.020104910929282845
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "125",
+      "cycles": 41717,
+      "can_round_trips": 83434,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 3.143796501787139e-10,
+          "p95": 1.3411041166477844e-09,
+          "max": 4.76837147544984e-09
+        },
+        "c1": {
+          "mean": 0.002057905473820695,
+          "p95": 0.0045000002771615755,
+          "max": 0.016000002086162535
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route125/route.npz": "8dcf304871bf5c6bf1ce206c788d7034bf5f056522faded0aa7948ff1cccbb75",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route125/model_paths.npz": "4be9c7809dabbcb52296ba93b4743146dc941e49a32aca07f008b75757703e49",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_c0_response_124_125/route125/metadata.json": "1f2b812d3c2cc8e5a2246098756940d6f8989a2591daf4d74b1ef4c8555e2d57",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 400.6387703520005,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.011855688758199511,
+                "p95": 0.04400000000000004,
+                "max": 0.08999999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0014598678186559682,
+                "p95": 0.0038109167580561484,
+                "max": 0.008547308522950069
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004381361682877179,
+                "p95": 0.011499999999999955,
+                "max": 0.026000000000000023
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.013993993314735238,
+                "p95": 0.045499999999999985,
+                "max": 0.10099999999999998
+              },
+              "abs_integral": {
+                "mean": 0.005839471274623873,
+                "p95": 0.015243667032224593,
+                "max": 0.034189234091800275
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 374.7068341230003,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009116710554600182,
+                "p95": 0.034499999999999975,
+                "max": 0.056499999999999995
+              },
+              "abs_integral": {
+                "mean": 0.0012932452919320093,
+                "p95": 0.0033324897472669437,
+                "max": 0.005299333915076451
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.003881005481513329,
+                "p95": 0.010000000000000009,
+                "max": 0.016000000000000014
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.010892089423903706,
+                "p95": 0.033499999999999974,
+                "max": 0.061
+              },
+              "abs_integral": {
+                "mean": 0.005172981167728037,
+                "p95": 0.013329958989067775,
+                "max": 0.021197335660305804
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.0,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": null,
+              "c1_bound_seconds": 0.0,
+              "abs_c1": null,
+              "abs_integral": null
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": null,
+              "c1_bound_seconds": 0.0,
+              "abs_c1": null,
+              "abs_integral": null
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 0.9176147959999799,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0395574712643678,
+                "p95": 0.07070000000000001,
+                "max": 0.07350000000000001
+              },
+              "abs_integral": {
+                "mean": 0.0046617832968676625,
+                "p95": 0.00831878619144775,
+                "max": 0.00854401622733786
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.014005747126436784,
+                "p95": 0.025000000000000022,
+                "max": 0.025500000000000023
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.045735632183908026,
+                "p95": 0.08469999999999997,
+                "max": 0.08799999999999997
+              },
+              "abs_integral": {
+                "mean": 0.01864713318747065,
+                "p95": 0.033275144765791,
+                "max": 0.03417606490935144
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "146",
+      "cycles": 53229,
+      "can_round_trips": 106458,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 3.47655752720815e-10,
+          "p95": 1.3411041166477844e-09,
+          "max": 2.8610229740877458e-08
+        },
+        "c1": {
+          "mean": 0.0005115900711566346,
+          "p95": 0.0014999999525026064,
+          "max": 0.031500009775161764
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_model_replay_146/full/route.npz": "b01db5bdd1c3b9fb83418a298571c98e60b5eb0509800d86cdaf07bafcdc6d63",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_model_replay_146/full/model_paths.npz": "11e0e9c8ce2959aac72d2f8a9cc4f6a025480034d5cd8b59b68a41b2ae3cf4a8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_model_replay_146/full/metadata.json": "2be1254dd1eee422f3b2c2011faa91a21ab431751998525105381c2886df15ca",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 388.4780471659999,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.012762826655616287,
+                "p95": 0.04949999999999999,
+                "max": 0.3355
+              },
+              "abs_integral": {
+                "mean": 0.00140430581588815,
+                "p95": 0.005196335258827,
+                "max": 0.015172675510623962
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004213332988008601,
+                "p95": 0.015499999999999958,
+                "max": 0.045499999999999985
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.016220675455181174,
+                "p95": 0.05449999999999999,
+                "max": 0.381
+              },
+              "abs_integral": {
+                "mean": 0.0056172232635526,
+                "p95": 0.020785341035308,
+                "max": 0.060690702042495846
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 360.78646303400023,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009118854401963255,
+                "p95": 0.033999999999999975,
+                "max": 0.05049999999999999
+              },
+              "abs_integral": {
+                "mean": 0.0013716561993877326,
+                "p95": 0.005183135203590487,
+                "max": 0.007088351347223891
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004115689227251181,
+                "p95": 0.015499999999999958,
+                "max": 0.02150000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.012508951727599776,
+                "p95": 0.045499999999999985,
+                "max": 0.056499999999999995
+              },
+              "abs_integral": {
+                "mean": 0.0054866247975509305,
+                "p95": 0.020732540814361947,
+                "max": 0.028353405388895563
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.40894236700091824,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.19066279069767444,
+                "p95": 0.31565,
+                "max": 0.3355
+              },
+              "abs_integral": {
+                "mean": 0.007957751897364404,
+                "p95": 0.013856116498189231,
+                "max": 0.015172675510623962
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.023872093023255804,
+                "p95": 0.04144999999999999,
+                "max": 0.045499999999999985
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.21453488372093021,
+                "p95": 0.3571,
+                "max": 0.381
+              },
+              "abs_integral": {
+                "mean": 0.031831007589457616,
+                "p95": 0.055424465992756924,
+                "max": 0.060690702042495846
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 1.7254436840005383,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05200000000000001,
+                "p95": 0.07615000000000001,
+                "max": 0.08250000000000002
+              },
+              "abs_integral": {
+                "mean": 0.0012151996422466716,
+                "p95": 0.0038294129685446866,
+                "max": 0.004117448893821465
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0036542857142857145,
+                "p95": 0.01150000000000001,
+                "max": 0.012500000000000011
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05478,
+                "p95": 0.07579999999999999,
+                "max": 0.08449999999999996
+              },
+              "abs_integral": {
+                "mean": 0.004860798568986686,
+                "p95": 0.015317651874178747,
+                "max": 0.01646979557528586
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "149",
+      "cycles": 132334,
+      "can_round_trips": 264668,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 1.604709350643841e-09,
+          "p95": 7.152557657263969e-09,
+          "max": 5.7220459037665705e-08
+        },
+        "c1": {
+          "mean": 0.0017679043919280148,
+          "p95": 0.006999999552965153,
+          "max": 0.06099999892711638
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route149/full/model_paths.npz": "19827800b8fb5983f3d6b72fcfaf36e35a40170bb17cd7c1e49374744fb449fb",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 868.9707798709996,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.6131428530001415,
+              "abs_c1": {
+                "mean": 0.03162209127149679,
+                "p95": 0.136,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.004337281571551143,
+                "p95": 0.01650708372536763,
+                "max": 0.08918479035009047
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01284689194826867,
+                "p95": 0.049500000000000044,
+                "max": 0.15300000000000002
+              },
+              "c1_bound_seconds": 2.0342576530002816,
+              "abs_c1": {
+                "mean": 0.0420766757057433,
+                "p95": 0.16599999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.017234335298924784,
+                "p95": 0.06602833490147052,
+                "max": 0.20609200757621993
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 604.4948936639992,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.007713199406992832,
+                "p95": 0.025499999999999967,
+                "max": 0.08999999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0030236965786995897,
+                "p95": 0.011242656884168022,
+                "max": 0.04031909334992459
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009070527876334684,
+                "p95": 0.03399999999999992,
+                "max": 0.12050000000000005
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01537781720053971,
+                "p95": 0.045499999999999985,
+                "max": 0.20350000000000001
+              },
+              "abs_integral": {
+                "mean": 0.012094786314798359,
+                "p95": 0.04497062753667209,
+                "max": 0.16127637339969836
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 7.399390565000289,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.07936514100018144,
+              "abs_c1": {
+                "mean": 0.19698214285714286,
+                "p95": 0.41437500000000005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.012288441990071225,
+                "p95": 0.026923379371695266,
+                "max": 0.08918479035009047
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.033258597883597876,
+                "p95": 0.07799999999999996,
+                "max": 0.14849999999999997
+              },
+              "c1_bound_seconds": 0.33763480800018897,
+              "abs_c1": {
+                "mean": 0.22675661375661374,
+                "p95": 0.49500000000000005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.04675622793929329,
+                "p95": 0.10769351748678106,
+                "max": 0.20609200757621993
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 10.132018413998935,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07184088762983946,
+                "p95": 0.25464999999999993,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.00714488337355485,
+                "p95": 0.02195984718049444,
+                "max": 0.04376451988220944
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0214395656279509,
+                "p95": 0.06605000000000001,
+                "max": 0.13149999999999995
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08528328611898019,
+                "p95": 0.2513999999999996,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.0285795334942194,
+                "p95": 0.08783938872197776,
+                "max": 0.17505807952883776
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "151",
+      "cycles": 325708,
+      "can_round_trips": 651416,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 5.766340730466527e-10,
+          "p95": 1.4901164746561335e-09,
+          "max": 5.7220458593576495e-08
+        },
+        "c1": {
+          "mean": 3.426637813015064e-10,
+          "p95": 1.2814998506804898e-09,
+          "max": 1.478195188475695e-08
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route151/full/model_paths.npz": "980b3843cec04254280d744a5801cee1bf0f8ef371052398327ff245f9eee01b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_route151/full/metadata.json": "937825317a0edd470c54647240b922be8f79dda5b3365ffdd61281f0aca877a1",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 1084.8179876659942,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.014936758306503251,
+                "p95": 0.04749999999999999,
+                "max": 0.4375
+              },
+              "abs_integral": {
+                "mean": 0.0019418257276221315,
+                "p95": 0.005625704402760605,
+                "max": 0.03233720884592278
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005825853382447092,
+                "p95": 0.01699999999999996,
+                "max": 0.09699999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01987303413529789,
+                "p95": 0.0605,
+                "max": 0.4505
+              },
+              "abs_integral": {
+                "mean": 0.007767302910488526,
+                "p95": 0.02250281761104242,
+                "max": 0.12934883538369113
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 957.2288755179943,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.008267932622547484,
+                "p95": 0.02899999999999997,
+                "max": 0.08599999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0016168772813897417,
+                "p95": 0.004567673943774199,
+                "max": 0.020690765904718463
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004851528820474,
+                "p95": 0.013500000000000068,
+                "max": 0.062000000000000055
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.012207647256745113,
+                "p95": 0.03949999999999998,
+                "max": 0.121
+              },
+              "abs_integral": {
+                "mean": 0.006467509125558967,
+                "p95": 0.018270695775096796,
+                "max": 0.08276306361887385
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.251548027998979,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.20821524663677132,
+                "p95": 0.3335,
+                "max": 0.36150000000000004
+              },
+              "abs_integral": {
+                "mean": 0.010254632432079117,
+                "p95": 0.024046521245485956,
+                "max": 0.03007593815192481
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03074439461883408,
+                "p95": 0.07209999999999991,
+                "max": 0.09000000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.23895964125560543,
+                "p95": 0.3982999999999999,
+                "max": 0.4505
+              },
+              "abs_integral": {
+                "mean": 0.04101852972831647,
+                "p95": 0.09618608498194382,
+                "max": 0.12030375260769924
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 5.7115867560314655,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04280703259005145,
+                "p95": 0.11049999999999958,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.0034756048575463475,
+                "p95": 0.0075551430254932675,
+                "max": 0.019872955944572817
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.010411663807890228,
+                "p95": 0.022849999999999985,
+                "max": 0.0595
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05202315608919382,
+                "p95": 0.10804999999999994,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.01390241943018539,
+                "p95": 0.03022057210197307,
+                "max": 0.07949182377829127
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "a0",
+      "cycles": 114582,
+      "can_round_trips": 229164,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.02570244338167474,
+          "p95": 0.08000000059604684,
+          "max": 1.4500001144409183
+        },
+        "c1": {
+          "mean": 0.018378171080823867,
+          "p95": 0.045500003528594984,
+          "max": 0.14200000262260437
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/route.npz": "01ce8b0361c3154d07d5449525a650baa2cc261675095cb1f04ec9e37a9174d3",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/model_paths.npz": "5d0c69d10a6d13882b47d950ae64c4d98f7ca2b59eab27e4e9557eef3bc4917b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea0/metadata.json": "00496a11afbee475e9b5d66838a4d1663a3c0063cd562b4d1408cce6d71e586e",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 926.827608547,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 7.184738287000073,
+              "abs_c1": {
+                "mean": 0.03568002998598481,
+                "p95": 0.10699999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.01616910489294493,
+                "p95": 0.04236463705264313,
+                "max": 0.06301604275554723
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.04850755625088274,
+                "p95": 0.127,
+                "max": 0.189
+              },
+              "c1_bound_seconds": 7.270400228000085,
+              "abs_c1": {
+                "mean": 0.08144671512227981,
+                "p95": 0.2005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.06467577102861112,
+                "p95": 0.16945854821057252,
+                "max": 0.2520641710221889
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 793.4103597689999,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.02200562168472882,
+                "p95": 0.055499999999999994,
+                "max": 0.127
+              },
+              "abs_integral": {
+                "mean": 0.01652707806850015,
+                "p95": 0.04262118756823333,
+                "max": 0.06301604275554723
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.049582605771427125,
+                "p95": 0.128,
+                "max": 0.189
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07022719601025354,
+                "p95": 0.18,
+                "max": 0.268
+              },
+              "abs_integral": {
+                "mean": 0.0661083122740006,
+                "p95": 0.17048475027293333,
+                "max": 0.2520641710221889
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 3.0652132199998903,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.8483222440000873,
+              "abs_c1": {
+                "mean": 0.2672641843971631,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.011424585260094532,
+                "p95": 0.038749330713255786,
+                "max": 0.050081575387856445
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03425354609929077,
+                "p95": 0.11645000000000004,
+                "max": 0.15000000000000002
+              },
+              "c1_bound_seconds": 0.8580964770001174,
+              "abs_c1": {
+                "mean": 0.2889290780141844,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.045693671463492555,
+                "p95": 0.15499732285302315,
+                "max": 0.20032630155142578
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 3.6424934670006905,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0757661971830986,
+                "p95": 0.27590000000000003,
+                "max": 0.396
+              },
+              "abs_integral": {
+                "mean": 0.011695752806756726,
+                "p95": 0.03839227809390158,
+                "max": 0.05417303373752463
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03508309859154929,
+                "p95": 0.11499999999999999,
+                "max": 0.1625000000000001
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.09862394366197183,
+                "p95": 0.27095,
+                "max": 0.396
+              },
+              "abs_integral": {
+                "mean": 0.046783011227026904,
+                "p95": 0.15356911237560633,
+                "max": 0.2166921349500985
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "a2",
+      "cycles": 71111,
+      "can_round_trips": 142222,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.04191847719972587,
+          "p95": 0.11000001072883592,
+          "max": 2.5599999904632567
+        },
+        "c1": {
+          "mean": 0.01939190874727061,
+          "p95": 0.06499999994449318,
+          "max": 0.15299999666213993
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/route.npz": "af4128d278be6be0042f72a02255ddbec96a8a5aa435b9852c8202e4a5cb39e5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/model_paths.npz": "5a5a7c4fc30c7b3bc7f2413daa8b11fe86b69dd3249e8df2d35b0a0636a49717",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea2/metadata.json": "cfecd240216e409a1e2591c6c2e6f0bad002ecd2a50c8f6dbf22a8f9174708da",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 362.6477764930001,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 4.459983808000175,
+              "abs_c1": {
+                "mean": 0.04167496323427398,
+                "p95": 0.1205,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.016493412286619748,
+                "p95": 0.05373980803378555,
+                "max": 0.0693615907458025
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.04937148644523988,
+                "p95": 0.16149999999999998,
+                "max": 0.20850000000000002
+              },
+              "c1_bound_seconds": 4.459983808000175,
+              "abs_c1": {
+                "mean": 0.08672904353616916,
+                "p95": 0.2865,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.06597364914647899,
+                "p95": 0.2149592321351422,
+                "max": 0.27744636298321
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 290.97134975200026,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.022101711914231364,
+                "p95": 0.0595,
+                "max": 0.10849999999999999
+              },
+              "abs_integral": {
+                "mean": 0.015820556149433493,
+                "p95": 0.04418057884913681,
+                "max": 0.0693615907458025
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.04746363479163064,
+                "p95": 0.1325,
+                "max": 0.20850000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0683340134878091,
+                "p95": 0.185,
+                "max": 0.3115
+              },
+              "abs_integral": {
+                "mean": 0.06328222459773397,
+                "p95": 0.17672231539654723,
+                "max": 0.27744636298321
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.3960744589988963,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.5771308549993819,
+              "abs_c1": {
+                "mean": 0.2992292576419214,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.010560165550642769,
+                "p95": 0.023925644955181513,
+                "max": 0.027573475143414895
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.028967248908296946,
+                "p95": 0.07200000000000001,
+                "max": 0.08250000000000002
+              },
+              "c1_bound_seconds": 0.5771308549993819,
+              "abs_c1": {
+                "mean": 0.31621834061135373,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.042240662202571076,
+                "p95": 0.09570257982072605,
+                "max": 0.11029390057365958
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 2.0893869870001254,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.10120769230769232,
+                "p95": 0.38389999999999963,
+                "max": 0.4885
+              },
+              "abs_integral": {
+                "mean": 0.014333096323723843,
+                "p95": 0.03329530335109902,
+                "max": 0.06640541183528922
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.042976923076923086,
+                "p95": 0.10000000000000003,
+                "max": 0.1995
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.13044102564102564,
+                "p95": 0.3730499999999998,
+                "max": 0.488
+              },
+              "abs_integral": {
+                "mean": 0.05733238529489537,
+                "p95": 0.1331812134043961,
+                "max": 0.2656216473411569
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "a5",
+      "cycles": 38961,
+      "can_round_trips": 77922,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0678814615486646,
+          "p95": 0.23999999046325726,
+          "max": 2.549999809265137
+        },
+        "c1": {
+          "mean": 0.01143658678334302,
+          "p95": 0.03199999850988389,
+          "max": 0.1399999998807907
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/route.npz": "815d1e248ff5c3e5e5cfc11dfbd0690d0d13ddafe1436890e239975a72dae9b8",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/model_paths.npz": "72e014b844322df6318f6af588c27175ce68d9a37bda62b70eafca5bdfe6dfe4",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea5/metadata.json": "c533b06d1b7c598330b36b117bdb3624221bc4193ded8354246d5c86f36b2628",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 281.78537111799994,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 3.1221818889999327,
+              "abs_c1": {
+                "mean": 0.03506284162766604,
+                "p95": 0.14149999999999996,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.007543155431029828,
+                "p95": 0.01973582628047163,
+                "max": 0.03643085280880848
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.022619770640563034,
+                "p95": 0.05900000000000005,
+                "max": 0.10950000000000004
+              },
+              "c1_bound_seconds": 3.1221818889999327,
+              "abs_c1": {
+                "mean": 0.05577810724875852,
+                "p95": 0.18200000000000005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.03017258591230251,
+                "p95": 0.07894330512188652,
+                "max": 0.1457234112352339
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 213.48442901700008,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.011879631375506747,
+                "p95": 0.026499999999999968,
+                "max": 0.08549999999999996
+              },
+              "abs_integral": {
+                "mean": 0.00703602778884671,
+                "p95": 0.019147569568558447,
+                "max": 0.02354246238145113
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.021106038465164505,
+                "p95": 0.057499999999999996,
+                "max": 0.07050000000000001
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.031190581691335907,
+                "p95": 0.07550000000000001,
+                "max": 0.1305
+              },
+              "abs_integral": {
+                "mean": 0.02814411115538684,
+                "p95": 0.07659027827423379,
+                "max": 0.09416984952580452
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 3.357601107000278,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.42073437099998046,
+              "abs_c1": {
+                "mean": 0.20920532915360504,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.011797339836996953,
+                "p95": 0.02881326106826214,
+                "max": 0.036251738887660895
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03518652037617555,
+                "p95": 0.08609999999999993,
+                "max": 0.10850000000000004
+              },
+              "c1_bound_seconds": 0.42073437099998046,
+              "abs_c1": {
+                "mean": 0.2440846394984326,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.047188311899122516,
+                "p95": 0.11525304427304855,
+                "max": 0.14500695555064358
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 1.565259798999719,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07110062893081759,
+                "p95": 0.3864999999999999,
+                "max": 0.499
+              },
+              "abs_integral": {
+                "mean": 0.006097622312778354,
+                "p95": 0.026022275684688696,
+                "max": 0.02650300082161693
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.018305031446540873,
+                "p95": 0.07805000000000005,
+                "max": 0.07950000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08376415094339625,
+                "p95": 0.3826499999999999,
+                "max": 0.499
+              },
+              "abs_integral": {
+                "mean": 0.024390489251113416,
+                "p95": 0.10408910273875478,
+                "max": 0.10601200328646772
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "a9",
+      "cycles": 286319,
+      "can_round_trips": 572638,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0574873679806263,
+          "p95": 0.24000002861022907,
+          "max": 1.8600000095367433
+        },
+        "c1": {
+          "mean": 0.013711528090603754,
+          "p95": 0.04250000014156102,
+          "max": 0.2065000006556511
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 1231.1594245750002,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 1.1985475469998619,
+              "abs_c1": {
+                "mean": 0.022867414765759143,
+                "p95": 0.0595,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.009658753747081847,
+                "p95": 0.03749426570797019,
+                "max": 0.05315341445442142
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.028953450249366366,
+                "p95": 0.11250000000000004,
+                "max": 0.15949999999999998
+              },
+              "c1_bound_seconds": 1.3800707329994566,
+              "abs_c1": {
+                "mean": 0.050228566756602075,
+                "p95": 0.16549999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.03861303635361464,
+                "p95": 0.14997706283188075,
+                "max": 0.21261365781768568
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 1104.0355057850002,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01549124294557954,
+                "p95": 0.04349999999999998,
+                "max": 0.14400000000000002
+              },
+              "abs_integral": {
+                "mean": 0.010027030376340966,
+                "p95": 0.03780110194655233,
+                "max": 0.05315341445442142
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.030082455804454657,
+                "p95": 0.11349999999999999,
+                "max": 0.15949999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0442128679923051,
+                "p95": 0.15499999999999997,
+                "max": 0.237
+              },
+              "abs_integral": {
+                "mean": 0.040108121505363865,
+                "p95": 0.15120440778620933,
+                "max": 0.21261365781768568
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 3.045776381998209,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.17680746200016983,
+              "abs_c1": {
+                "mean": 0.25675161290322585,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.007977660311571523,
+                "p95": 0.021650212160243706,
+                "max": 0.03588939079874956
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.023306451612903224,
+                "p95": 0.06432500000000002,
+                "max": 0.10749999999999993
+              },
+              "c1_bound_seconds": 0.19958685599999626,
+              "abs_c1": {
+                "mean": 0.2763741935483871,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.03141913157717249,
+                "p95": 0.08548241577566816,
+                "max": 0.14355756319499824
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 8.186633558998594,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07688680387409201,
+                "p95": 0.26737500000000003,
+                "max": 0.3655
+              },
+              "abs_integral": {
+                "mean": 0.005015000359865008,
+                "p95": 0.016210886470230314,
+                "max": 0.027260043988701885
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.014982445520581112,
+                "p95": 0.04874999999999996,
+                "max": 0.07100000000000006
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08780629539951575,
+                "p95": 0.26925,
+                "max": 0.382
+              },
+              "abs_integral": {
+                "mean": 0.019994121122344322,
+                "p95": 0.06484354588092126,
+                "max": 0.09815674756729216
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "b8",
+      "cycles": 160431,
+      "can_round_trips": 320862,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.09075655656311847,
+          "p95": 0.3199999809265135,
+          "max": 3.8600001049041746
+        },
+        "c1": {
+          "mean": 0.016863607866581948,
+          "p95": 0.05200000042468308,
+          "max": 0.2869999998062849
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/route.npz": "6f5dd369b70eaed4b95b28c8b25c9f2e9b830fa07a334881a185505481667c8b",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/model_paths.npz": "939af6cf7e74251d8842581cc078d26d9fbfd22a0d7817cb0e368697d419b615",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb8/metadata.json": "73b439132d1de37ec187b544c04d2b05c80965065515a4b7dec29ba57ae37e7c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 465.3759713629988,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 1.536421163000341,
+              "abs_c1": {
+                "mean": 0.03867700923263206,
+                "p95": 0.14150000000000001,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.010396216535404445,
+                "p95": 0.03747970543898043,
+                "max": 0.07454461948325858
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.031177852494107983,
+                "p95": 0.11249999999999999,
+                "max": 0.22350000000000003
+              },
+              "c1_bound_seconds": 1.5793523149986868,
+              "abs_c1": {
+                "mean": 0.06699170792882009,
+                "p95": 0.242,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.04158486614161778,
+                "p95": 0.14991882175592172,
+                "max": 0.2981784779330343
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 341.72108557001775,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.019711061047795745,
+                "p95": 0.056499999999999995,
+                "max": 0.2825
+              },
+              "abs_integral": {
+                "mean": 0.009962255868444585,
+                "p95": 0.03856530506403394,
+                "max": 0.06944635649081674
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.029887092499337395,
+                "p95": 0.11549999999999999,
+                "max": 0.20850000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04833785375622111,
+                "p95": 0.174,
+                "max": 0.365
+              },
+              "abs_integral": {
+                "mean": 0.03984902347377834,
+                "p95": 0.15426122025613576,
+                "max": 0.27778542596326694
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 3.148538213048596,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.1776992299928679,
+              "abs_c1": {
+                "mean": 0.19679375000000002,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.010200459740250956,
+                "p95": 0.020271306771841316,
+                "max": 0.02852053737224022
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0304203125,
+                "p95": 0.061,
+                "max": 0.08600000000000008
+              },
+              "c1_bound_seconds": 0.1776992299928679,
+              "abs_c1": {
+                "mean": 0.21505468749999998,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.040801838961003825,
+                "p95": 0.08108522708736526,
+                "max": 0.11408214948896088
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 4.61631620406115,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05585670103092783,
+                "p95": 0.21649999999999958,
+                "max": 0.39050000000000007
+              },
+              "abs_integral": {
+                "mean": 0.00885962087560036,
+                "p95": 0.025279123475325835,
+                "max": 0.06940317490843757
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.026575257731958766,
+                "p95": 0.07590000000000004,
+                "max": 0.20800000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07613092783505154,
+                "p95": 0.2474,
+                "max": 0.4
+              },
+              "abs_integral": {
+                "mean": 0.03543848350240144,
+                "p95": 0.10111649390130334,
+                "max": 0.2776126996337503
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "b9",
+      "cycles": 90774,
+      "can_round_trips": 181548,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.0779309579021297,
+          "p95": 0.3100000107288361,
+          "max": 4.5400001907348635
+        },
+        "c1": {
+          "mean": 0.008044334523298988,
+          "p95": 0.024500000361353164,
+          "max": 0.21399999999999997
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 680.5921192759997,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.9690469479999706,
+              "abs_c1": {
+                "mean": 0.026402434515093703,
+                "p95": 0.1225,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.0025416092779144014,
+                "p95": 0.006679298666558443,
+                "max": 0.04642423533760058
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.007617140701956783,
+                "p95": 0.020000000000000018,
+                "max": 0.13949999999999996
+              },
+              "c1_bound_seconds": 0.9690469479999706,
+              "abs_c1": {
+                "mean": 0.030871699871322725,
+                "p95": 0.14899999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.010163763520286657,
+                "p95": 0.026717194666233773,
+                "max": 0.18569694135040232
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 528.1952906039994,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009545512588385536,
+                "p95": 0.02749999999999997,
+                "max": 0.26350000000000007
+              },
+              "abs_integral": {
+                "mean": 0.001877767213804321,
+                "p95": 0.0041559233066762995,
+                "max": 0.04642423533760058
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005632097047780594,
+                "p95": 0.012499999999999956,
+                "max": 0.13949999999999996
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.013126550915778853,
+                "p95": 0.034499999999999975,
+                "max": 0.374
+              },
+              "abs_integral": {
+                "mean": 0.007511068855217284,
+                "p95": 0.016623693226705198,
+                "max": 0.18569694135040232
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 4.03264079499948,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.2518290070000262,
+              "abs_c1": {
+                "mean": 0.21187682926829268,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.008061425380712547,
+                "p95": 0.025935265290567725,
+                "max": 0.032433572370031784
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.024064634146341465,
+                "p95": 0.07804999999999997,
+                "max": 0.09750000000000003
+              },
+              "c1_bound_seconds": 0.2518290070000262,
+              "abs_c1": {
+                "mean": 0.22372926829268297,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.03222470684385121,
+                "p95": 0.1037410611622709,
+                "max": 0.12973428948012714
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 10.882075623000304,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06680436802973977,
+                "p95": 0.18000000000000005,
+                "max": 0.403
+              },
+              "abs_integral": {
+                "mean": 0.0046093853034825175,
+                "p95": 0.022194804222032277,
+                "max": 0.04282043361774647
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.013813197026022305,
+                "p95": 0.066625,
+                "max": 0.12849999999999995
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07529135687732341,
+                "p95": 0.20187500000000003,
+                "max": 0.40800000000000003
+              },
+              "abs_integral": {
+                "mean": 0.018421541551495908,
+                "p95": 0.0887792168881291,
+                "max": 0.17128173447098588
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "ca",
+      "cycles": 327448,
+      "can_round_trips": 654896,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.015992715429034462,
+          "p95": 0.05000000029802365,
+          "max": 1.0699999809265135
+        },
+        "c1": {
+          "mean": 0.003733989703050476,
+          "p95": 0.009999999975319963,
+          "max": 0.11399999868869781
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/route.npz": "ae9d46770eaf0dbbac6af86aebc926320eed0cf114eb43d5f78b0676e8e0dbf9",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/model_paths.npz": "bf17deb442383aaa79432566cd382df24a1bbbbd0521d0cafab956618f5bdd96",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_routeca/metadata.json": "a759d5cdf878df8b05d91db637b1935b6b4bdd87af96f0f256b67e7d809b3525",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 999.6971771089911,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.871117996999601,
+              "abs_c1": {
+                "mean": 0.012556625984766936,
+                "p95": 0.04199999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.001239621133297858,
+                "p95": 0.004404552810243706,
+                "max": 0.03605733148287095
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.003718912555715422,
+                "p95": 0.013000000000000012,
+                "max": 0.10799999999999998
+              },
+              "c1_bound_seconds": 0.871117996999601,
+              "abs_c1": {
+                "mean": 0.01537002585799234,
+                "p95": 0.045999999999999985,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.004958484533191432,
+                "p95": 0.017618211240974825,
+                "max": 0.1442293259314838
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 894.5175882330013,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.008051044618360108,
+                "p95": 0.025999999999999968,
+                "max": 0.1305
+              },
+              "abs_integral": {
+                "mean": 0.0010852453196161383,
+                "p95": 0.004369385660310908,
+                "max": 0.025085144775993145
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0032557403409346477,
+                "p95": 0.013000000000000012,
+                "max": 0.07500000000000007
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01045964332298836,
+                "p95": 0.02999999999999997,
+                "max": 0.16549999999999998
+              },
+              "abs_integral": {
+                "mean": 0.004340981278464553,
+                "p95": 0.017477542641243633,
+                "max": 0.10034057910397258
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.8064431289967615,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.20270111999889195,
+              "abs_c1": {
+                "mean": 0.2648561643835617,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.005020996319381341,
+                "p95": 0.009502816111739901,
+                "max": 0.030205617941309142
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.015075342465753419,
+                "p95": 0.028599999999999924,
+                "max": 0.09099999999999997
+              },
+              "c1_bound_seconds": 0.20270111999889195,
+              "abs_c1": {
+                "mean": 0.27993150684931506,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.020083985277525362,
+                "p95": 0.038011264446959604,
+                "max": 0.12082247176523657
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 6.8833717230081675,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.03921575846833578,
+                "p95": 0.07750000000000001,
+                "max": 0.11450000000000005
+              },
+              "abs_integral": {
+                "mean": 0.002765968900637435,
+                "p95": 0.009111749265981805,
+                "max": 0.03457990942887293
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.00829013254786451,
+                "p95": 0.02749999999999998,
+                "max": 0.10399999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04557511045655375,
+                "p95": 0.09360000000000004,
+                "max": 0.1915
+              },
+              "abs_integral": {
+                "mean": 0.01106387560254974,
+                "p95": 0.03644699706392722,
+                "max": 0.13831963771549172
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "route": "raptor02",
+      "cycles": 132881,
+      "can_round_trips": 265762,
+      "baseline_difference_from_recorded_path": {
+        "c0": {
+          "mean": 0.01159572992270899,
+          "p95": 0.06918421261012586,
+          "max": 0.39572428941726656
+        },
+        "c1": {
+          "mean": 0.017694949745761752,
+          "p95": 0.045999999999999985,
+          "max": 0.11740966669842601
+        }
+      },
+      "source_sha256": {
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/route.npz": "8a4cfe53994988d053b47d9caadf21ebd064fd20e598fa05ddc2da245bd0e980",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/model_paths.npz": "d5dc6f72d91472b8f2fb1add1680cdaea1e122774ddd6d8519fd7673daf71bb5",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/.cache/ford_raptor_route02/metadata.json": "9602e08efc2bd784133837c4156c075bb89bad3bedd6b309f15e884ed20e338a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8"
+      },
+      "cohorts": {
+        "all": {
+          "seconds": 592.9243753840037,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.017850244208526957,
+                "p95": 0.04700000000000004,
+                "max": 0.2565
+              },
+              "abs_integral": {
+                "mean": 0.011705370512567934,
+                "p95": 0.03514309594203327,
+                "max": 0.05920220463143979
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03511692331173896,
+                "p95": 0.10549999999999993,
+                "max": 0.1775
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04973421971983856,
+                "p95": 0.14549999999999996,
+                "max": 0.3095
+              },
+              "abs_integral": {
+                "mean": 0.046821482050271736,
+                "p95": 0.14057238376813308,
+                "max": 0.23680881852575916
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 544.8536588620009,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.015593179049939112,
+                "p95": 0.04249999999999998,
+                "max": 0.08199999999999996
+              },
+              "abs_integral": {
+                "mean": 0.01195640654501521,
+                "p95": 0.036629134355118415,
+                "max": 0.05920220463143979
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.035870095596648575,
+                "p95": 0.10999999999999999,
+                "max": 0.1775
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05073035470416714,
+                "p95": 0.15100000000000002,
+                "max": 0.258
+              },
+              "abs_integral": {
+                "mean": 0.04782562618006084,
+                "p95": 0.14651653742047366,
+                "max": 0.23680881852575916
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 0.18602708199978224,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.21066666666666667,
+                "p95": 0.253525,
+                "max": 0.2565
+              },
+              "abs_integral": {
+                "mean": 0.013346821049402966,
+                "p95": 0.017395032007995706,
+                "max": 0.017586923863221245
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.04,
+                "p95": 0.05214999999999999,
+                "max": 0.05299999999999999
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.24827777777777774,
+                "p95": 0.305675,
+                "max": 0.3095
+              },
+              "abs_integral": {
+                "mean": 0.053387284197611865,
+                "p95": 0.06958012803198282,
+                "max": 0.07034769545288498
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 3.565696897007001,
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.03655555555555554,
+                "p95": 0.05049999999999999,
+                "max": 0.05349999999999999
+              },
+              "abs_integral": {
+                "mean": 0.011158109876857033,
+                "p95": 0.027747077211486715,
+                "max": 0.028660951303543385
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.033459064327485376,
+                "p95": 0.08300000000000002,
+                "max": 0.08600000000000008
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.031640350877192976,
+                "p95": 0.057924999999999977,
+                "max": 0.07550000000000001
+              },
+              "abs_integral": {
+                "mean": 0.04463243950742813,
+                "p95": 0.11098830884594686,
+                "max": 0.11464380521417354
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "points": [
+    {
+      "route": "149",
+      "label": "right entry",
+      "t": 319.54876946,
+      "c1": [
+        0.419,
+        0.484
+      ],
+      "stored_i": [
+        0.02158999510831112,
+        0.08635998043324448
+      ],
+      "desired_angle": -178.08517456054688,
+      "actual_angle": -97.80000305175781,
+      "clean": true
+    },
+    {
+      "route": "149",
+      "label": "left entry",
+      "t": 820.797358331,
+      "c1": [
+        -0.4595,
+        -0.5
+      ],
+      "stored_i": [
+        -0.020957814210675784,
+        -0.08243796299594727
+      ],
+      "desired_angle": 182.4056854248047,
+      "actual_angle": 80.0999984741211,
+      "clean": true
+    },
+    {
+      "route": "149",
+      "label": "right release",
+      "t": 850.497395513,
+      "c1": [
+        0.067,
+        0.0010000000000000009
+      ],
+      "stored_i": [
+        -0.022043793611652845,
+        -0.08817517444661138
+      ],
+      "desired_angle": -63.7685432434082,
+      "actual_angle": -76.30000305175781,
+      "clean": true
+    },
+    {
+      "route": "149",
+      "label": "near center on right release",
+      "t": 851.330749595,
+      "c1": [
+        0.01050000000000001,
+        -0.04600000000000004
+      ],
+      "stored_i": [
+        -0.018929469421363025,
+        -0.0757178776854521
+      ],
+      "desired_angle": -18.825239181518555,
+      "actual_angle": -19.899999618530273,
+      "clean": true
+    },
+    {
+      "route": "151",
+      "label": "right entry",
+      "t": 306.8910060340004,
+      "c1": [
+        0.32699999999999996,
+        0.3725
+      ],
+      "stored_i": [
+        0.015048795068939143,
+        0.06019518027575657
+      ],
+      "desired_angle": -125.05401611328125,
+      "actual_angle": -49.099998474121094,
+      "clean": true
+    },
+    {
+      "route": "151",
+      "label": "right still behind",
+      "t": 307.9987168460002,
+      "c1": [
+        0.26749999999999996,
+        0.3625
+      ],
+      "stored_i": [
+        0.03176095992208441,
+        0.12704383968833763
+      ],
+      "desired_angle": -118.6932144165039,
+      "actual_angle": -96.5999984741211,
+      "clean": true
+    },
+    {
+      "route": "151",
+      "label": "left entry",
+      "t": 2363.8068579950013,
+      "c1": [
+        -0.34099999999999997,
+        -0.37850000000000006
+      ],
+      "stored_i": [
+        -0.012471471370072287,
+        -0.04988588548028915
+      ],
+      "desired_angle": 137.1013641357422,
+      "actual_angle": 64.0999984741211,
+      "clean": true
+    }
+  ],
+  "sweep": {
+    "149": {
+      "settings": [
+        {
+          "kp": 0.75,
+          "ki": 0.25
+        },
+        {
+          "kp": 0.75,
+          "ki": 0.5
+        },
+        {
+          "kp": 0.75,
+          "ki": 1.0
+        },
+        {
+          "kp": 0.75,
+          "ki": 2.0
+        }
+      ],
+      "cycles": 132334,
+      "can_round_trips": 529336,
+      "cohorts": {
+        "all": {
+          "seconds": 868.9707798709996,
+          "abs_c1_change": {
+            "mean": 0.00433035507347147,
+            "p95": 0.016500000000000015,
+            "max": 0.08250000000000002
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.6131428530001415,
+              "abs_c1": {
+                "mean": 0.03162209127149679,
+                "p95": 0.136,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.004337281571551143,
+                "p95": 0.01650708372536763,
+                "max": 0.08918479035009047
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.00433035507347147,
+                "p95": 0.016500000000000015,
+                "max": 0.08250000000000002
+              },
+              "c1_bound_seconds": 0.8661807760001068,
+              "abs_c1": {
+                "mean": 0.034866424465767404,
+                "p95": 0.14550000000000002,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.00867254835569256,
+                "p95": 0.03301416745073526,
+                "max": 0.1648141763135125
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01284689194826867,
+                "p95": 0.049500000000000044,
+                "max": 0.15300000000000002
+              },
+              "c1_bound_seconds": 2.0342576530002816,
+              "abs_c1": {
+                "mean": 0.0420766757057433,
+                "p95": 0.16599999999999998,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.017234335298924784,
+                "p95": 0.06602833490147052,
+                "max": 0.20609200757621993
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0296857530246141,
+                "p95": 0.11450000000000002,
+                "max": 0.3065000000000001
+              },
+              "c1_bound_seconds": 3.1126114620002454,
+              "abs_c1": {
+                "mean": 0.057423277940017614,
+                "p95": 0.21599999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.03426454861464544,
+                "p95": 0.13193595463395166,
+                "max": 0.3501392538096381
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 604.4948936639992,
+          "abs_c1_change": {
+            "mean": 0.0030207052787633473,
+            "p95": 0.011000000000000032,
+            "max": 0.040000000000000036
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.007713199406992832,
+                "p95": 0.025499999999999967,
+                "max": 0.08999999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0030236965786995897,
+                "p95": 0.011242656884168022,
+                "max": 0.04031909334992459
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0030207052787633473,
+                "p95": 0.011000000000000032,
+                "max": 0.040000000000000036
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.009920402112171647,
+                "p95": 0.03249999999999997,
+                "max": 0.128
+              },
+              "abs_integral": {
+                "mean": 0.0060473931573991795,
+                "p95": 0.022485313768336044,
+                "max": 0.08063818669984918
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.009070527876334684,
+                "p95": 0.03399999999999992,
+                "max": 0.12050000000000005
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01537781720053971,
+                "p95": 0.045499999999999985,
+                "max": 0.20350000000000001
+              },
+              "abs_integral": {
+                "mean": 0.012094786314798359,
+                "p95": 0.04497062753667209,
+                "max": 0.16127637339969836
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.021164426232238936,
+                "p95": 0.07899999999999996,
+                "max": 0.28200000000000003
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.02701315110022821,
+                "p95": 0.08899999999999997,
+                "max": 0.354
+              },
+              "abs_integral": {
+                "mean": 0.024189572629596718,
+                "p95": 0.08994125507334418,
+                "max": 0.3225527467993967
+              }
+            }
+          ]
+        },
+        "bend_10_to_45deg": {
+          "seconds": 202.44166298800042,
+          "abs_c1_change": {
+            "mean": 0.006008955223880598,
+            "p95": 0.018500000000000016,
+            "max": 0.04400000000000004
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.055536517412935325,
+                "p95": 0.09849999999999998,
+                "max": 0.20950000000000002
+              },
+              "abs_integral": {
+                "mean": 0.006008600582458532,
+                "p95": 0.01852658671469967,
+                "max": 0.043767406726204765
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.006008955223880598,
+                "p95": 0.018500000000000016,
+                "max": 0.04400000000000004
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06024383084577114,
+                "p95": 0.10950000000000004,
+                "max": 0.2425
+              },
+              "abs_integral": {
+                "mean": 0.012017201164917064,
+                "p95": 0.03705317342939934,
+                "max": 0.08753481345240953
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01802858208955224,
+                "p95": 0.055499999999999994,
+                "max": 0.13150000000000006
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07023669154228857,
+                "p95": 0.136,
+                "max": 0.3145
+              },
+              "abs_integral": {
+                "mean": 0.02403440232983413,
+                "p95": 0.07410634685879867,
+                "max": 0.17506962690481906
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.04206087064676617,
+                "p95": 0.1295,
+                "max": 0.3065000000000001
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0921794776119403,
+                "p95": 0.1985,
+                "max": 0.462
+              },
+              "abs_integral": {
+                "mean": 0.04806880465966826,
+                "p95": 0.14821269371759735,
+                "max": 0.3501392538096381
+              }
+            }
+          ]
+        },
+        "turn_over_45deg": {
+          "seconds": 62.034223219000054,
+          "abs_c1_change": {
+            "mean": 0.011617632732586461,
+            "p95": 0.026000000000000023,
+            "max": 0.08250000000000002
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.6131428530001415,
+              "abs_c1": {
+                "mean": 0.18662169183308974,
+                "p95": 0.4155,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.01168667851206402,
+                "p95": 0.026164839919689434,
+                "max": 0.08918479035009047
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.011617632732586461,
+                "p95": 0.026000000000000023,
+                "max": 0.08250000000000002
+              },
+              "c1_bound_seconds": 0.8661807760001068,
+              "abs_c1": {
+                "mean": 0.19520068192888457,
+                "p95": 0.442,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.023345128409878933,
+                "p95": 0.05232967983937887,
+                "max": 0.1648141763135125
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.032745332034421176,
+                "p95": 0.07750000000000001,
+                "max": 0.15300000000000002
+              },
+              "c1_bound_seconds": 2.0342576530002816,
+              "abs_c1": {
+                "mean": 0.21041508361747038,
+                "p95": 0.46599999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.04513841012321181,
+                "p95": 0.10465935967875774,
+                "max": 0.20609200757621993
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.07235841857444392,
+                "p95": 0.16200000000000003,
+                "max": 0.297
+              },
+              "c1_bound_seconds": 3.1126114620002454,
+              "abs_c1": {
+                "mean": 0.24040940087676574,
+                "p95": 0.4995,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.08741692510522363,
+                "p95": 0.20931871935751548,
+                "max": 0.3393527489650057
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 7.399390565000289,
+          "abs_c1_change": {
+            "mean": 0.012160714285714287,
+            "p95": 0.027125000000000024,
+            "max": 0.08150000000000002
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.07936514100018144,
+              "abs_c1": {
+                "mean": 0.19698214285714286,
+                "p95": 0.41437500000000005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.012288441990071225,
+                "p95": 0.026923379371695266,
+                "max": 0.08918479035009047
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.012160714285714287,
+                "p95": 0.027125000000000024,
+                "max": 0.08150000000000002
+              },
+              "c1_bound_seconds": 0.12292100000027517,
+              "abs_c1": {
+                "mean": 0.20798412698412697,
+                "p95": 0.448,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.024535567518490998,
+                "p95": 0.05384675874339053,
+                "max": 0.1648141763135125
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.033258597883597876,
+                "p95": 0.07799999999999996,
+                "max": 0.14849999999999997
+              },
+              "c1_bound_seconds": 0.33763480800018897,
+              "abs_c1": {
+                "mean": 0.22675661375661374,
+                "p95": 0.49500000000000005,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.04675622793929329,
+                "p95": 0.10769351748678106,
+                "max": 0.20609200757621993
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.07096891534391535,
+                "p95": 0.15024999999999997,
+                "max": 0.2955
+              },
+              "c1_bound_seconds": 0.592189894000029,
+              "abs_c1": {
+                "mean": 0.2598108465608466,
+                "p95": 0.5,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.0890280554899707,
+                "p95": 0.21538703497356212,
+                "max": 0.3377261900220666
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 10.132018413998935,
+          "abs_c1_change": {
+            "mean": 0.007144475920679891,
+            "p95": 0.022049999999999972,
+            "max": 0.04400000000000004
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07184088762983946,
+                "p95": 0.25464999999999993,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.00714488337355485,
+                "p95": 0.02195984718049444,
+                "max": 0.04376451988220944
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.007144475920679891,
+                "p95": 0.022049999999999972,
+                "max": 0.04400000000000004
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.07623371104815865,
+                "p95": 0.2519999999999996,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.0142897667471097,
+                "p95": 0.04391969436098888,
+                "max": 0.08752903976441888
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0214395656279509,
+                "p95": 0.06605000000000001,
+                "max": 0.13149999999999995
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.08528328611898019,
+                "p95": 0.2513999999999996,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.0285795334942194,
+                "p95": 0.08783938872197776,
+                "max": 0.17505807952883776
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.05002266288951842,
+                "p95": 0.15364999999999984,
+                "max": 0.3065
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.10592492917847028,
+                "p95": 0.2949499999999996,
+                "max": 0.481
+              },
+              "abs_integral": {
+                "mean": 0.0571590669884388,
+                "p95": 0.17567877744395552,
+                "max": 0.3501161590576755
+              }
+            }
+          ]
+        }
+      }
+    },
+    "151": {
+      "settings": [
+        {
+          "kp": 0.75,
+          "ki": 0.25
+        },
+        {
+          "kp": 0.75,
+          "ki": 0.5
+        },
+        {
+          "kp": 0.75,
+          "ki": 1.0
+        },
+        {
+          "kp": 0.75,
+          "ki": 2.0
+        }
+      ],
+      "cycles": 325708,
+      "can_round_trips": 1302832,
+      "cohorts": {
+        "all": {
+          "seconds": 1084.8179876659942,
+          "abs_c1_change": {
+            "mean": 0.0019417964871911461,
+            "p95": 0.005500000000000005,
+            "max": 0.03250000000000003
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.014936758306503251,
+                "p95": 0.04749999999999999,
+                "max": 0.4375
+              },
+              "abs_integral": {
+                "mean": 0.0019418257276221315,
+                "p95": 0.005625704402760605,
+                "max": 0.03233720884592278
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0019417964871911461,
+                "p95": 0.005500000000000005,
+                "max": 0.03250000000000003
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01645981981313268,
+                "p95": 0.05099999999999999,
+                "max": 0.4375
+              },
+              "abs_integral": {
+                "mean": 0.003883651455244263,
+                "p95": 0.01125140880552121,
+                "max": 0.06467441769184556
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.005825853382447092,
+                "p95": 0.01699999999999996,
+                "max": 0.09699999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.01987303413529789,
+                "p95": 0.0605,
+                "max": 0.4505
+              },
+              "abs_integral": {
+                "mean": 0.007767302910488526,
+                "p95": 0.02250281761104242,
+                "max": 0.12934883538369113
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01357645879918721,
+                "p95": 0.03949999999999998,
+                "max": 0.22649999999999998
+              },
+              "c1_bound_seconds": 0.7085463900011746,
+              "abs_c1": {
+                "mean": 0.027131465897176583,
+                "p95": 0.07850000000000001,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.01552299598794133,
+                "p95": 0.04500563522208484,
+                "max": 0.25869767076738226
+              }
+            }
+          ]
+        },
+        "small_under_10deg": {
+          "seconds": 957.2288755179943,
+          "abs_c1_change": {
+            "mean": 0.0016169484575105683,
+            "p95": 0.004500000000000004,
+            "max": 0.02100000000000002
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.008267932622547484,
+                "p95": 0.02899999999999997,
+                "max": 0.08599999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0016168772813897417,
+                "p95": 0.004567673943774199,
+                "max": 0.020690765904718463
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0016169484575105683,
+                "p95": 0.004500000000000004,
+                "max": 0.02100000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.00945622253065002,
+                "p95": 0.03200000000000003,
+                "max": 0.08949999999999997
+              },
+              "abs_integral": {
+                "mean": 0.0032337545627794833,
+                "p95": 0.009135347887548398,
+                "max": 0.041381531809436926
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.004851528820474,
+                "p95": 0.013500000000000068,
+                "max": 0.062000000000000055
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.012207647256745113,
+                "p95": 0.03949999999999998,
+                "max": 0.121
+              },
+              "abs_integral": {
+                "mean": 0.006467509125558967,
+                "p95": 0.018270695775096796,
+                "max": 0.08276306361887385
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.011317493112947658,
+                "p95": 0.03199999999999997,
+                "max": 0.14500000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.018199098900174546,
+                "p95": 0.05299999999999999,
+                "max": 0.20000000000000007
+              },
+              "abs_integral": {
+                "mean": 0.012935018251117933,
+                "p95": 0.03654139155019359,
+                "max": 0.1655261272377477
+              }
+            }
+          ]
+        },
+        "bend_10_to_45deg": {
+          "seconds": 112.00189528999817,
+          "abs_c1_change": {
+            "mean": 0.003423709764430858,
+            "p95": 0.008500000000000008,
+            "max": 0.020000000000000073
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04494223161301923,
+                "p95": 0.08799999999999997,
+                "max": 0.15600000000000003
+              },
+              "abs_integral": {
+                "mean": 0.0034250566102884445,
+                "p95": 0.008494719073927964,
+                "max": 0.0198920286087438
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.003423709764430858,
+                "p95": 0.008500000000000008,
+                "max": 0.020000000000000073
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04800854162920337,
+                "p95": 0.09299999999999997,
+                "max": 0.1725
+              },
+              "abs_integral": {
+                "mean": 0.006850113220576889,
+                "p95": 0.016989438147855928,
+                "max": 0.0397840572174876
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.010272253191871967,
+                "p95": 0.025499999999999967,
+                "max": 0.06000000000000005
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.0544955493616256,
+                "p95": 0.10349999999999998,
+                "max": 0.20550000000000002
+              },
+              "abs_integral": {
+                "mean": 0.013700226441153778,
+                "p95": 0.033978876295711856,
+                "max": 0.0795681144349752
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.02397370077324223,
+                "p95": 0.0595,
+                "max": 0.13950000000000007
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06762569681711923,
+                "p95": 0.12850000000000006,
+                "max": 0.27349999999999997
+              },
+              "abs_integral": {
+                "mean": 0.027400452882307556,
+                "p95": 0.06795775259142371,
+                "max": 0.1591362288699504
+              }
+            }
+          ]
+        },
+        "turn_over_45deg": {
+          "seconds": 15.587216858001739,
+          "abs_c1_change": {
+            "mean": 0.01124661071659135,
+            "p95": 0.027299999999999946,
+            "max": 0.03250000000000003
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.20894867656552618,
+                "p95": 0.33799999999999997,
+                "max": 0.4375
+              },
+              "abs_integral": {
+                "mean": 0.011243344804680191,
+                "p95": 0.02726361113732335,
+                "max": 0.03233720884592278
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.01124661071659135,
+                "p95": 0.027299999999999946,
+                "max": 0.03250000000000003
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.21994544867656554,
+                "p95": 0.36,
+                "max": 0.4375
+              },
+              "abs_integral": {
+                "mean": 0.022486689609360382,
+                "p95": 0.0545272222746467,
+                "max": 0.06467441769184556
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03372207876049063,
+                "p95": 0.08199999999999996,
+                "max": 0.09699999999999998
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.24192123950936087,
+                "p95": 0.40729999999999994,
+                "max": 0.4505
+              },
+              "abs_integral": {
+                "mean": 0.044973379218720765,
+                "p95": 0.1090544445492934,
+                "max": 0.12934883538369113
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.077619754680439,
+                "p95": 0.17049999999999998,
+                "max": 0.22649999999999998
+              },
+              "c1_bound_seconds": 0.7085463900011746,
+              "abs_c1": {
+                "mean": 0.2848105229180116,
+                "p95": 0.49829999999999997,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.08913896439283807,
+                "p95": 0.19646876521731874,
+                "max": 0.25869767076738226
+              }
+            }
+          ]
+        },
+        "turn_entry_behind": {
+          "seconds": 2.251548027998979,
+          "abs_c1_change": {
+            "mean": 0.010253363228699552,
+            "p95": 0.02434999999999993,
+            "max": 0.030000000000000027
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.20821524663677132,
+                "p95": 0.3335,
+                "max": 0.36150000000000004
+              },
+              "abs_integral": {
+                "mean": 0.010254632432079117,
+                "p95": 0.024046521245485956,
+                "max": 0.03007593815192481
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.010253363228699552,
+                "p95": 0.02434999999999993,
+                "max": 0.030000000000000027
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.21846860986547081,
+                "p95": 0.3566499999999999,
+                "max": 0.391
+              },
+              "abs_integral": {
+                "mean": 0.020509264864158234,
+                "p95": 0.04809304249097191,
+                "max": 0.06015187630384962
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.03074439461883408,
+                "p95": 0.07209999999999991,
+                "max": 0.09000000000000002
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.23895964125560543,
+                "p95": 0.3982999999999999,
+                "max": 0.4505
+              },
+              "abs_integral": {
+                "mean": 0.04101852972831647,
+                "p95": 0.09618608498194382,
+                "max": 0.12030375260769924
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.07070403587443948,
+                "p95": 0.15614999999999998,
+                "max": 0.21050000000000002
+              },
+              "c1_bound_seconds": 0.07475004499974602,
+              "abs_c1": {
+                "mean": 0.27891928251121073,
+                "p95": 0.47984999999999994,
+                "max": 0.5
+              },
+              "abs_integral": {
+                "mean": 0.08128829884235061,
+                "p95": 0.1900719475629414,
+                "max": 0.24060750521539848
+              }
+            }
+          ]
+        },
+        "turn_releasing_excess_steering": {
+          "seconds": 5.7115867560314655,
+          "abs_c1_change": {
+            "mean": 0.0034708404802744433,
+            "p95": 0.007899999999999983,
+            "max": 0.019999999999999962
+          },
+          "settings": [
+            {
+              "kp": 0.75,
+              "ki": 0.25,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0,
+                "p95": 0.0,
+                "max": 0.0
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04280703259005145,
+                "p95": 0.11049999999999958,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.0034756048575463475,
+                "p95": 0.0075551430254932675,
+                "max": 0.019872955944572817
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 0.5,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.0034708404802744433,
+                "p95": 0.007899999999999983,
+                "max": 0.019999999999999962
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.04585077186963978,
+                "p95": 0.10429999999999999,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.006951209715092695,
+                "p95": 0.015110286050986535,
+                "max": 0.039745911889145634
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 1.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.010411663807890228,
+                "p95": 0.022849999999999985,
+                "max": 0.0595
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.05202315608919382,
+                "p95": 0.10804999999999994,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.01390241943018539,
+                "p95": 0.03022057210197307,
+                "max": 0.07949182377829127
+              }
+            },
+            {
+              "kp": 0.75,
+              "ki": 2.0,
+              "abs_c1_change_from_baseline": {
+                "mean": 0.024315608919382517,
+                "p95": 0.0531,
+                "max": 0.139
+              },
+              "c1_bound_seconds": 0.0,
+              "abs_c1": {
+                "mean": 0.06461663807890224,
+                "p95": 0.14259999999999992,
+                "max": 0.38550000000000006
+              },
+              "abs_integral": {
+                "mean": 0.02780483886037078,
+                "p95": 0.06044114420394614,
+                "max": 0.15898364755658254
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "current_source_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+    "tools/ford_pscm_lab/proportional_replay.py": "67ead868ae7f9ab1e3753c8e5a072cf6162cf6ffdc70e2e1b70439076b8ebb85"
+  }
+}

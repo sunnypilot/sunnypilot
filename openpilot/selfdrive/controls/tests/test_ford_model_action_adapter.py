@@ -248,9 +248,9 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
   frame = 0
   # Every fresh error sample integrates within amplitude headroom.
   # Matched steering removes P and preserves I.
-  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.005),
-                                           (sign*.004, 0., 100, sign*.005), (sign*.005, 0., 100, 0.),
-                                           (sign*.003, 0., 100, sign*.005), (0., 1.0625, 5, 0.)]:
+  for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.02),
+                                           (sign*.004, 0., 100, sign*.02), (sign*.005, 0., 100, 0.),
+                                           (sign*.003, 0., 100, sign*.02), (0., 1.0625, 5, 0.)]:
     for _ in range(count):
       now = 1.+frame*.01
       controls.curvature, cs.steeringTorque = measured, torque
@@ -305,7 +305,7 @@ def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, s
   assert controller.diagnostics['pscm_limited'] is service_valid
   assert controller.core.proportional == pytest.approx(.015)
   # All three fresh samples may integrate unless the valid PSCM limit blocks it.
-  assert controller.core.correction == pytest.approx(0. if service_valid else .00015)
+  assert controller.core.correction == pytest.approx(0. if service_valid else .0006)
   assert cc.latActive and controls.ford_path.valid
 
 
@@ -338,7 +338,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
                 'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert_current_request(core, controls.desired_curvature, cs.vEgo)
-    increment = .25*speed*(controls.desired_curvature-controls.curvature)*.01
+    increment = speed*(controls.desired_curvature-controls.curvature)*.01
     assert abs(core.correction-before[2]) <= abs(increment)+1e-10
     msg = custom.CarControlSP.new_message()
     exec(publication, {'self': controls, 'CC_SP': msg})
@@ -355,7 +355,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v13'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v14'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
@@ -394,7 +394,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
                 'time': SimpleNamespace(monotonic=lambda now=now: now)})
     assert_current_request(core, controls.desired_curvature, cs.vEgo)
     if frame == 129:
-      assert 0. < sign*core.correction < .02
+      assert 0. < sign*core.correction < .08
     if frame == 130:
       # Zero measured error removes P, but does not arbitrarily erase I.
       assert core.correction == before[2]
@@ -413,7 +413,7 @@ def test_unwind_and_catchup_through_selected_request_and_actual_can(pipeline, si
     packet = next(packet for packet in packets if packet[0] == address)
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
   assert controls.ford_path.path_angle == pytest.approx(core.correction, abs=.00025)
-  assert 0. < sign*core.correction < .02
+  assert 0. < sign*core.correction < .08
   assert controls.ford_path.path_offset == pytest.approx(0.)
 
 

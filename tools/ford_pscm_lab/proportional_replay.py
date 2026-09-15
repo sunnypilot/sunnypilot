@@ -1,4 +1,4 @@
-"""Compare P gains using production adapters and fixed recorded motion.
+"""Compare explicit PI gains using production adapters and fixed recorded motion.
 
 This checks command behavior, not counterfactual tracking or stability. Original
 selected curvature is retained, including each route's original model/delay.
@@ -21,6 +21,7 @@ from tools.ford_pscm_lab.model_action_replay import WireCheck, sample, table
 
 
 GAINS = (.50, .75)
+DEFAULT_SETTINGS = tuple((kp, .25) for kp in GAINS)
 DIAGNOSTICS = ('heading_feedforward', 'heading_proportional', 'heading_correction',
                'feedback_enabled', 'pscm_limited', 'driver_override', 'offset_overflow')
 
@@ -31,7 +32,9 @@ def describe(values, mask):
           'max': float(np.max(values))} if len(values) else None
 
 
-def replay(route, output):
+def replay(route, output, settings=DEFAULT_SETTINGS):
+  if len(settings) < 2 or any(len(pair) != 2 or not np.isfinite(pair).all() or min(pair) < 0. for pair in settings):
+    raise ValueError('Provide at least two finite, nonnegative P:I pairs')
   label, source = route.split('=', 1)
   directory = Path(source).resolve()
   destination = output.resolve()/label
@@ -58,11 +61,11 @@ def replay(route, output):
             & cs['can_valid'].astype(bool) & pa['valid'].astype(bool) & exact
             & r['model']['valid'][mi].astype(bool) & (abs(cc['t']-t) < .005)
             & (t-pa['t'] >= 0.) & (t-pa['t'] <= .15))
-  controllers = [FordModelActionController(proportional_gain=kp, integral_gain=.25, c0_time_based=False) for kp in GAINS]
-  commands = np.zeros((2, len(t), 4))
-  valid = np.zeros((2, len(t)), bool)
-  diagnostics = np.zeros((2, len(t), len(DIAGNOSTICS)))
-  reasons = [Counter(), Counter()]
+  controllers = [FordModelActionController(proportional_gain=kp, integral_gain=ki, c0_time_based=False) for kp, ki in settings]
+  commands = np.zeros((len(settings), len(t), 4))
+  valid = np.zeros((len(settings), len(t)), bool)
+  diagnostics = np.zeros((len(settings), len(t), len(DIAGNOSTICS)))
+  reasons = [Counter() for _ in settings]
   wire = WireCheck()
   for i, now in enumerate(t):
     status = SimpleNamespace(valid=bool(ps['valid'][i] and ps['status_valid'][i]), canMonoTime=round(ps['stamp'][i]*1e9),
@@ -82,11 +85,14 @@ def replay(route, output):
   assert np.isfinite(commands).all() and np.isfinite(diagnostics).all()
   assert (abs(commands[:, :, :2]) <= [5.1100001, .5000001]).all()
   assert (commands[:, :, 2:] == 0.).all() and (commands[~valid] == 0.).all()
-  np.testing.assert_array_equal(valid[0], valid[1])
-  np.testing.assert_array_equal(commands[0, :, 0], commands[1, :, 0])
-  np.testing.assert_array_equal(diagnostics[0, :, [0, 3, 4, 5, 6]], diagnostics[1, :, [0, 3, 4, 5, 6]])
-  np.testing.assert_allclose(diagnostics[1, :, 1], 1.5*diagnostics[0, :, 1], rtol=1e-12, atol=1e-12)
-  assert reasons[0] == reasons[1]
+  for k, (kp, _) in enumerate(settings):
+    np.testing.assert_array_equal(valid[0], valid[k])
+    np.testing.assert_array_equal(commands[0, :, 0], commands[k, :, 0])
+    np.testing.assert_array_equal(diagnostics[0, :, [0, 3, 4, 5, 6]], diagnostics[k, :, [0, 3, 4, 5, 6]])
+    expected_p = kp*np.maximum(7., cs['speed'])*(c['desired']-c['measured'])*diagnostics[k, :, 3]
+    np.testing.assert_allclose(diagnostics[k, :, 1], expected_p, rtol=1e-12, atol=1e-12)
+    assert (diagnostics[k, diagnostics[k, :, 3] == 0., 1:3] == 0.).all()
+    assert reasons[0] == reasons[k]
 
   driver = (cs['pressed'] > 0.) | (abs(cs['torque']) > 1.) | ((ps['status_valid'] > 0) & (ps['limit'] == 3))
   bad = driver | ~valid[0] | (diagnostics[0, :, 3] == 0.)
@@ -106,18 +112,22 @@ def replay(route, output):
   cohorts = {}
   for name, mask in masks.items():
     cohorts[name] = {'seconds': float(weights[mask].sum()), 'abs_c1_change': describe(abs(change), mask),
-                     'settings': [{'kp': kp, 'c1_bound_seconds': float(weights[mask & (abs(commands[k, :, 1]) >= .4995)].sum()),
+                     'settings': [{'kp': kp, 'ki': ki,
+                                   'abs_c1_change_from_baseline': describe(abs(commands[k, :, 1]-commands[0, :, 1]), mask),
+                                   'c1_bound_seconds': float(weights[mask & (abs(commands[k, :, 1]) >= .4995)].sum()),
                                    'abs_c1': describe(abs(commands[k, :, 1]), mask),
-                                   'abs_integral': describe(abs(diagnostics[k, :, 2]), mask)} for k, kp in enumerate(GAINS)]}
+                                   'abs_integral': describe(abs(diagnostics[k, :, 2]), mask)} for k, (kp, ki) in enumerate(settings)]}
   paired = clean[1:] & clean[:-1]
   step = np.diff(commands[:, :, 1], axis=1)
-  step_metrics = [{'kp': kp, 'abs_c1_per_cycle_change': describe(abs(step[k]), paired)} for k, kp in enumerate(GAINS)]
+  step_metrics = [{'kp': kp, 'ki': ki, 'abs_c1_per_cycle_change': describe(abs(step[k]), paired)} for k, (kp, ki) in enumerate(settings)]
   rec = sample(r['path'], t, nearest=True)
   rec_mask = clean & (rec['valid'] > 0) & (abs(rec['t']-t) < .005)
   baseline_comparison = {name: describe(abs(commands[0, :, idx]-rec[name]), rec_mask) for idx, name in enumerate(('c0', 'c1'))}
   sources = (directory/'route.npz', directory/'model_paths.npz', directory/'metadata.json',
              Path(__file__).resolve(), Path(ford_model_action.__file__).resolve())
-  report = {'scope': __doc__, 'route': label, 'cycles': len(t), 'gains': list(GAINS), 'ki': .25,
+  report = {'scope': __doc__, 'route': label, 'cycles': len(t), 'gains': [kp for kp, _ in settings],
+            'settings': [{'kp': kp, 'ki': ki} for kp, ki in settings],
+            'ki': settings[0][1] if len({ki for _, ki in settings}) == 1 else None,
             'can_round_trips': wire.count, 'validity_and_c0_and_gates_identical': True,
             'status_counts': dict(reasons[0]), 'cohorts': cohorts, 'per_cycle_changes': step_metrics,
             'baseline_difference_from_recorded_path': baseline_comparison,
@@ -126,6 +136,7 @@ def replay(route, output):
   destination.mkdir(parents=True, exist_ok=True)
   (destination/'report.json').write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
   np.savez_compressed(destination/'commands.npz', t=t-metadata['t0'], commands=commands, valid=valid,
+                      settings=np.array(settings),
                       diagnostics=diagnostics, diagnostic_names=DIAGNOSTICS, clean=clean,
                       driver=driver, speed=cs['speed'], desired=c['desired'], measured=c['measured'])
   return report
@@ -136,12 +147,19 @@ if __name__ == '__main__':
   parser.add_argument('--routes', nargs='+', required=True, help='label=extract-directory pairs')
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--workers', type=int, default=4)
+  parser.add_argument('--settings', nargs='+', help='Explicit P:I pairs; defaults to 0.50:0.25 and 0.75:0.25')
   args = parser.parse_args()
+  try:
+    settings = tuple(tuple(float(v) for v in pair.split(':')) for pair in args.settings) if args.settings else DEFAULT_SETTINGS
+    if len(settings) < 2 or any(len(pair) != 2 or not np.isfinite(pair).all() or min(pair) < 0. for pair in settings):
+      raise ValueError
+  except ValueError:
+    parser.error('Settings require at least two finite, nonnegative P:I pairs')
   labels = [route.split('=', 1)[0] for route in args.routes]
   if len(set(labels)) != len(labels) or any(Path(label).name != label or label in ('.', '..') for label in labels):
     parser.error('Route labels must be unique directory names')
   with ProcessPoolExecutor(max_workers=args.workers) as pool:
-    jobs = {pool.submit(replay, route, args.output): route for route in args.routes}
+    jobs = {pool.submit(replay, route, args.output, settings): route for route in args.routes}
     for job in as_completed(jobs):
       result = job.result()
       print(json.dumps({'route': result['route'], 'cycles': result['cycles'], 'can_round_trips': result['can_round_trips'],
