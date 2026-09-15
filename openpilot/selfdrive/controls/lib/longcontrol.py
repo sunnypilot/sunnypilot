@@ -7,8 +7,6 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
-STOPPING_DECEL_RATE = 0.3  # m/s^2/s while trying to stop
-
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
 
@@ -70,7 +68,7 @@ class LongControl:
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
         # TODO: can we just go straight to stopAccel?
-        output_accel -= STOPPING_DECEL_RATE * DT_CTRL
+        output_accel -= 1.0 * DT_CTRL  # m/s^2/s while trying to stop
       self.reset()
 
     else:  # LongCtrlState.pid
