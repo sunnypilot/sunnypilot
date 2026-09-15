@@ -40,6 +40,7 @@ def long_control_state_trans(CP_SP, active, long_control_state,
 
   return long_control_state
 
+
 class LongControl(LongControlSP):
   def __init__(self, CP, CP_SP):
     self.CP = CP
@@ -66,7 +67,7 @@ class LongControl(LongControlSP):
 
     elif self.long_control_state == LongCtrlState.stopping:
       output_accel = self.last_output_accel
-      if output_accel > self.CP.stopAccel and not LongControlSP.should_hold_stopping(self, CS, a_target):
+      if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
         # TODO: can we just go straight to stopAccel?
         output_accel -= self.stopping_decel_rate(CS.vEgo) * DT_CTRL
