@@ -48,6 +48,8 @@ jobs:
           submodules: true
 
       - name: Download Model Chunks in Parallel
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           mkdir -p /tmp/model_chunks
           echo '${{ toJson(matrix.artifact.chunks) }}' > chunks.json
@@ -63,10 +65,13 @@ jobs:
           with open(manifest_path, "w") as f:
             f.write(str(len(chunks)))
           base_dir = os.environ["BASE_DIR"]
+          hf_token = os.environ.get("HF_TOKEN", "")
           with open("/tmp/curl_config.txt", "w") as f:
             for c in chunks:
               fn = c["file_name"]
               f.write(f"url = \"{base_dir}/{fn}\"\noutput = \"/tmp/model_chunks/{fn}\"\n")
+              if hf_token:
+                f.write(f"header = \"Authorization: Bearer {hf_token}\"\n")
           '
           curl -Z --parallel-immediate --parallel-max 16 -s -S -f -L -K /tmp/curl_config.txt
 
