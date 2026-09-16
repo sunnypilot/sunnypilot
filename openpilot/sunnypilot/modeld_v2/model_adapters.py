@@ -8,7 +8,18 @@ import codecs
 import pickle
 import numpy as np
 from tinygrad.tensor import Tensor
-from tinygrad_repo.examples.openpilot.helpers import allocate_inputs
+from tinygrad.dtype import DType, dtypes
+from tinygrad.device import Buffer
+from tinygrad.uop.ops import UOp
+from tinygrad.helpers import round_up
+import math
+from openpilot.common.basedir import BASEDIR
+from pathlib import Path
+from openpilot.sunnypilot.modeld_v2.helpers import DynamicTinygradUnpickler
+
+def input_view(buffer: Buffer, shape: tuple[int, ...], dtype: DType, offset: int) -> Tensor:
+  view = buffer.view(math.prod(shape), dtype, offset).ensure_allocated()
+  return Tensor(UOp.from_buffer(view)).reshape(shape)
 
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import MODELD_INPUTS, make_input_queues as make_stock_input_queues
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -142,33 +153,72 @@ class NativeTinygradAdapter(BaseModelAdapter):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.is_native = True
-    variant = self.jits['variants'][f'{self.cam_w}x{self.cam_h}']
-    self.input_specs = variant['input_specs']
-    self.packed_specs = variant['packed_specs']
-    self.run_model = variant['run']
+    self.input_specs = self.jits['input_specs']
+    self.packed_specs = self.jits['packed_specs']
+
+    self.model_device = self.input_specs['new_img'][2]
+    self.input_shapes = {name: (shape, np.dtype(dtype)) for name, (shape, dtype, _) in self.input_specs.items()}
+    self.state_pairs = {name: f'next_{name}' for name in self.input_shapes if f'next_{name}' in self.jits['metadata']['output_shapes']}
+
+    stride, y_height, uv_height, _ = get_nv12_info(self.cam_w, self.cam_h)
+    self.frame_copy_size = stride * (y_height + uv_height)
+
+    self.input_shapes_orig = self.jits['metadata']['input_shapes']
+    self._vision_input_names = [k for k in self.input_shapes_orig if 'img' in k]
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
-    self._vision_input_names = ['img', 'big_img']
+
     self.reset_warmup_buffers()
     self._init_common()
 
+    warp_dir = Path(BASEDIR) / "sunnypilot/modeld_v2/models"
+    with open(warp_dir / f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl', 'rb') as f:
+      self.run_warp = DynamicTinygradUnpickler(f).load()['run']
+    self.run_model = self.jits['run']
+
+    self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
+    for name, next_name in self.state_pairs.items():
+      state = self.input_queues[name]
+      self.outputs[next_name] = input_view(state._buffer(), state.shape, state.dtype, 0)
+
   def copy_frames(self, bufs):
-    for key, buf in bufs.items():
-      data = buf.data if hasattr(buf, 'data') else buf
-      if key in self.frame_views:
-        np.copyto(self.frame_views[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_views[key].size))
+    for i, key in enumerate(self._vision_input_names):
+      if key in bufs:
+        data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
+        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
 
   def reset_warmup_buffers(self) -> None:
-    self.input_queues, views = allocate_inputs(self.input_specs, self.packed_specs)
-    self.frame_views = {name: views[name] for name in self._vision_input_names if name in views}
-    self.numpy_inputs = {name: views[name] for name in views if name not in self.frame_views}
+    self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
+                         for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
+    shapes = {'tfm': (2, 3, 3)} | {name: shape for name, (shape, _) in self.input_shapes.items()
+                                   if name not in self.state_pairs and name != 'new_img'}
+    npy_size = sum(round_up(math.prod(shape) * 4, 128) for shape in shapes.values())
+    self.packed_input = np.zeros(npy_size + 2 * self.frame_copy_size, dtype=np.uint8)
+    self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
+    self.input_device = Tensor(self.packed_input, device=self.model_device)._buffer()
+    self.numpy_inputs = {}
+    offset = 0
+    for name, shape in shapes.items():
+      self.numpy_inputs[name] = np.ndarray(shape, dtype=np.float32, buffer=self.packed_input, offset=offset)
+      self.input_queues[name] = input_view(self.input_device, shape, dtypes.float32, offset)
+      offset += round_up(self.numpy_inputs[name].nbytes, 128)
+    self.frames = self.packed_input[npy_size:].reshape(2, self.frame_copy_size)
+    self.warp_inputs = {'input_frame': input_view(self.input_device, self.frames.shape, dtypes.uint8, npy_size), 'M_inv': self.input_queues.pop('tfm')}
+
+    # Split tfm into tfm and big_tfm for modeld compatibility
+    if 'tfm' in self.numpy_inputs and self.numpy_inputs['tfm'].shape == (2, 3, 3):
+      real_tfm = self.numpy_inputs.pop('tfm')
+      self.numpy_inputs['tfm'] = real_tfm[0]
+      self.numpy_inputs['big_tfm'] = real_tfm[1]
 
   def run(self):
-    outs = self.run_model(**self.input_queues)
-    return outs
+    self.input_device.copy_from(self.input_host)
+    self.input_queues['new_img'] = self.run_warp(**self.warp_inputs)
+    self.run_model(output_buffers=self.outputs, **self.input_queues)
+    return self.outputs['outputs']
 
 
 def get_model_adapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=False):
-  if 'variants' in jits:
+  if 'input_specs' in jits:
     return NativeTinygradAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)
   else:
     return LegacyModelAdapter(jits, cam_w, cam_h, model_device, queue_device, warp_device, chestnut=chestnut)
