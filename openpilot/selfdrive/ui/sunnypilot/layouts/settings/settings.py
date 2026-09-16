@@ -34,6 +34,9 @@ from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 # from openpilot.selfdrive.ui.sunnypilot.layouts.settings.navigation import NavigationLayout
 
+if gui_app.sunnypilot_ui():
+  from openpilot.system.ui.sunnypilot.lib.wifi_manager import WifiManagerSP as WifiManager
+
 OP.PANEL_COLOR = rl.Color(10, 10, 10, 255)
 ICON_SIZE = 70
 
