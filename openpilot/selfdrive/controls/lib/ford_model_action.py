@@ -13,7 +13,7 @@ import struct
 
 import numpy as np
 
-from opendbc.car.ford.values import CarControllerParams, FordFlags
+from opendbc.car.ford.values import FordFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
@@ -180,8 +180,9 @@ class FordModelActionController:
   Feedback advances once per fresh steering measurement; repeated samples
   still use the current request. Raw model geometry is checked on every cycle.
 
-  CAN yaw remains a health gate, not the feedback measurement. Driver override
-  clears the correction. Fresh PSCM limits only inhibit outward integration;
+  CAN yaw remains a health gate, not the feedback measurement. Ford's filtered
+  steeringPressed and fresh PSCM driver overrides clear the correction.
+  Fresh PSCM limits only inhibit outward integration;
   neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
@@ -191,7 +192,8 @@ class FordModelActionController:
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
                                       c0_proportional_gain=c0_proportional_gain)
     self.direct_path = bool(direct_path)
-    self.hypothesis = 'model-path-direct-feedback-v17' if self.direct_path else 'model-action-curvature-c0-feedback-v19'
+    self.hypothesis = ('model-path-direct-feedback-v20-filtered-driver' if self.direct_path else
+                       'model-action-curvature-c0-feedback-v20-filtered-driver')
     self.reset()
 
   def path_curvature(self, model, speed):
@@ -242,8 +244,9 @@ class FordModelActionController:
     status_fresh = (pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0
                     and -.005 <= now-pscm_status.canMonoTime*1e-9 <= .15)
     pscm_limited = bool(status_fresh and pscm_status.limit == 2)
+    # CarState already filters Ford's torque threshold into steeringPressed.
+    # Rechecking raw torque here bypasses that filter and abruptly clears P/I.
     driver_override = bool(driver_pressed or not _finite(driver_torque)
-                           or abs(driver_torque) > CarControllerParams.STEER_DRIVER_ALLOWANCE
                            or (status_fresh and pscm_status.limit == 3))
     feedback_enabled = not (driver_override or (status_fresh and (pscm_status.denied or pscm_status.lateralState != 2)))
     direct_path = self.direct_path and reference_source == 'modelV2'

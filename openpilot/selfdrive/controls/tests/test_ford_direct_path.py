@@ -90,7 +90,7 @@ def test_both_base_channels_retain_upstream_request_limits_on_entry_reversal_and
   assert abs(command.path_offset) < .01 and abs(command.path_angle) < .001
 
 
-def test_feedback_tracks_path_heading_and_raw_torque_override_is_still_the_driven_baseline():
+def test_feedback_tracks_path_heading_and_filtered_driver_input_clears_correction():
   controller = FordModelActionController(direct_path=True)
   model = circle(.01)
   desired = 0.
@@ -101,7 +101,9 @@ def test_feedback_tracks_path_heading_and_raw_torque_override_is_still_the_drive
   desired, _ = step(controller, model, 2., desired, measured=desired)
   assert controller.core.proportional == pytest.approx(0.)
   assert controller.core.correction == pytest.approx(retained)
-  step(controller, model, 2.01, desired, driver_torque=1.0625)
+  desired, _ = step(controller, model, 2.01, desired, driver_torque=1.0625)
+  assert controller.diagnostics['feedback_enabled']
+  step(controller, model, 2.02, desired, driver_pressed=True, driver_torque=1.0625)
   assert controller.core.correction == controller.core.proportional == controller.core.offset_proportional == 0.
 
 

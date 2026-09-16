@@ -139,8 +139,8 @@ def test_repeated_steering_samples_do_not_reintegrate_error():
   assert controller.diagnostics['feedback_dt'] == pytest.approx(.06)
 
 
-@pytest.mark.parametrize('overrides', [{'driver_pressed': True}, {'driver_torque': 1.01},
-                                     {'driver_torque': -1.01}, {'driver_torque': math.nan},
+@pytest.mark.parametrize('overrides', [{'driver_pressed': True}, {'driver_torque': math.nan},
+                                     {'driver_torque': math.inf}, {'driver_torque': None},
                                      {'pscm_status': status(2.01, limit=3)},
                                      {'pscm_status': status(2.01, denied=True)},
                                      {'pscm_status': status(2.01, lateralState=1)}])

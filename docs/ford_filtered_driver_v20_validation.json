@@ -1,0 +1,308 @@
+{
+  "baseline_commit": "4900c0a40c87c72000b7168a6cf4fe6dd98ea6d0",
+  "tests": {
+    "passed": 658,
+    "subtests_passed": 2
+  },
+  "total_cycles": 583599,
+  "total_wire_checks": 58362,
+  "limitations": "Frozen recorded motion; no predicted wheel response. Only route 162 ran the baseline gain/version. Older-route baseline differences from recorded commands are expected.",
+  "routes": {
+    "162": {
+      "cycles": 49003,
+      "wire_checks": 4901,
+      "baseline_recorded_error_p50_p95_p99_max": {
+        "c0": [
+          2.3841861818141297e-09,
+          3.33786012163273e-08,
+          5.7220459037665705e-08,
+          1.1444091807533141e-07
+        ],
+        "c1": [
+          4.6193593394860955e-10,
+          7.152557435219364e-09,
+          1.2874603272372553e-08,
+          1.478195188475695e-08
+        ]
+      },
+      "latched_angle_match_fraction": 1.0,
+      "command_changes": {
+        "c0": [
+          0.0,
+          0.0,
+          0.3899999999999997,
+          2.58
+        ],
+        "c1": [
+          0.0014999999999999458,
+          0.07550000000000001,
+          0.11149999999999999,
+          0.2450000000000001
+        ]
+      },
+      "variants": {
+        "old": {
+          "feedback_switches_active": 538,
+          "feedback_switches_low_speed": 219,
+          "low_speed_c0_steps_over_025m": 152,
+          "low_speed_c1_steps_over_005rad": 83,
+          "low_speed_step_p99": {
+            "c0": 0.5400000000000005,
+            "c1": 0.033499999999999974
+          },
+          "raw_crossing_c0_steps_over_025m": 99,
+          "c0_bound_active_s": 0.0,
+          "c1_bound_active_s": 0.9656279909999625
+        },
+        "new": {
+          "feedback_switches_active": 218,
+          "feedback_switches_low_speed": 95,
+          "low_speed_c0_steps_over_025m": 70,
+          "low_speed_c1_steps_over_005rad": 50,
+          "low_speed_step_p99": {
+            "c0": 0.16000000000000014,
+            "c1": 0.019949999999999843
+          },
+          "raw_crossing_c0_steps_over_025m": 0,
+          "c0_bound_active_s": 0.0,
+          "c1_bound_active_s": 1.0580744659999937
+        }
+      },
+      "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\nBoth controllers receive the logged selected curvature. Recorded-command agreement\nis expected only for routes driven with the selected baseline and fixed 7 m C0.\n",
+      "provenance": {
+        "baseline_commit": "4900c0a40c87c72000b7168a6cf4fe6dd98ea6d0",
+        "baseline_controller_sha256": "d5841c1f6a4368de20ff14de89a48d7dce737c6a41d79628ccb4f8b19f28f91b",
+        "candidate_controller_sha256": "b34a55f84fdbf6c432ce89cdc378aaaf9bbd765ca4e6934845059f586e6f0773",
+        "fixed_c0_distance_m": 7.0
+      },
+      "sources_sha256": {
+        ".cache/ford_route162/full/route.npz": "a725f9ca309b90a2d750d51a9b9d5b459d99119a54ab048631bc0fce07348af8",
+        ".cache/ford_route162/full/model_paths.npz": "cffe310b122d9ae26a53ee504608156b4242a6bba5f681898d5b661951ac5ce5",
+        ".cache/ford_route162/full/metadata.json": "ef3ac1caca0eaec31f7140a0743bd3b98885ce143cb0f97a8eee615b33943d7f"
+      },
+      "valid_active_seconds": 319.0762965260001
+    },
+    "157": {
+      "cycles": 76554,
+      "wire_checks": 7656,
+      "baseline_recorded_error_p50_p95_p99_max": {
+        "c0": [
+          0.009999999999999787,
+          0.3699999867081644,
+          1.1900000762939458,
+          2.7099999666213987
+        ],
+        "c1": [
+          2.5331975406217566e-10,
+          7.152557379708213e-09,
+          1.3113021890553966e-08,
+          1.478195188475695e-08
+        ]
+      },
+      "latched_angle_match_fraction": 1.0,
+      "command_changes": {
+        "c0": [
+          0.0,
+          0.0,
+          0.18569999999999706,
+          5.4
+        ],
+        "c1": [
+          0.0,
+          0.035499999999999976,
+          0.066,
+          0.40850000000000003
+        ]
+      },
+      "variants": {
+        "old": {
+          "feedback_switches_active": 484,
+          "feedback_switches_low_speed": 312,
+          "low_speed_c0_steps_over_025m": 229,
+          "low_speed_c1_steps_over_005rad": 105,
+          "low_speed_step_p99": {
+            "c0": 0.3100000000000005,
+            "c1": 0.028000000000000025
+          },
+          "raw_crossing_c0_steps_over_025m": 99,
+          "c0_bound_active_s": 0.25064877399995567,
+          "c1_bound_active_s": 5.832844185000681
+        },
+        "new": {
+          "feedback_switches_active": 224,
+          "feedback_switches_low_speed": 148,
+          "low_speed_c0_steps_over_025m": 137,
+          "low_speed_c1_steps_over_005rad": 59,
+          "low_speed_step_p99": {
+            "c0": 0.20000000000000018,
+            "c1": 0.022499999999999964
+          },
+          "raw_crossing_c0_steps_over_025m": 0,
+          "c0_bound_active_s": 0.2999506119999751,
+          "c1_bound_active_s": 6.521285587999955
+        }
+      },
+      "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\nBoth controllers receive the logged selected curvature. Recorded-command agreement\nis expected only for routes driven with the selected baseline and fixed 7 m C0.\n",
+      "provenance": {
+        "baseline_commit": "4900c0a40c87c72000b7168a6cf4fe6dd98ea6d0",
+        "baseline_controller_sha256": "d5841c1f6a4368de20ff14de89a48d7dce737c6a41d79628ccb4f8b19f28f91b",
+        "candidate_controller_sha256": "b34a55f84fdbf6c432ce89cdc378aaaf9bbd765ca4e6934845059f586e6f0773",
+        "fixed_c0_distance_m": 7.0
+      },
+      "sources_sha256": {
+        ".cache/ford_route157/full/route.npz": "e2e2573f904aa11ee9e10450e7f5b965d475657b61127e827a67eadcd6b857fb",
+        ".cache/ford_route157/full/model_paths.npz": "25fc2526e092fde5ceb5aab63a5aa4f73a2c989a3263cedb0a26faf8da61c47b",
+        ".cache/ford_route157/full/metadata.json": "f2d72c9a877ed6694e4da6831841113dc0c05987e2c76cca51f358d12411b235"
+      },
+      "valid_active_seconds": 527.940320743
+    },
+    "151": {
+      "cycles": 325708,
+      "wire_checks": 32571,
+      "baseline_recorded_error_p50_p95_p99_max": {
+        "c0": [
+          0.010000000223516992,
+          0.18000000834465002,
+          0.9099999795913697,
+          4.419999957084657
+        ],
+        "c1": [
+          0.002999999523162822,
+          0.016500000025611382,
+          0.04399999969661239,
+          0.09699999737739562
+        ]
+      },
+      "latched_angle_match_fraction": 1.0,
+      "command_changes": {
+        "c0": [
+          0.0,
+          0.0,
+          0.0,
+          4.55
+        ],
+        "c1": [
+          0.0,
+          0.020500000000000018,
+          0.050000000000000044,
+          0.28450000000000003
+        ]
+      },
+      "variants": {
+        "old": {
+          "feedback_switches_active": 727,
+          "feedback_switches_low_speed": 225,
+          "low_speed_c0_steps_over_025m": 142,
+          "low_speed_c1_steps_over_005rad": 86,
+          "low_speed_step_p99": {
+            "c0": 0.17999999999999972,
+            "c1": 0.016500000000000015
+          },
+          "raw_crossing_c0_steps_over_025m": 80,
+          "c0_bound_active_s": 0.0,
+          "c1_bound_active_s": 3.3938434989995585
+        },
+        "new": {
+          "feedback_switches_active": 259,
+          "feedback_switches_low_speed": 101,
+          "low_speed_c0_steps_over_025m": 77,
+          "low_speed_c1_steps_over_005rad": 42,
+          "low_speed_step_p99": {
+            "c0": 0.13999999999999968,
+            "c1": 0.014499999999999957
+          },
+          "raw_crossing_c0_steps_over_025m": 0,
+          "c0_bound_active_s": 0.029249633000290487,
+          "c1_bound_active_s": 4.042117826999856
+        }
+      },
+      "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\nBoth controllers receive the logged selected curvature. Recorded-command agreement\nis expected only for routes driven with the selected baseline and fixed 7 m C0.\n",
+      "provenance": {
+        "baseline_commit": "4900c0a40c87c72000b7168a6cf4fe6dd98ea6d0",
+        "baseline_controller_sha256": "d5841c1f6a4368de20ff14de89a48d7dce737c6a41d79628ccb4f8b19f28f91b",
+        "candidate_controller_sha256": "b34a55f84fdbf6c432ce89cdc378aaaf9bbd765ca4e6934845059f586e6f0773",
+        "fixed_c0_distance_m": 7.0
+      },
+      "sources_sha256": {
+        ".cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        ".cache/ford_route151/full/model_paths.npz": "980b3843cec04254280d744a5801cee1bf0f8ef371052398327ff245f9eee01b",
+        ".cache/ford_route151/full/metadata.json": "937825317a0edd470c54647240b922be8f79dda5b3365ffdd61281f0aca877a1"
+      },
+      "valid_active_seconds": 1355.493226190003
+    },
+    "149": {
+      "cycles": 132334,
+      "wire_checks": 13234,
+      "baseline_recorded_error_p50_p95_p99_max": {
+        "c0": [
+          0.020000001788138988,
+          0.7800000047683717,
+          2.070000008535385,
+          4.560000002980233
+        ],
+        "c1": [
+          0.005500000000000005,
+          0.048999999627471036,
+          0.09199999963641169,
+          0.1995000131130219
+        ]
+      },
+      "latched_angle_match_fraction": 1.0,
+      "command_changes": {
+        "c0": [
+          0.0,
+          0.0,
+          0.10000000000000053,
+          4.499999999999999
+        ],
+        "c1": [
+          0.0,
+          0.07950000000000002,
+          0.3125,
+          0.4315
+        ]
+      },
+      "variants": {
+        "old": {
+          "feedback_switches_active": 1024,
+          "feedback_switches_low_speed": 393,
+          "low_speed_c0_steps_over_025m": 375,
+          "low_speed_c1_steps_over_005rad": 226,
+          "low_speed_step_p99": {
+            "c0": 0.44079999999998143,
+            "c1": 0.031500000000000035
+          },
+          "raw_crossing_c0_steps_over_025m": 217,
+          "c0_bound_active_s": 0.0,
+          "c1_bound_active_s": 10.436320454000196
+        },
+        "new": {
+          "feedback_switches_active": 354,
+          "feedback_switches_low_speed": 171,
+          "low_speed_c0_steps_over_025m": 197,
+          "low_speed_c1_steps_over_005rad": 111,
+          "low_speed_step_p99": {
+            "c0": 0.1999999999999993,
+            "c1": 0.02150000000000002
+          },
+          "raw_crossing_c0_steps_over_025m": 0,
+          "c0_bound_active_s": 0.0,
+          "c1_bound_active_s": 16.08094779300012
+        }
+      },
+      "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\nBoth controllers receive the logged selected curvature. Recorded-command agreement\nis expected only for routes driven with the selected baseline and fixed 7 m C0.\n",
+      "provenance": {
+        "baseline_commit": "4900c0a40c87c72000b7168a6cf4fe6dd98ea6d0",
+        "baseline_controller_sha256": "d5841c1f6a4368de20ff14de89a48d7dce737c6a41d79628ccb4f8b19f28f91b",
+        "candidate_controller_sha256": "b34a55f84fdbf6c432ce89cdc378aaaf9bbd765ca4e6934845059f586e6f0773",
+        "fixed_c0_distance_m": 7.0
+      },
+      "sources_sha256": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/model_paths.npz": "19827800b8fb5983f3d6b72fcfaf36e35a40170bb17cd7c1e49374744fb449fb",
+        ".cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32"
+      },
+      "valid_active_seconds": 1247.577060015
+    }
+  }
+}
