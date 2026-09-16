@@ -73,7 +73,7 @@ jobs:
               if hf_token:
                 f.write(f"header = \"Authorization: Bearer {hf_token}\"\n")
           '
-          curl -Z --parallel-immediate --parallel-max 16 -s -S -f -L -K /tmp/curl_config.txt
+          curl -Z --parallel-immediate --parallel-max 12 --retry 3 --retry-all-errors -s -S -f -L -K /tmp/curl_config.txt
 
       - name: Run Model Compatibility Test
         env:
