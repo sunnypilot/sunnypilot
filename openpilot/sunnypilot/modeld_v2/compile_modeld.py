@@ -7,41 +7,112 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import argparse
+import atexit
+import codecs
+import gc
 import math
+import multiprocessing as mp
 import os
+import pickle
+import shutil
 import tempfile
 import time
 from functools import partial
-from openpilot.selfdrive.modeld.helpers import dump_oob, load_oob
+from typing import Any
+
 import numpy as np
-os.environ['GMMU'] = '0'
 
-def _patch_tinygrad_fetch_fw():
-  import hashlib
-  import pathlib
-  import zstandard
-  from tinygrad import helpers
-  _orig_fetch_fw = helpers.fetch_fw
-  def fetch_fw(path, name, sha256):
-    p = pathlib.Path(f"/lib/firmware/{path}/{name}.zst")
-    if p.is_file():
-      blob = zstandard.ZstdDecompressor().stream_reader(p.read_bytes()).read()
-      if hashlib.sha256(blob).hexdigest() == sha256:
-        return blob
-    return _orig_fetch_fw(path, name, sha256)
-  helpers.fetch_fw = fetch_fw
-_patch_tinygrad_fetch_fw()
+from openpilot.common.file_chunker import chunk_file, get_chunk_targets, open_file_chunked
+from openpilot.sunnypilot.modeld_v2.helpers import dump_oob, load_oob
+import openpilot.sunnypilot.modeld_v2.stock_dependencies as stock
+from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 
-import openpilot.selfdrive.modeld.compile_modeld as stock
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
+from tinygrad.helpers import Context
+from tinygrad.nn.onnx import OnnxRunner, OnnxPBParser
 from tinygrad.tensor import Tensor
+
+os.environ['GMMU'] = '0'
+
+def _patch_tinygrad_fetch_fw():
+  try:
+    import hashlib
+    import pathlib
+    import zstandard
+    from tinygrad import helpers
+    _orig_fetch_fw = helpers.fetch_fw
+    def fetch_fw(path, name, sha256):
+      p = pathlib.Path(f"/lib/firmware/{path}/{name}.zst")
+      if p.is_file():
+        blob = zstandard.ZstdDecompressor().stream_reader(p.read_bytes()).read()
+        if hashlib.sha256(blob).hexdigest() == sha256:
+          return blob
+      return _orig_fetch_fw(path, name, sha256)
+    helpers.fetch_fw = fetch_fw
+  except ImportError:
+    pass
+_patch_tinygrad_fetch_fw()
+
+def _patch_ops_serialization():
+  try:
+    from tinygrad.uop.ops import Ops
+    def __reduce_ex__(self, proto):
+      return (getattr, (self.__class__, self.name))
+    Ops.__reduce_ex__ = __reduce_ex__
+  except ImportError:
+    pass
+_patch_ops_serialization()
 
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']
 POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
-nv12_copy_size = stock.nv12_copy_size
+
+class MetadataOnnxPBParser(OnnxPBParser):
+  def _parse_ModelProto(self) -> dict:
+    obj: dict[str, Any] = {"graph": {"input": [], "output": []}, "metadata_props": []}
+    for fid, wire_type in self._parse_message(self.reader.len):
+      match fid:
+        case 7:
+          obj["graph"] = self._parse_GraphProto()
+        case 14:
+          obj["metadata_props"].append(self._parse_StringStringEntryProto())
+        case _:
+          self.reader.skip_field(wire_type)
+    return obj
+
+def get_name_and_shape(value_info: dict[str, Any]) -> tuple[str, tuple[int, ...]]:
+  shape = tuple(int(dim) if isinstance(dim, int) else 0 for dim in value_info["parsed_type"].shape)
+  name = value_info["name"]
+  return name, shape
+
+def get_metadata_value_by_name(model: dict[str, Any], name: str) -> str | Any:
+  for prop in model["metadata_props"]:
+    if prop["key"] == name:
+      return prop["value"]
+  return None
+
+def make_metadata_dict(model_path):
+  with Context(DEV='CPU'):
+    model = MetadataOnnxPBParser(model_path).parse()
+    output_slices_raw = get_metadata_value_by_name(model, 'output_slices')
+    assert output_slices_raw is not None, 'output_slices not found in metadata'
+
+    output_slices = pickle.loads(codecs.decode(output_slices_raw.encode(), "base64"))
+    if 'hidden_state' not in output_slices:
+      output_slices['hidden_state'] = slice(0, 512)
+
+    meta_dict = {
+      'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
+      'output_slices': output_slices,
+      'input_shapes': dict(get_name_and_shape(x) for x in model["graph"]["input"]),
+      'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
+    }
+    del model
+    gc.collect()
+    return meta_dict
+
 
 def _detect_desire_key(shapes: dict) -> str | None:
   return next((key for key in shapes if key.startswith('desire')), None)
@@ -123,7 +194,10 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], feat_dim),
                        dtype=np.float32), device=device).contiguous().realize()
 
-  queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
+  for key in ('tfm', 'big_tfm'):
+    if key in npy_arrays:
+      npy_arrays[key] = np.eye(3, dtype=np.float32)
+      queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
 
   return queues, npy_arrays
 
@@ -164,8 +238,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
   is_supercombo = vision_runner is None
   npy_shapes, npy_sizes = get_policy_npy_shapes(input_shapes, is_supercombo=is_supercombo)
 
-  def run_policy(warped, img_q, big_img_q, feat_q, packed_npy_inputs, **kwargs):
-    desire_q = kwargs['desire_q']
+  def run_policy(warped, img_q, big_img_q, feat_q, desire_q=None, packed_npy_inputs=None, **kwargs):
     packed_npy_inputs_dev = packed_npy_inputs.to(Device.DEFAULT)
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
@@ -209,7 +282,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
   return run_policy
 
 
-def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark_runs: int = 1):
+def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark_runs: int = 1, clear_refs=None):
   SEED = 42
   def random_inputs_run(fn, seed, n_runs, test_val=None, test_buffers=None, expect_match=True):
     queues_res = make_queues(Device.DEFAULT)
@@ -224,7 +297,7 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
       for v in frame_views.values():
         v[:] = rng.integers(0, 256, size=v.shape, dtype=np.uint8)
       Device.default.synchronize()
-      random_inputs = make_random_inputs(rng=rng) if make_random_inputs is not None else {}
+      random_inputs = make_random_inputs() if make_random_inputs is not None else {}
       st = time.perf_counter()
       outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
       mt = time.perf_counter()
@@ -237,23 +310,37 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
         buffers = [np.copy(v.numpy().copy()) for v in input_queues.values()]
 
     if test_val is not None:
-      match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
-      assert match == expect_match, f"outputs {'differ from' if expect_match else 'match'} baseline (seed={seed})"
+      if expect_match:
+        for a, b in zip(val, test_val, strict=True):
+          np.testing.assert_array_equal(a, b, err_msg=f"outputs differ from baseline (seed={seed})")
+      else:
+        match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
+        assert not match, f"outputs match baseline unexpectedly (seed={seed})"
     if test_buffers is not None:
-      match = all(np.array_equal(a, b) for a, b in zip(buffers, test_buffers, strict=True))
-      assert match == expect_match, f"buffers {'differ from' if expect_match else 'match'} baseline (seed={seed})"
+      if expect_match:
+        for a, b in zip(buffers, test_buffers, strict=True):
+          np.testing.assert_array_equal(a, b, err_msg=f"buffers differ from baseline (seed={seed})")
+      else:
+        match = all(np.array_equal(a, b) for a, b in zip(buffers, test_buffers, strict=True))
+        assert not match, f"buffers match baseline unexpectedly (seed={seed})"
     return val, buffers
 
   print('capture + replay')
+  gc.collect()
   test_val, test_buffers = random_inputs_run(jit, SEED, 3)
   print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
+    del jit
+    if clear_refs:
+      clear_refs()
+    gc.collect()
     f.seek(0)
     loaded_jit = load_oob(f)
+
   random_inputs_run(loaded_jit, SEED, benchmark_runs, test_val, test_buffers, expect_match=True)
   random_inputs_run(loaded_jit, SEED+1, benchmark_runs, test_val, test_buffers, expect_match=False)
-  return jit
+  return loaded_jit
 
 
 def _parse_size(size_str: str) -> tuple[int, int]:
@@ -264,9 +351,6 @@ def _parse_size(size_str: str) -> tuple[int, int]:
 def read_file_chunked_to_disk(path):
   if not path:
     return None
-  import atexit
-  import shutil
-  from openpilot.common.file_chunker import open_file_chunked
   tmp_path = f'{path}.unchunked'
   with open(tmp_path, 'wb') as f, open_file_chunked(path) as src:
     shutil.copyfileobj(src, f)
@@ -283,6 +367,46 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
   return runners, keys
 
 
+def _compile_unified_resolution_worker(cam_w, cam_h, supercombo_onnx, model_w, model_h, derived_frame_skip, benchmark_runs, result_path):
+  os.environ['GMMU'] = '0'
+  model_metadata = make_metadata_dict(supercombo_onnx)
+  model_runner = OnnxRunner(supercombo_onnx)
+  features_slice = model_metadata['output_slices']['hidden_state']
+  run_policy = make_run_policy(None, [model_runner], features_slice, derived_frame_skip, model_metadata['input_shapes'])
+  nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+  frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+  make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+                              frame_copy_size=frame_copy_size)
+  warp = stock.make_warp(nv12, model_w, model_h)
+  run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+
+  def cleanup_unified():
+    nonlocal run_model_jit, run_policy, model_runner, warp
+    run_model_jit, run_policy, model_runner, warp = None, None, None, None
+  compiled_jit = compile_jit(
+    run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=benchmark_runs, clear_refs=cleanup_unified)
+  result_data = (compiled_jit, Device.DEFAULT)
+  with open(result_path, "wb") as f:
+    dump_oob(result_data, f)
+
+def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_runs, result_path):
+  os.environ['GMMU'] = '0'
+  nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+  WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
+  make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=WARP_DEV)
+  warp = TinyJit(stock.make_warp(nv12, model_w, model_h), prune=True)
+
+  def cleanup_warp():
+    nonlocal warp
+    warp = None
+  compiled_jit = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs,
+                            benchmark_runs=benchmark_runs, clear_refs=cleanup_warp)
+
+  result_data = (compiled_jit, Device.DEFAULT)
+  with open(result_path, "wb") as f:
+    dump_oob(result_data, f)
+
+
 if __name__ == "__main__":
   if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
     from openpilot.system.hardware.chestnut.flash import link_up
@@ -292,11 +416,6 @@ if __name__ == "__main__":
       time.sleep(1)
     else:
       raise RuntimeError("Chestnut not ready, skipping big model build")
-
-  from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-  from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
-  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-  from tinygrad.nn.onnx import OnnxRunner
 
   parser = argparse.ArgumentParser(description="Compile combined JIT pkl for sunnypilot modeld_v2")
   parser.add_argument('--model-type', choices=MODEL_TYPES, required=True)
@@ -322,30 +441,44 @@ if __name__ == "__main__":
   args.on_policy_onnx = read_file_chunked_to_disk(args.on_policy_onnx)
   args.supercombo_onnx = read_file_chunked_to_disk(args.supercombo_onnx)
 
+  is_unified_supercombo = False
   if args.model_type == 'supercombo':
     assert args.supercombo_onnx
     model_metadata = make_metadata_dict(args.supercombo_onnx)
-    output_data['metadata'] = {'model': model_metadata, **model_metadata}
-    output_data['input_devices'] = {'model': Device.DEFAULT}
-    output_data['run_model'] = {}
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
-    model_runner = OnnxRunner(args.supercombo_onnx)
-    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
-    for cam_w, cam_h in args.camera_resolutions:
-      print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
-      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-      make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
-                                  frame_copy_size=frame_copy_size)
-      warp = stock.make_warp(nv12, model_w, model_h)
-      run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
-      output_data['run_model'][(cam_w, cam_h)] = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
+    if derived_frame_skip != 1 and os.getenv('CHESTNUT'):
+      is_unified_supercombo = True
+
+  if is_unified_supercombo:
+    output_data['metadata'] = {'model': model_metadata, **model_metadata}
+    features_slice = model_metadata['output_slices']['hidden_state']
+    print(f"Compiling supercombo run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})")
+    policy_runner = OnnxRunner(args.supercombo_onnx)
+    run_policy_func = make_run_policy(None, [policy_runner], features_slice, derived_frame_skip, model_metadata['input_shapes'])
+    run_policy_jit = TinyJit(run_policy_func, prune=True)
+    make_policy_queues = partial(generate_queues_and_npy, model_metadata['input_shapes'], derived_frame_skip, is_supercombo=True)
+    WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
+    make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
+
+    def cleanup_policy():
+      global run_policy_jit, run_policy_func, policy_runner
+      run_policy_jit, run_policy_func, policy_runner = None, None, None
+
+    output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues, make_random_inputs=make_random_model_inputs,
+                                            benchmark_runs=args.benchmark_runs, clear_refs=cleanup_policy)
+    output_data['input_devices'] = {'model': Device.DEFAULT}
+    output_data['metadata']['warp_dev'] = WARP_DEV
   else:
     vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
+
     if args.model_type == 'vision_policy':
       assert vision_runner and args.policy_onnx
       policy_runners = [OnnxRunner(args.policy_onnx)]
       output_data['metadata'] = {'vision': make_metadata_dict(args.vision_onnx), 'policy': make_metadata_dict(args.policy_onnx)}
+    elif args.model_type == 'supercombo':
+      assert args.supercombo_onnx
+      policy_runners = [OnnxRunner(args.supercombo_onnx)]
+      output_data['metadata'] = {'model': make_metadata_dict(args.supercombo_onnx)}
     elif args.model_type == 'vision_multi_policy':
       assert vision_runner
       policy_runners, policy_names = _load_policy_runners(args)
@@ -360,27 +493,51 @@ if __name__ == "__main__":
 
     derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
     all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
-    feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('policy')
+    feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('model') or output_data['metadata'].get('policy')
     assert feat_meta is not None
     features_slice = feat_meta['output_slices']['hidden_state']
+    is_supercombo = vision_runner is None
+    gc.collect()
 
     print(f"Compiling run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})...")
     run_policy_func = make_run_policy(vision_runner, policy_runners, features_slice, derived_frame_skip, all_shapes)
     run_policy_jit = TinyJit(run_policy_func, prune=True)
-    make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=False)
-    make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=Device.DEFAULT)
-    output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues, make_random_inputs=make_random_model_inputs)
+    make_policy_queues = partial(generate_queues_and_npy, all_shapes, derived_frame_skip, is_supercombo=is_supercombo)
+    WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
+    make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
 
-    for cam_w, cam_h in args.camera_resolutions:
-      print(f"Compiling warp JIT for {cam_w}x{cam_h}...")
-      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
-      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
-      make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=frame_copy_size, device=Device.DEFAULT)
-      warp = TinyJit(stock.make_warp(nv12, model_w, model_h), prune=True)
-      output_data[(cam_w, cam_h)] = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs)
+    def cleanup_policy():
+      global run_policy_jit, run_policy_func, vision_runner, policy_runners
+      run_policy_jit, run_policy_func, vision_runner, policy_runners = None, None, None, None
 
+    output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues,
+                                            make_random_inputs=make_random_model_inputs, benchmark_runs=args.benchmark_runs, clear_refs=cleanup_policy)
+
+    ctx = mp.get_context('spawn')
+    output_data['input_devices'] = {}
+    tmp_files = []
+    for cam_w, cam_h in set(args.camera_resolutions):
+      print(f"Compiling warp JIT for {cam_w}x{cam_h}")
+      tmp_res = tempfile.NamedTemporaryFile(delete=False, suffix=".pkl", dir=".")
+      tmp_res.close()
+
+      p = ctx.Process(target=_compile_warp_resolution_worker, args=(cam_w, cam_h, model_w, model_h, args.benchmark_runs, tmp_res.name))
+      p.start()
+      p.join()
+      if p.exitcode != 0:
+        raise RuntimeError(f"Warp compilation worker failed for {cam_w}x{cam_h}")
+
+      tmp_files.append((cam_w, cam_h, tmp_res.name))
+    for cam_w, cam_h, tmp_name in tmp_files:
+      with open(tmp_name, "rb") as f:
+        compiled_jit, dev_name = load_oob(f)
+      output_data[(cam_w, cam_h)] = compiled_jit
+      output_data['input_devices']['warp'] = dev_name
+      os.remove(tmp_name)
+      gc.collect()
     output_data['metadata']['warp_dev'] = Device.DEFAULT
 
+  gc.collect()
   with open(args.output, "wb") as file:
     dump_oob(output_data, file)
 
