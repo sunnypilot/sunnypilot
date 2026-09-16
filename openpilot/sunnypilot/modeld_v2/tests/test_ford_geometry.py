@@ -102,6 +102,7 @@ def test_publication_preserves_original_history_and_longitudinal_and_serializes_
   apply(FordGeometryReference(), m, d, sp)
   assert original.to_dict() == before  # prev_action held by modeld must remain the learned action.
   assert m.modelV2.action.to_dict() == d.drivingModelData.action.to_dict()
+  assert m.modelV2.action.to_dict() == before
   assert m.modelV2.action.desiredAcceleration == original.desiredAcceleration
   assert m.modelV2.action.shouldStop == original.shouldStop
   with log.Event.from_bytes(sp.to_bytes()) as decoded:
@@ -109,7 +110,7 @@ def test_publication_preserves_original_history_and_longitudinal_and_serializes_
     assert ref.enabled and ref.valid == (not invalid)
     assert ref.modelMonoTime == m.logMonoTime
     assert ref.actionDesiredCurvature == original.desiredCurvature
-    assert ref.selectedCurvature == m.modelV2.action.desiredCurvature
+    assert ref.to_dict() == m.modelV2.fordGeometryReference.to_dict()
     if invalid:
       assert ref.selectedCurvature == original.desiredCurvature
     else:
@@ -121,14 +122,15 @@ def test_published_geometry_flows_through_actual_controlsd_selection_feedback_an
   from opendbc.car import structs
 
   m, d, sp, _ = messages()
+  m.modelV2.action.desiredCurvature = d.drivingModelData.action.desiredCurvature = .015
   apply(FordGeometryReference(), m, d, sp)
-  controls = startup()
+  controls = startup(params=SimpleNamespace(get_bool=lambda k: k in ('FordModelActionController', 'FordGeometryReference')))
   controls.sm, controls.desired_curvature, controls.curvature = Subscriptions(maneuver), 0., 0.
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=5., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0., steeringAngleDeg=0.)
   exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': m.modelV2,
                     'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
-  # Geometry asks right; original action and maneuver both ask left. The unchanged
+  # Both sources ask right; maneuver asks left and retains priority. The unchanged
   # upstream jerk limit permits 0.002 curvature in this first 10 ms step.
   expected = -.002 if maneuver else .002
   assert controls.desired_curvature == pytest.approx(expected)
@@ -167,5 +169,7 @@ def test_actual_modeld_hook_uses_exact_timing_after_original_action_history_is_s
     return
   expected = smooth_value(get_curvature_from_plan(list(m.modelV2.orientation.z), list(m.modelV2.orientationRate.z),
                                                  TIMES, 5., .743946), 0., .1)
-  assert m.modelV2.action.desiredCurvature == pytest.approx(expected)
+  assert m.modelV2.action.desiredCurvature == pytest.approx(-.003)
+  assert sp.modelDataV2SP.fordGeometryReference.selectedCurvature == pytest.approx(expected)
+  assert m.modelV2.fordGeometryReference.to_dict() == sp.modelDataV2SP.fordGeometryReference.to_dict()
   assert sp.modelDataV2SP.fordGeometryReference.previewSeconds == pytest.approx(.743946)

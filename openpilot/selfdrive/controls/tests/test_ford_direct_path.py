@@ -107,22 +107,22 @@ def test_feedback_tracks_path_heading_and_raw_torque_override_is_still_the_drive
 
 @pytest.mark.parametrize('geometry', [False, True])
 @pytest.mark.parametrize('maneuver', [False, True])
-def test_actual_controlsd_path_selection_feedback_logging_publication_and_can(pipeline, geometry, maneuver):  # noqa: F811
+def test_missing_geometry_reference_falls_back_to_action_through_controlsd_and_can(pipeline, geometry, maneuver):  # noqa: F811
   settings = {'FordModelActionController': True, 'FordGeometryReference': geometry}
   controls = startup(params=SimpleNamespace(get_bool=lambda key: settings.get(key, False)))
   controls.sm, controls.desired_curvature, controls.curvature = Subscriptions(maneuver), 0., 0.
-  assert controls.ford_path_controller.direct_path == geometry
+  assert not controls.ford_path_controller.direct_path
+  assert (controls.ford_path_controller.geometry_assist is not None) == geometry
   model = circle(.01)
   model.action = SimpleNamespace(desiredCurvature=-.03)  # Deliberately opposite to the model path.
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=5., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
   exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                     'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature, 'time': SimpleNamespace(monotonic=lambda: 1.)})
-  direct = geometry and not maneuver
-  expected = .002 if direct else -.002
+  expected = -.002
   assert controls.desired_curvature == pytest.approx(expected)
   assert controls.ford_path_controller.core.feedback_curvature == controls.desired_curvature
-  assert controls.ford_path_controller.diagnostics['direct_path'] == direct
+  assert not controls.ford_path_controller.diagnostics['direct_path']
   assert controls.ford_path.path_angle*expected > 0.
   msg = custom.CarControlSP.new_message()
   exec(pipeline[1], {'self': controls, 'CC_SP': msg})

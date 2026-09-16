@@ -15,6 +15,7 @@ import numpy as np
 
 from opendbc.car.ford.values import CarControllerParams, FordFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
+from openpilot.selfdrive.controls.lib.ford_geometry_action import GeometryActionHybrid
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 
@@ -184,12 +185,27 @@ class FordModelActionController:
   neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
-               c0_proportional_gain=C0_PROPORTIONAL_GAIN, direct_path=False):
+               c0_proportional_gain=C0_PROPORTIONAL_GAIN, direct_path=False, geometry_assist=False):
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
                                       c0_proportional_gain=c0_proportional_gain)
     self.direct_path = bool(direct_path)
+    self.geometry_assist = GeometryActionHybrid() if geometry_assist else None
     self.hypothesis = 'model-path-direct-feedback-v17' if self.direct_path else 'model-action-curvature-c0-feedback-v15'
+    if self.geometry_assist is not None:
+      if self.direct_path:
+        raise ValueError('Geometry assistance uses the scalar C0/C1 mapper')
+      self.hypothesis = 'geometry-assisted-action-feedback-v18'
     self.reset()
+
+  def select_reference(self, model, *, model_mono_time, active, valid):
+    """Combine only an atomic, matching geometry/action pair; missing geometry uses action."""
+    action = float(model.action.desiredCurvature)
+    if self.geometry_assist is None:
+      return action
+    ref = getattr(model, 'fordGeometryReference', None)
+    matched = ref is not None and ref.enabled and ref.valid and ref.modelMonoTime == model_mono_time
+    geometry = float(ref.selectedCurvature) if matched else math.nan
+    return self.geometry_assist.update(action, geometry, active=active and valid)
 
   def path_curvature(self, model, speed):
     """Heading-equivalent feedback target; controlsd limits and logs this value."""
@@ -206,6 +222,8 @@ class FordModelActionController:
 
   def reset(self, status='inactive'):
     self.core.reset()
+    if self.geometry_assist is not None:
+      self.geometry_assist.reset()
     self.last_time = self.last_measurement_time = self.last_model_time = None
     self.diagnostics = {'status': status, 'hypothesis': self.hypothesis,
                         'c0_time_based': self.core.c0_time_based,
@@ -271,13 +289,15 @@ class FordModelActionController:
                         'feedback_error': self.core.feedback_curvature-current_curvature,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}
+    if self.geometry_assist is not None:
+      self.diagnostics.update(geometry_assistance=self.geometry_assist.weight, action_peak=self.geometry_assist.action_peak)
     return command
 
 
-def select_model_action_controller(CP, enabled, *, c0_time_based=False, direct_path=False):
+def select_model_action_controller(CP, enabled, *, c0_time_based=False, direct_path=False, geometry_assist=False):
   """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
     return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN,
-                                     c0_time_based=c0_time_based, direct_path=direct_path)
+                                     c0_time_based=c0_time_based, direct_path=direct_path, geometry_assist=geometry_assist)
   return None

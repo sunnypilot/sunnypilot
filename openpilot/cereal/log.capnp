@@ -1076,6 +1076,8 @@ struct ModelDataV2 {
 
   # e2e lateral planner
   action @26: Action;
+  # Atomic action/geometry pair for the opt-in Ford reference selector.
+  fordGeometryReference @28 :Custom.ModelDataV2SP.FordGeometryReference;
 
   lateralPlannerSolutionDEPRECATED @25: Deprecated.LateralPlannerSolution;
   leadsDEPRECATED @11 :List(LeadDataV2DEPRECATED);

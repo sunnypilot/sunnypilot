@@ -1,0 +1,118 @@
+{
+  "baseline_commit": "01f5d54292056a64aafa7750f30d2a7871304d04",
+  "hypothesis": "geometry-assisted-action-feedback-v18",
+  "settings": {
+    "controller": "FordModelActionController",
+    "geometry_assist": "FordGeometryReference",
+    "start_curvature": 0.01,
+    "full_curvature": 0.02,
+    "release_power": 2.0
+  },
+  "regression_tests_passed": 678,
+  "regression_subtests_passed": 2,
+  "hybrid_unit_and_integration_tests": 35,
+  "ruff": "passed",
+  "sunnylink_schema_compile_check": "passed",
+  "validation_scope": "Frozen-motion replay and code/message/CAN tests; physical steering response is not simulated.",
+  "routes": {
+    "149": {
+      "cycles": 132334,
+      "wire_checks": 13234,
+      "every_output_column_exactly_matches_offline_candidate": true,
+      "active_valid_seconds": 1247.577060015,
+      "geometry_source": "Reconstructed geometry with recorded delay/model smoothing; speed approximated by first consuming control sample",
+      "input_and_runtime_sha256": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32",
+        ".cache/ford_route149/intake.npz": "503919c4f1566ef850007c59f16ce074697ba57732f21beb7b158c1ca7be3a9d",
+        ".cache/ford_route149/intake.json": "80f8c4ba69b4259ed308e0db110123063c6917357d26b49c9b6585695c9b24ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/hybrid_reference_replay.py": "068c746a1a6c5642a3430d6efb44b43d1ae6951cc4ad0e65721f1275dae31add",
+        "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+        ".cache/ford_hybrid_guarded/149/commands.npz": "bf40a870d33edbc0dec0d90206b7f082fee3a54f807bd61dd87e56102a571ba8",
+        ".cache/ford_hybrid_guarded/149/report.json": "963ed7e2c7ffe647ad5ea7d9c4530df54fa6f555423532efc89710aa20cc054a"
+      }
+    },
+    "151": {
+      "cycles": 325708,
+      "wire_checks": 32571,
+      "every_output_column_exactly_matches_offline_candidate": true,
+      "active_valid_seconds": 1355.493226190003,
+      "geometry_source": "Reconstructed geometry with recorded delay/model smoothing; speed approximated by first consuming control sample",
+      "input_and_runtime_sha256": {
+        ".cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        ".cache/ford_route151/full/metadata.json": "937825317a0edd470c54647240b922be8f79dda5b3365ffdd61281f0aca877a1",
+        ".cache/ford_route151/intake.npz": "18bbefb7738cebd0071dc987e90f74469a0c8ed456f9412324030592cafd68c9",
+        ".cache/ford_route151/intake.json": "0cfe327b5889f2603d902d2a01e915bf9a27b7a312137111d892a5e8540e03aa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/hybrid_reference_replay.py": "068c746a1a6c5642a3430d6efb44b43d1ae6951cc4ad0e65721f1275dae31add",
+        "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+        ".cache/ford_hybrid_guarded/151/commands.npz": "b01843e65718f51695a0e7642bb90c894a74e576e15e3e28b9101528b9052953",
+        ".cache/ford_hybrid_guarded/151/report.json": "8849332e600372ef405d098cb0f4eeeb4dc87100041af3ecddfe0d24b88ebd20"
+      }
+    },
+    "157": {
+      "cycles": 76554,
+      "wire_checks": 7656,
+      "every_output_column_exactly_matches_offline_candidate": true,
+      "active_valid_seconds": 527.940320743,
+      "geometry_source": "Reconstructed geometry with recorded delay/model smoothing; speed approximated by first consuming control sample",
+      "input_and_runtime_sha256": {
+        ".cache/ford_route157/full/route.npz": "e2e2573f904aa11ee9e10450e7f5b965d475657b61127e827a67eadcd6b857fb",
+        ".cache/ford_route157/full/metadata.json": "f2d72c9a877ed6694e4da6831841113dc0c05987e2c76cca51f358d12411b235",
+        ".cache/ford_route157/intake.npz": "5dffd86fde68197727d6c6b9c5eae82320a456fa1206c4cf18e5e9c69419dde4",
+        ".cache/ford_route157/intake.json": "1d82c7f87d42229b96771bce3dd43c6b1651aa4fb8bb0ca3b1886d5a1a1c1a3c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/hybrid_reference_replay.py": "068c746a1a6c5642a3430d6efb44b43d1ae6951cc4ad0e65721f1275dae31add",
+        "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+        ".cache/ford_hybrid_guarded/157/commands.npz": "49f02f7471d6fbb548f7f46a5615153a4079c2d29bc33cedf63987089eb9fb4b",
+        ".cache/ford_hybrid_guarded/157/report.json": "5aca689ca41bc98796f081f211212799d5a58ca90af0f94232fcc841d8af9e43"
+      }
+    },
+    "15a": {
+      "cycles": 21867,
+      "wire_checks": 2187,
+      "every_output_column_exactly_matches_offline_candidate": true,
+      "active_valid_seconds": 65.37018141000004,
+      "geometry_source": "Logged original action and selected geometry; exact model timestamp joins",
+      "input_and_runtime_sha256": {
+        ".cache/ford_route15a/rlog_full/route.npz": "057ce69ce028b2c9c1b42ab8110f35c888a6c398ddcc4156e74afc98c83d119d",
+        ".cache/ford_route15a/rlog_full/metadata.json": "bea47c7f0c0b583964ced3484fe814ec9a7a24abbfe6272e70f9dde12580a756",
+        ".cache/ford_route15a/rlog_full/model_paths.npz": "ef820d9df14afa308bf46f95463b636a599ff24fd08bffaff1ae671b3932c24a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/hybrid_reference_replay.py": "068c746a1a6c5642a3430d6efb44b43d1ae6951cc4ad0e65721f1275dae31add",
+        "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+        ".cache/ford_hybrid_guarded/15a/commands.npz": "b2648c067840336ddf49ec732459a9325e7d02e15215b514438364df6733c0c7",
+        ".cache/ford_hybrid_guarded/15a/report.json": "9ac33ad43dc8e395402a89ef0fcee44875428e4e7e39c7cc31c4e3d8e8b1153f"
+      }
+    },
+    "15b": {
+      "cycles": 22278,
+      "wire_checks": 2228,
+      "every_output_column_exactly_matches_offline_candidate": true,
+      "active_valid_seconds": 148.29076710100003,
+      "geometry_source": "Logged original action and selected geometry; exact model timestamp joins",
+      "input_and_runtime_sha256": {
+        ".cache/ford_route15b/rlog_full/route.npz": "f95e1c16a4677fee0ab57002d714e22716bf11873c308280553312fa9d18aab0",
+        ".cache/ford_route15b/rlog_full/metadata.json": "545ef8d6740e57237f35b2ca684111fc2d774e83aa1d6c8a5a0fff1b71270e85",
+        ".cache/ford_route15b/rlog_full/model_paths.npz": "a90be55943ce0009afbf38ef2035b3fff4de8ab00ea266636247bcc5a5012eae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/hybrid_reference_replay.py": "068c746a1a6c5642a3430d6efb44b43d1ae6951cc4ad0e65721f1275dae31add",
+        "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+        ".cache/ford_hybrid_guarded/15b/commands.npz": "11c35c5c35680d60471aeb50c14479226d7a5494c9edb509e8bfb790509d44cf",
+        ".cache/ford_hybrid_guarded/15b/report.json": "245fb9d5ae00391d3c5a0a0acbbc01726b02fe33cea5ed6196911b660ca36b33"
+      }
+    }
+  },
+  "source_sha256": {
+    "openpilot/cereal/log.capnp": "836fe271f91ce39603889bcbca37439ca62c62271a7ab91579a4a9dd4ccb3b65",
+    "openpilot/cereal/custom.capnp": "854840fae9bb3b7dda26a3532004ffc3450235dab7cdb2e735cbeeb41d0bf728",
+    "openpilot/selfdrive/controls/controlsd.py": "d54d5838499a7f151f8475a2ea45dc7fd624fba69d49fdf6edc9525a3ee9bd12",
+    "openpilot/selfdrive/controls/lib/ford_geometry_action.py": "f92ee4a952049be980229bbb2b4fb3f6d61d8d5876c6df8e7bace418b1fac80f",
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "5d90f819c03b109877bb8aa7ed44db30083518da24e61d9612d13540e7ace9ad",
+    "openpilot/sunnypilot/modeld_v2/ford_geometry.py": "55d144886dfa7cb8c300f7cbfed435d9bd0072d95dcfa295107b227ef63702b9",
+    "openpilot/selfdrive/controls/tests/test_ford_geometry_action.py": "1454e068faf7a603e6cbb61d07d85a02f1022e7f384e2a468707090f004d3698"
+  },
+  "unique_control_cycles": 578741,
+  "production_adapter_wire_checks": 57876
+}

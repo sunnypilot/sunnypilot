@@ -490,7 +490,7 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
     modelMonoTime @2 :UInt64;
     actionDesiredCurvature @3 :Float32;  # Original model action, with its own unchanged smoothing history.
     rawCurvature @4 :Float32;
-    selectedCurvature @5 :Float32;  # Published modelV2.action, before controlsd's normal limits/maneuver override.
+    selectedCurvature @5 :Float32;  # Smoothed geometry; controlsd combines it with the original action before normal limits.
     previewSeconds @6 :Float32;
     smoothSeconds @7 :Float32;
   }

@@ -1,5 +1,8 @@
 # Ford model geometry reference trial
 
+Current behavior: [geometry-assisted action reference](ford_geometry_action_hybrid_offline.md).
+The descriptions below document the earlier geometry-only trial.
+
 This documents the initial curvature-reference trial at `18ded0380`. The
 subsequent [direct model-path trial](ford_direct_path.md) reuses the geometry
 toggle and changes controlsd's reference and C0/C1 mapping. modeld telemetry
