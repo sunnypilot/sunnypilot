@@ -20,6 +20,11 @@ on:
         required: false
         type: string
         default: 'sunnypilot/sunnypilot_models_v1'
+      docs_repo:
+        description: 'GitHub repo holding the driving_models JSON on its gh-pages branch'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot-models'
 
 jobs:
   setup:
@@ -34,7 +39,6 @@ jobs:
       - name: Checkout sunnypilot repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot
           path: sunnypilot
           submodules: recursive
 
@@ -47,10 +51,10 @@ jobs:
           echo "tinygrad_ref=$ref" >> $GITHUB_OUTPUT
           echo "tinygrad_ref is $ref"
 
-      - name: Checkout docs repo (sunnypilot-models, gh-pages)
+      - name: Checkout docs repo (gh-pages)
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-models
+          repository: ${{ inputs.docs_repo }}
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
@@ -118,6 +122,7 @@ jobs:
       json_version: ${{ needs.setup.outputs.json_version }}
       target_hardware: ${{ github.event.inputs.target_hardware }}
       hf_repo: ${{ github.event.inputs.hf_repo }}
+      docs_repo: ${{ inputs.docs_repo }}
       set_min_version: ${{ github.event.inputs.set_min_version }}
       tinygrad_ref: ${{ needs.setup.outputs.tinygrad_ref }}
     secrets: inherit
@@ -162,6 +167,7 @@ jobs:
       target_hardware: ${{ github.event.inputs.target_hardware }}
       artifact_suffix: -retry
       hf_repo: ${{ github.event.inputs.hf_repo }}
+      docs_repo: ${{ inputs.docs_repo }}
       set_min_version: ${{ github.event.inputs.set_min_version }}
       tinygrad_ref: ${{ needs.setup.outputs.tinygrad_ref }}
     secrets: inherit

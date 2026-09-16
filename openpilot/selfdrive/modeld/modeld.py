@@ -36,7 +36,11 @@ from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_driving_model_data, fill_pose_msg, PublishState
 from openpilot.common.file_chunker import open_file_chunked
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
-from openpilot.selfdrive.modeld.helpers import MODELS_DIR, chestnut_present, chestnut_compiled, modeld_pkl_path, load_oob
+from openpilot.selfdrive.modeld.helpers import  MODELS_DIR, chestnut_present, chestnut_compiled, modeld_pkl_path, load_oob
+
+from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
+from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
+from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
 SEND_RAW_PRED = os.getenv('SEND_RAW_PRED')
 
@@ -315,6 +319,7 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
+  RELC = RoadEdgeLaneChangeController()
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -354,6 +359,7 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["narrowRoadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
+    model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
     lat_delay = sm["lateralDelay"].lateralDelay + LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -405,6 +411,7 @@ def main(demo=False):
       # fallback to small model
       cloudlog.exception("big model failed, fall back to small")
       params.put_bool("ChestnutActive", False)
+      assert small_model is not None
       model = small_model
       if chestnut_state is not None:
         chestnut_state.big = False
@@ -429,15 +436,20 @@ def main(demo=False):
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]
       r_lane_change_prob = desire_state[log.Desire.laneChangeRight]
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
-      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob)
+      mdv2sp_send = messaging.new_message('modelDataV2SP')
+      left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
+      DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
+      mdv2sp_send.valid = modelv2_send.valid
+      mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
 
       fill_driving_model_data(drivingdata_send, modelv2_send)
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, extrinsics_calibration_seen)
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
+      pm.send('modelDataV2SP', mdv2sp_send)
     last_vipc_frame_id = meta_main.frame_id
 
 if __name__ == "__main__":
