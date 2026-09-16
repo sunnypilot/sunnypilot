@@ -8,12 +8,14 @@ Commands use the current bounded request without an additional C0/C1 slew.
 The direct-path trial samples model position and heading separately, retains
 independent upstream request limits, and uses heading-equivalent feedback.
 """
+from collections import deque
 import math
 import struct
 
 import numpy as np
 
 from opendbc.car.ford.values import FordFlags
+from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
@@ -28,6 +30,7 @@ DIRECT_PATH_C0_PROPORTIONAL_GAIN = 0.5
 C0_RESPONSE_CONSTANT = 0.010717679293424373
 C0_RESPONSE_INVERSE_SPEED_SQUARED = 0.018122981795212647
 CALIBRATION_APPROVED = False
+CURVATURE_REQUEST_BUFFER_SECONDS = 1.0
 
 
 def _packed(value, resolution, offset):
@@ -177,8 +180,9 @@ class FordModelActionController:
 
   controlsd owns upstream selection/limiting and service health. This adapter
   checks ages and clock order, then supplies elapsed time to the core.
-  Feedback advances once per fresh steering measurement; repeated samples
-  still use the current request. Raw model geometry is checked on every cycle.
+  Base commands use the latest request. Like comma's torque controller, feedback
+  uses a one-second request buffer indexed by lateralDelay at the 100 Hz control
+  cadence. Only integration waits for fresh steering measurements.
 
   CAN yaw remains a health gate, not the feedback measurement. Ford's filtered
   steeringPressed and fresh PSCM driver overrides clear the correction.
@@ -192,8 +196,10 @@ class FordModelActionController:
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
                                       c0_proportional_gain=c0_proportional_gain)
     self.direct_path = bool(direct_path)
-    self.hypothesis = ('model-path-direct-feedback-v20-filtered-driver' if self.direct_path else
-                       'model-action-curvature-c0-feedback-v20-filtered-driver')
+    self.request_buffer_size = int(CURVATURE_REQUEST_BUFFER_SECONDS / DT_CTRL)
+    self.request_buffer = deque([0.] * self.request_buffer_size, maxlen=self.request_buffer_size)
+    self.hypothesis = ('model-path-direct-feedback-v21-delayed-feedback' if self.direct_path else
+                       'model-action-curvature-c0-feedback-v21-delayed-feedback')
     self.reset()
 
   def path_curvature(self, model, speed):
@@ -211,6 +217,8 @@ class FordModelActionController:
 
   def reset(self, status='inactive'):
     self.core.reset()
+    if status != 'inactive':
+      self.request_buffer = deque([0.] * self.request_buffer_size, maxlen=self.request_buffer_size)
     self.last_time = self.last_measurement_time = self.last_model_time = None
     self.diagnostics = {'status': status, 'hypothesis': self.hypothesis,
                         'c0_time_based': self.core.c0_time_based,
@@ -218,13 +226,22 @@ class FordModelActionController:
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
              reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None,
-             feedback_curvature=None, curvature_scale=1., reference_source='modelV2', roll=0.):
+             feedback_curvature=None, curvature_scale=1., reference_source='modelV2', roll=0., lat_delay=0.):
+    # Record on every control cycle, including disengagement, as upstream does.
+    # This buffer changes feedback only; it never queues the outgoing base path.
+    feedback_delay = 0.
+    if _finite(desired_curvature, lat_delay) and abs(desired_curvature) <= 1.:
+      self.request_buffer.append(desired_curvature)
+      delay_frames = int(np.clip(lat_delay / DT_CTRL + 1, 1, self.request_buffer_size))
+      if feedback_curvature is None:
+        feedback_curvature = self.request_buffer[-delay_frames]
+        feedback_delay = (delay_frames - 1) * DT_CTRL
     reason = None
     if not active:
       reason = 'inactive'
     elif not valid:
       reason = 'invalid_service'
-    elif not _finite(desired_curvature, current_curvature, yaw_rate, speed, now, measurement_time, model_time, reference_time):
+    elif not _finite(desired_curvature, current_curvature, yaw_rate, speed, now, measurement_time, model_time, reference_time, lat_delay):
       reason = 'nonfinite'
     elif not all(-.005 <= now - timestamp <= .15 for timestamp in (measurement_time, model_time, reference_time)):
       reason = 'stale_input'
@@ -267,6 +284,7 @@ class FordModelActionController:
                         'model_age': now - model_time, 'measurement_age': now - measurement_time, 'reference_age': now - reference_time,
                         'dt': dt, 'offset_request': self.core.c0, 'heading_request': self.core.c1,
                         'curvature_error': desired_curvature-current_curvature, 'feedback_dt': feedback_dt,
+                        'feedback_delay_requested': lat_delay, 'feedback_delay': feedback_delay,
                         'heading_feedforward': base_heading,
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
                         'offset_proportional': self.core.offset_proportional, 'c0_proportional_gain': self.core.c0_proportional_gain,

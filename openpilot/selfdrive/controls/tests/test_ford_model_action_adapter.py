@@ -145,8 +145,11 @@ def pipeline():
   selection = next(n for n in body if isinstance(n, ast.If) and ast.unparse(n.test) == "self.sm.valid['lateralManeuverPlan']")
   limiter = next(n for n in body if isinstance(n, ast.Assign) and isinstance(n.value, ast.Call) and
                  isinstance(n.value.func, ast.Name) and n.value.func.id == 'clip_curvature')
+  delay = next(n for n in body if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'lat_delay')
+  model_source = ast.parse((root/'selfdrive/modeld/modeld.py').read_text())
+  smoothing = next(n for n in model_source.body if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'LAT_SMOOTH_SECONDS')
   branch = next(n for n in body if isinstance(n, ast.If) and ast.unparse(n.test) == "self.CP.brand == 'ford'")
-  call = compile(ast.Module(body=[selection, limiter, branch], type_ignores=[]), str(controls_file), 'exec')
+  call = compile(ast.Module(body=[smoothing, selection, limiter, delay, branch], type_ignores=[]), str(controls_file), 'exec')
   publication_file = root/'sunnypilot/selfdrive/controls/controlsd_ext.py'
   body = _method(publication_file, 'ControlsExt', 'state_control_ext').body
   publish = [n for n in body if (isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'ford_path') or
@@ -163,7 +166,8 @@ class Subscriptions:
     self.valid = {'lateralManeuverPlan': maneuver, 'modelV2': True, 'carStateSP': True}
     self.logMonoTime = {'carState': 995_000_000, 'modelV2': 980_000_000, 'lateralManeuverPlan': 990_000_000}
     self.failed = set()
-    self.messages = {'carStateSP': custom.CarStateSP.new_message(), 'lateralManeuverPlan': SimpleNamespace(desiredCurvature=-.1)}
+    self.messages = {'carStateSP': custom.CarStateSP.new_message(), 'lateralManeuverPlan': SimpleNamespace(desiredCurvature=-.1),
+                     'lateralDelay': SimpleNamespace(lateralDelay=0.)}
 
   def __getitem__(self, service):
     return self.messages[service]
@@ -291,6 +295,51 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
     assert (core.offset_proportional == 0.) == (cs.steeringPressed or measured == sign*.004)
 
 
+@pytest.mark.parametrize('sign', [-1., 1.])
+@pytest.mark.parametrize('delay', [.16894637048244476, .2])
+def test_controlsd_uses_lateral_delay_for_feedback_and_current_base_on_can(pipeline, sign, delay):
+  call, publication = pipeline
+  controls, sm = startup(), Subscriptions(False)
+  controls.sm, controls.desired_curvature = sm, 0.
+  sm.messages['lateralDelay'].lateralDelay = delay
+  model = straight()
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=5., yawRate=0., canValid=True, steeringPressed=False, steeringTorque=0.)
+  cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
+  downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
+  vehicle = SimpleNamespace(out=structs.CarState(vEgo=5., vEgoRaw=5.), acc_tja_status_stock_values=defaultdict(int),
+                            lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+  parser = CANParser('ford_lincoln_base_pt', [('LateralMotionControl2', 100)], downstream.CAN.main)
+  history = [0.]*100
+  for frame, desired in enumerate([0.]*100+[sign*.004]*100+[-sign*.003]*100+[0.]*100):
+    now = 1.+frame*.01
+    model.action = SimpleNamespace(desiredCurvature=desired)
+    selected, _ = clip_curvature(cs.vEgo, controls.desired_curvature, desired, 0.)
+    history.append(selected)
+    controls.curvature = history[-int(delay/.01+1)]
+    sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
+    exec(call, {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
+                'time': SimpleNamespace(monotonic=lambda now=now: now)})
+    core = controls.ford_path_controller.core
+    assert core.feedback_curvature == controls.curvature
+    assert core.proportional == core.offset_proportional == core.correction == 0.
+    assert_current_request(core, selected, cs.vEgo)
+    msg = custom.CarControlSP.new_message()
+    exec(publication, {'self': controls, 'CC_SP': msg})
+    _, packets = downstream.update(cc.as_reader(), convert_carControlSP(msg.as_reader()), vehicle, round(now*1e9))
+    received = parser.update([round(now*1e9), packets])
+    address = parser.dbc.name_to_msg['LateralMotionControl2'].address
+    assert address in received
+    wire = parser.vl['LateralMotionControl2']
+    assert wire['LatCtlPathOffst_L_Actl'] == pytest.approx(-encode_model_action(model, selected, cs.vEgo).path_offset, abs=.005)
+    assert wire['LatCtlPath_An_Actl'] == pytest.approx(-7.*selected, abs=.00025)
+    assert wire['LatCtlCurv_No_Actl'] == wire['LatCtlCrv_NoRate2_Actl'] == 0.
+    assert wire['LatCtl_D2_Rq'] == 2 and wire['LatCtlPath_No_Cnt'] == frame % 16
+    packet = next(packet for packet in packets if packet[0] == address)
+    assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
+
+
 @pytest.mark.parametrize('service_valid', [False, True])
 def test_actual_controlsd_passes_only_valid_pscm_service_to_feedback(pipeline, service_valid):
   controls, sm = startup(), Subscriptions(False)
@@ -363,7 +412,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v20-filtered-driver'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v21-delayed-feedback'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.

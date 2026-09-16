@@ -180,6 +180,7 @@ class Controls(ControlsExt):
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
+          lat_delay=lat_delay,
           driver_pressed=CS.steeringPressed, driver_torque=CS.steeringTorque,
           reference_source=reference_service, roll=lp.roll,
           pscm_status=self.sm['carStateSP'].fordPscmStatus if self.sm.valid['carStateSP'] else None,
