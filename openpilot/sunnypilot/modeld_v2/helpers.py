@@ -55,6 +55,10 @@ def _dynamic_factory(real_class):
     return _enum_factory(real_class)
 
   def factory(*args, **kwargs):
+    if real_class.__name__ == 'Buffer':
+      if len(args) == 7 and isinstance(args[6], int):
+        args = tuple(list(args[:6]) + [None] + list(args[6:]))
+
     try:
       return real_class(*args, **kwargs)
     except TypeError:
