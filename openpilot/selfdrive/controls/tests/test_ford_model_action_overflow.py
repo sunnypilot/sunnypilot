@@ -63,7 +63,7 @@ def test_extra_offset_releases_immediately_without_stored_overflow(sign):
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_c1_feedback_saturation_does_not_spill_correction_into_c0(sign):
-  controller = ModelActionController(proportional_gain=0., integral_gain=1.)
+  controller = ModelActionController(proportional_gain=0., integral_gain=1., c0_proportional_gain=0.)
   for _ in range(200):
     out = controller.update(straight(sign*.2), sign*.02, current_curvature=0., speed=20., dt=.01)
   assert out.path_angle == pytest.approx(sign*.5)
@@ -78,6 +78,7 @@ def test_overflow_is_base_geometry_with_existing_feedback_gates(sign, enabled, l
   for _ in range(150):
     out = controller.update(straight(sign*.2), sign*.03, current_curvature=sign*.02, speed=20., dt=.01,
                             feedback_enabled=enabled, pscm_limited=limited)
-  assert out.path_offset == pytest.approx(sign*((1-math.cos(.21))/.03+.7), abs=.005)
+  expected = sign*((1-math.cos(.21))/.03+.7)+controller.offset_proportional
+  assert out.path_offset == pytest.approx(expected, abs=.005)
   assert out.path_angle == pytest.approx(sign*.5)
   assert controller.correction == 0.

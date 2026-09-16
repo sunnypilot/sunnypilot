@@ -171,6 +171,8 @@ class Controls(ControlsExt):
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
         self.ford_path = self.ford_path_controller.update(
           ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=-CS.yawRate, speed=CS.vEgo, now=time.monotonic(),
+          # Roll/angle offset cancel in the error; retain the normal steering-angle conversion's speed and stiffness effects.
+          curvature_scale=self.VM.get_steer_from_curvature(1., CS.vEgo, 0.) / (self.CP.steerRatio*self.CP.wheelbase),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,
           model_time=self.sm.logMonoTime['modelV2'] * 1e-9,
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,

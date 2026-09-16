@@ -29,7 +29,8 @@ from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import 
 def assert_current_request(core, desired, speed):
   target = encode_model_action(straight(), desired, speed)
   base = min(.5, max(-.5, target.path_angle))
-  assert core.c0 == pytest.approx(min(5.11, max(-5.11, target.path_offset+7.*(target.path_angle-base))))
+  offset = min(5.11, max(-5.11, target.path_offset+7.*(target.path_angle-base)))
+  assert core.c0 == pytest.approx(min(5.11, max(-5.11, offset+core.offset_proportional)))
   assert core.c1 == pytest.approx(min(.5, max(-.5, base+core.proportional+core.correction)))
 
 
@@ -190,7 +191,8 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   assert controller.core.proportional == pytest.approx(.75*20.*expected_curvature)
   assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
   assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0045)
-  assert controls.ford_path.path_offset == pytest.approx(0.)  # Limited curvature arc is below one C0 step.
+  assert controls.ford_path.path_offset == pytest.approx((-1 if maneuver else 1)*.01)
+  assert controller.core.offset_proportional*expected_curvature > 0.
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
 
@@ -280,7 +282,9 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
     assert core.correction == pytest.approx(expected)
     assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
     assert controls.ford_path.path_angle == pytest.approx(core.c1, abs=.00025)
-    assert controls.ford_path.path_offset == pytest.approx(sign*.1)
+    base = encode_model_action(straight(), sign*.004, cs.vEgo).path_offset
+    assert controls.ford_path.path_offset == pytest.approx(base+core.offset_proportional, abs=.005)
+    assert (core.offset_proportional == 0.) == (torque != 0. or measured == sign*.004)
 
 
 @pytest.mark.parametrize('service_valid', [False, True])
@@ -355,13 +359,16 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v14'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v15'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.
   else:
     assert sign*controls.ford_path.path_angle < 0.
-  assert controls.ford_path.path_offset == pytest.approx(sign*(.24 if same_turn else -.02))
+  if same_turn:
+    assert sign*controls.ford_path.path_offset > .24
+  else:
+    assert sign*controls.ford_path.path_offset < -.02
   controls.ford_path_controller.reset()
   assert core.c0 == core.c1 == core.correction == 0.
 

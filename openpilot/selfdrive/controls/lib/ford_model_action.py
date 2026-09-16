@@ -1,7 +1,7 @@
 """Opt-in Ford C2-free model mapping with measured-curvature PI feedback.
 
 C0 samples a desired-curvature arc at 7 m, optionally max(7 m, v*1s),
-including base-heading overflow. C1
+including base-heading overflow, plus proportional tracking correction. C1
 combines the selected curvature's heading with proportional and integrated
 tracking error. Reference distance and gains are explicit trial choices.
 Commands use the current bounded request without an additional C0/C1 slew.
@@ -19,6 +19,10 @@ OFFSET_STATION_M = 7.0
 HEADING_TIME_S = 1.0
 C1_PROPORTIONAL_GAIN = 0.75  # Drive-trial gains, not a learned calibration.
 C1_INTEGRAL_GAIN = 1.0
+C0_PROPORTIONAL_GAIN = 0.5  # Trial fraction of the measured wheel-angle error.
+# Offline Lightning fit: geometric curvature per metre of C0, with v in m/s.
+C0_RESPONSE_CONSTANT = 0.010717679293424373
+C0_RESPONSE_INVERSE_SPEED_SQUARED = 0.018122981795212647
 CALIBRATION_APPROVED = False
 
 
@@ -63,24 +67,31 @@ class ModelActionController:
 
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
-  __slots__ = ('c0', 'c1', 'correction', 'proportional_gain', 'integral_gain', 'proportional', 'feedback_curvature', 'c0_time_based')
+  __slots__ = ('c0', 'c1', 'correction', 'proportional_gain', 'integral_gain', 'proportional', 'feedback_curvature', 'c0_time_based',
+               'c0_proportional_gain', 'offset_proportional')
 
-  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False):
-    if not _finite(proportional_gain, integral_gain) or min(proportional_gain, integral_gain) < 0.:
+  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
+               c0_proportional_gain=C0_PROPORTIONAL_GAIN):
+    if not _finite(proportional_gain, integral_gain, c0_proportional_gain) or min(proportional_gain, integral_gain, c0_proportional_gain) < 0.:
       raise ValueError('PI gains must be finite and nonnegative')
     self.proportional_gain, self.integral_gain = float(proportional_gain), float(integral_gain)
+    self.c0_proportional_gain = float(c0_proportional_gain)
     self.c0_time_based = bool(c0_time_based)
     self.reset()
 
   def reset(self):
     self.c0 = self.c1 = self.correction = self.proportional = self.feedback_curvature = 0.
+    self.offset_proportional = 0.
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
-             feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None):
+             feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None, curvature_scale=1.):
     feedback_dt = dt if feedback_dt is None else feedback_dt
     reference = desired_curvature if feedback_curvature is None else feedback_curvature
-    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, reference) or not .002 <= dt <= .1
+    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, reference, curvature_scale) or not .002 <= dt <= .1
         or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1. or abs(reference) > 1.):
+      self.reset()
+      return FordPath()
+    if curvature_scale <= 0.:
       self.reset()
       return FordPath()
     target = encode_model_action(model, desired_curvature, speed, c0_time_based=self.c0_time_based)
@@ -90,12 +101,16 @@ class ModelActionController:
     self.feedback_curvature = reference
     error = reference-current_curvature
     self.proportional = self.proportional_gain*max(OFFSET_STATION_M, speed*HEADING_TIME_S)*error if feedback_enabled else 0.
-    if not _finite(self.proportional):
+    # Road-curvature error -> geometric steering error -> metres of C0.
+    # This is proportional only: nothing is accumulated or carried into a release.
+    response = C0_RESPONSE_CONSTANT+C0_RESPONSE_INVERSE_SPEED_SQUARED/max(speed, 1.34)**2
+    self.offset_proportional = self.c0_proportional_gain*error*curvature_scale/response if feedback_enabled else 0.
+    if not _finite(self.proportional, self.offset_proportional):
       self.reset()
       return FordPath()
     base = float(np.clip(target.path_angle, -.5, .5))
     offset = float(np.clip(target.path_offset+OFFSET_STATION_M*(target.path_angle-base), -5.11, 5.11))
-    self.c0 = offset
+    self.c0 = float(np.clip(offset+self.offset_proportional, -5.11, 5.11))
     if feedback_enabled:
       increment = self.integral_gain*error*speed*feedback_dt
       if not _finite(increment):
@@ -129,9 +144,11 @@ class FordModelActionController:
   clears the correction. Fresh PSCM limits only inhibit outward integration;
   neither a limit nor a repeated measurement freezes the model request.
   """
-  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False):
-    self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based)
-    self.hypothesis = 'model-action-curvature-c0-distance-pi-v14'
+  def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
+               c0_proportional_gain=C0_PROPORTIONAL_GAIN):
+    self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
+                                      c0_proportional_gain=c0_proportional_gain)
+    self.hypothesis = 'model-action-curvature-c0-feedback-v15'
     self.reset()
 
   def set_c0_time_based(self, enabled, *, lateral_engaged):
@@ -151,7 +168,7 @@ class FordModelActionController:
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
              reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None,
-             feedback_curvature=None):
+             feedback_curvature=None, curvature_scale=1.):
     reason = None
     if not active:
       reason = 'inactive'
@@ -183,7 +200,7 @@ class FordModelActionController:
     feedback_enabled = not (driver_override or (status_fresh and (pscm_status.denied or pscm_status.lateralState != 2)))
     command = self.core.update(model, desired_curvature, current_curvature=current_curvature, speed=speed, dt=dt,
                                feedback_dt=feedback_dt, feedback_enabled=feedback_enabled, pscm_limited=pscm_limited,
-                               feedback_curvature=feedback_curvature)
+                               feedback_curvature=feedback_curvature, curvature_scale=curvature_scale)
     if not command.valid:
       self.reset('invalid_path')
       return command
@@ -199,6 +216,8 @@ class FordModelActionController:
                         'curvature_error': desired_curvature-current_curvature, 'feedback_dt': feedback_dt,
                         'heading_feedforward': base_heading,
                         'offset_overflow': OFFSET_STATION_M*(raw_heading-base_heading),
+                        'offset_proportional': self.core.offset_proportional, 'c0_proportional_gain': self.core.c0_proportional_gain,
+                        'curvature_scale': curvature_scale,
                         'heading_correction': self.core.correction, 'feedback_enabled': feedback_enabled,
                         'heading_proportional': self.core.proportional, 'proportional_gain': self.core.proportional_gain,
                         'integral_gain': self.core.integral_gain, 'feedback_curvature': self.core.feedback_curvature,

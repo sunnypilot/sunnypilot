@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import pytest
 
 from opendbc.car.ford.values import CAR, FordFlags
+from opendbc.car.vehicle_model import VehicleModel
 from openpilot.common.params import Params, ParamKeyFlag, ParamKeyType
 from openpilot.selfdrive.controls.lib.ford_model_action import C1_INTEGRAL_GAIN, C1_PROPORTIONAL_GAIN, FordModelActionController, select_model_action_controller
 from openpilot.selfdrive.controls.lib.ford_path import FordPath
@@ -18,7 +19,9 @@ CANFD_CARS = [car for car in CAR if car.config.flags & FordFlags.CANFD]
 
 def car_params(**overrides):
   return SimpleNamespace(**({'brand': 'ford', 'flags': FordFlags.CANFD, 'carFingerprint': 'FORD_F_150_LIGHTNING_MK1',
-                             'carFw': []} | overrides))
+                             'carFw': [], 'steerRatio': 16.9, 'wheelbase': 3.7, 'mass': 3084., 'rotationalInertia': 5000.,
+                             'centerToFront': 1.628, 'steerRatioRear': 0., 'tireStiffnessFront': 378306.8125,
+                             'tireStiffnessRear': 469877.5625} | overrides))
 
 
 def startup(cp=None, params=None):
@@ -36,6 +39,7 @@ def startup(cp=None, params=None):
                  'select_model_action_controller': select_model_action_controller,
                  'cloudlog': SimpleNamespace(event=lambda *args, **kwargs: None)}
   exec(compile(ast.Module(body=body[start:end+1], type_ignores=[]), str(filename), 'exec'), environment)
+  controls.VM = VehicleModel(controls.CP)
   return controls
 
 
@@ -48,7 +52,8 @@ def test_actual_startup_priority(candidate, observer, fingerprint):
     assert type(selected.ford_path_controller) is FordModelActionController
     assert selected.ford_path_controller.core.proportional_gain == C1_PROPORTIONAL_GAIN == .75
     assert selected.ford_path_controller.core.integral_gain == C1_INTEGRAL_GAIN == 1.
-    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-distance-pi-v14'
+    assert selected.ford_path_controller.core.c0_proportional_gain == .5
+    assert selected.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v15'
   else:
     assert selected.ford_path_controller is None
   assert selected.ford_model_action == candidate

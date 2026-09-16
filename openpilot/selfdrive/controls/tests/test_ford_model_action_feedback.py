@@ -17,7 +17,7 @@ def tick(controller, desired, measured, **overrides):
 
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_feedback_builds_holds_and_unwinds_without_changing_c0(sign):
-  controller, matched = ModelActionController(proportional_gain=0., integral_gain=1.), ModelActionController(proportional_gain=0., integral_gain=1.)
+  controller, matched = (ModelActionController(proportional_gain=0., integral_gain=1., c0_proportional_gain=0.) for _ in range(2))
   for _ in range(100):
     tick(controller, sign*.004, sign*.004)
   for _ in range(100):

@@ -1,0 +1,856 @@
+{
+  "scope": "Replay C0 feedback against v14 using frozen native-time Lightning measurements.\n\nThis checks software/CAN behavior, not the physical response to new commands.\nUse cached route.npz, model_paths.npz and metadata.json from the rlog extractor.\n",
+  "routes": [
+    {
+      "route": "112",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 108971,
+      "wire_round_trips": 10898,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 83590,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.28000000000000025,
+            1.7300000000000004
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 43982,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.04999999999999982,
+            1.4699999999999998
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 9939,
+          "delta_c0_m_quantiles": [
+            0.15999999999999925,
+            1.1199999999999997,
+            1.7300000000000004
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 3604,
+          "delta_c0_m_quantiles": [
+            0.73,
+            1.4299999999999997,
+            1.7300000000000004
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_route112/route.npz": "2b08a2fb636f7d14556d7df4035eafc1d1b97932237955528562a16db2b31d3e",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        ".cache/ford_route112/model_paths.npz": "9837afe78aab4cad288cad98a595a5777fa8a66bb235986b1272a7f7c54e559a",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "113",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 49614,
+      "wire_round_trips": 4962,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 24171,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.9400000000000004,
+            2.2200000000000006
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 16815,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.05999999999999961,
+            1.0499999999999998
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 2920,
+          "delta_c0_m_quantiles": [
+            0.6600000000000001,
+            1.8704999999999974,
+            2.2200000000000006
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 2831,
+          "delta_c0_m_quantiles": [
+            0.8699999999999997,
+            1.9399999999999995,
+            2.2200000000000006
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_route113/route.npz": "774ca4a21b7113c2706d6130bc180c3216ea4833155300ab01e75b3486e36327",
+        ".cache/ford_route113/metadata.json": "1c0ca74dd48b90ab9d5444c5ca7f8aa9361700bbdf98bd5e853be50ad2895d7f",
+        ".cache/ford_route113/model_paths.npz": "93c41761eb85263f534f5371b905482cf7c948582eb1e9149966594be1d3768f",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "117",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 27301,
+      "wire_round_trips": 2731,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 13659,
+          "delta_c0_m_quantiles": [
+            0.03000000000000025,
+            0.5,
+            1.5900000000000007
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 5001,
+          "delta_c0_m_quantiles": [
+            0.010000000000000675,
+            0.3000000000000007,
+            1.5899999999999999
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 2891,
+          "delta_c0_m_quantiles": [
+            0.1200000000000001,
+            0.7400000000000002,
+            1.38
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 1195,
+          "delta_c0_m_quantiles": [
+            0.54,
+            1.5599999999999996,
+            1.5900000000000007
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_route117/route.npz": "65e4ea6c76dce73018b636479b3777116f1e58bb9813e6c1a7b79018b219140e",
+        ".cache/ford_route117/metadata.json": "348396b3059c5f54d7938cd3acf2bb268a813b47ff47561da7a94cb75c3f3114",
+        ".cache/ford_route117/model_paths.npz": "079f6003968287530e1ed6f2243c727e80c2ef3d16fb8a7d945d7eca744d54e7",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "11c",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 54146,
+      "wire_round_trips": 5415,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 36780,
+          "delta_c0_m_quantiles": [
+            0.020000000000000462,
+            0.3700000000000001,
+            2.1799999999999997
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 16750,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.09999999999999964,
+            0.5
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 2461,
+          "delta_c0_m_quantiles": [
+            0.1899999999999995,
+            0.8899999999999997,
+            2.1799999999999997
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 1827,
+          "delta_c0_m_quantiles": [
+            0.5599999999999996,
+            0.9569999999999982,
+            2.1799999999999997
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_maneuver_11c/analysis/route.npz": "1f3c37a7c7ae85ba69e9958435a9568f8244fa862f43ad1ee2a0192d1df13966",
+        ".cache/ford_maneuver_11c/analysis/metadata.json": "2d0051d23059145988ca905e5386704def24b8080ce92541cec5e4ab501bcd0c",
+        ".cache/ford_maneuver_11c/analysis/model_paths.npz": "0ff433da3dde1d4d7f10596cd53558ec5de9d56fbc49aec3e8afb4c9872377d5",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "125",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 41717,
+      "wire_round_trips": 4172,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 41107,
+          "delta_c0_m_quantiles": [
+            0.0,
+            0.05999999999999961,
+            0.40000000000000036
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 33135,
+          "delta_c0_m_quantiles": [
+            0.0,
+            0.010000000000000675,
+            0.28000000000000025
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 192,
+          "delta_c0_m_quantiles": [
+            0.3200000000000003,
+            0.3799999999999999,
+            0.40000000000000036
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_c0_response_124_125/route125/route.npz": "8dcf304871bf5c6bf1ce206c788d7034bf5f056522faded0aa7948ff1cccbb75",
+        ".cache/ford_c0_response_124_125/route125/metadata.json": "1f2b812d3c2cc8e5a2246098756940d6f8989a2591daf4d74b1ef4c8555e2d57",
+        ".cache/ford_c0_response_124_125/route125/model_paths.npz": "4be9c7809dabbcb52296ba93b4743146dc941e49a32aca07f008b75757703e49",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "146",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 53229,
+      "wire_round_trips": 5323,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 40717,
+          "delta_c0_m_quantiles": [
+            0.0,
+            0.04999999999999982,
+            1.1300000000000003
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 30796,
+          "delta_c0_m_quantiles": [
+            0.0,
+            0.02999999999999936,
+            0.35000000000000053
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 585,
+          "delta_c0_m_quantiles": [
+            0.3700000000000001,
+            1.0300000000000002,
+            1.1300000000000003
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 298,
+          "delta_c0_m_quantiles": [
+            0.4500000000000002,
+            1.0614999999999999,
+            1.1300000000000003
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_model_replay_146/full/route.npz": "b01db5bdd1c3b9fb83418a298571c98e60b5eb0509800d86cdaf07bafcdc6d63",
+        ".cache/ford_model_replay_146/full/metadata.json": "2be1254dd1eee422f3b2c2011faa91a21ab431751998525105381c2886df15ca",
+        ".cache/ford_model_replay_146/full/model_paths.npz": "11e0e9c8ce2959aac72d2f8a9cc4f6a025480034d5cd8b59b68a41b2ae3cf4a8",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "149",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 132334,
+      "wire_round_trips": 13234,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 109224,
+          "delta_c0_m_quantiles": [
+            0.019999999999999574,
+            0.43999999999999995,
+            2.2800000000000002
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 54914,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.07000000000000028,
+            2.04
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 15161,
+          "delta_c0_m_quantiles": [
+            0.20999999999999996,
+            1.0300000000000002,
+            2.25
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 6659,
+          "delta_c0_m_quantiles": [
+            0.6399999999999997,
+            1.4100000000000001,
+            2.2800000000000002
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32",
+        ".cache/ford_route149/full/model_paths.npz": "19827800b8fb5983f3d6b72fcfaf36e35a40170bb17cd7c1e49374744fb449fb",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "151",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 325708,
+      "wire_round_trips": 32571,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 124806,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.10000000000000053,
+            2.21
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "straight": {
+          "n": 85546,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.03999999999999915,
+            0.6300000000000008
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 3715,
+          "delta_c0_m_quantiles": [
+            0.25,
+            1.12,
+            2.21
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "large_error": {
+          "n": 1839,
+          "delta_c0_m_quantiles": [
+            0.6200000000000001,
+            1.35,
+            2.21
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        }
+      },
+      "sources": {
+        ".cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        ".cache/ford_route151/full/metadata.json": "937825317a0edd470c54647240b922be8f79dda5b3365ffdd61281f0aca877a1",
+        ".cache/ford_route151/full/model_paths.npz": "980b3843cec04254280d744a5801cee1bf0f8ef371052398327ff245f9eee01b",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "a9",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 286319,
+      "wire_round_trips": 28632,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 142471,
+          "delta_c0_m_quantiles": [
+            0.019999999999999574,
+            0.15999999999999925,
+            1.5699999999999994
+          ],
+          "c0_old_capped": 25,
+          "c0_new_capped": 128
+        },
+        "straight": {
+          "n": 99221,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.05999999999999961,
+            1.4800000000000004
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 6893,
+          "delta_c0_m_quantiles": [
+            0.23000000000000043,
+            0.9699999999999998,
+            1.5600000000000005
+          ],
+          "c0_old_capped": 25,
+          "c0_new_capped": 128
+        },
+        "large_error": {
+          "n": 3224,
+          "delta_c0_m_quantiles": [
+            0.6600000000000001,
+            1.2599999999999998,
+            1.5699999999999994
+          ],
+          "c0_old_capped": 25,
+          "c0_new_capped": 128
+        }
+      },
+      "sources": {
+        ".cache/ford_routea9/route.npz": "3fa8cabfb729dd42d689de38618d1d21c8965c9d60f914546f4d7cc58db8c975",
+        ".cache/ford_routea9/metadata.json": "403d35504bf596144845ac2060ce067d571f49a2955d16223af28a79a7a66e93",
+        ".cache/ford_routea9/model_paths.npz": "7f3646ad24aa52de5982c65600813de5bbc5f7664d92a2516bbba35da6e7b240",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "b9",
+      "baseline": "d425b3260b0785b22096d130702b54a2e0761c36",
+      "baseline_sha256": "c55464ecfbe7fad9f51905cf5f226be2676440ac5afec470b05515e32b065cc8",
+      "cycles": 90774,
+      "wire_round_trips": 9078,
+      "c1_identical": true,
+      "c0_gain": 0.5,
+      "metrics": {
+        "all": {
+          "n": 81066,
+          "delta_c0_m_quantiles": [
+            0.010000000000000675,
+            0.3100000000000005,
+            2.12
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 10
+        },
+        "straight": {
+          "n": 42647,
+          "delta_c0_m_quantiles": [
+            0.009999999999999787,
+            0.07000000000000028,
+            1.63
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 0
+        },
+        "turn": {
+          "n": 9816,
+          "delta_c0_m_quantiles": [
+            0.1200000000000001,
+            0.8300000000000001,
+            2.12
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 10
+        },
+        "large_error": {
+          "n": 3486,
+          "delta_c0_m_quantiles": [
+            0.6600000000000001,
+            1.5100000000000005,
+            2.12
+          ],
+          "c0_old_capped": 0,
+          "c0_new_capped": 10
+        }
+      },
+      "sources": {
+        ".cache/ford_routeb9/route.npz": "b07c789d8155335f5d120d0262fced6e4d5803fe767b0ff49b6413dce4140b5c",
+        ".cache/ford_routeb9/metadata.json": "9ce452220cab61b81883f32fc2fcaf5db6c78a674cb255a49cc77d5029580fee",
+        ".cache/ford_routeb9/model_paths.npz": "6b1f87897c050273fdc05af051307a049b6fc3a93072e7cda1721195ce7c3861",
+        ".cache/ford_route112/metadata.json": "726d78a7e7aa45307dcfe27cb00775c20ecc9d54538eb7f26a0166fc216226ce",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/c0_feedback_validate.py": "12b843f024b671f8b4282e1981f6d68de879a9cdff20fee74fd5228b6e4168ad",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    }
+  ],
+  "test_summary": {
+    "pytest_passed": 439,
+    "ruff": "passed",
+    "git_diff_check": "passed"
+  },
+  "fit_source_sha256": "536ea20ee1bfa9366453c6d01fae6c7dd7b83388f2a71662cc12b43311767c6f",
+  "fitted_plant_sanity_check": {
+    "scope": "Approximate fitted-plant simulation with frozen future reference/speed, recomputed controller feedback, 20 Hz, four-second clean windows. Not physical tracking validation.",
+    "routes": {
+      "149": {
+        "0.0": {
+          "all": {
+            "windows": 515,
+            "tracking_rmse_deg": 1.9599623978328702,
+            "p95_abs_error_deg": 3.6108132362595673
+          },
+          "turn": {
+            "windows": 27,
+            "tracking_rmse_deg": 5.648897344766248,
+            "p95_abs_error_deg": 10.154937282895988
+          },
+          "unwind": {
+            "windows": 16,
+            "tracking_rmse_deg": 4.56296777072208,
+            "p95_abs_error_deg": 5.8047028901317175
+          },
+          "near_straight": {
+            "windows": 280,
+            "tracking_rmse_deg": 0.5053540034793153,
+            "p95_abs_error_deg": 0.9099971698933058
+          }
+        },
+        "0.25": {
+          "all": {
+            "windows": 515,
+            "tracking_rmse_deg": 1.868833791306516,
+            "p95_abs_error_deg": 3.4194303642888486
+          },
+          "turn": {
+            "windows": 27,
+            "tracking_rmse_deg": 5.3063969129788715,
+            "p95_abs_error_deg": 9.669302705935252
+          },
+          "unwind": {
+            "windows": 16,
+            "tracking_rmse_deg": 4.307554036590833,
+            "p95_abs_error_deg": 5.549381163721539
+          },
+          "near_straight": {
+            "windows": 280,
+            "tracking_rmse_deg": 0.4868309463403626,
+            "p95_abs_error_deg": 0.8696197439962221
+          }
+        },
+        "0.5": {
+          "all": {
+            "windows": 515,
+            "tracking_rmse_deg": 1.7898071883511764,
+            "p95_abs_error_deg": 3.260221243224674
+          },
+          "turn": {
+            "windows": 27,
+            "tracking_rmse_deg": 5.006440079078192,
+            "p95_abs_error_deg": 9.002861391131468
+          },
+          "unwind": {
+            "windows": 16,
+            "tracking_rmse_deg": 4.078042889798365,
+            "p95_abs_error_deg": 5.24331028633435
+          },
+          "near_straight": {
+            "windows": 280,
+            "tracking_rmse_deg": 0.4694670576005347,
+            "p95_abs_error_deg": 0.8331203606609966
+          }
+        },
+        "0.75": {
+          "all": {
+            "windows": 515,
+            "tracking_rmse_deg": 1.7203138728888623,
+            "p95_abs_error_deg": 3.1149598999491044
+          },
+          "turn": {
+            "windows": 27,
+            "tracking_rmse_deg": 4.743912352245749,
+            "p95_abs_error_deg": 8.664577551257613
+          },
+          "unwind": {
+            "windows": 16,
+            "tracking_rmse_deg": 3.8750067743533827,
+            "p95_abs_error_deg": 4.9966209407120425
+          },
+          "near_straight": {
+            "windows": 280,
+            "tracking_rmse_deg": 0.45412470534078503,
+            "p95_abs_error_deg": 0.7964604020331516
+          }
+        },
+        "1.0": {
+          "all": {
+            "windows": 515,
+            "tracking_rmse_deg": 1.6590272653809652,
+            "p95_abs_error_deg": 2.990976062659628
+          },
+          "turn": {
+            "windows": 27,
+            "tracking_rmse_deg": 4.507245023760021,
+            "p95_abs_error_deg": 8.107112731535002
+          },
+          "unwind": {
+            "windows": 16,
+            "tracking_rmse_deg": 3.693644190831072,
+            "p95_abs_error_deg": 4.749308802498215
+          },
+          "near_straight": {
+            "windows": 280,
+            "tracking_rmse_deg": 0.4404620597734029,
+            "p95_abs_error_deg": 0.7694584025732562
+          }
+        }
+      },
+      "151": {
+        "0.0": {
+          "all": {
+            "windows": 794,
+            "tracking_rmse_deg": 0.9049924838460381,
+            "p95_abs_error_deg": 1.496850675938314
+          },
+          "unwind": {
+            "windows": 7,
+            "tracking_rmse_deg": 1.3568942395552432,
+            "p95_abs_error_deg": 2.4717442023707914
+          },
+          "near_straight": {
+            "windows": 525,
+            "tracking_rmse_deg": 0.47746381422226297,
+            "p95_abs_error_deg": 0.9045192063209317
+          }
+        },
+        "0.25": {
+          "all": {
+            "windows": 794,
+            "tracking_rmse_deg": 0.8744021810097441,
+            "p95_abs_error_deg": 1.4250449905919713
+          },
+          "unwind": {
+            "windows": 7,
+            "tracking_rmse_deg": 1.2734874215389322,
+            "p95_abs_error_deg": 2.3213325000763567
+          },
+          "near_straight": {
+            "windows": 525,
+            "tracking_rmse_deg": 0.45648429088650827,
+            "p95_abs_error_deg": 0.8575351438117865
+          }
+        },
+        "0.5": {
+          "all": {
+            "windows": 794,
+            "tracking_rmse_deg": 0.8487165771252436,
+            "p95_abs_error_deg": 1.3633464420801624
+          },
+          "unwind": {
+            "windows": 7,
+            "tracking_rmse_deg": 1.1986282107421773,
+            "p95_abs_error_deg": 2.163514655425466
+          },
+          "near_straight": {
+            "windows": 525,
+            "tracking_rmse_deg": 0.4395196212749708,
+            "p95_abs_error_deg": 0.82723861668119
+          }
+        },
+        "0.75": {
+          "all": {
+            "windows": 794,
+            "tracking_rmse_deg": 0.8256116631456035,
+            "p95_abs_error_deg": 1.309241916169811
+          },
+          "unwind": {
+            "windows": 7,
+            "tracking_rmse_deg": 1.1341202040172427,
+            "p95_abs_error_deg": 2.0707107084230465
+          },
+          "near_straight": {
+            "windows": 525,
+            "tracking_rmse_deg": 0.42406706004679057,
+            "p95_abs_error_deg": 0.7946947170401512
+          }
+        },
+        "1.0": {
+          "all": {
+            "windows": 794,
+            "tracking_rmse_deg": 0.8052189413919172,
+            "p95_abs_error_deg": 1.2575495536727697
+          },
+          "unwind": {
+            "windows": 7,
+            "tracking_rmse_deg": 1.0739985410343649,
+            "p95_abs_error_deg": 1.9599553503928666
+          },
+          "near_straight": {
+            "windows": 525,
+            "tracking_rmse_deg": 0.41043500769646296,
+            "p95_abs_error_deg": 0.7683540262306987
+          }
+        }
+      },
+      "125": {
+        "0.0": {
+          "all": {
+            "windows": 346,
+            "tracking_rmse_deg": 1.5101438591368561,
+            "p95_abs_error_deg": 1.3433430124202965
+          },
+          "near_straight": {
+            "windows": 246,
+            "tracking_rmse_deg": 0.3997814518183382,
+            "p95_abs_error_deg": 0.8420670524669589
+          }
+        },
+        "0.25": {
+          "all": {
+            "windows": 346,
+            "tracking_rmse_deg": 1.460719401448126,
+            "p95_abs_error_deg": 1.2614591679946765
+          },
+          "near_straight": {
+            "windows": 246,
+            "tracking_rmse_deg": 0.377498378600397,
+            "p95_abs_error_deg": 0.7868969957812859
+          }
+        },
+        "0.5": {
+          "all": {
+            "windows": 346,
+            "tracking_rmse_deg": 1.4162750202728391,
+            "p95_abs_error_deg": 1.188472341120946
+          },
+          "near_straight": {
+            "windows": 246,
+            "tracking_rmse_deg": 0.35896062148345687,
+            "p95_abs_error_deg": 0.7523514432810818
+          }
+        },
+        "0.75": {
+          "all": {
+            "windows": 346,
+            "tracking_rmse_deg": 1.3766402449201502,
+            "p95_abs_error_deg": 1.1248966870109076
+          },
+          "near_straight": {
+            "windows": 246,
+            "tracking_rmse_deg": 0.34130621657460447,
+            "p95_abs_error_deg": 0.7141102879383627
+          }
+        },
+        "1.0": {
+          "all": {
+            "windows": 346,
+            "tracking_rmse_deg": 1.3414563262275077,
+            "p95_abs_error_deg": 1.0712299506410858
+          },
+          "near_straight": {
+            "windows": 246,
+            "tracking_rmse_deg": 0.3255065971687205,
+            "p95_abs_error_deg": 0.6807731116817476
+          }
+        }
+      }
+    }
+  }
+}
