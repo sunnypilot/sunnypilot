@@ -18,6 +18,17 @@ sections:
     details: Derives path offset and heading from the same selected desired curvature and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.
     enablement:
     - $ref: '#/macros/offroad'
+  - key: FordGeometryReference
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Model Geometry Reference (Experimental)
+    description: Use model heading and heading rate as the steering reference for the Ford C0/C1 controller.
+    details: On uses the published model path to calculate desired curvature at the model's existing preview time, with the same output smoothing. Off uses the original model action. Both use the existing C0/C1 mapping, steering feedback, and limits. Requires Selected-Action Path Tracking; otherwise upstream Ford control remains selected. The original action and selected reference are both logged. Default off. Changes apply after an offroad-to-onroad cycle.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: param
+      key: FordModelActionController
+      equals: true
 - id: hyundai
   title: Hyundai / Kia / Genesis Settings
   description: ''

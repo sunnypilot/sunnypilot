@@ -2190,6 +2190,24 @@
               "type": "offroad_only"
             }
           ]
+        },
+        {
+          "key": "FordGeometryReference",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "Model Geometry Reference (Experimental)",
+          "description": "Use model heading and heading rate as the steering reference for the Ford C0/C1 controller.",
+          "details": "On uses the published model path to calculate desired curvature at the model's existing preview time, with the same output smoothing. Off uses the original model action. Both use the existing C0/C1 mapping, steering feedback, and limits. Requires Selected-Action Path Tracking; otherwise upstream Ford control remains selected. The original action and selected reference are both logged. Default off. Changes apply after an offroad-to-onroad cycle.",
+          "enablement": [
+            {
+              "type": "offroad_only"
+            },
+            {
+              "type": "param",
+              "key": "FordModelActionController",
+              "equals": true
+            }
+          ]
         }
       ]
     },

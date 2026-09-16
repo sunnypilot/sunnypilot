@@ -51,6 +51,7 @@ from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, ma
                                                            make_supercombo_input_queues, nv12_copy_size,
                                                            WARP_INPUTS, POLICY_INPUTS)
 from openpilot.sunnypilot.livedelay.helpers import get_ford_delay_offset, get_lat_delay
+from openpilot.sunnypilot.modeld_v2.ford_geometry import select_ford_geometry_reference
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_oob
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -415,6 +416,9 @@ def main(demo=False):
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
   ford_model_action = params.get_bool("FordModelActionController")
+  ford_geometry = select_ford_geometry_reference(CP, ford_model_action, params.get_bool("FordGeometryReference"))
+  if CP.brand == 'ford':
+    cloudlog.event('Ford model reference selected', source='geometry' if ford_geometry is not None else 'action')
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
@@ -545,6 +549,11 @@ def main(demo=False):
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
                      frame_drop_ratio, meta_main.timestamp_eof, model_execution_time, live_calib_seen, meta_constants)
       modelv2_send.modelV2.big = model.chestnut
+
+      if ford_geometry is not None:
+        ford_geometry.apply(modelv2_send, drivingdata_send, mdv2sp_send, speed=v_ego, preview=lat_action_t,
+                            smooth_seconds=model.LAT_SMOOTH_SECONDS,
+                            smoothing_enabled=model.generation is not None and model.generation >= 10)
 
       desire_state = modelv2_send.modelV2.meta.desireState
       l_lane_change_prob = desire_state[log.Desire.laneChangeLeft]

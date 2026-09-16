@@ -1,0 +1,212 @@
+{
+  "scope": "Replay the geometry reference and current C0/C1 controller on frozen route measurements.\n\nRequires cached full/route.npz, full/metadata.json, intake.npz and intake.json.\nThis is command validation, not a simulation of the truck following new requests.\n",
+  "routes": [
+    {
+      "route": "157",
+      "model": "CTMV2",
+      "cycles": 76554,
+      "model_frames": 14892,
+      "fallback_frames": 0,
+      "wire_round_trips": 15312,
+      "metrics": {
+        "all": {
+          "samples": 44971,
+          "angle_reference_difference_deg_p50_p95_max": [
+            0.7096582083526739,
+            37.323791775018584,
+            473.2113566966026
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 26,
+          "action_c1_bound_samples": 433,
+          "geometry_c1_bound_samples": 1393
+        },
+        "straight": {
+          "samples": 29296,
+          "angle_reference_difference_deg_p50_p95_max": [
+            0.3907433332260141,
+            10.800464754067871,
+            172.34883032860316
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 0,
+          "action_c1_bound_samples": 0,
+          "geometry_c1_bound_samples": 0
+        },
+        "turn": {
+          "samples": 5773,
+          "angle_reference_difference_deg_p50_p95_max": [
+            18.222567807080637,
+            104.0235491521133,
+            473.2113566966026
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 26,
+          "action_c1_bound_samples": 433,
+          "geometry_c1_bound_samples": 1393
+        }
+      },
+      "sources_sha256": {
+        ".cache/ford_route157/full/route.npz": "e2e2573f904aa11ee9e10450e7f5b965d475657b61127e827a67eadcd6b857fb",
+        ".cache/ford_route157/full/metadata.json": "f2d72c9a877ed6694e4da6831841113dc0c05987e2c76cca51f358d12411b235",
+        ".cache/ford_route157/intake.npz": "5dffd86fde68197727d6c6b9c5eae82320a456fa1206c4cf18e5e9c69419dde4",
+        ".cache/ford_route157/intake.json": "1d82c7f87d42229b96771bce3dd43c6b1651aa4fb8bb0ca3b1886d5a1a1c1a3c",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/geometry_reference_validate.py": "84dae09c158f5aaa3b88b5141545cd16829022437027d3d86c60a0acf7d78f56",
+        "openpilot/sunnypilot/modeld_v2/ford_geometry.py": "9a51519533b7e4a6b5aa5ff58ad5b646afb2267c943d5a790e86d8b20324d84b",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "149",
+      "model": "CTMV2",
+      "cycles": 132334,
+      "model_frames": 26104,
+      "fallback_frames": 0,
+      "wire_round_trips": 26468,
+      "metrics": {
+        "all": {
+          "samples": 109224,
+          "angle_reference_difference_deg_p50_p95_max": [
+            1.0809205342304384,
+            21.80654129599715,
+            180.71838950537807
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 142,
+          "action_c1_bound_samples": 845,
+          "geometry_c1_bound_samples": 2430
+        },
+        "straight": {
+          "samples": 67435,
+          "angle_reference_difference_deg_p50_p95_max": [
+            0.6422363701463203,
+            6.246569735165232,
+            62.050131143674285
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 0,
+          "action_c1_bound_samples": 0,
+          "geometry_c1_bound_samples": 0
+        },
+        "turn": {
+          "samples": 15161,
+          "angle_reference_difference_deg_p50_p95_max": [
+            6.8859610951543,
+            87.51133149734092,
+            180.71838950537807
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 142,
+          "action_c1_bound_samples": 845,
+          "geometry_c1_bound_samples": 2430
+        }
+      },
+      "sources_sha256": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/metadata.json": "624fff03c25eb298661cb7b25f3dbe6d214d863f799d93635c0f4f05fc0d2b32",
+        ".cache/ford_route149/intake.npz": "503919c4f1566ef850007c59f16ce074697ba57732f21beb7b158c1ca7be3a9d",
+        ".cache/ford_route149/intake.json": "80f8c4ba69b4259ed308e0db110123063c6917357d26b49c9b6585695c9b24ae",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/geometry_reference_validate.py": "84dae09c158f5aaa3b88b5141545cd16829022437027d3d86c60a0acf7d78f56",
+        "openpilot/sunnypilot/modeld_v2/ford_geometry.py": "9a51519533b7e4a6b5aa5ff58ad5b646afb2267c943d5a790e86d8b20324d84b",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    },
+    {
+      "route": "151",
+      "model": "TT",
+      "cycles": 325708,
+      "model_frames": 64837,
+      "fallback_frames": 0,
+      "wire_round_trips": 65142,
+      "metrics": {
+        "all": {
+          "samples": 124806,
+          "angle_reference_difference_deg_p50_p95_max": [
+            0.6014079626170221,
+            8.687564671100564,
+            233.5485828527104
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 6,
+          "action_c1_bound_samples": 162,
+          "geometry_c1_bound_samples": 588
+        },
+        "straight": {
+          "samples": 105881,
+          "angle_reference_difference_deg_p50_p95_max": [
+            0.5210065989727145,
+            4.103656620119354,
+            143.66919002099516
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 0,
+          "action_c1_bound_samples": 0,
+          "geometry_c1_bound_samples": 0
+        },
+        "turn": {
+          "samples": 3715,
+          "angle_reference_difference_deg_p50_p95_max": [
+            9.423421334227854,
+            66.85200116463068,
+            233.5485828527104
+          ],
+          "action_c0_bound_samples": 0,
+          "geometry_c0_bound_samples": 6,
+          "action_c1_bound_samples": 162,
+          "geometry_c1_bound_samples": 588
+        }
+      },
+      "sources_sha256": {
+        ".cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        ".cache/ford_route151/full/metadata.json": "937825317a0edd470c54647240b922be8f79dda5b3365ffdd61281f0aca877a1",
+        ".cache/ford_route151/intake.npz": "18bbefb7738cebd0071dc987e90f74469a0c8ed456f9412324030592cafd68c9",
+        ".cache/ford_route151/intake.json": "0cfe327b5889f2603d902d2a01e915bf9a27b7a312137111d892a5e8540e03aa",
+        "/Users/ibpersonal/.codex/worktrees/1a1c/sunnypilot/tools/ford_pscm_lab/geometry_reference_validate.py": "84dae09c158f5aaa3b88b5141545cd16829022437027d3d86c60a0acf7d78f56",
+        "openpilot/sunnypilot/modeld_v2/ford_geometry.py": "9a51519533b7e4a6b5aa5ff58ad5b646afb2267c943d5a790e86d8b20324d84b",
+        "openpilot/selfdrive/controls/lib/ford_model_action.py": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca"
+      }
+    }
+  ],
+  "tests_passed": 605,
+  "route157_timing": [
+    {
+      "event": 9,
+      "action": {
+        "entry_75deg": 509.71654137700006,
+        "release_below_25deg": 515.628442615
+      },
+      "geometry": {
+        "entry_75deg": 509.26702728900005,
+        "release_below_25deg": 515.7717539590001
+      }
+    },
+    {
+      "event": 11,
+      "action": {
+        "entry_75deg": 595.0217840170001,
+        "release_below_25deg": 601.3182963449999
+      },
+      "geometry": {
+        "entry_75deg": 595.2721063070001,
+        "release_below_25deg": 601.874657156
+      }
+    },
+    {
+      "event": 16,
+      "action": {
+        "entry_75deg": 700.319324972,
+        "release_below_25deg": 708.5712472329999
+      },
+      "geometry": {
+        "entry_75deg": 700.2793086730001,
+        "release_below_25deg": 709.1140404539999
+      }
+    }
+  ],
+  "totals": {
+    "cycles": 534596,
+    "model_frames": 105833,
+    "fallback_frames": 0,
+    "wire_round_trips": 106922
+  }
+}

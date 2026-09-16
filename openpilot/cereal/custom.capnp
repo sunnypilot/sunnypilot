@@ -482,6 +482,18 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
   leftLaneChangeEdgeBlock @1 :Bool;
   rightLaneChangeEdgeBlock @2 :Bool;
+  fordGeometryReference @3 :FordGeometryReference;
+
+  struct FordGeometryReference {
+    enabled @0 :Bool;
+    valid @1 :Bool;  # False while enabled means invalid geometry; original action is retained.
+    modelMonoTime @2 :UInt64;
+    actionDesiredCurvature @3 :Float32;  # Original model action, with its own unchanged smoothing history.
+    rawCurvature @4 :Float32;
+    selectedCurvature @5 :Float32;  # Published modelV2.action, before controlsd's normal limits/maneuver override.
+    previewSeconds @6 :Float32;
+    smoothSeconds @7 :Float32;
+  }
 
   enum TurnDirection {
     none @0;

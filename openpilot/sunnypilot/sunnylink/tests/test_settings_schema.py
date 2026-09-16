@@ -299,6 +299,14 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     assert "FordSharedPathController" not in keys
     assert "FordPscmObserver" not in keys
 
+  def test_ford_geometry_is_a_separate_cycle_only_opt_in(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    item = next(item for item in items if item["key"] == "FordGeometryReference")
+    assert item["widget"] == "toggle" and item["needs_onroad_cycle"] is True
+    assert item["enablement"] == [{"type": "offroad_only"}, {"type": "param", "key": "FordModelActionController", "equals": True}]
+    with tempfile.TemporaryDirectory() as path:
+      assert Params(path).get_default_value("FordGeometryReference") is False
+
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
