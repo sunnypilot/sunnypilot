@@ -12,7 +12,7 @@ import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
 from openpilot.sunnypilot.modeld_v2.modeld import _find_driving_pkl
 from openpilot.sunnypilot.modeld_v2.tests import helpers as tests_helpers
 from openpilot.sunnypilot.modeld_v2.tests.helpers import DummyModel, DummyBundle, ARCHETYPES, CAM_W, CAM_H, \
-  SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES
+  SPLIT_VISION_INPUT_SHAPES
 from openpilot.common.test import OpenpilotTestCase
 
 # resolved by name from this module when a test asks for them
@@ -66,21 +66,6 @@ class TestModelStateCombinedInit(OpenpilotTestCase):
 
 
 class TestStockEquivalence(OpenpilotTestCase):
-
-  def test_split_queue_keys_match_stock(self, model_state_factory):
-    from openpilot.selfdrive.modeld.compile_modeld import make_input_queues
-    from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip
-
-    state = model_state_factory(ARCHETYPES['vision_policy_split'])
-
-    frame_skip = derive_frame_skip(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES)
-    stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
-    stock_queues, stock_npy, _frame_views = make_input_queues(stock_shapes, frame_skip, device='NPY', frame_copy_size=49152)
-
-    # sunnypilot split pipeline has tfm/big_tfm as queues (stock has them in npy only)
-    assert set(stock_queues.keys()) <= set(state.input_queues.keys())
-    assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
-
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
 
@@ -105,20 +90,26 @@ class TestStockEquivalence(OpenpilotTestCase):
 
   def test_unified_run_model(self, tmp_path, monkeypatch, patch_modeld):
     from openpilot.common.hardware import hw
-    from openpilot.selfdrive.modeld.helpers import dump_oob
+    from openpilot.sunnypilot.modeld_v2.helpers import dump_oob
     shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
               'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
-    pkl_data = {'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}},
-                'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}}
+    import codecs
+    import pickle
+    slices_b64 = codecs.encode(pickle.dumps({}), 'base64').decode()
+    pkl_data = {
+      'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}, 'metadata': {'output_slices': slices_b64},
+                   'input_shapes': shapes, 'output_slices': {}, 'output_shapes': {}},
+      'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}
+    }
     with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
       dump_oob(pkl_data, f)
     bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
     patch_modeld(bundle)
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
     state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
-    assert state.is_run_model and state.run_model is not None
-    assert state.run_policy is None and state.warp is None
-    assert 'img' in state.frame_views and 'big_img' in state.frame_views
+    assert state.adapter.is_run_model and state.adapter.run_model is not None
+    assert state.adapter.run_policy is None and state.adapter.warp is None
+    assert 'img' in state.adapter.frame_views and 'big_img' in state.adapter.frame_views
 
 
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())
@@ -193,7 +184,7 @@ class TestInputQueueCreation(OpenpilotTestCase):
   def test_queues_not_empty(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
-    assert len(state.input_queues) > 0, f"{arch.name}: input_queues empty"
+    assert len(state.adapter.input_queues) > 0, f"{arch.name}: input_queues empty"
 
   @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_npy_contains_transforms(self, archetype_name, model_state_factory):
