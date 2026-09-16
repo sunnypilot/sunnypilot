@@ -1,4 +1,4 @@
-"""Replay C0 feedback against v14 using frozen native-time Lightning measurements.
+"""Replay C0 feedback against a baseline using frozen native-time Lightning measurements.
 
 This checks software/CAN behavior, not the physical response to new commands.
 Use cached route.npz, model_paths.npz and metadata.json from the rlog extractor.
@@ -6,6 +6,7 @@ Use cached route.npz, model_paths.npz and metadata.json from the rlog extractor.
 import argparse
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import hashlib
+import inspect
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,7 +25,7 @@ SPECIAL = {'11c': 'ford_maneuver_11c/analysis', '125': 'ford_c0_response_124_125
 ROUTES = ['a9', 'b9', '112', '113', '117', '11c', '125', '146', '149', '151']
 
 
-def replay(label, output):
+def replay(label, output, baseline=BASELINE):
   source = Path('.cache')/SPECIAL.get(label, 'ford_route'+label)
   meta = json.loads((source/'metadata.json').read_text())
   with np.load(source/'route.npz') as z:
@@ -46,7 +47,8 @@ def replay(label, output):
   exact = r['model']['ns'][mi] == c['model_ns']
   np.testing.assert_array_equal(model_ns, r['model']['ns'])
   models = [SimpleNamespace(position=SimpleNamespace(x=p[0], y=p[1]), orientation=SimpleNamespace(z=p[2])) for p in paths]
-  old, old_hash = original_controller(BASELINE)
+  old, old_hash = original_controller(baseline)
+  old_accepts_scale = 'curvature_scale' in inspect.signature(old.update).parameters
   new = ford_model_action.FordModelActionController()
   wire = WireCheck()
   names = ['t', 'valid', 'c0_old', 'c0_new', 'c1', 'offset_p', 'enabled', 'error_deg', 'target_deg', 'speed', 'curvature_scale']
@@ -66,11 +68,15 @@ def replay(label, output):
                 'measurement_time': cs['t'][i], 'model_time': model_time, 'reference_time': model_time, 'active': bool(cc['active'][i]),
                 'valid': valid, 'driver_pressed': bool(cs['pressed'][i]), 'driver_torque': cs['torque'][i], 'pscm_status': status}
     model = models[mi[i]] if exact[i] else None
-    a = old.update(model, c['desired'][i], **args)
+    a = old.update(model, c['desired'][i], **args, **({'curvature_scale': scale} if old_accepts_scale else {}))
     b = new.update(model, c['desired'][i], curvature_scale=scale, **args)
     assert a.valid == b.valid
     assert a.path_angle == b.path_angle
     assert old.core.correction == new.core.correction
+    assert old.core.proportional == new.core.proportional
+    if hasattr(old.core, 'offset_proportional') and old.core.c0_proportional_gain > 0.:
+      assert np.isclose(new.core.offset_proportional, old.core.offset_proportional *
+                        new.core.c0_proportional_gain / old.core.c0_proportional_gain, rtol=1e-12, atol=1e-12)
     assert abs(b.path_offset) <= 5.1100001 and abs(b.path_angle) <= .5000001
     assert b.curvature == b.curvature_rate == 0.
     assert np.isfinite([b.path_offset, b.path_angle, new.core.offset_proportional]).all()
@@ -99,7 +105,7 @@ def replay(label, output):
                            'c0_new_capped': int((abs(rows[mask, 3]) >= 5.105).sum())}
   files = [source/n for n in ('route.npz', 'metadata.json', 'model_paths.npz')]
   files += [reference, Path(__file__), Path(ford_model_action.__file__)]
-  report = {'route': label, 'baseline': BASELINE, 'baseline_sha256': old_hash, 'cycles': len(t), 'wire_round_trips': wire.count,
+  report = {'route': label, 'baseline': baseline, 'baseline_sha256': old_hash, 'cycles': len(t), 'wire_round_trips': wire.count,
                 'c1_identical': True, 'c0_gain': new.core.c0_proportional_gain, 'metrics': metrics,
                 'sources': {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}}
   (dest/'report.json').write_text(json.dumps(report, indent=2)+'\n')
@@ -111,9 +117,10 @@ if __name__ == '__main__':
   parser.add_argument('--output', type=Path, required=True)
   parser.add_argument('--routes', nargs='+', default=ROUTES, choices=ROUTES)
   parser.add_argument('--workers', type=int, default=4)
+  parser.add_argument('--baseline', default=BASELINE, help='Controller commit to compare, including previous C0 gains')
   args = parser.parse_args()
   with ProcessPoolExecutor(max_workers=args.workers) as pool:
-    jobs = {pool.submit(replay, label, args.output): label for label in args.routes}
+    jobs = {pool.submit(replay, label, args.output, args.baseline): label for label in args.routes}
     results = []
     for job in as_completed(jobs):
       result = job.result()

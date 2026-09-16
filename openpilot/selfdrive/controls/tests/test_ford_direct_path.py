@@ -112,6 +112,7 @@ def test_actual_controlsd_path_selection_feedback_logging_publication_and_can(pi
   controls = startup(params=SimpleNamespace(get_bool=lambda key: settings.get(key, False)))
   controls.sm, controls.desired_curvature, controls.curvature = Subscriptions(maneuver), 0., 0.
   assert controls.ford_path_controller.direct_path == geometry
+  assert controls.ford_path_controller.core.c0_proportional_gain == (.5 if geometry else 1.)
   model = circle(.01)
   model.action = SimpleNamespace(desiredCurvature=-.03)  # Deliberately opposite to the model path.
   cc = structs.CarControl(latActive=True)

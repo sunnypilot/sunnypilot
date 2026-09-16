@@ -10,8 +10,9 @@ from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import 
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_c0_helps_entry_then_releases_at_catchup_without_accumulation(sign):
-  controller = ModelActionController(c0_proportional_gain=.5)
+@pytest.mark.parametrize('gain', [.5, 1.])
+def test_c0_helps_entry_then_releases_at_catchup_without_accumulation(sign, gain):
+  controller = ModelActionController(c0_proportional_gain=gain)
   matched = ModelActionController(c0_proportional_gain=0.)
   kwargs = {'speed': 5., 'dt': .01, 'feedback_dt': 0., 'curvature_scale': 1.2}
   base = matched.update(straight(), sign*.02, current_curvature=sign*.01, **kwargs)
@@ -29,8 +30,9 @@ def test_c0_helps_entry_then_releases_at_catchup_without_accumulation(sign):
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
-def test_zero_target_commands_opposite_c0_and_does_not_retain_old_correction(sign):
-  core = ModelActionController(c0_proportional_gain=.5)
+@pytest.mark.parametrize('gain', [.5, 1.])
+def test_zero_target_commands_opposite_c0_and_does_not_retain_old_correction(sign, gain):
+  core = ModelActionController(c0_proportional_gain=gain)
   core.update(straight(), sign*.1, current_curvature=0., speed=5., dt=.01)
   out = core.update(straight(), 0., current_curvature=sign*.03, speed=5., dt=.01, feedback_dt=0.)
   assert sign*out.path_offset < 0.
@@ -38,8 +40,9 @@ def test_zero_target_commands_opposite_c0_and_does_not_retain_old_correction(sig
   assert out.path_offset == core.offset_proportional == 0.
 
 
-def test_new_c0_does_not_change_c1_or_its_integral_for_identical_measurements():
-  old, new = ModelActionController(c0_proportional_gain=0.), ModelActionController(c0_proportional_gain=.5)
+@pytest.mark.parametrize('old_gain,new_gain', [(0., .5), (.5, 1.)])
+def test_new_c0_does_not_change_c1_or_its_integral_for_identical_measurements(old_gain, new_gain):
+  old, new = ModelActionController(c0_proportional_gain=old_gain), ModelActionController(c0_proportional_gain=new_gain)
   for i in range(200):
     desired, measured = .03*math.sin(i/13), .025*math.sin((i-5)/13)
     kwargs = {'current_curvature': measured, 'speed': 12., 'dt': .01, 'feedback_enabled': i % 7 != 0, 'pscm_limited': i % 9 == 0}

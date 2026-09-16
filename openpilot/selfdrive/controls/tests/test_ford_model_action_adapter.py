@@ -191,7 +191,7 @@ def test_actual_controlsd_selection_limiting_publication_and_downstream_can(pipe
   assert controller.core.proportional == pytest.approx(.75*20.*expected_curvature)
   assert controller.core.correction == 0.  # First measurement has no elapsed feedback time.
   assert controls.ford_path.path_angle == pytest.approx((-1 if maneuver else 1)*.0045)
-  assert controls.ford_path.path_offset == pytest.approx((-1 if maneuver else 1)*.01)
+  assert controls.ford_path.path_offset == pytest.approx((-1 if maneuver else 1)*.02)
   assert controller.core.offset_proportional*expected_curvature > 0.
   assert cc.latActive and cc.actuators.curvature == 0.
   assert controller.diagnostics['reference_age'] == pytest.approx(.01 if maneuver else .02)
@@ -359,7 +359,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v15'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v19'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.

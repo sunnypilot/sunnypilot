@@ -22,7 +22,8 @@ OFFSET_STATION_M = 7.0
 HEADING_TIME_S = 1.0
 C1_PROPORTIONAL_GAIN = 0.75  # Drive-trial gains, not a learned calibration.
 C1_INTEGRAL_GAIN = 1.0
-C0_PROPORTIONAL_GAIN = 0.5  # Trial fraction of the measured wheel-angle error.
+C0_PROPORTIONAL_GAIN = 1.0  # Action trial: stronger immediate correction for the same tracking error.
+DIRECT_PATH_C0_PROPORTIONAL_GAIN = 0.5
 # Offline Lightning fit: geometric curvature per metre of C0, with v in m/s.
 C0_RESPONSE_CONSTANT = 0.010717679293424373
 C0_RESPONSE_INVERSE_SPEED_SQUARED = 0.018122981795212647
@@ -184,11 +185,13 @@ class FordModelActionController:
   neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
-               c0_proportional_gain=C0_PROPORTIONAL_GAIN, direct_path=False):
+               c0_proportional_gain=None, direct_path=False):
+    if c0_proportional_gain is None:
+      c0_proportional_gain = DIRECT_PATH_C0_PROPORTIONAL_GAIN if direct_path else C0_PROPORTIONAL_GAIN
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
                                       c0_proportional_gain=c0_proportional_gain)
     self.direct_path = bool(direct_path)
-    self.hypothesis = 'model-path-direct-feedback-v17' if self.direct_path else 'model-action-curvature-c0-feedback-v15'
+    self.hypothesis = 'model-path-direct-feedback-v17' if self.direct_path else 'model-action-curvature-c0-feedback-v19'
     self.reset()
 
   def path_curvature(self, model, speed):

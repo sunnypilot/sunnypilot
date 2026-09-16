@@ -1,5 +1,9 @@
 # Ford C0 proportional feedback trial
 
+This describes the original P=0.5 trial. The subsequent
+[action-mode gain trial](ford_action_c0_gain_v19.md) raises action C0 P to 1.0;
+direct-path mode retains P=0.5.
+
 The existing controller sends its tracking correction through C1 only. Offline
 identification on the Lightning suggests that stronger C1 requests can stop
 producing faster wheel movement while additional C0 may still help. This trial
