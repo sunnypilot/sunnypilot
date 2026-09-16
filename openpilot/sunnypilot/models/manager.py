@@ -154,6 +154,41 @@ class ModelManagerSP:
     del self._download_start_times[artifact.fileName]
 
   async def _process_artifact(self, artifact, destination_path: str) -> None:
+    # retry transient failures, including errors while streaming the body.
+    # Rechecking hashes on each attempt preserves complete chunks without trusting partials.
+    try:
+      for attempt in range(4):
+        try:
+          await self._process_artifact_once(artifact, destination_path)
+          return
+        except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError, requests.HTTPError) as e:
+          if isinstance(e, requests.HTTPError) and (e.response is None or e.response.status_code not in (408, 429, 500, 502, 503, 504)):
+            raise
+          if attempt == 3:
+            raise
+          delay = 2 ** (attempt + 1)
+          cloudlog.warning(f"Retrying {artifact.fileName} in {delay}s: {e}")
+          for _ in range(delay * 4):
+            if self._download_interrupted():
+              raise DownloadCancelled("Download cancelled") from e
+            await asyncio.sleep(0.25)
+    except DownloadCancelled:
+      raise
+    except Exception as e:
+      # Keep files for the next attempt; only SHA-verified content is ever reused.
+      cloudlog.error(f"Error downloading {artifact.fileName}: {e}")
+      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
+      artifact.downloadProgress.eta = 0
+      self._sync_artifact_progress(artifact)
+      if self.selected_bundle:
+        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+      self._report_status()
+      raise
+    finally:
+      self._download_start_times.pop(artifact.fileName, None)
+
+  # one verified attempt, shared by initial downloads and retries.
+  async def _process_artifact_once(self, artifact, destination_path: str) -> None:
     if not artifact.downloadUri.uri:
       return None
     if self._download_interrupted():
@@ -164,78 +199,58 @@ class ModelManagerSP:
     filename = artifact.fileName
     full_path = os.path.join(destination_path, filename)
 
-    try:
-      # progress counts only valid chunks so a resumed download continues the
-      # bar from where verification left it, instead of falling back to zero
-      is_cached = False
-      valid_chunks: set[int] = set()
-      if len(artifact.chunks) > 0:
-        from openpilot.common.file_chunker import get_chunk_name
-        num_chunks = len(artifact.chunks)
-        for i, chunk in enumerate(artifact.chunks):
-          if self._download_interrupted():
-            raise DownloadCancelled("Download cancelled")
-          if await verify_file(get_chunk_name(full_path, i, num_chunks), chunk.sha256):
-            valid_chunks.add(i)
-          artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.verifying
-          artifact.downloadProgress.progress = (len(valid_chunks) / num_chunks) * 100
-          self._sync_artifact_progress(artifact)
-          self._report_status()
-        is_cached = len(valid_chunks) == num_chunks
-      else:
-        if await verify_file(full_path, expected_hash):
-          is_cached = True
-
-      if is_cached:
-        artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
-        artifact.downloadProgress.progress = 100
-        artifact.downloadProgress.eta = 0
+    # progress counts only valid chunks so a resumed download continues the
+    # bar from where verification left it, instead of falling back to zero
+    is_cached = False
+    valid_chunks: set[int] = set()
+    if len(artifact.chunks) > 0:
+      from openpilot.common.file_chunker import get_chunk_name
+      num_chunks = len(artifact.chunks)
+      for i, chunk in enumerate(artifact.chunks):
+        if self._download_interrupted():
+          raise DownloadCancelled("Download cancelled")
+        if await verify_file(get_chunk_name(full_path, i, num_chunks), chunk.sha256):
+          valid_chunks.add(i)
+        artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.verifying
+        artifact.downloadProgress.progress = (len(valid_chunks) / num_chunks) * 100
         self._sync_artifact_progress(artifact)
         self._report_status()
-        return
+      is_cached = len(valid_chunks) == num_chunks
+    else:
+      if await verify_file(full_path, expected_hash):
+        is_cached = True
 
+    if is_cached:
+      # a disconnected final response may leave all chunks but no manifest.
       if len(artifact.chunks) > 0:
-        await self._download_chunked(url, full_path, artifact, skip=valid_chunks)
-        from openpilot.common.file_chunker import get_chunk_name
-        for i, chunk in enumerate(artifact.chunks):
-          chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
-          if not await verify_file(chunk_path, chunk.sha256):
-            raise ValueError(f"Hash validation failed for chunk {i+1} of {filename}")
-      else:
-        await self._download_file(url, full_path, artifact)
-        if not await verify_file(full_path, expected_hash):
-          raise ValueError(f"Hash validation failed for {filename}")
-
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
+        from openpilot.common.file_chunker import get_manifest_path
+        if not os.path.exists(get_manifest_path(full_path)):  # noqa: ASYNC240
+          with open(get_manifest_path(full_path), 'w') as f:  # noqa: ASYNC230
+            f.write(str(len(artifact.chunks)))
+      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
       artifact.downloadProgress.progress = 100
       artifact.downloadProgress.eta = 0
       self._sync_artifact_progress(artifact)
       self._report_status()
+      return
 
-    except DownloadCancelled:
-      # a cancel keeps whatever is on disk: complete chunks resume the next attempt
-      self._download_start_times.pop(artifact.fileName, None)
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
-      artifact.downloadProgress.eta = 0
-      self._sync_artifact_progress(artifact)
-      if self.selected_bundle:
-        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
-      self._report_status()
-      raise
+    if len(artifact.chunks) > 0:
+      await self._download_chunked(url, full_path, artifact, skip=valid_chunks)
+      from openpilot.common.file_chunker import get_chunk_name
+      for i, chunk in enumerate(artifact.chunks):
+        chunk_path = get_chunk_name(full_path, i, len(artifact.chunks))
+        if not await verify_file(chunk_path, chunk.sha256):
+          raise ValueError(f"Hash validation failed for chunk {i+1} of {filename}")
+    else:
+      await self._download_file(url, full_path, artifact)
+      if not await verify_file(full_path, expected_hash):
+        raise ValueError(f"Hash validation failed for {filename}")
 
-    except Exception as e:
-      cloudlog.error(f"Error downloading {filename}: {str(e)}")
-      for f in [full_path] + [p for p in (os.path.join(destination_path, f) for f in os.listdir(destination_path)) if filename in p]:
-        if os.path.isfile(f):  # noqa: ASYNC240
-          os.remove(f)
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
-      artifact.downloadProgress.eta = 0
-      self._sync_artifact_progress(artifact)
-      if self.selected_bundle:
-        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
-      self._report_status()
-      self._download_start_times.pop(artifact.fileName, None)
-      raise
+    artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
+    artifact.downloadProgress.progress = 100
+    artifact.downloadProgress.eta = 0
+    self._sync_artifact_progress(artifact)
+    self._report_status()
 
   async def _process_model(self, model, destination_path: str) -> None:
     """Processes a single model download including verification"""
@@ -309,11 +324,15 @@ class ModelManagerSP:
       self._download_ref = ref_to_download
       try:
         self.download(model_to_download, Paths.model_root(), source)
+      # cancellation clears the selection; failures remain visible until another request.
+      except DownloadCancelled:
+        self.selected_bundle = None
       except Exception as e:
         cloudlog.exception(e)
+      else:
+        self.selected_bundle = None
       finally:
         self._release_download_ref()
-        self.selected_bundle = None
 
   def main_thread(self) -> None:
     """Main thread for model management"""

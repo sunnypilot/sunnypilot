@@ -365,6 +365,12 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert DownloadHandler.request_paths == [], "cached bundle must not hit the network"
       assert [round(p) for p in self.reported[:3]] == [33, 67, 100]
       assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.cached
+      # resuming verified chunks must also restore the loader's manifest.
+      with open(get_manifest_path(base_path)) as f:
+        assert f.read() == str(len(CHUNK_BODIES))
+      os.utime(get_manifest_path(base_path), (1, 1))
+      asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert os.stat(get_manifest_path(base_path)).st_mtime == 1, "do not rewrite a manifest a model may be reading"
     self.run_with_server(body)
 
   def _make_params_with_store(self):
@@ -415,6 +421,81 @@ class TestManagerDownload(ManagerDownloadTestBase):
       assert "ModelManager_ActiveBundle" not in store, "chestnut download must not touch the qcom slot"
       assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
     self.run_with_server(body)
+
+
+  # exercise retries through real HTTP bodies and the request lifecycle.
+  def test_interrupted_body_retries_without_redownloading_complete_chunks(self):
+    class InterruptedHandler(DownloadHandler):
+      def do_GET(self):
+        if self.path.endswith('.chunk02of03') and self.path not in self.request_paths:
+          type(self).request_paths.append(self.path)
+          self.send_response(200)
+          self.send_header('Content-Length', str(len(CHUNK_BODIES[1])))
+          self.end_headers()
+          self.wfile.write(CHUNK_BODIES[1][:2000])
+          self.close_connection = True
+          return
+        super().do_GET()
+
+    with http_server_context(handler=InterruptedHandler) as (host, port):
+      self.base_url = f'http://{host}:{port}'
+      artifact = self.make_artifact(chunked=True)
+      with mock.patch.object(manager_module.asyncio, 'sleep', new_callable=mock.AsyncMock):
+        asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      paths = InterruptedHandler.request_paths
+      assert sum(p.endswith('.chunk01of03') for p in paths) == 1
+      assert sum(p.endswith('.chunk02of03') for p in paths) == 2
+      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
+      for path, expected in zip(self.chunk_paths(os.path.join(self.dest, artifact.fileName)), CHUNK_BODIES, strict=True):
+        with open(path, 'rb') as f:
+          assert f.read() == expected
+
+  def test_transient_failure_keeps_chunks_and_stays_visible(self):
+    self._check_failure_keeps_chunks_and_stays_visible(503, 4)
+
+  def test_permanent_failure_does_not_retry(self):
+    self._check_failure_keeps_chunks_and_stays_visible(404, 1)
+
+  def _check_failure_keeps_chunks_and_stays_visible(self, status, attempts):
+    def body():
+      artifact = self.make_artifact(chunked=True)
+      self._bundle.ref = 'test-ref'
+      self.manager.source_models = {'qcom': [self._bundle]}
+      params, store = self._make_params_with_store()
+      store['ModelManager_DownloadRef'] = 'test-ref'
+      params.remove.side_effect = lambda key: store.__setitem__(key, None)
+      self.manager.params = params
+      failing = '/' + os.path.basename(get_chunk_name(artifact.downloadUri.uri, 1, len(CHUNK_BODIES)))
+      DownloadHandler.fail_paths = {failing: status}
+      with mock.patch.object(manager_module.asyncio, 'sleep', new_callable=mock.AsyncMock), \
+           mock.patch.object(manager_module.Paths, 'model_root', return_value=self.dest):
+        self.manager._process_download_requests()
+        self.manager._process_download_requests()  # idle ticks must retain the failure
+      assert DownloadHandler.request_paths.count(failing) == attempts
+      assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.failed
+      assert store['ModelManager_DownloadRef'] is None
+      assert 'ModelManager_ActiveBundle' not in store
+      path = get_chunk_name(os.path.join(self.dest, artifact.fileName), 0, len(CHUNK_BODIES))
+      with open(path, 'rb') as f:
+        assert f.read() == CHUNK_BODIES[0]
+      assert self.manager._download_start_times == {}
+    self.run_with_server(body)
+
+  def test_cancel_during_backoff_stops_retry(self):
+    def body():
+      artifact = self.make_artifact(chunked=False)
+      DownloadHandler.fail_paths = {'/driving_test_tinygrad.pkl.whole': 503}
+
+      async def cancel(_):
+        self.manager.params.get.return_value = None
+
+      with mock.patch.object(manager_module.asyncio, 'sleep', side_effect=cancel):
+        with self.assertRaises(manager_module.DownloadCancelled):
+          asyncio.run(self.manager._process_artifact(artifact, self.dest))
+      assert len(DownloadHandler.request_paths) == 1
+      self.manager.params.put.assert_not_called()
+    self.run_with_server(body)
+  # End BluePilot
 
 
 class TestManagerImports(OpenpilotTestCase):
