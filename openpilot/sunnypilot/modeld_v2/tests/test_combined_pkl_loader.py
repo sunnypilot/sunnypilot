@@ -96,17 +96,20 @@ class TestStockEquivalence(OpenpilotTestCase):
     import codecs
     import pickle
     slices_b64 = codecs.encode(pickle.dumps({}), 'base64').decode()
-    pkl_data = {'metadata': {'metadata': {'output_slices': slices_b64}},
-                'variants': {f'{CAM_W}x{CAM_H}': {'input_specs': {}, 'packed_specs': {}, 'run': tests_helpers._noop_jit}}}
+    pkl_data = {
+      'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}, 'metadata': {'output_slices': slices_b64},
+                   'input_shapes': shapes, 'output_slices': {}, 'output_shapes': {}},
+      'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}
+    }
     with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
       dump_oob(pkl_data, f)
     bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
     patch_modeld(bundle)
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
     state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
-    assert state.is_run_model and state.run_model is not None
-    assert state.run_policy is None and state.warp is None
-    assert 'img' in state.frame_views and 'big_img' in state.frame_views
+    assert state.adapter.is_run_model and state.adapter.run_model is not None
+    assert state.adapter.run_policy is None and state.adapter.warp is None
+    assert 'img' in state.adapter.frame_views and 'big_img' in state.adapter.frame_views
 
 
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())
@@ -181,7 +184,7 @@ class TestInputQueueCreation(OpenpilotTestCase):
   def test_queues_not_empty(self, archetype_name, model_state_factory):
     arch = ARCHETYPES[archetype_name]
     state = model_state_factory(arch)
-    assert len(state.input_queues) > 0, f"{arch.name}: input_queues empty"
+    assert len(state.adapter.input_queues) > 0, f"{arch.name}: input_queues empty"
 
   @parameterized.expand(ARCHETYPE_NAMES, names=["archetype_name"])
   def test_npy_contains_transforms(self, archetype_name, model_state_factory):

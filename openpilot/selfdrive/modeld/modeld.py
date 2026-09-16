@@ -139,7 +139,7 @@ def input_view(buffer: Buffer, shape: tuple[int, ...], dtype: DType, offset: int
   return Tensor(UOp.from_buffer(view)).reshape(shape)
 
 
-class ModelState:
+class ModelState(ModelStateBase):
   prev_desire: np.ndarray  # for tracking the rising edge of the pulse
 
   def __init__(self, cam_w: int, cam_h: int, chestnut: bool):
@@ -283,6 +283,7 @@ def main(demo=False):
   if model is None:
     model = small_model
   params.put_bool("ChestnutLoading", False)
+  assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
 
   # messaging

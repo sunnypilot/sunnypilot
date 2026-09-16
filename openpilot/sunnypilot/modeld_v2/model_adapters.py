@@ -170,7 +170,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.reset_warmup_buffers()
     self._init_common()
 
-    warp_dir = Path(BASEDIR) / "sunnypilot/modeld_v2/models"
+    warp_dir = Path(BASEDIR) / "openpilot/sunnypilot/modeld_v2/models"
     with open(warp_dir / f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl', 'rb') as f:
       self.run_warp = DynamicTinygradUnpickler(f).load()['run']
     self.run_model = self.jits['run']

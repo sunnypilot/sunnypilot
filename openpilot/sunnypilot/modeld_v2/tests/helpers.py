@@ -168,9 +168,16 @@ def make_pkl_data(archetype):
     return {
       'metadata': {
         'metadata': {'output_slices': slices_b64},
-        'input_shapes': archetype.metadata_structure['model']['input_shapes']
+        'model': {
+          'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+          'output_slices': archetype.metadata_structure['model']['output_slices']
+        },
+        'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+        'output_slices': archetype.metadata_structure['model']['output_slices'],
+        'output_shapes': {}
       },
-      'variants': {f'{CAM_W}x{CAM_H}': {'input_specs': {}, 'packed_specs': {}, 'run': _noop_jit}},
+      'run_policy': _noop_jit,
+      (CAM_W, CAM_H): _noop_jit
     }
 
   return {

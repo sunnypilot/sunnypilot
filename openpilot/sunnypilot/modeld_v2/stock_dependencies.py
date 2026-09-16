@@ -88,6 +88,10 @@ def make_frame_prepare(nv12: NV12Frame, model_w, model_h):
   return frame_prepare_tinygrad
 
 
+def _detect_desire_key(shapes: dict) -> str | None:
+  return next((key for key in shapes if key.startswith('desire')), None)
+
+
 def get_policy_npy_shapes(input_shapes):
   dp = input_shapes['desire_pulse']
   tc = input_shapes['traffic_convention']
@@ -102,7 +106,7 @@ def make_input_queues(input_shapes, frame_skip, device, frame_copy_size):
   img = input_shapes['img']
   fb = input_shapes['features_buffer']
   feat_dim = math.prod(fb[2:])
-  dp = input_shapes['desire_pulse']
+  dp = input_shapes[_detect_desire_key(input_shapes)]
   n_frames = img[1] // 6
   img_buf_shape = (frame_skip * (n_frames - 1) + 1, 6, img[2], img[3])
 
