@@ -17,6 +17,7 @@ from opendbc.car import Bus, structs
 from opendbc.car.ford.carcontroller import CarController
 from opendbc.car.ford.fordcan import calculate_lat_ctl2_checksum
 from opendbc.car.ford.values import CAR, CarControllerParams, FordFlags
+from opendbc.car.interfaces import CarStateBase
 from openpilot.cereal import custom
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
@@ -242,6 +243,7 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
   model.action = SimpleNamespace(desiredCurvature=sign*.004)
   cc = structs.CarControl(latActive=True)
   cs = SimpleNamespace(vEgo=20., yawRate=.2, canValid=True, steeringPressed=False, steeringTorque=0.)
+  driver_filter = SimpleNamespace(steering_pressed_cnt=0)
   cp = structs.CarParams(flags=int(FordFlags.CANFD), carFingerprint='FORD_F_150_LIGHTNING_MK1')
   downstream = CarController({Bus.pt: 'ford_lincoln_base_pt'}, cp, structs.CarParamsSP())
   vehicle = SimpleNamespace(out=structs.CarState(vEgo=20., vEgoRaw=20.), acc_tja_status_stock_values=defaultdict(int),
@@ -251,11 +253,13 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
   # Every fresh error sample integrates within amplitude headroom.
   # Matched steering removes P and preserves I.
   for measured, torque, count, expected in [(sign*.004, 0., 100, 0.), (sign*.003, 0., 100, sign*.02),
-                                           (sign*.004, 0., 100, sign*.02), (sign*.005, 0., 100, 0.),
-                                           (sign*.003, 0., 100, sign*.02), (0., 1.0625, 5, 0.)]:
+                                           (sign*.004, 0., 100, sign*.02), (sign*.004, 1.0625, 2, sign*.02),
+                                           (sign*.005, 0., 100, 0.), (sign*.003, 0., 100, sign*.02), (0., 1.0625, 12, 0.)]:
     for _ in range(count):
       now = 1.+frame*.01
       controls.curvature, cs.steeringTorque = measured, torque
+      cs.steeringPressed = CarStateBase.update_steering_pressed(
+        driver_filter, abs(torque) > CarControllerParams.STEER_DRIVER_ALLOWANCE, 5)
       sm.logMonoTime.update(carState=round(now*1e9), modelV2=round(now*1e9))
       environment = {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                      'lp': SimpleNamespace(roll=0.), 'clip_curvature': clip_curvature,
@@ -277,14 +281,14 @@ def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline
       assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
       frame += 1
     core = controls.ford_path_controller.core
-    expected_p = .75*20.*(sign*.004-measured) if torque == 0. else 0.
+    expected_p = .75*20.*(sign*.004-measured) if not cs.steeringPressed else 0.
     assert core.proportional == pytest.approx(expected_p)
     assert core.correction == pytest.approx(expected)
     assert core.c1 == pytest.approx(sign*.08+expected_p+expected)
     assert controls.ford_path.path_angle == pytest.approx(core.c1, abs=.00025)
     base = encode_model_action(straight(), sign*.004, cs.vEgo).path_offset
     assert controls.ford_path.path_offset == pytest.approx(base+core.offset_proportional, abs=.005)
-    assert (core.offset_proportional == 0.) == (torque != 0. or measured == sign*.004)
+    assert (core.offset_proportional == 0.) == (cs.steeringPressed or measured == sign*.004)
 
 
 @pytest.mark.parametrize('service_valid', [False, True])
@@ -359,7 +363,7 @@ def test_continuous_pi_reversal_through_selected_limited_request_and_actual_can(
     assert wire['LatCtlPath_No_Cs'] == calculate_lat_ctl2_checksum(2, frame % 16, packet[1])
     if frame == 199:
       assert sign*core.correction < 0. if same_turn else sign*core.correction > 0.
-  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v15'
+  assert controls.ford_path_controller.diagnostics['hypothesis'] == 'model-action-curvature-c0-feedback-v16-filtered-driver'
   if same_turn:
     assert controls.desired_curvature == pytest.approx(sign*.01)
     assert sign*controls.ford_path.path_angle >= speed*.01  # No old unwind correction left below the new base.

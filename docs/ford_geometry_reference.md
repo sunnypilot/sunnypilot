@@ -50,7 +50,10 @@ the toggle is read at modeld startup.
 publication time, original action curvature, raw geometric curvature, selected
 curvature, preview, and smoothing time. `valid=false` while enabled identifies
 fallback. A startup log also identifies action or geometry mode. The existing
-Ford diagnostics continue to identify the unchanged v15 feedback controller.
+Ford diagnostics identified the unchanged v15 feedback controller in the initial
+geometry trial. The subsequent [v16 feedback continuity trial](ford_filtered_driver.md)
+uses Ford's filtered driver-input signal and leaves this reference calculation
+unchanged.
 
 ## Offline validation
 
