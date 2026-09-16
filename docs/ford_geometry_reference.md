@@ -1,5 +1,10 @@
 # Ford model geometry reference trial
 
+This documents the initial curvature-reference trial at `18ded0380`. The
+subsequent [direct model-path trial](ford_direct_path.md) reuses the geometry
+toggle and changes controlsd's reference and C0/C1 mapping. modeld telemetry
+described here remains available for comparison.
+
 `FordGeometryReference` changes the steering reference used by the existing
 Ford C0/C1 feedback controller. It is default off and requires
 `FordModelActionController` and a Ford CAN FD vehicle.
@@ -50,10 +55,7 @@ the toggle is read at modeld startup.
 publication time, original action curvature, raw geometric curvature, selected
 curvature, preview, and smoothing time. `valid=false` while enabled identifies
 fallback. A startup log also identifies action or geometry mode. The existing
-Ford diagnostics identified the unchanged v15 feedback controller in the initial
-geometry trial. The subsequent [v16 feedback continuity trial](ford_filtered_driver.md)
-uses Ford's filtered driver-input signal and leaves this reference calculation
-unchanged.
+Ford diagnostics continue to identify the unchanged v15 feedback controller.
 
 ## Offline validation
 

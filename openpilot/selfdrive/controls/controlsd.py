@@ -56,7 +56,8 @@ class Controls(ControlsExt):
     self.curvature = 0.0
     self.desired_curvature = 0.0
     self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
-                                                              c0_time_based=self.params.get_bool("FordC0TimeBased"))
+                                                              c0_time_based=self.params.get_bool("FordC0TimeBased"),
+                                                              direct_path=self.params.get_bool("FordGeometryReference"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":
       cloudlog.event("Ford path controller selected",
@@ -151,6 +152,8 @@ class Controls(ControlsExt):
     # Reset desired curvature to current to avoid violating the limits on engage
     if self.sm.valid['lateralManeuverPlan']:
       new_desired_curvature = self.sm['lateralManeuverPlan'].desiredCurvature if CC.latActive else self.curvature
+    elif self.ford_model_action and self.ford_path_controller.direct_path:
+      new_desired_curvature = self.ford_path_controller.path_curvature(model_v2, CS.vEgo) if CC.latActive else self.curvature
     else:
       new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)
@@ -178,6 +181,7 @@ class Controls(ControlsExt):
           reference_time=self.sm.logMonoTime[reference_service] * 1e-9,
           active=CC.latActive, valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2', reference_service]),
           driver_pressed=CS.steeringPressed, driver_torque=CS.steeringTorque,
+          reference_source=reference_service, roll=lp.roll,
           pscm_status=self.sm['carStateSP'].fordPscmStatus if self.sm.valid['carStateSP'] else None,
         )
         if not self.ford_path.valid:

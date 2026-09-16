@@ -5,13 +5,16 @@ including base-heading overflow, plus proportional tracking correction. C1
 combines the selected curvature's heading with proportional and integrated
 tracking error. Reference distance and gains are explicit trial choices.
 Commands use the current bounded request without an additional C0/C1 slew.
+The direct-path trial samples model position and heading separately, retains
+independent upstream request limits, and uses heading-equivalent feedback.
 """
 import math
 import struct
 
 import numpy as np
 
-from opendbc.car.ford.values import FordFlags
+from opendbc.car.ford.values import CarControllerParams, FordFlags
+from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from openpilot.selfdrive.controls.lib.ford_path import FordPath, _model_path
 
 
@@ -62,13 +65,34 @@ def encode_model_action(model, desired_curvature, speed, *, c0_time_based=False)
   return FordPath(True, c0, c1, 0., 0.) if _finite(c0, c1) else FordPath()
 
 
+def encode_model_path(model, speed, *, c0_time_based=False):
+  """Sample lateral position and heading independently in the model's frame.
+
+  Preserve the existing distance choices and hold a short path's endpoint.
+  These preview points are trial choices, not identified Ford reference points.
+  """
+  if not _finite(speed) or not .3 <= speed <= 55:
+    return FordPath()
+  try:
+    path = _model_path(model)
+  except OverflowError:
+    return FordPath()
+  if path is None or not all(_finite(*values) for values in path):
+    return FordPath()
+  distance, _, lateral, heading = path
+  heading_distance = max(OFFSET_STATION_M, speed*HEADING_TIME_S)
+  offset_distance = heading_distance if c0_time_based else OFFSET_STATION_M
+  return FordPath(True, float(np.interp(offset_distance, distance, lateral)),
+                  float(np.interp(heading_distance, distance, heading)), 0., 0.)
+
+
 class ModelActionController:
   """Integrated tracking error is the only accumulated correction.
 
   Freshness, measurement cadence and driver/PSCM arbitration belong to the caller.
   """
   __slots__ = ('c0', 'c1', 'correction', 'proportional_gain', 'integral_gain', 'proportional', 'feedback_curvature', 'c0_time_based',
-               'c0_proportional_gain', 'offset_proportional')
+               'c0_proportional_gain', 'offset_proportional', 'offset_reference')
 
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
                c0_proportional_gain=C0_PROPORTIONAL_GAIN):
@@ -82,22 +106,37 @@ class ModelActionController:
   def reset(self):
     self.c0 = self.c1 = self.correction = self.proportional = self.feedback_curvature = 0.
     self.offset_proportional = 0.
+    self.offset_reference = None
 
   def update(self, model, desired_curvature, *, current_curvature, speed, dt, active=True, valid=True,
-             feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None, curvature_scale=1.):
+             feedback_dt=None, feedback_enabled=True, pscm_limited=False, feedback_curvature=None, curvature_scale=1.,
+             direct_path=False, roll=0.):
     feedback_dt = dt if feedback_dt is None else feedback_dt
     reference = desired_curvature if feedback_curvature is None else feedback_curvature
-    if (not active or not valid or not _finite(dt, feedback_dt, current_curvature, reference, curvature_scale) or not .002 <= dt <= .1
-        or not 0. <= feedback_dt <= .15 or abs(current_curvature) > 1. or abs(reference) > 1.):
+    if (not active or not valid or not _finite(dt, feedback_dt, desired_curvature, current_curvature, reference, curvature_scale, roll)
+        or not .002 <= dt <= .1 or not 0. <= feedback_dt <= .15
+        or abs(desired_curvature) > 1. or abs(current_curvature) > 1. or abs(reference) > 1.):
       self.reset()
       return FordPath()
     if curvature_scale <= 0.:
       self.reset()
       return FordPath()
-    target = encode_model_action(model, desired_curvature, speed, c0_time_based=self.c0_time_based)
+    target = (encode_model_path(model, speed, c0_time_based=self.c0_time_based) if direct_path else
+              encode_model_action(model, desired_curvature, speed, c0_time_based=self.c0_time_based))
     if not target.valid:
       self.reset()
       return FordPath()
+    if direct_path:
+      # Limit the channels independently, without rebuilding C0 from C1.
+      # Normalizing C0 by distance only applies the existing curvature envelope;
+      # when unconstrained, the output is exactly the sampled model offset.
+      distance = max(OFFSET_STATION_M, speed*HEADING_TIME_S) if self.c0_time_based else OFFSET_STATION_M
+      previous = current_curvature if self.offset_reference is None else self.offset_reference
+      self.offset_reference, _ = clip_curvature(speed, previous, 2.*target.path_offset/distance**2, roll)
+      target = FordPath(True, .5*self.offset_reference*distance**2,
+                        max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature, 0., 0.)
+    else:
+      self.offset_reference = None
     self.feedback_curvature = reference
     error = reference-current_curvature
     self.proportional = self.proportional_gain*max(OFFSET_STATION_M, speed*HEADING_TIME_S)*error if feedback_enabled else 0.
@@ -140,17 +179,22 @@ class FordModelActionController:
   Feedback advances once per fresh steering measurement; repeated samples
   still use the current request. Raw model geometry is checked on every cycle.
 
-  CAN yaw remains a health gate, not the feedback measurement. Ford's filtered
-  steeringPressed and fresh PSCM driver overrides clear the correction.
-  Fresh PSCM limits only inhibit outward integration;
+  CAN yaw remains a health gate, not the feedback measurement. Driver override
+  clears the correction. Fresh PSCM limits only inhibit outward integration;
   neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
-               c0_proportional_gain=C0_PROPORTIONAL_GAIN):
+               c0_proportional_gain=C0_PROPORTIONAL_GAIN, direct_path=False):
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
                                       c0_proportional_gain=c0_proportional_gain)
-    self.hypothesis = 'model-action-curvature-c0-feedback-v16-filtered-driver'
+    self.direct_path = bool(direct_path)
+    self.hypothesis = 'model-path-direct-feedback-v17' if self.direct_path else 'model-action-curvature-c0-feedback-v15'
     self.reset()
+
+  def path_curvature(self, model, speed):
+    """Heading-equivalent feedback target; controlsd limits and logs this value."""
+    target = encode_model_path(model, speed, c0_time_based=self.core.c0_time_based)
+    return target.path_angle/max(OFFSET_STATION_M, speed*HEADING_TIME_S) if target.valid else 0.
 
   def set_c0_time_based(self, enabled, *, lateral_engaged):
     """Apply a distance change only after lateral assistance is disengaged."""
@@ -169,7 +213,7 @@ class FordModelActionController:
 
   def update(self, model, desired_curvature, *, current_curvature, yaw_rate, speed, now, measurement_time, model_time,
              reference_time, active, valid=True, driver_pressed=False, driver_torque=0., pscm_status=None,
-             feedback_curvature=None, curvature_scale=1.):
+             feedback_curvature=None, curvature_scale=1., reference_source='modelV2', roll=0.):
     reason = None
     if not active:
       reason = 'inactive'
@@ -195,14 +239,14 @@ class FordModelActionController:
     status_fresh = (pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0
                     and -.005 <= now-pscm_status.canMonoTime*1e-9 <= .15)
     pscm_limited = bool(status_fresh and pscm_status.limit == 2)
-    # CarState already filters Ford's noisy torque signal into steeringPressed.
-    # Rechecking its raw threshold here bypasses that filter and chatters P/I.
     driver_override = bool(driver_pressed or not _finite(driver_torque)
+                           or abs(driver_torque) > CarControllerParams.STEER_DRIVER_ALLOWANCE
                            or (status_fresh and pscm_status.limit == 3))
     feedback_enabled = not (driver_override or (status_fresh and (pscm_status.denied or pscm_status.lateralState != 2)))
+    direct_path = self.direct_path and reference_source == 'modelV2'
     command = self.core.update(model, desired_curvature, current_curvature=current_curvature, speed=speed, dt=dt,
                                feedback_dt=feedback_dt, feedback_enabled=feedback_enabled, pscm_limited=pscm_limited,
-                               feedback_curvature=feedback_curvature, curvature_scale=curvature_scale)
+                               feedback_curvature=feedback_curvature, curvature_scale=curvature_scale, direct_path=direct_path, roll=roll)
     if not command.valid:
       self.reset('invalid_path')
       return command
@@ -210,6 +254,7 @@ class FordModelActionController:
     raw_heading = max(OFFSET_STATION_M, speed*HEADING_TIME_S)*desired_curvature
     base_heading = float(np.clip(raw_heading, -.5, .5))
     self.diagnostics = {'status': 'active', 'hypothesis': self.hypothesis,
+                        'direct_path': direct_path, 'offset_reference': self.core.offset_reference,
                         'c0_time_based': self.core.c0_time_based,
                         'offset_distance': max(OFFSET_STATION_M, speed*HEADING_TIME_S) if self.core.c0_time_based else OFFSET_STATION_M,
                         'calibration_approved': CALIBRATION_APPROVED, 'desired_curvature': desired_curvature,
@@ -229,9 +274,10 @@ class FordModelActionController:
     return command
 
 
-def select_model_action_controller(CP, enabled, *, c0_time_based=False):
+def select_model_action_controller(CP, enabled, *, c0_time_based=False, direct_path=False):
   """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
-    return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, c0_time_based=c0_time_based)
+    return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN,
+                                     c0_time_based=c0_time_based, direct_path=direct_path)
   return None

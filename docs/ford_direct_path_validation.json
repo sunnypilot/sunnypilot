@@ -19,18 +19,23 @@
     "latched_angle_match_fraction": 1.0,
     "command_changes": {
       "c0": [
-        0.0,
-        0.0,
-        0.541800000000003,
-        1.6400000000000006
+        0.2799999999999998,
+        1.3800000000000003,
+        1.8000000000000007,
+        2.51
       ],
       "c1": [
-        0.0,
-        0.1825,
-        0.20749999999999996,
-        0.21100000000000008
+        0.01749999999999996,
+        0.124,
+        0.2940450000000001,
+        0.45200000000000007
       ]
     },
+    "reference_change_p50_p95_max": [
+      0.0015834828704371431,
+      0.012526763883651669,
+      0.03905121179470369
+    ],
     "variants": {
       "old": {
         "feedback_switches_active": 112,
@@ -41,25 +46,27 @@
           "c0": 0.4996000000000004,
           "c1": 0.05668000000000003
         },
+        "c0_bound_active_s": 0.0,
         "c1_bound_active_s": 2.5702606670000137
       },
       "new": {
-        "feedback_switches_active": 50,
-        "feedback_switches_low_speed": 25,
-        "low_speed_c0_steps_over_025m": 21,
-        "low_speed_c1_steps_over_005rad": 18,
+        "feedback_switches_active": 112,
+        "feedback_switches_low_speed": 61,
+        "low_speed_c0_steps_over_025m": 52,
+        "low_speed_c1_steps_over_005rad": 46,
         "low_speed_step_p99": {
-          "c0": 0.15480000000000044,
-          "c1": 0.02622000000000008
+          "c0": 0.8499999999999996,
+          "c1": 0.08540000000000011
         },
-        "c1_bound_active_s": 3.8107828889998814
+        "c0_bound_active_s": 0.0,
+        "c1_bound_active_s": 6.774772933000349
       }
     },
-    "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\n",
+    "method": "Compare direct model-path commands against the driven geometry-curvature controller.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\nreference selection, command continuity and overrides; it does not predict a changed wheel response.\n",
     "provenance": {
       "baseline_commit": "18ded0380045c29520cf1f690688e48ebad043d8",
       "baseline_controller_sha256": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca",
-      "candidate_controller_sha256": "c1132b826a37e6b600ef75683ab8f0a8c784c668472f69f08e217a0a91cca60a",
+      "candidate_controller_sha256": "02b64f40a56cadefb181afbf7c3720affa3c7fe4ac18a2902dc9c546fd6b395d",
       "fixed_c0_distance_m": 7.0
     },
     "sources_sha256": {
@@ -88,18 +95,23 @@
     "latched_angle_match_fraction": 0.9999321895978843,
     "command_changes": {
       "c0": [
-        0.0,
-        0.0,
-        0.2600000000000003,
-        1.740000000000001
+        0.040000000000000036,
+        1.08,
+        1.7699999999999996,
+        2.46
       ],
       "c1": [
-        0.0020000000000000018,
-        0.012999999999999994,
-        0.07999999999999996,
-        0.15400000000000003
+        0.003500000000000003,
+        0.12449999999999994,
+        0.22634999999999764,
+        0.406
       ]
     },
+    "reference_change_p50_p95_max": [
+      0.00021085212911765025,
+      0.013382994089416386,
+      0.03945627628640698
+    ],
     "variants": {
       "old": {
         "feedback_switches_active": 238,
@@ -110,25 +122,27 @@
           "c0": 0.36999999999999944,
           "c1": 0.03771999999999984
         },
+        "c0_bound_active_s": 0.0,
         "c1_bound_active_s": 6.701652654999748
       },
       "new": {
-        "feedback_switches_active": 82,
-        "feedback_switches_low_speed": 40,
-        "low_speed_c0_steps_over_025m": 39,
-        "low_speed_c1_steps_over_005rad": 17,
+        "feedback_switches_active": 238,
+        "feedback_switches_low_speed": 107,
+        "low_speed_c0_steps_over_025m": 129,
+        "low_speed_c1_steps_over_005rad": 57,
         "low_speed_step_p99": {
-          "c0": 0.22999999999999904,
-          "c1": 0.03050000000000002
+          "c0": 0.6187999999999921,
+          "c1": 0.05121999999999982
         },
-        "c1_bound_active_s": 7.123324506999893
+        "c0_bound_active_s": 0.0,
+        "c1_bound_active_s": 7.542629173000023
       }
     },
-    "method": "Compare driver-input arbitration on recorded references and frozen vehicle motion.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\ncommand continuity and overrides; it does not predict a changed wheel response.\n",
+    "method": "Compare direct model-path commands against the driven geometry-curvature controller.\n\nInput: extract.py route.npz/model_paths.npz/metadata.json directories. This checks\nreference selection, command continuity and overrides; it does not predict a changed wheel response.\n",
     "provenance": {
       "baseline_commit": "18ded0380045c29520cf1f690688e48ebad043d8",
       "baseline_controller_sha256": "8bc8554ed6743c5faf433deaa6de3f07fae27d183f62b04f49f9c3b9f1e8dcca",
-      "candidate_controller_sha256": "c1132b826a37e6b600ef75683ab8f0a8c784c668472f69f08e217a0a91cca60a",
+      "candidate_controller_sha256": "02b64f40a56cadefb181afbf7c3720affa3c7fe4ac18a2902dc9c546fd6b395d",
       "fixed_c0_distance_m": 7.0
     },
     "sources_sha256": {

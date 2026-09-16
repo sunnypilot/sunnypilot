@@ -2183,8 +2183,8 @@
           "widget": "toggle",
           "needs_onroad_cycle": true,
           "title": "Selected-Action Path Tracking (Experimental)",
-          "description": "Follow the selected desired curvature using path-offset and heading commands with measured steering feedback on any Ford CAN FD vehicle.",
-          "details": "Derives path offset and heading from the same selected desired curvature and adjusts the heading request using the difference between requested and measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
+          "description": "Follow the selected model reference using path-offset and heading commands with measured steering feedback on any Ford CAN FD vehicle.",
+          "details": "Uses the selected desired curvature, or the model path when Model Geometry Reference is enabled, with correction based on requested versus measured steering. Uses remaining path-offset range when the base heading request reaches its limit. The correction holds when steering matches and clears on driver override. Default off; physical tracking and turn-exit behavior are not road-validated. Enable only for controlled testing. Turning it off restores upstream Ford curvature control, regardless of any previously stored experimental settings. Only Ford CAN FD vehicles can use this experiment. Changes apply after a real offroad-to-onroad cycle, not immediately or on disengagement alone.",
           "enablement": [
             {
               "type": "offroad_only"
@@ -2196,8 +2196,8 @@
           "widget": "toggle",
           "needs_onroad_cycle": true,
           "title": "Model Geometry Reference (Experimental)",
-          "description": "Use model heading and heading rate as the steering reference for the Ford C0/C1 controller.",
-          "details": "On uses the published model path to calculate desired curvature at the model's existing preview time, with the same output smoothing. Off uses the original model action. Both use the existing C0/C1 mapping, steering feedback, and limits. Requires Selected-Action Path Tracking; otherwise upstream Ford control remains selected. The original action and selected reference are both logged. Default off. Changes apply after an offroad-to-onroad cycle.",
+          "description": "Sample model lateral position for C0 and model heading for C1, with measured steering feedback.",
+          "details": "On uses direct model-path commands. C0 samples at 7 metres unless the C0 distance option is enabled; C1 samples at the larger of 7 metres or one second of travel. Feedback follows the heading from that same path. Command bounds and request limits remain active. Off restores the original model-action mapping. Requires Selected-Action Path Tracking; otherwise upstream Ford control remains selected. This changes the steering reference and has not been road-validated. Default off. Changes apply after an offroad-to-onroad cycle.",
           "enablement": [
             {
               "type": "offroad_only"

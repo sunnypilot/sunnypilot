@@ -1,7 +1,7 @@
-"""Compare driver-input arbitration on recorded references and frozen vehicle motion.
+"""Compare direct model-path commands against the driven geometry-curvature controller.
 
 Input: extract.py route.npz/model_paths.npz/metadata.json directories. This checks
-command continuity and overrides; it does not predict a changed wheel response.
+reference selection, command continuity and overrides; it does not predict a changed wheel response.
 """
 import argparse
 import hashlib
@@ -14,6 +14,7 @@ import numpy as np
 
 from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
+from openpilot.selfdrive.controls.lib.drive_helpers import clip_curvature
 from tools.ford_pscm_lab.model_action_replay import WireCheck, sample, table
 
 
@@ -35,11 +36,12 @@ def replay(source, destination, baseline_class, provenance):
   cp = SimpleNamespace(**{k: car[k] for k in ('mass', 'wheelbase', 'centerToFront', 'steerRatioRear', 'tireStiffnessFront', 'tireStiffnessRear')},
                        steerRatio=car['steer_ratio'], rotationalInertia=0.)
   vm = VehicleModel(cp)
-  cores = [baseline_class(), FordModelActionController()]
+  cores = [baseline_class(), FordModelActionController(direct_path=True)]
+  selected = 0.
   wire = WireCheck()
   names = ['t', 'active', 'valid', 'speed', 'pressed', 'raw_torque', 'pscm_override', 'limit',
            'old_c0', 'new_c0', 'old_c1', 'new_c1', 'old_i', 'new_i', 'old_feedback', 'new_feedback',
-           'recorded_c0', 'recorded_c1', 'latched_angle_error']
+           'recorded_c0', 'recorded_c1', 'latched_angle_error', 'old_reference', 'new_reference']
   rows = np.zeros((len(t), len(names)))
   for i, now in enumerate(t):
     vm.update_params(max(pa['stiffness'][i], .1), max(pa['steer_ratio'][i], .1))
@@ -51,16 +53,20 @@ def replay(source, destination, baseline_class, provenance):
                              limit=int(ps['limit'][i]), lateralState=int(ps['lateral_state'][i]), denied=bool(ps['denied'][i]))
     active = bool(cc['active'][i])
     valid = bool(c['valid'][i] and cs['valid'][i] and cs['can_valid'][i] and pa['valid'][i] and exact[i])
+    selected, _ = clip_curvature(cs['speed'][i], selected,
+                                 cores[1].path_curvature(models[mi[i]], cs['speed'][i]) if active else c['measured'][i], pa['roll'][i])
     commands = []
-    for core in cores:
-      command = core.update(models[mi[i]], c['desired'][i], current_curvature=c['measured'][i],
+    for variant, core in enumerate(cores):
+      target = c['desired'][i] if variant == 0 else selected
+      options = {} if variant == 0 else {'roll': pa['roll'][i]}
+      command = core.update(models[mi[i]], target, current_curvature=c['measured'][i],
                             speed=cs['speed'][i], yaw_rate=cs['yaw'][i], now=now, measurement_time=cs['t'][i],
                             model_time=c['model_ns'][i]*1e-9, reference_time=c['model_ns'][i]*1e-9,
                             active=active, valid=valid, driver_pressed=bool(cs['pressed'][i]), driver_torque=cs['torque'][i],
-                            pscm_status=status, curvature_scale=scale)
+                            pscm_status=status, curvature_scale=scale, **options)
       assert abs(command.path_offset) <= 5.1100001 and abs(command.path_angle) <= .5000001
       assert command.curvature == command.curvature_rate == 0.
-      if command.valid and (cs['pressed'][i] or (status.valid and -.005 <= now-ps['stamp'][i] <= .15 and status.limit == 3)):
+      if command.valid and (cs['pressed'][i] or abs(cs['torque'][i]) > 1. or (status.valid and -.005 <= now-ps['stamp'][i] <= .15 and status.limit == 3)):
         assert not core.diagnostics['feedback_enabled']
         assert core.core.correction == core.core.proportional == core.core.offset_proportional == 0.
       commands.append(command)
@@ -71,7 +77,7 @@ def replay(source, destination, baseline_class, provenance):
     rows[i] = [now-meta['t0'], active, new.valid, cs['speed'][i], cs['pressed'][i], cs['torque'][i], status.limit == 3, status.limit == 2,
                old.path_offset, new.path_offset, old.path_angle, new.path_angle, cores[0].core.correction, cores[1].core.correction,
                cores[0].diagnostics.get('feedback_enabled', False), cores[1].diagnostics.get('feedback_enabled', False),
-               sent['c0'][i], sent['c1'][i], abs(cs['angle'][i]-c['actual_angle'][i])]
+               sent['c0'][i], sent['c1'][i], abs(cs['angle'][i]-c['actual_angle'][i]), c['desired'][i], selected]
   a = dict(zip(names, rows.T, strict=True))
   live = a['valid'].astype(bool)
   consecutive = live[1:] & live[:-1] & (np.diff(t) < .03)
@@ -81,6 +87,7 @@ def replay(source, destination, baseline_class, provenance):
                k: np.quantile(abs(a['old_'+k][live]-a['recorded_'+k][live]), [.5, .95, .99, 1]).tolist() for k in ('c0', 'c1')},
              'latched_angle_match_fraction': float(np.mean(a['latched_angle_error'][live] < 1e-4)),
              'command_changes': {k: np.quantile(abs(a['new_'+k][live]-a['old_'+k][live]), [.5, .95, .99, 1]).tolist() for k in ('c0', 'c1')},
+             'reference_change_p50_p95_max': np.quantile(abs(a['new_reference'][live]-a['old_reference'][live]), [.5, .95, 1]).tolist(),
              'variants': {}}
   for name in ('old', 'new'):
     metrics['variants'][name] = {
@@ -89,6 +96,7 @@ def replay(source, destination, baseline_class, provenance):
       'low_speed_c0_steps_over_025m': int(np.count_nonzero(abs(np.diff(a[name+'_c0'])[low]) > .250001)),
       'low_speed_c1_steps_over_005rad': int(np.count_nonzero(abs(np.diff(a[name+'_c1'])[low]) > .050001)),
       'low_speed_step_p99': {k: float(np.quantile(abs(np.diff(a[name+'_'+k])[low]), .99)) for k in ('c0', 'c1')},
+      'c0_bound_active_s': float(np.sum(np.minimum(np.diff(t, append=t[-1]+.01), .03)[live & (abs(a[name+'_c0']) >= 5.105)])),
       'c1_bound_active_s': float(np.sum(np.minimum(np.diff(t, append=t[-1]+.01), .03)[live & (abs(a[name+'_c1']) >= .49975)])),
     }
   # Baseline agreement is reported rather than hidden: control publication time
