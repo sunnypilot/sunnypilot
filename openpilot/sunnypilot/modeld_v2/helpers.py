@@ -55,6 +55,11 @@ def _dynamic_factory(real_class):
     return _enum_factory(real_class)
 
   def factory(*args, **kwargs):
+    if real_class.__name__ == 'Buffer':
+      # Tinygrad, before compile_modeld moved to tg, serialized lb_refcount at index 6. It has been removed.
+      if len(args) >= 7 and isinstance(args[6], int):
+        args = tuple(list(args[:6]) + list(args[7:]))
+
     try:
       return real_class(*args, **kwargs)
     except TypeError:

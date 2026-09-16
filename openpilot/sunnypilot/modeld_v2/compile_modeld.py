@@ -32,7 +32,7 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-import openpilot.selfdrive.modeld.compile_modeld as stock
+import openpilot.sunnypilot.modeld_v2.stock_dependencies as stock
 from tinygrad import dtypes
 from tinygrad.device import Device
 from tinygrad.engine.jit import TinyJit
