@@ -418,7 +418,7 @@ def main(demo=False):
   ford_model_action = params.get_bool("FordModelActionController")
   ford_geometry = select_ford_geometry_reference(CP, ford_model_action, params.get_bool("FordGeometryReference"))
   if CP.brand == 'ford':
-    cloudlog.event('Ford model reference selected', source='geometry_assist_inputs' if ford_geometry is not None else 'action')
+    cloudlog.event('Ford model reference selected', source='geometry' if ford_geometry is not None else 'action')
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS

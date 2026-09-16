@@ -1,8 +1,5 @@
 # Direct model-path C0/C1 trial
 
-Historical trial at `01f5d5429`. The existing geometry toggle now selects the
-[geometry-assisted action reference](ford_geometry_action_hybrid_offline.md).
-
 This trial takes priority over the untested filtered-driver change. Driver
 arbitration is restored to the last driven baseline, `18ded0380`: a raw torque
 crossing above 1 Nm, filtered driver input, or fresh PSCM driver override still

@@ -57,7 +57,7 @@ class Controls(ControlsExt):
     self.desired_curvature = 0.0
     self.ford_path_controller = select_model_action_controller(self.CP, self.params.get_bool("FordModelActionController"),
                                                               c0_time_based=self.params.get_bool("FordC0TimeBased"),
-                                                              geometry_assist=self.params.get_bool("FordGeometryReference"))
+                                                              direct_path=self.params.get_bool("FordGeometryReference"))
     self.ford_model_action = isinstance(self.ford_path_controller, FordModelActionController)
     if self.CP.brand == "ford":
       cloudlog.event("Ford path controller selected",
@@ -151,14 +151,9 @@ class Controls(ControlsExt):
     # Steering PID loop and lateral MPC
     # Reset desired curvature to current to avoid violating the limits on engage
     if self.sm.valid['lateralManeuverPlan']:
-      if self.ford_model_action and self.ford_path_controller.geometry_assist is not None:
-        self.ford_path_controller.geometry_assist.reset()
       new_desired_curvature = self.sm['lateralManeuverPlan'].desiredCurvature if CC.latActive else self.curvature
-    elif self.ford_model_action and self.ford_path_controller.geometry_assist is not None:
-      reference = self.ford_path_controller.select_reference(
-        model_v2, model_mono_time=self.sm.logMonoTime['modelV2'], active=CC.latActive,
-        valid=CS.canValid and self.sm.all_checks(['carState', 'vehicleParameters', 'modelV2']))
-      new_desired_curvature = reference if CC.latActive else self.curvature
+    elif self.ford_model_action and self.ford_path_controller.direct_path:
+      new_desired_curvature = self.ford_path_controller.path_curvature(model_v2, CS.vEgo) if CC.latActive else self.curvature
     else:
       new_desired_curvature = model_v2.action.desiredCurvature if CC.latActive else self.curvature
     self.desired_curvature, curvature_limited = clip_curvature(CS.vEgo, self.desired_curvature, new_desired_curvature, lp.roll)

@@ -35,10 +35,10 @@ class FordGeometryReference:
     return raw, selected
 
   def apply(self, model_msg, driving_msg, sp_msg, *, speed, preview, smooth_seconds, smoothing_enabled):
-    """Publish geometry alongside the untouched action for controlsd's selector.
+    """Keep the original action separately; both published actions use the selected reference.
 
-    Embed the pair in modelV2 as well as diagnostic telemetry so controlsd never
-    has to join independently delivered publications from different frames.
+    The caller retains its original prev_action, so this experiment cannot feed
+    geometry into the learned action's smoothing or change longitudinal control.
     """
     model = model_msg.modelV2
     ref = sp_msg.modelDataV2SP.fordGeometryReference
@@ -51,7 +51,6 @@ class FordGeometryReference:
                          speed=speed, preview=preview, smooth_seconds=smooth_seconds, smoothing_enabled=smoothing_enabled)
     ref.valid = result is not None
     if result is not None:
-      ref.rawCurvature, ref.selectedCurvature = result
-    else:
-      ref.selectedCurvature = model.action.desiredCurvature
-    model.fordGeometryReference = ref
+      ref.rawCurvature, model.action.desiredCurvature = result
+      driving_msg.drivingModelData.action.desiredCurvature = model.action.desiredCurvature
+    ref.selectedCurvature = model.action.desiredCurvature
