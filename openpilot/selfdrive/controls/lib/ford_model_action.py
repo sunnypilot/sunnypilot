@@ -4,7 +4,8 @@ C0 samples a desired-curvature arc at 7 m, optionally max(7 m, v*1s),
 including base-heading overflow, plus proportional tracking correction softened
 near zero error without filtering or a deadband. C1
 combines the selected curvature's heading with proportional and integrated
-tracking error. Reference distance and gains are explicit trial choices.
+tracking error. Action-mode C1 P uses the same small-error shape as C0.
+Reference distance and gains are explicit trial choices.
 Commands use the current bounded request without an additional C0/C1 slew.
 The direct-path trial samples model position and heading separately, retains
 independent upstream request limits, and uses heading-equivalent feedback.
@@ -27,7 +28,7 @@ C1_PROPORTIONAL_GAIN = 0.75  # Drive-trial gains, not a learned calibration.
 C1_INTEGRAL_GAIN = 1.0
 C0_PROPORTIONAL_GAIN = 1.0  # Action trial: stronger immediate correction for the same tracking error.
 DIRECT_PATH_C0_PROPORTIONAL_GAIN = 0.5
-# Action-only trial: soften the error expressed as metres of C0 before gain.
+# Action-only trial: share C0's error scale with C1 proportional correction.
 # The slope grows smoothly from 0.5 to 1; correction reduction is at most 0.125 m * gain.
 C0_SMALL_ERROR_GAIN = 0.5
 C0_SMALL_ERROR_SCALE_M = 0.25
@@ -163,6 +164,9 @@ class ModelActionController:
       # original gain. Large corrections lose only a bounded amount, not a fraction.
       self.offset_proportional -= self.c0_proportional_gain*(1.-C0_SMALL_ERROR_GAIN)*C0_SMALL_ERROR_SCALE_M*math.tanh(
         offset_error/C0_SMALL_ERROR_SCALE_M)
+      # Soften C1 P around the target with the same shape, without new state.
+      normalized_error = offset_error/C0_SMALL_ERROR_SCALE_M
+      self.proportional *= 1.-(1.-C0_SMALL_ERROR_GAIN)*(math.tanh(normalized_error)/normalized_error if normalized_error else 1.)
     base = float(np.clip(target.path_angle, -.5, .5))
     offset = float(np.clip(target.path_offset+OFFSET_STATION_M*(target.path_angle-base), -5.11, 5.11))
     self.c0 = float(np.clip(offset+self.offset_proportional, -5.11, 5.11))
@@ -210,8 +214,8 @@ class FordModelActionController:
     self.direct_path = bool(direct_path)
     self.request_buffer_size = int(CURVATURE_REQUEST_BUFFER_SECONDS / DT_CTRL)
     self.request_buffer = deque([0.] * self.request_buffer_size, maxlen=self.request_buffer_size)
-    self.hypothesis = ('model-path-direct-feedback-v22-soft-c0' if self.direct_path else
-                       'model-action-curvature-c0-feedback-v22-soft-c0')
+    self.hypothesis = ('model-path-direct-feedback-v23' if self.direct_path else
+                       'model-action-curvature-c0-feedback-v23-soft-c0-c1')
     self.reset()
 
   def path_curvature(self, model, speed):

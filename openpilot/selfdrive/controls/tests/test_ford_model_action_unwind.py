@@ -13,7 +13,8 @@ def test_existing_integral_unwinds_in_current_output(sign, ki):
   core.c1, core.correction = sign*.07, sign*.03
   core.update(straight(), sign*.002, current_curvature=sign*.004, speed=20., dt=.01)
   assert core.correction == pytest.approx(sign*(.03-.0004*ki))
-  assert core.c1 == pytest.approx(sign*(.04-.0004*ki))
+  assert core.proportional*sign < 0.
+  assert core.c1 == pytest.approx(sign*.04+core.proportional+core.correction)
 
 
 @pytest.mark.parametrize('sign', [-1., 1.])
@@ -79,5 +80,5 @@ def test_duplicate_measurements_cannot_retire_integral(sign, limited, gain, ki):
   core.update(straight(), -sign*.002, current_curvature=sign*.004, speed=20., dt=.01,
               feedback_dt=0., pscm_limited=limited)
   assert core.correction == sign*.03
-  assert core.proportional == pytest.approx(-sign*.12*gain)
-  assert core.c1 == pytest.approx(-sign*(.01+.12*gain))
+  assert .5*.12*gain < -sign*core.proportional < .12*gain
+  assert core.c1 == pytest.approx(-sign*.01+core.proportional)

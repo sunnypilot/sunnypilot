@@ -15,9 +15,9 @@ def test_p_responds_without_waiting_for_integral_and_disappears_at_catchup(gain,
   controller.c1 = sign*.2
   out = controller.update(straight(), sign*.01, current_curvature=sign*.009,
                           speed=20., dt=.1, feedback_dt=0.)
-  assert controller.proportional == pytest.approx(sign*gain*.02)
+  assert .5*gain*.02 < sign*controller.proportional < gain*.02
   assert controller.correction == 0.
-  assert out.path_angle == pytest.approx(sign*(.2+gain*.02))
+  assert out.path_angle == pytest.approx(sign*.2+controller.proportional, abs=.00025)
   out = controller.update(straight(), sign*.01, current_curvature=sign*.01, speed=20., dt=.1)
   assert controller.proportional == controller.correction == 0.
   assert out.path_angle == pytest.approx(sign*.2)
@@ -36,7 +36,7 @@ def test_aligned_feedback_does_not_replace_current_feedforward_or_path(sign):
   # has already been exceeded. P and I must use the explicit feedback target.
   out = controller.update(straight(sign*.4), sign*.01, current_curvature=sign*.008,
                           feedback_curvature=sign*.006, speed=20., dt=.1)
-  assert controller.proportional == pytest.approx(-sign*.01)
+  assert .005 < -sign*controller.proportional < .01
   assert sign*controller.correction < 0.
   assert sign*out.path_angle < .2
 
@@ -96,7 +96,7 @@ def test_adapter_logs_separate_feedforward_p_i_and_explicit_feedback_target():
                       reference_time=now, active=True)
   d = controller.diagnostics
   assert d['heading_feedforward'] == pytest.approx(.08)
-  assert d['heading_proportional'] == pytest.approx(.005)
+  assert .0025 < d['heading_proportional'] < .005
   assert d['proportional_gain'] == .25 and d['feedback_curvature'] == .003
   assert d['heading_correction'] > 0.
   assert d['heading_request'] == pytest.approx(d['heading_feedforward']+d['heading_proportional']+d['heading_correction'])
