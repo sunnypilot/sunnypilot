@@ -519,6 +519,8 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   },
 
   EventName.brakeHold: {
+    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("Brake Hold Active"),
+    ET.NO_ENTRY: NoEntryAlert("Brake Hold Active"),
     ET.WARNING: Alert(
       "Press Resume to Exit Brake Hold",
       "",
