@@ -16,7 +16,7 @@ from setproctitle import setproctitle
 from tinygrad.tensor import Tensor
 
 import openpilot.cereal.messaging as messaging
-from openpilot.common.hardware import COMMA_HARDWARE
+from openpilot.common.hardware import COMMA_HARDWARE, HARDWARE
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 from openpilot.cereal import log
 from opendbc.car.structs import car
@@ -47,6 +47,7 @@ from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.frame_resize import FrameResize, SOURCE_SIZE, TARGET_SIZE
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (derive_frame_skip, make_split_input_queues,
                                                            make_supercombo_input_queues, nv12_copy_size,
                                                            WARP_INPUTS, POLICY_INPUTS)
@@ -126,7 +127,18 @@ class ModelState(ModelStateBase):
     self.is_run_model = 'run_model' in jits
 
     nv12_info = get_nv12_info(cam_w, cam_h)
-    self.frame_copy_size = nv12_copy_size(*nv12_info[:3])
+    self.source_frame_copy_size = nv12_copy_size(*nv12_info[:3])
+    self.frame_copy_size = self.source_frame_copy_size
+    self.frame_resize: FrameResize | None = None
+    model_camera_size = (cam_w, cam_h)
+    if (COMMA_HARDWARE and self.is_run_model and self.DEV == 'AMD'
+        and model_camera_size == SOURCE_SIZE and HARDWARE.get_device_type() == 'tizi'):
+      if TARGET_SIZE not in jits['run_model']:
+        raise RuntimeError("Comma 3X unified AMD model requires a compiled 1344x760 run_model entry")
+      self.frame_resize = FrameResize()
+      model_camera_size = TARGET_SIZE
+      self.frame_copy_size = nv12_copy_size(*get_nv12_info(*model_camera_size)[:3])
+      cloudlog.warning(f"Comma 3X unified AMD frame resize: {cam_w}x{cam_h} -> {model_camera_size[0]}x{model_camera_size[1]}")
     self.full_frames: dict = {}
     self._blob_cache: dict = {}
     self.frame_buffers: dict = {}
@@ -144,7 +156,7 @@ class ModelState(ModelStateBase):
         self.input_queues, self.numpy_inputs, self.frame_buffers = make_stock_input_queues(
           self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
         self.frame_views, self.npy = self.frame_buffers, self.numpy_inputs
-        self.run_model, self.run_policy, self.warp = jits['run_model'][(cam_w, cam_h)], None, None
+        self.run_model, self.run_policy, self.warp = jits['run_model'][model_camera_size], None, None
       else:
         self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
         self.run_model, self.run_policy, self.warp = None, jits['run_policy'], jits[(cam_w, cam_h)]
@@ -185,7 +197,7 @@ class ModelState(ModelStateBase):
       self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def warmup(self) -> None:
-    dummy_size = self.frame_copy_size if self.is_run_model else self.frame_buf_params[self._road_key][3]
+    dummy_size = self.source_frame_copy_size if self.is_run_model else self.frame_buf_params[self._road_key][3]
     dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
@@ -220,7 +232,10 @@ class ModelState(ModelStateBase):
     if self.is_run_model:
       for key, buf in bufs.items():
         data = buf.data if hasattr(buf, 'data') else buf
-        np.copyto(self.frame_buffers[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+        if self.frame_resize is not None:
+          self.frame_resize.resize(data, self.frame_buffers[key])
+        else:
+          np.copyto(self.frame_buffers[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key, buf in bufs.items():
         ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
@@ -240,6 +255,10 @@ class ModelState(ModelStateBase):
 
     self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
+    if self.frame_resize is not None:
+      for key in ('tfm', 'big_tfm'):
+        self.numpy_inputs[key][0] *= TARGET_SIZE[0] / SOURCE_SIZE[0]
+        self.numpy_inputs[key][1] *= TARGET_SIZE[1] / SOURCE_SIZE[1]
 
     if self.run_model is not None:
       outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
