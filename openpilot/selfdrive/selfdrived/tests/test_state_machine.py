@@ -2,7 +2,7 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import log
 from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.selfdrived.state import StateMachine, SOFT_DISABLE_TIME
-from openpilot.selfdrive.selfdrived.events import Events, ET, EVENTS, NormalPermanentAlert
+from openpilot.selfdrive.selfdrived.events import EventName, Events, ET, EVENTS, NormalPermanentAlert
 
 State = log.SelfdriveState.OpenpilotState
 
@@ -81,6 +81,18 @@ class TestStateMachine(OpenpilotTestCase):
     self.events.add(make_event([ET.NO_ENTRY, ET.PRE_ENABLE]))
     self.state_machine.update(self.events)
     assert self.state_machine.state == State.preEnabled
+
+  def test_brake_hold_blocks_engagement(self):
+    self.events.add(EventName.brakeHold)
+    self.events.add(EventName.buttonEnable)
+    self.state_machine.update(self.events)
+    assert self.state_machine.state == State.disabled
+
+  def test_brake_hold_immediately_disables(self):
+    self.state_machine.state = State.enabled
+    self.events.add(EventName.brakeHold)
+    self.state_machine.update(self.events)
+    assert self.state_machine.state == State.disabled
 
   def test_maintain_states(self):
     # Given current state's event type, we should maintain state
