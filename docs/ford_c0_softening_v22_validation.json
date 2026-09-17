@@ -1,0 +1,415 @@
+{
+  "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+  "method": "Native-time production-controller replay using recorded wheel motion. Tests command behavior, not changed physical tracking.",
+  "cycles": 646178,
+  "wire_checks": 64620,
+  "tests": {
+    "ford_controller_and_integration": 708,
+    "subtests": 2,
+    "ford_can": 11,
+    "ruff": "passed",
+    "diff_check": "passed",
+    "ford_can_subtests": 23
+  },
+  "selection": {
+    "0.15": {
+      "wobble1": {
+        "P_periodic_reduction_pct": 43.471957098342315,
+        "P_before": 0.1502831327602382,
+        "P_after": 0.08495211376066261
+      },
+      "wobble2": {
+        "P_periodic_reduction_pct": 20.901758921591217,
+        "P_before": 0.22856483271408398,
+        "P_after": 0.1807907624006479
+      },
+      "wobble2_exit": {
+        "P_periodic_reduction_pct": 31.59900962734852,
+        "P_before": 0.3407619177930598,
+        "P_after": 0.2330845265832934
+      },
+      "left_entry_peak": {
+        "t": 557.084304569,
+        "before": -2.9300000000000006,
+        "after_unpacked": -2.8568021983086886,
+        "retained_percent": 97.50178151224192
+      }
+    },
+    "0.25": {
+      "wobble1": {
+        "P_periodic_reduction_pct": 47.14718986588794,
+        "P_before": 0.1502831327602382,
+        "P_after": 0.07942885882136426
+      },
+      "wobble2": {
+        "P_periodic_reduction_pct": 31.648695347911747,
+        "P_before": 0.22856483271408398,
+        "P_after": 0.1562270451359394
+      },
+      "wobble2_exit": {
+        "P_periodic_reduction_pct": 40.10137585312036,
+        "P_before": 0.3407619177930598,
+        "P_after": 0.2041117003745639
+      },
+      "left_entry_peak": {
+        "t": 557.084304569,
+        "before": -2.9300000000000006,
+        "after_unpacked": -2.8068022480277577,
+        "retained_percent": 95.79529856750024
+      }
+    },
+    "0.4": {
+      "wobble1": {
+        "P_periodic_reduction_pct": 48.78814118850091,
+        "P_before": 0.1502831327602382,
+        "P_after": 0.07696278576667091
+      },
+      "wobble2": {
+        "P_periodic_reduction_pct": 40.16673505205207,
+        "P_before": 0.22856483271408398,
+        "P_after": 0.13675780193565182
+      },
+      "wobble2_exit": {
+        "P_periodic_reduction_pct": 45.26729702228269,
+        "P_before": 0.3407619177930598,
+        "P_after": 0.18650820832684864
+      },
+      "left_entry_peak": {
+        "t": 557.084304569,
+        "before": -2.9300000000000006,
+        "after_unpacked": -2.7318281193111016,
+        "retained_percent": 93.23645458399662
+      }
+    },
+    "0.5": {
+      "wobble1": {
+        "P_periodic_reduction_pct": 49.20782335256252,
+        "P_before": 0.1502831327602382,
+        "P_after": 0.07633207426288317
+      },
+      "wobble2": {
+        "P_periodic_reduction_pct": 43.09149572817541,
+        "P_before": 0.22856483271408398,
+        "P_after": 0.1300728275889832
+      },
+      "wobble2_exit": {
+        "P_periodic_reduction_pct": 46.79902581397264,
+        "P_before": 0.3407619177930598,
+        "P_after": 0.18128865992089754
+      },
+      "left_entry_peak": {
+        "t": 557.084304569,
+        "before": -2.9300000000000006,
+        "after_unpacked": -2.682025078944252,
+        "retained_percent": 91.53669211413828
+      }
+    }
+  },
+  "bookmarks": {
+    "wobble1": {
+      "window": [
+        420.8,
+        424.0
+      ],
+      "p": {
+        "old_peak_to_peak": 0.1502831327602382,
+        "new_peak_to_peak": 0.07942885882136426,
+        "reduction_percent": 47.14718986588794
+      },
+      "c0": {
+        "old_peak_to_peak": 0.1463643509329174,
+        "new_peak_to_peak": 0.07619232987207852,
+        "reduction_percent": 47.943382807061084
+      }
+    },
+    "wobble2": {
+      "window": [
+        514.3,
+        521.4
+      ],
+      "p": {
+        "old_peak_to_peak": 0.22856483271408398,
+        "new_peak_to_peak": 0.15622704513593932,
+        "reduction_percent": 31.648695347911794
+      },
+      "c0": {
+        "old_peak_to_peak": 0.22189262078364064,
+        "new_peak_to_peak": 0.15013115100291197,
+        "reduction_percent": 32.3406292319656
+      }
+    },
+    "wobble2_exit": {
+      "window": [
+        523.7,
+        526.8
+      ],
+      "p": {
+        "old_peak_to_peak": 0.3407619177930598,
+        "new_peak_to_peak": 0.2041117003745639,
+        "reduction_percent": 40.10137585312036
+      },
+      "c0": {
+        "old_peak_to_peak": 0.3347422828817533,
+        "new_peak_to_peak": 0.19869356211391034,
+        "reduction_percent": 40.642825159886286
+      }
+    }
+  },
+  "good_left_points": [
+    {
+      "meaning": "entry",
+      "t": 557.084304569,
+      "target_angle": 167.83670043945312,
+      "actual_angle": 76.5999984741211,
+      "old_c0": -2.9300000000000006,
+      "new_c0": -2.8100000000000005,
+      "old_p": -1.9288202876424623,
+      "new_p": -1.8038203373625472,
+      "c1": -0.4565,
+      "i": -0.058477505092137665
+    },
+    {
+      "meaning": "midturn_unwind",
+      "t": 558.284113233,
+      "target_angle": 109.08927154541016,
+      "actual_angle": 183.6999969482422,
+      "old_c0": 1.44,
+      "new_c0": 1.31,
+      "old_p": 2.0905105735349747,
+      "new_p": 1.9655105871733405,
+      "c1": -0.11499999999999999,
+      "i": -0.05363273646512535
+    }
+  ],
+  "routes": {
+    "166": {
+      "cycles": 62579,
+      "wire_checks": 6258,
+      "baseline_matches_archived_v21_exactly": true,
+      "c1_integral_reference_arbitration_equal_every_cycle": true,
+      "P_reduction_p50_p95_p99_max_m": [
+        0.003636227080371235,
+        0.10752626130792256,
+        0.12490297403763004,
+        0.12499999961974328
+      ],
+      "C0_change_p50_p95_p99_max_m": [
+        0.0,
+        0.10999999999999943,
+        0.1299999999999999,
+        0.13000000000000078
+      ],
+      "variants": {
+        "old": {
+          "c0_step_p95_p99_max": [
+            0.020000000000000018,
+            0.050000000000000266,
+            1.8900000000000006
+          ],
+          "c0_bound_seconds": 0.0
+        },
+        "new": {
+          "c0_step_p95_p99_max": [
+            0.010000000000000675,
+            0.040000000000000036,
+            1.7700000000000005
+          ],
+          "c0_bound_seconds": 0.0
+        }
+      },
+      "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+      "method": "Replay C0 softening against v21 on frozen recorded motion, not a PSCM model.",
+      "controller_sha256": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+      "source_sha256": {
+        ".cache/ford_route166/full/route.npz": "0ce273e4a12725c4481b11dab38b304950d364455b89f216b929a9c61b7feb1c",
+        ".cache/ford_route166/full/model_paths.npz": "720fe9ba9865a05937989449b0b0bd3304baf5f1730042da6b61adc2941c0f5a",
+        ".cache/ford_route166/intake.npz": "660b5e7f6789d931660ad71b10f7d8ce2b63436e7573b615ccc8e5da1f2a14d0",
+        ".cache/ford_feedback_delay_v21/166/commands.npz": "bfe51abd9e914edea505efc4fb42fe66950cfa5835e4f929d922992e90c88b5b"
+      }
+    },
+    "162": {
+      "cycles": 49003,
+      "wire_checks": 4901,
+      "baseline_matches_archived_v21_exactly": true,
+      "c1_integral_reference_arbitration_equal_every_cycle": true,
+      "P_reduction_p50_p95_p99_max_m": [
+        0.01864462197101791,
+        0.12428797325001033,
+        0.12499916992638829,
+        0.12499999992682431
+      ],
+      "C0_change_p50_p95_p99_max_m": [
+        0.019999999999999574,
+        0.1200000000000001,
+        0.1299999999999999,
+        0.13000000000000078
+      ],
+      "variants": {
+        "old": {
+          "c0_step_p95_p99_max": [
+            0.03000000000000025,
+            0.09999999999999964,
+            2.7299999999999995
+          ],
+          "c0_bound_seconds": 0.0
+        },
+        "new": {
+          "c0_step_p95_p99_max": [
+            0.03000000000000025,
+            0.08999999999999986,
+            2.5999999999999996
+          ],
+          "c0_bound_seconds": 0.0
+        }
+      },
+      "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+      "method": "Replay C0 softening against v21 on frozen recorded motion, not a PSCM model.",
+      "controller_sha256": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+      "source_sha256": {
+        ".cache/ford_route162/full/route.npz": "a725f9ca309b90a2d750d51a9b9d5b459d99119a54ab048631bc0fce07348af8",
+        ".cache/ford_route162/full/model_paths.npz": "cffe310b122d9ae26a53ee504608156b4242a6bba5f681898d5b661951ac5ce5",
+        ".cache/ford_route162/intake.npz": "9455b01e1d1d3dcba08276b382a8c6cd54ff6fb19cb417b72d0ac89cf193034b",
+        ".cache/ford_feedback_delay_v21/162/commands.npz": "6c70518fb9b7232b689740662c4bd5c0c24cabee4e743a2b4f3b2313bcce1912"
+      }
+    },
+    "157": {
+      "cycles": 76554,
+      "wire_checks": 7656,
+      "baseline_matches_archived_v21_exactly": true,
+      "c1_integral_reference_arbitration_equal_every_cycle": true,
+      "P_reduction_p50_p95_p99_max_m": [
+        0.00530841320802854,
+        0.12371750128642126,
+        0.12499999318487974,
+        0.125
+      ],
+      "C0_change_p50_p95_p99_max_m": [
+        0.009999999999999787,
+        0.1200000000000001,
+        0.1299999999999999,
+        0.13000000000000078
+      ],
+      "variants": {
+        "old": {
+          "c0_step_p95_p99_max": [
+            0.03000000000000025,
+            0.09000000000000014,
+            5.6000000000000005
+          ],
+          "c0_bound_seconds": 0.2999506119999751
+        },
+        "new": {
+          "c0_step_p95_p99_max": [
+            0.02999999999999936,
+            0.08000000000000007,
+            5.6000000000000005
+          ],
+          "c0_bound_seconds": 0.15561390599987135
+        }
+      },
+      "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+      "method": "Replay C0 softening against v21 on frozen recorded motion, not a PSCM model.",
+      "controller_sha256": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+      "source_sha256": {
+        ".cache/ford_route157/full/route.npz": "e2e2573f904aa11ee9e10450e7f5b965d475657b61127e827a67eadcd6b857fb",
+        ".cache/ford_route157/full/model_paths.npz": "25fc2526e092fde5ceb5aab63a5aa4f73a2c989a3263cedb0a26faf8da61c47b",
+        ".cache/ford_route157/intake.npz": "5dffd86fde68197727d6c6b9c5eae82320a456fa1206c4cf18e5e9c69419dde4",
+        ".cache/ford_feedback_delay_v21/157/commands.npz": "7d7659c54662e7f56015313e634b959be29dae524522b425f4c2adccc391fc9d"
+      }
+    },
+    "151": {
+      "cycles": 325708,
+      "wire_checks": 32571,
+      "baseline_matches_archived_v21_exactly": true,
+      "c1_integral_reference_arbitration_equal_every_cycle": true,
+      "P_reduction_p50_p95_p99_max_m": [
+        0.004569097471431923,
+        0.07115894622455567,
+        0.12458615764509068,
+        0.12499999999990274
+      ],
+      "C0_change_p50_p95_p99_max_m": [
+        0.009999999999999787,
+        0.07000000000000028,
+        0.1200000000000001,
+        0.13000000000000078
+      ],
+      "variants": {
+        "old": {
+          "c0_step_p95_p99_max": [
+            0.010000000000000675,
+            0.040000000000000036,
+            3.45
+          ],
+          "c0_bound_seconds": 0.0
+        },
+        "new": {
+          "c0_step_p95_p99_max": [
+            0.010000000000000231,
+            0.03000000000000025,
+            3.33
+          ],
+          "c0_bound_seconds": 0.0
+        }
+      },
+      "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+      "method": "Replay C0 softening against v21 on frozen recorded motion, not a PSCM model.",
+      "controller_sha256": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+      "source_sha256": {
+        ".cache/ford_route151/full/route.npz": "41a5b8bd388cf5a3d553f784542376ac9355fcdc5be4f427053d0504537babe1",
+        ".cache/ford_route151/full/model_paths.npz": "980b3843cec04254280d744a5801cee1bf0f8ef371052398327ff245f9eee01b",
+        ".cache/ford_route151/intake.npz": "18bbefb7738cebd0071dc987e90f74469a0c8ed456f9412324030592cafd68c9",
+        ".cache/ford_feedback_delay_v21/151/commands.npz": "4ab25e4c31fcddf08184c396efc3db78953d5ce60da7c653964bc2fa7e3184c9"
+      }
+    },
+    "149": {
+      "cycles": 132334,
+      "wire_checks": 13234,
+      "baseline_matches_archived_v21_exactly": true,
+      "c1_integral_reference_arbitration_equal_every_cycle": true,
+      "P_reduction_p50_p95_p99_max_m": [
+        0.010345416404636773,
+        0.12405821661525897,
+        0.12499991437968122,
+        0.12499999999999556
+      ],
+      "C0_change_p50_p95_p99_max_m": [
+        0.009999999999999787,
+        0.1200000000000001,
+        0.1299999999999999,
+        0.13000000000000078
+      ],
+      "variants": {
+        "old": {
+          "c0_step_p95_p99_max": [
+            0.03000000000000025,
+            0.08999999999999986,
+            3.87
+          ],
+          "c0_bound_seconds": 0.0
+        },
+        "new": {
+          "c0_step_p95_p99_max": [
+            0.020000000000000462,
+            0.08000000000000007,
+            3.750000000000001
+          ],
+          "c0_bound_seconds": 0.0
+        }
+      },
+      "baseline_commit": "ed9c44f57584b5f033f79db6331e21b9b3e0ad55",
+      "method": "Replay C0 softening against v21 on frozen recorded motion, not a PSCM model.",
+      "controller_sha256": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+      "source_sha256": {
+        ".cache/ford_route149/full/route.npz": "aa5902877343cd033ee286b3668d91a85336ffbf740861849fb0b76b0ca24ade",
+        ".cache/ford_route149/full/model_paths.npz": "19827800b8fb5983f3d6b72fcfaf36e35a40170bb17cd7c1e49374744fb449fb",
+        ".cache/ford_route149/intake.npz": "503919c4f1566ef850007c59f16ce074697ba57732f21beb7b158c1ca7be3a9d",
+        ".cache/ford_feedback_delay_v21/149/commands.npz": "15c4ad68338a921cd6b2cd22d0b3d6b5b8637614dacbe61f954a3a6d7cb8d8d9"
+      }
+    }
+  },
+  "code_sha256": {
+    "openpilot/selfdrive/controls/lib/ford_model_action.py": "b0aff6d70ad8ae7693c69068dbe646767e4d9fc20a23af70cbddcf6ebf849f48",
+    "tools/ford_pscm_lab/c0_softening_replay.py": "43e185871e5b9875cee5288160d344fe4d606c4bdf63dd719fb6a6cd9404307e"
+  }
+}

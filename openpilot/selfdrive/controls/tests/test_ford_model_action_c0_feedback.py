@@ -90,7 +90,8 @@ def test_c0_response_units_and_explicit_gain():
   core.update(straight(), .01, current_curvature=0., speed=5., dt=.01, curvature_scale=1.2)
   # Fitted C0 gain is geometric curvature per metre of command, not road curvature.
   response = .010717679293424373+.018122981795212647/25.
-  assert core.offset_proportional == pytest.approx(.5*.01*1.2/response)
+  assert core.offset_proportional_linear == pytest.approx(.5*.01*1.2/response)
+  assert core.offset_proportional_linear-.0625 < core.offset_proportional < core.offset_proportional_linear
 
 
 @pytest.mark.parametrize('speed', [1., 5., 20., 40.])
