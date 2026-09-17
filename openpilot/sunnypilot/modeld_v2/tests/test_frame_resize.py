@@ -22,7 +22,7 @@ class TestFrameResize(unittest.TestCase):
     self.destination = np.empty(self.resizer.target_copy_size, dtype=np.uint8)
 
   def test_sampling_and_padding(self):
-    self.assertTrue(self.resizer._indices.flags.writeable)
+    self.assertTrue(self.resizer._indices.flags['W'])
     source_y = self.source[:2490368].reshape(1216, 2048)
     source_uv = self.source[2490368:].reshape(608, 2048)
     source_y[:1208, :1928] = (3 * np.arange(1208)[:, None] + 5 * np.arange(1928)) % 251
