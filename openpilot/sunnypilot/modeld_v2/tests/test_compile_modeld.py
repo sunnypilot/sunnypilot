@@ -225,6 +225,7 @@ class Test4DFeaturesBuffer(OpenpilotTestCase):
 
 
 class TestStockCompileModeldEquivalence(OpenpilotTestCase):
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
   def test_get_policy_npy_shapes_matches_stock(self):
     from openpilot.selfdrive.modeld.compile_modeld import get_policy_npy_shapes as stock_get_policy_npy_shapes
     from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes as sunny_get_policy_npy_shapes
@@ -243,6 +244,7 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
     assert sunny_sizes == stock_sizes
     assert sunny_shapes['prev_feat'] == (1, 512)
 
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
   def test_make_input_queues_full_stock_equivalence(self):
     from openpilot.selfdrive.modeld.compile_modeld import make_input_queues as stock_make_input_queues
     from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues as sunny_make_supercombo_input_queues

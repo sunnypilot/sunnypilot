@@ -1,0 +1,73 @@
+name: Compile warp for sunnypilot modeld
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
+
+jobs:
+  compile_warps:
+    runs-on: [self-hosted, chestnut]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set environment variables
+        run: |
+          source /etc/profile
+          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
+          export UV_PYTHON_PREFERENCE=managed
+          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
+          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          uv sync --frozen
+          printenv >> $GITHUB_ENV
+
+      - name: Disable powersave
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+
+      - name: Compile Warp Kernels
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          mkdir -p openpilot/sunnypilot/modeld_v2/models/
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
+          echo "Model size: $MODEL_SIZE"
+          echo "Camera resolutions: $CAMERA_RES"
+
+          for res in $CAMERA_RES; do
+            NV12_INFO=$(python3 -c "from openpilot.system.camerad.cameras.nv12_info import get_nv12_info; w, h = map(int, '${res}'.split('x')); print(','.join(map(str, get_nv12_info(w, h))))")
+
+            WARP_PKL="openpilot/sunnypilot/modeld_v2/models/driving_warp_${res}_tinygrad.pkl"
+            echo "Compiling $WARP_PKL on QCOM"
+            taskset -c 7 env DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
+              --frame ${res/x/,},${NV12_INFO} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${WARP_PKL}"
+
+            BIG_WARP_PKL="openpilot/sunnypilot/modeld_v2/models/big_driving_warp_${res}_tinygrad.pkl"
+            echo "Compiling $BIG_WARP_PKL on AMD"
+            taskset -c 7 env DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
+              --frame ${res/x/,},${NV12_INFO} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${BIG_WARP_PKL}"
+          done
+
+      - name: Re-enable powersave
+        if: always()
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+        with:
+          author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "[bot] Update warp pkl for modeld_v2"
+          title: "[bot] Update modeld_v2 Warp"
+          branch: "auto/compile-warp-kernels"
+          base: "master"
+          delete-branch: true
+          labels: bot
+          add-paths: |
+            openpilot/sunnypilot/modeld_v2/models/*.pkl

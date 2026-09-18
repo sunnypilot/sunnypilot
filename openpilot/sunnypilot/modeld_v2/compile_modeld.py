@@ -7,13 +7,28 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import argparse
+import atexit
 import math
 import os
+import shutil
 import tempfile
 import time
 from functools import partial
-from openpilot.selfdrive.modeld.helpers import dump_oob, load_oob
+
 import numpy as np
+
+from tinygrad.examples.openpilot.compile_onnx import onnx_metadata
+from openpilot.common.file_chunker import chunk_file, get_chunk_targets, open_file_chunked
+from openpilot.sunnypilot.modeld_v2.helpers import dump_oob, load_oob
+import openpilot.sunnypilot.modeld_v2.stock_dependencies as stock
+from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+
+from tinygrad import dtypes
+from tinygrad.device import Device
+from tinygrad.engine.jit import TinyJit
+from tinygrad.nn.onnx import OnnxRunner
+from tinygrad.tensor import Tensor
+
 os.environ['GMMU'] = '0'
 
 def _patch_tinygrad_fetch_fw():
@@ -32,16 +47,20 @@ def _patch_tinygrad_fetch_fw():
   helpers.fetch_fw = fetch_fw
 _patch_tinygrad_fetch_fw()
 
-import openpilot.selfdrive.modeld.compile_modeld as stock
-from tinygrad import dtypes
-from tinygrad.device import Device
-from tinygrad.engine.jit import TinyJit
-from tinygrad.tensor import Tensor
+def _patch_fastenum_serialization():
+  try:
+    from tinygrad.uops import FastEnum
+    def __reduce_ex__(self, proto):
+      return (getattr, (self.__class__, self.name))
+    FastEnum.__reduce_ex__ = __reduce_ex__
+  except ImportError:
+    pass
+_patch_fastenum_serialization()
 
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']
 POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs']
-nv12_copy_size = stock.nv12_copy_size
+
 
 def _detect_desire_key(shapes: dict) -> str | None:
   return next((key for key in shapes if key.startswith('desire')), None)
@@ -123,7 +142,10 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], feat_dim),
                        dtype=np.float32), device=device).contiguous().realize()
 
-  queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
+  for key in ('tfm', 'big_tfm'):
+    if key in npy_arrays:
+      npy_arrays[key] = np.eye(3, dtype=np.float32)
+      queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
 
   return queues, npy_arrays
 
@@ -264,9 +286,6 @@ def _parse_size(size_str: str) -> tuple[int, int]:
 def read_file_chunked_to_disk(path):
   if not path:
     return None
-  import atexit
-  import shutil
-  from openpilot.common.file_chunker import open_file_chunked
   tmp_path = f'{path}.unchunked'
   with open(tmp_path, 'wb') as f, open_file_chunked(path) as src:
     shutil.copyfileobj(src, f)
@@ -283,6 +302,28 @@ def _load_policy_runners(args: argparse.Namespace) -> tuple[list, list]:
   return runners, keys
 
 
+def make_metadata_dict(onnx_path):
+  metadata, output_shapes = onnx_metadata(onnx_path)
+  runner = OnnxRunner(onnx_path)
+  input_shapes = {name: tuple(d if isinstance(d, int) else 1 for d in spec.shape) for name, spec in runner.graph_inputs.items()}
+
+  output_slices = {}
+  offset = 0
+  for name in output_shapes.keys():
+    size = math.prod(d if isinstance(d, int) else 1 for d in output_shapes[name])
+    output_slices[name] = slice(offset, offset + size)
+    offset += size
+
+  if 'hidden_state' not in output_slices:
+    output_slices['hidden_state'] = slice(0, 512)
+
+  return {
+    'input_shapes': input_shapes,
+    'output_slices': output_slices,
+    'metadata_props': metadata
+  }
+
+
 if __name__ == "__main__":
   if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
     from openpilot.system.hardware.chestnut.flash import link_up
@@ -292,11 +333,6 @@ if __name__ == "__main__":
       time.sleep(1)
     else:
       raise RuntimeError("Chestnut not ready, skipping big model build")
-
-  from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-  from openpilot.selfdrive.modeld.get_model_metadata import make_metadata_dict
-  from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
-  from tinygrad.nn.onnx import OnnxRunner
 
   parser = argparse.ArgumentParser(description="Compile combined JIT pkl for sunnypilot modeld_v2")
   parser.add_argument('--model-type', choices=MODEL_TYPES, required=True)
@@ -330,7 +366,8 @@ if __name__ == "__main__":
     output_data['run_model'] = {}
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
     model_runner = OnnxRunner(args.supercombo_onnx)
-    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
+    features_slice = model_metadata['output_slices']['hidden_state']
+    run_policy = make_run_policy(None, [model_runner], features_slice, derived_frame_skip, model_metadata['input_shapes'])
     for cam_w, cam_h in args.camera_resolutions:
       print(f"Compiling unified run_model JIT for {cam_w}x{cam_h}...")
       nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))

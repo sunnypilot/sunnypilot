@@ -46,7 +46,6 @@ jobs:
 
           if [ "${{ inputs.target }}" = "big" ]; then
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
-            ONNX_PATH="openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/big"
           elif [ "${{ inputs.target }}" = "dm" ]; then
             ONNX_PATH="openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
@@ -57,8 +56,9 @@ jobs:
             ONNX_PATH="openpilot/selfdrive/modeld/models/driving_supercombo.onnx"
             HF_DEFAULTS_PATH="models/defaults/small"
           fi
+          ONNX_REF=""
+          [ -n "$ONNX_PATH" ] && ONNX_REF=$(git log -1 --format='%H' -- "$ONNX_PATH")
 
-          ONNX_REF=$(git log -1 --format='%H' -- "$ONNX_PATH")
           TINYGRAD_REF=$(python3 openpilot/sunnypilot/models/tinygrad_ref.py)
           if [ -z "$TINYGRAD_REF" ]; then
             echo "::error::Failed to resolve tinygrad ref"
@@ -78,6 +78,8 @@ jobs:
     if: ${{ inputs.target == 'small' }}
     runs-on: [self-hosted, tici]
     env:
+      MODELS_DIR: openpilot/selfdrive/modeld/models
+      COMPILER: tinygrad_repo/examples/openpilot
       SMALL_ONNX: openpilot/selfdrive/modeld/models/driving_supercombo.onnx
       SMALL_PKL: openpilot/selfdrive/modeld/models/driving_tinygrad.pkl
     steps:
@@ -85,8 +87,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Pull ONNX via LFS
+      - name: Pull small ONNX via LFS
         run: git lfs pull -I "${{ env.SMALL_ONNX }}"
+
 
       - name: Set environment variables
         run: |
@@ -103,24 +106,15 @@ jobs:
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
 
-      - name: Compile small model with stock compiler
+      - name: Compile small model from ONNX
         run: |
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
-
-          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
-          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
-          FRAME_SKIP=$(python3 -c "from openpilot.selfdrive.modeld.constants import ModelConstants as MC; print(MC.MODEL_RUN_FREQ // MC.MODEL_CONTEXT_FREQ)")
-
           TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
-
-          env ${TG_FLAGS} python3 \
-            ${{ github.workspace }}/openpilot/selfdrive/modeld/compile_modeld.py \
-            --onnx ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
-            --model-size $MODEL_SIZE \
-            --camera-resolutions $CAMERA_RES \
-            --frame-skip $FRAME_SKIP \
-            --output ${{ github.workspace }}/${{ env.SMALL_PKL }}
+          env ${TG_FLAGS} python3 ${{ github.workspace }}/${{ env.COMPILER }}/compile_onnx.py \
+            ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
+            ${{ github.workspace }}/${{ env.SMALL_PKL }} \
+            --device-input "*" --out-of-band --benchmark-runs 1
 
       - name: Chunk small pkl
         run: |
@@ -150,11 +144,14 @@ jobs:
           cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
           cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
 
+          ONNX_SHA256=$(git cat-file blob "$(git ls-files -s "${{ github.workspace }}/${{ env.SMALL_ONNX }}" | awk '{print $2}')" | grep '^oid sha256:' | cut -d: -f2)
+
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "$MODELS_DIR" \
             --output-dir "$OUTPUT_DIR" \
             --custom-name "$MODEL_NAME" \
-            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}"
+            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}" \
+            --onnx-sha256 "$ONNX_SHA256"
 
           echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
 
@@ -181,15 +178,17 @@ jobs:
     if: ${{ inputs.target == 'big' }}
     runs-on: [self-hosted, chestnut]
     env:
-      BIG_ONNX: openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx
+      MODELS_DIR: openpilot/selfdrive/modeld/models
+      COMPILER: tinygrad_repo/examples/openpilot
       BIG_PKL: openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          lfs: true
 
-      - name: Pull big ONNX via LFS
-        run: git lfs pull -I "${{ env.BIG_ONNX }}"
+      - name: Pull big PKL via LFS
+        run: git lfs pull -I "${{ env.BIG_PKL }}"
 
       - name: Set environment variables
         run: |
@@ -222,25 +221,6 @@ jobs:
               raise RuntimeError('Chestnut PCIe link not ready after 10 attempts')
           "
 
-      - name: Compile big model with stock compiler
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
-
-          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
-          CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
-          FRAME_SKIP=$(python3 -c "from openpilot.selfdrive.modeld.constants import ModelConstants as MC; print(MC.MODEL_RUN_FREQ // MC.MODEL_CONTEXT_FREQ)")
-
-          TG_FLAGS="DEBUG=2 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2"
-
-          env ${TG_FLAGS} python3 \
-            ${{ github.workspace }}/openpilot/selfdrive/modeld/compile_modeld.py \
-            --onnx ${{ github.workspace }}/${{ env.BIG_ONNX }} \
-            --model-size $MODEL_SIZE \
-            --camera-resolutions $CAMERA_RES \
-            --frame-skip $FRAME_SKIP \
-            --output ${{ github.workspace }}/${{ env.BIG_PKL }}
-
       - name: Chunk big pkl
         run: |
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
@@ -269,11 +249,14 @@ jobs:
           cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
           cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
 
+          PKL_LFS_SHA256=$(sha256sum "$MODELS_DIR/${PKL_BASE}" | cut -d' ' -f1)
+
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "$MODELS_DIR" \
             --output-dir "$OUTPUT_DIR" \
             --custom-name "$MODEL_NAME" \
-            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}"
+            --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}" \
+            --onnx-sha256 "$PKL_LFS_SHA256"
 
           echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
 
@@ -311,7 +294,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pull ONNX via LFS
+      - name: Pull LFS for resolved ONNX files
+        if: ${{ needs.resolve.outputs.onnx_path != '' }}
         run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}"
 
       - name: Install huggingface_hub
@@ -351,8 +335,6 @@ jobs:
             --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
             --artifact-name "$ARTIFACT_NAME" \
             --model-dir output \
-            --onnx-path "${{ needs.resolve.outputs.onnx_path }}" \
-            --onnx-ref "${{ needs.resolve.outputs.onnx_ref }}" \
             --model-name "${{ needs.resolve.outputs.model_name }}" \
             --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
             --run-number "${{ github.run_number }}"
@@ -490,15 +472,27 @@ jobs:
           export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
           TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
-          MODEL_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld"
+          COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
+          MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           DM_SIZE=$(python3 -c "from openpilot.common.transformations.model import DM_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
 
           for res in $(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')"); do
-            WARP_PKL="${MODEL_DIR}/models/dm_warp_${res}_tinygrad.pkl"
-            taskset -c 7 env ${TG_FLAGS} python3 ${MODEL_DIR}/compile_dm_warp.py \
-              --camera-resolution ${res} \
+            CAM_W=$(echo $res | cut -d x -f1)
+            CAM_H=$(echo $res | cut -d x -f2)
+            STRIDE_INFO=$(python3 -c "
+          import sys
+          from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+          s,y,u,sz = get_nv12_info(int(sys.argv[1]), int(sys.argv[2]))
+          print(f'{s},{y},{u},{sz}')
+          " $CAM_W $CAM_H)
+            WARP_PKL="${MODELS_DIR}/dm_warp_${res}_tinygrad.pkl"
+            taskset -c 7 env ${TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
+              --frame ${CAM_W},${CAM_H},${STRIDE_INFO} \
               --warp-to ${DM_SIZE} \
-              --output ${WARP_PKL}
+              --layout luma \
+              --border-fill 16 \
+              --transform-device NPY \
+              --output "${WARP_PKL}"
           done
 
       - name: Prepare DM output
