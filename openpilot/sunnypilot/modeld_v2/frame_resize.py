@@ -16,7 +16,7 @@ TARGET_SIZE = (1344, 760)
 
 
 class FrameResize:
-  """Fixed NV12 point sampling: floor(dst * source / target), with edge-filled padding."""
+  """Fixed NV12 point sampling: center-anchored floor((2*dst + 1) * source / (2 * target)), with edge-filled padding."""
 
   def __init__(self):
     source_w, source_h = SOURCE_SIZE
@@ -28,15 +28,15 @@ class FrameResize:
     # np.take copies read-only indices, so keep this private map writable.
     self._indices = np.empty(self.target_copy_size, dtype=np.intp)
 
-    x = np.minimum(np.arange(target_stride, dtype=np.intp), target_w - 1) * source_w // target_w
-    y = np.minimum(np.arange(target_y_height, dtype=np.intp), target_h - 1) * source_h // target_h
+    x = ((2 * np.minimum(np.arange(target_stride, dtype=np.intp), target_w - 1) + 1) * source_w) // (2 * target_w)
+    y = ((2 * np.minimum(np.arange(target_y_height, dtype=np.intp), target_h - 1) + 1) * source_h) // (2 * target_h)
     target_uv_offset = target_stride * target_y_height
     self._indices[:target_uv_offset].reshape(target_y_height, target_stride)[:] = y[:, None] * source_stride + x
 
     # Resize chroma pairs on their own grid, retaining the U/V byte within each pair.
     uv_bytes = np.arange(target_stride, dtype=np.intp)
-    x = np.minimum(uv_bytes // 2, target_w // 2 - 1) * (source_w // 2) // (target_w // 2) * 2 + uv_bytes % 2
-    y = np.minimum(np.arange(target_uv_height, dtype=np.intp), target_h // 2 - 1) * (source_h // 2) // (target_h // 2)
+    x = ((2 * np.minimum(uv_bytes // 2, target_w // 2 - 1) + 1) * (source_w // 2)) // (2 * (target_w // 2)) * 2 + uv_bytes % 2
+    y = ((2 * np.minimum(np.arange(target_uv_height, dtype=np.intp), target_h // 2 - 1) + 1) * (source_h // 2)) // (2 * (target_h // 2))
     self._indices[target_uv_offset:].reshape(target_uv_height, target_stride)[:] = source_stride * source_y_height + y[:, None] * source_stride + x
 
     assert self._indices.min() >= 0 and self._indices.max() < self.source_copy_size
