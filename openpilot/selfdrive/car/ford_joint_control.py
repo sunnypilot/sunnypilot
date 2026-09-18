@@ -8,6 +8,13 @@ import math
 
 from opendbc.car.ford.values import FordFlags
 
+# Small steering-wheel trim around the nominal inverse, in degrees. These are
+# trial tuning values, not recovered PSCM constants. No extra proportional loop.
+ANGLE_TRIM_MAX = 2.0
+ANGLE_TRIM_KI = 0.2  # 1/s; error clipping limits adaptation to 0.4 deg/s.
+ANGLE_TRIM_ERROR_MAX = 5.0
+ANGLE_TRIM_RATE_MAX = 5.0  # deg/s: do not learn a bias from fast wheel motion.
+
 
 def joint_control_enabled(CP, params):
   return bool(
@@ -47,6 +54,8 @@ class FordJointControl:
     self.sent = (0.0, 0.0, False)
     self.measurement = (0.0, 0.0, 0.0)
     self.fault = ''
+    self.angle_trim = 0.0
+    self.wheel_rate = 0.0
     self.diagnostics = {'hypothesis': 'ford-joint-v24', 'status': 'inactive'}
 
   def advance(self, now):
@@ -68,8 +77,9 @@ class FordJointControl:
     self.last_time = now
 
   def prepare(self, CC, CC_SP, CS, now, *, fresh=True, pscm_status=None):
-    from openpilot.selfdrive.controls.lib.ford_joint.inverse import invert_angle
+    from openpilot.selfdrive.controls.lib.ford_joint.inverse import C0_BOUND, C1_BOUND, invert_angle
 
+    dt = now - self.last_time if self.last_time is not None else 0.0
     self.advance(now)
     path = CC_SP.fordLateralPath
     target = float(CC.actuators.steeringAngleDeg)
@@ -79,7 +89,14 @@ class FordJointControl:
     yaw = -float(CC.angularVelocity[2]) if len(CC.angularVelocity) == 3 else math.nan
     finite = all(math.isfinite(v) for v in (CS.vEgo, CS.steeringAngleDeg, CS.yawRate, yaw, target))
     if finite:
+      # Ford does not populate CarState.steeringRateDeg. Derive motion from the
+      # measured angle; 0.1 s filtering suppresses its 0.1-degree quantization.
+      if 0.0 < dt <= 0.1:
+        rate = (CS.steeringAngleDeg - self.measurement[1]) / dt
+        self.wheel_rate += dt / (0.1 + dt) * (rate - self.wheel_rate)
       self.measurement = (max(0.0, CS.vEgo * 3.6), CS.steeringAngleDeg, yaw)
+    else:
+      self.wheel_rate = 0.0
     status_fresh = pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0 and -0.005 <= now - pscm_status.canMonoTime * 1e-9 <= 0.15
     # Like upstream Ford, steeringPressed alone does not zero the path. Retain
     # disengagement/fault gates and the PSCM's explicit override/denial status.
@@ -100,25 +117,50 @@ class FordJointControl:
     if self.last_sent_time is not None and now - self.last_sent_time > 0.1:
       self.fault = 'missing_transmit_history'
     active = bool(CC.latActive and valid and not override and not self.fault)
+    if not active:
+      self.angle_trim = 0.0
     command = (0.0, 0.0)
     details = {}
     if active:
       try:
         speed, angle, yaw = self.measurement
-        inverse = invert_angle(self.angle, speed, target, angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
+        error = target - angle
+        settling = abs(error) <= ANGLE_TRIM_ERROR_MAX and abs(self.wheel_rate) <= ANGLE_TRIM_RATE_MAX
+        # Outside small, slow tracking, an opposite error invalidates the trim.
+        # Release it before allocation rather than carrying it into an unwind.
+        if not CS.steeringPressed and not settling and error * self.angle_trim < 0.0:
+          self.angle_trim = 0.0
+        trimmed_target = target + self.angle_trim
+        inverse = invert_angle(self.angle, speed, trimmed_target, angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
         # Firmware phase is estimated from elapsed time. Cover the 1/2 firmware
         # ticks before the next nominal 100 Hz transmit; all phases are tested.
         ticks = max(1, min(2, int((self.phase + 0.01 + 1e-12) / 0.008)))
         command, info = self.encoder.choose(speed, inverse['curvature'], phase=0 if ticks == 2 else 2)
         details = {
           'requested_angle': target,
+          'trimmed_angle': trimmed_target,
+          'angle_trim': self.angle_trim,
+          'wheel_rate': self.wheel_rate,
           'reachable_angle': inverse['reachable_target'],
           'target_curvature': inverse['curvature'],
           'predicted_curvature': float(info['first_state'][3]),
           'accel_limited': inverse['accel_limited'],
         }
+        # Learn only small residual errors while the wheel is settling. Large
+        # entry lag and saturated actuation must not wind up a centering trim.
+        # Opposing error can still bleed existing trim toward zero. A light
+        # touch freezes learning; it does not cut the base command or held trim.
+        limited = inverse['accel_limited'] or (status_fresh and pscm_status.limit == 2) or abs(command[0]) >= C0_BOUND or abs(command[1]) >= C1_BOUND
+        learning = CS.vEgo >= 2.0 and settling and not limited
+        if not CS.steeringPressed:
+          increment = ANGLE_TRIM_KI * max(-ANGLE_TRIM_MAX, min(ANGLE_TRIM_MAX, error)) * dt
+          if not learning:
+            increment = max(min(-self.angle_trim, 0.0), min(max(-self.angle_trim, 0.0), increment))
+          self.angle_trim = max(-ANGLE_TRIM_MAX, min(ANGLE_TRIM_MAX, self.angle_trim + increment))
+        details['trim_learning'] = bool(learning and not CS.steeringPressed)
       except (ValueError, OverflowError, ArithmeticError):
         self.fault = 'invalid_prediction'
+        self.angle_trim = 0.0
         active = False
         command = (0.0, 0.0)
     # The inverse operates in CAN/pinion coordinates. CarController negates

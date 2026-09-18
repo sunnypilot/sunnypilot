@@ -2,6 +2,8 @@
 
 This default-off trial turns the normal action-derived desired steering angle into a jointly selected C0/C1 pair. It estimates the held fields and curvature filter of an older Ford PSCM and chooses one command whose predicted next-update error is no worse than a C1-anchored alternative. Among those candidates it minimizes error over the complete return to the steady pair, including the filter tail. It does not retain a future command plan or classify turns into maneuver states.
 
+The later [residual wheel-angle trim](ford_joint_centering_trim.md) adds a small, bounded integral correction around this nominal encoder. The original validation below describes the earlier versions; the trim has separate validation and is not gainless.
+
 ## Select and revert
 
 In sunnylink → Vehicle → Ford Settings, while offroad:
@@ -96,3 +98,5 @@ The extra v24 steeringPressed gate is removed. A light touch no longer directly 
 Regression coverage includes biased raw yaw with unchanged calibrated motion, yaw sign, missing/nonfinite/out-of-range yaw, touch continuity, retained PSCM override/denial, and execution of controlsd's motion-health gate with v24 enabled and disabled. The original eight bias/touch cases failed before the fix. All 524 focused controller tests now pass. Frozen replay compares yaw-only, touch-only, combined and baseline commands through the actual adapter and CAN packer; measurements remain recorded, so it cannot demonstrate the resulting wheel motion or smoothness. Artifacts are under `.cache/ford_v25_bias`.
 
 All four variants completed 52,526 recorded updates each without latched prediction faults, nonzero C2/C3 or field-bound violations. The missing carState interval is treated as an independent replay boundary, not bridged or claimed as a vehicle restart. All recorded active samples had the required calibrated yaw and recorded motion-health fields. Yaw-only preserved the baseline active count; the combined change added 5,988 active updates, all during steeringPressed with lateral control otherwise permitted. Fresh PSCM override/denial remained inactive. In the 174–178 second wheel-pause window, the extra 21 mode-0 updates disappeared. No new acceleration-allowance clipping occurred. The four steady windows shifted the requested curvature leftward, consistent with correcting the measured right bias. Closed-loop bias and touch feel still require truck validation.
+
+Replay-audit correction: the original four-variant `.cache/ford_v25_bias/replay.py` passed an extracted PSCM timestamp in seconds where the adapter expects nanoseconds. Its fresh-status branch therefore did not substantiate the override/denial claim above. The production freshness code and explicit-status unit tests were unaffected. The later [centering-trim validation](ford_joint_centering_trim.md) converts timestamps correctly and asserts inhibition on every fresh recorded override/denial sample.

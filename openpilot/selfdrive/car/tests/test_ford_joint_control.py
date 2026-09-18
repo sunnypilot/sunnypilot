@@ -14,7 +14,7 @@ from opendbc.car.ford.carcontroller import CarController
 from opendbc.car.ford.values import FordFlags
 from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params, ParamKeyFlag
-from openpilot.selfdrive.car.ford_joint_control import FordJointControl, joint_control_enabled, select_joint_control
+from openpilot.selfdrive.car.ford_joint_control import ANGLE_TRIM_MAX, FordJointControl, joint_control_enabled, select_joint_control
 from openpilot.selfdrive.controls.lib.ford_joint.angle import AngleModel
 from openpilot.selfdrive.controls.lib.ford_joint.encoder import PairedRelease, state
 from openpilot.selfdrive.controls.lib.ford_joint.inverse import invert_angle
@@ -113,6 +113,118 @@ def test_calibrated_yaw_sign_matches_pinion_coordinates():
   p.cs.yawRate = .012
   p.tick(1., angular_velocity=[.01, .02, -.02])
   assert p.joint.measurement[2] == pytest.approx(.02)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_persistent_small_wheel_error_builds_bounded_correction(sign):
+  # Route 17a: a steady request ~1.5 degrees from the wheel, no driver or
+  # PSCM limit. The nominal encoder alone has no way to remove that residual.
+  p = Pipeline()
+  p.cs.vEgo = 20.
+  before = None
+  for i in range(601):
+    p.tick(1. + i*.01, sign*1.5)
+    if i == 100:
+      before = p.joint.diagnostics['target_curvature']
+  assert sign*(p.joint.diagnostics['target_curvature'] - before) > 0.00005
+  assert 1.7 < sign*p.joint.angle_trim < ANGLE_TRIM_MAX
+
+
+@pytest.mark.parametrize('bias', [-1.5, 1.5])
+def test_trim_removes_static_mismatch_in_synthetic_angle_plant(bias):
+  # A regression for residual feedback, NOT a validated PSCM/wheel simulation.
+  # Use the actual packed-command observer and angle stage, then a deliberately
+  # simple 0.4 s wheel lag with a known additive mismatch.
+  p = Pipeline()
+  p.cs.vEgo = 20.
+  angle = rate = 0.
+  errors = []
+  for i in range(3000):
+    p.cs.steeringAngleDeg, p.cs.steeringRateDeg = angle, rate
+    p.cs.yawRate = math.radians(angle)/16.9*20./(3.7+(33/16384)*20**2)
+    p.tick(1.+i*.01, 0.)
+    nominal = copy.copy(p.joint.angle).step(72., p.joint.diagnostics['predicted_curvature'], angle,
+                                          p.cs.yawRate, p.cs.yawRate*20., 3.7, 16.9)
+    rate = (nominal+bias-angle)/.4
+    angle += rate*.01
+    errors.append(angle)
+  assert np.mean(np.abs(errors[-500:])) < .1
+
+
+@pytest.mark.parametrize('target,rate,speed', [(60., 0., 5.), (1.5, 20., 5.), (1.5, 0., 1.)])
+def test_trim_does_not_learn_large_lag_fast_motion_or_crawl(target, rate, speed):
+  p = Pipeline()
+  p.cs.vEgo = speed
+  for i in range(200):
+    # Real Ford CarState leaves steeringRateDeg at zero, even during motion.
+    p.cs.steeringAngleDeg = rate*i*.01
+    p.tick(1.+i*.01, target+p.cs.steeringAngleDeg)
+    assert abs(p.joint.angle_trim) < .015  # Only the derivative's initial settling.
+  if rate:
+    assert p.joint.wheel_rate == pytest.approx(rate, abs=.01)
+    assert not p.joint.diagnostics['trim_learning']
+
+
+def test_trim_bounded_retained_at_zero_error_and_frozen_on_light_touch():
+  p = Pipeline()
+  for i in range(1201):
+    p.tick(1.+i*.01, 2.)
+    assert abs(p.joint.angle_trim) <= ANGLE_TRIM_MAX
+  assert p.joint.angle_trim == ANGLE_TRIM_MAX
+  p.cs.steeringPressed = True
+  assert p.tick(13.01, -2.).latActive
+  assert p.joint.angle_trim == ANGLE_TRIM_MAX
+  p.cs.steeringPressed = False
+  p.tick(13.02, 0.)
+  assert p.joint.angle_trim == ANGLE_TRIM_MAX
+  assert not p.tick(13.03, active=False).latActive
+  assert p.joint.angle_trim == 0.
+
+
+@pytest.mark.parametrize('limit,denied', [(3, False), (0, True)])
+def test_explicit_override_resets_trim(limit, denied):
+  p = Pipeline()
+  p.joint.angle_trim = 1.
+  status = SimpleNamespace(valid=True, canMonoTime=1_000_000_000, limit=limit, denied=denied)
+  assert not p.tick(1., 1.5, pscm_status=status).latActive
+  assert p.joint.angle_trim == 0.
+
+
+def test_limit_reached_does_not_grow_trim_but_allows_relief():
+  p = Pipeline()
+  p.joint.angle_trim = 1.
+  for i in range(101):
+    now = 1.+i*.01
+    status = SimpleNamespace(valid=True, canMonoTime=round(now*1e9), limit=2, denied=False)
+    assert p.tick(now, 1.5, pscm_status=status).latActive
+    assert p.joint.angle_trim == 1.
+  p.tick(2.01, -1.5, pscm_status=status)
+  assert 0.99 < p.joint.angle_trim < 1.
+
+
+def test_acceleration_clipping_does_not_grow_trim():
+  p = Pipeline()
+  p.cs.vEgo = 50.
+  p.cs.steeringAngleDeg = 200.
+  for i in range(100):
+    p.tick(1.+i*.01, 201.5)
+    assert p.joint.diagnostics['accel_limited']
+    assert p.joint.angle_trim == 0.
+
+
+@pytest.mark.parametrize('target,rate', [(-60., 0.), (-2., -30.)])
+def test_reversal_or_fast_unwind_clears_old_trim_before_allocation(target, rate):
+  p = Pipeline()
+  for i in range(10):
+    p.cs.steeringAngleDeg = rate*i*.01
+    p.tick(1.+i*.01, target+p.cs.steeringAngleDeg)
+  p.joint.angle_trim = ANGLE_TRIM_MAX
+  for i in range(10, 101):
+    p.cs.steeringAngleDeg = rate*i*.01
+    request = target+p.cs.steeringAngleDeg
+    p.tick(1.+i*.01, request)
+    assert p.joint.angle_trim == 0.
+    assert p.joint.diagnostics['trimmed_angle'] == pytest.approx(request, abs=1e-5)
 
 
 @pytest.mark.parametrize('angular_velocity', [[], [0., 0.], [0., 0., math.nan], [0., 0., math.inf], [0., 0., 3.1]])
