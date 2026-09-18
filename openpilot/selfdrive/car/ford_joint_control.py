@@ -73,19 +73,24 @@ class FordJointControl:
     self.advance(now)
     path = CC_SP.fordLateralPath
     target = float(CC.actuators.steeringAngleDeg)
-    finite = all(math.isfinite(v) for v in (CS.vEgo, CS.steeringAngleDeg, CS.yawRate, target))
+    # controlsd publishes calibrated car-frame motion and gates the path on its
+    # health/freshness. Raw Ford CAN yaw has a zero offset on the audited truck.
+    # Calibrated Z is opposite the CAN/pinion sign used by the recovered model.
+    yaw = -float(CC.angularVelocity[2]) if len(CC.angularVelocity) == 3 else math.nan
+    finite = all(math.isfinite(v) for v in (CS.vEgo, CS.steeringAngleDeg, CS.yawRate, yaw, target))
     if finite:
-      # The route extractor negated carState.yawRate; the audited inverse negated
-      # it back. Native carState yaw and wheel angle already share our CAN sign.
-      self.measurement = (max(0.0, CS.vEgo * 3.6), CS.steeringAngleDeg, CS.yawRate)
+      self.measurement = (max(0.0, CS.vEgo * 3.6), CS.steeringAngleDeg, yaw)
     status_fresh = pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0 and -0.005 <= now - pscm_status.canMonoTime * 1e-9 <= 0.15
-    override = bool(CS.steeringPressed or (status_fresh and (pscm_status.limit == 3 or pscm_status.denied)))
+    # Like upstream Ford, steeringPressed alone does not zero the path. Retain
+    # disengagement/fault gates and the PSCM's explicit override/denial status.
+    override = bool(status_fresh and (pscm_status.limit == 3 or pscm_status.denied))
     valid = bool(
       fresh
       and CS.canValid
       and finite
       and 0.3 <= CS.vEgo <= 55
       and abs(CS.yawRate) <= 3
+      and abs(yaw) <= 3
       and path.enabled
       and path.valid
       and not CS.steerFaultTemporary
@@ -127,6 +132,10 @@ class FordJointControl:
       'hypothesis': 'ford-joint-v24',
       'status': self.fault or ('active' if active else 'inactive'),
       'driver_override': override,
+      'driver_pressed': bool(CS.steeringPressed),
+      'yaw_source': 'calibrated_pose',
+      'yaw_rate': yaw if math.isfinite(yaw) else None,
+      'can_yaw_rate': float(CS.yawRate) if math.isfinite(CS.yawRate) else None,
       'held_c0': self.request.c0,
       'held_c1': self.request.c1,
       'filtered_curvature': self.request.filtered,

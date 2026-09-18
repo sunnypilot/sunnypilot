@@ -29,6 +29,7 @@ def cp():
 
 def controls(target=30., active=True):
   cc = structs.CarControl(latActive=active, longActive=True)
+  cc.angularVelocity = [0., 0., 0.]
   cc.actuators.steeringAngleDeg = target
   cc.actuators.accel = .3
   sp = structs.CarControlSP()
@@ -45,8 +46,9 @@ class Pipeline:
                                    lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
     self.interface = SimpleNamespace(CC=self.sender, CS=self.vehicle)
 
-  def tick(self, now, target=30., active=True, **kwargs):
+  def tick(self, now, target=30., active=True, *, angular_velocity=None, **kwargs):
     cc, sp = controls(target, active)
+    cc.angularVelocity = [0., 0., -self.cs.yawRate] if angular_velocity is None else angular_velocity
     result = self.joint.prepare(cc.as_reader(), sp, self.cs, now, **kwargs)
     _, packets = CarInterfaceBase.apply(self.interface, result, sp, round(now * 1e9))
     assert sum(p[0] == 0x3d6 for p in packets) == 1
@@ -95,6 +97,44 @@ def test_reference_carrier_adds_no_second_feedback_loop():
   assert not c.set_c0_time_based(True, lateral_engaged=False)
 
 
+def test_can_yaw_zero_offset_does_not_bias_the_command():
+  reference, biased = Pipeline(), Pipeline()
+  biased.cs.yawRate = -.008  # Route 175: raw CAN disagrees with calibrated yaw.
+  for i in range(200):
+    now = 1. + i*.01
+    reference.tick(now, 0., angular_velocity=[0., 0., 0.])
+    biased.tick(now, 0., angular_velocity=[0., 0., 0.])
+    assert biased.joint.sent == reference.joint.sent
+    assert biased.joint.measurement[2] == 0.
+
+
+def test_calibrated_yaw_sign_matches_pinion_coordinates():
+  p = Pipeline()
+  p.cs.yawRate = .012
+  p.tick(1., angular_velocity=[.01, .02, -.02])
+  assert p.joint.measurement[2] == pytest.approx(.02)
+
+
+@pytest.mark.parametrize('angular_velocity', [[], [0., 0.], [0., 0., math.nan], [0., 0., math.inf], [0., 0., 3.1]])
+def test_missing_or_invalid_calibrated_yaw_does_not_fall_back_to_raw_can(angular_velocity):
+  p = Pipeline()
+  p.tick(1.)
+  assert not p.tick(1.01, angular_velocity=angular_velocity).latActive
+  assert p.joint.sent == (0., 0., False)
+  assert p.tick(1.02).latActive
+
+
+def test_touch_does_not_zero_the_command_or_reset_held_state():
+  reference, touched = Pipeline(), Pipeline()
+  for i in range(160):
+    touched.cs.steeringPressed = 40 <= i < 50 or 100 <= i < 115
+    target = 60. if i < 100 else -30.
+    reference.tick(1. + i*.01, target)
+    assert touched.tick(1. + i*.01, target).latActive
+    assert touched.joint.sent == reference.joint.sent
+    np.testing.assert_array_equal(state(touched.joint.request), state(reference.joint.request))
+
+
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_can_coordinates_entry_reversal_release_and_100hz(sign):
   p = Pipeline()
@@ -118,18 +158,16 @@ def test_observer_follows_packed_command_only_and_inactive_slew():
   for i in range(100):
     p.tick(1.02+i*.01, 60.)
   held = copy.copy(p.joint.request)
-  p.cs.steeringPressed = True
-  result = p.tick(2.02, 60.)
+  result = p.tick(2.02, 60., active=False)
   assert not result.latActive and p.joint.sent == (0., 0., False)
   assert abs(p.joint.request.c0) > 0 or abs(p.joint.request.c1) > 0
   held = copy.copy(p.joint.request)
   phase = p.joint.phase
-  p.tick(2.03, 60.)
+  p.tick(2.03, 60., active=False)
   ticks = int((phase+.01+1e-12)/.008)
   for _ in range(ticks):
     held.step(5.36*3.6, 0., 0., active=False, freeze_i=True)
   np.testing.assert_allclose(state(p.joint.request), state(held), atol=1e-12)
-  p.cs.steeringPressed = False
   assert p.tick(2.04, -30.).latActive
   assert p.joint.diagnostics['requested_angle'] == -30.
 
@@ -245,9 +283,9 @@ def test_card_transmit_hook_and_fault_alert_use_actual_source(active, override):
               'time': SimpleNamespace(monotonic=lambda: 1.), 'convert_carControlSP': convert_carControlSP,
               'can_list_to_can_capnp': lambda data, **kwargs: data})
   assert sent[0][0] == 'sendcan'
-  assert p.joint.sent[2] == (active and not override)
+  assert p.joint.sent[2] == active
   assert p.joint.last_sent_time == 1.
-  assert owner.CC_prev.to_dict() == {**original, 'latActive': active and not override}
+  assert owner.CC_prev.to_dict() == {**original, 'latActive': active}
   assert cc.to_dict() == original
 
   update_method = next(n for n in car.body if isinstance(n, ast.FunctionDef) and n.name == 'state_update')

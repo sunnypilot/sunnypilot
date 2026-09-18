@@ -239,6 +239,48 @@ def test_actual_controlsd_service_gates(pipeline, maneuver, failed):
   assert controls.ford_path.valid == cc.latActive == (failed == 'lateralManeuverPlan' and not maneuver)
 
 
+@pytest.mark.parametrize('joint', [False, True])
+@pytest.mark.parametrize('failure', [None, 'missing_pose', 'uncalibrated', 'deviceMotion', 'extrinsicsCalibration',
+                                    'inputs', 'sensors', 'yaw_invalid', 'stale', 'future', 'nan', 'range'])
+def test_joint_calibrated_motion_gate_only_affects_joint_mode(pipeline, joint, failure):
+  params = SimpleNamespace(get_bool=lambda key: key == 'FordModelActionController' or (joint and key == 'FordPscmJointControl'))
+  controls, sm = startup(params=params), Subscriptions(False)
+  controls.sm, controls.desired_curvature, controls.curvature = sm, 0., 0.
+  controls.calibrated_pose = SimpleNamespace(angular_velocity=SimpleNamespace(xyz=[0., 0., -.02]))
+  controls.pose_calibrator = SimpleNamespace(calib_valid=True)
+  motion = SimpleNamespace(inputsOK=True, sensorsOK=True, angularVelocityDevice=SimpleNamespace(valid=True))
+  sm.messages['deviceMotion'] = motion
+  sm.logMonoTime['deviceMotion'] = 980_000_000
+  if failure == 'missing_pose':
+    controls.calibrated_pose = None
+  elif failure == 'uncalibrated':
+    controls.pose_calibrator.calib_valid = False
+  elif failure in ('deviceMotion', 'extrinsicsCalibration'):
+    sm.failed.add(failure)
+  elif failure == 'inputs':
+    motion.inputsOK = False
+  elif failure == 'sensors':
+    motion.sensorsOK = False
+  elif failure == 'yaw_invalid':
+    motion.angularVelocityDevice.valid = False
+  elif failure in ('stale', 'future'):
+    sm.logMonoTime['deviceMotion'] = 840_000_000 if failure == 'stale' else 1_010_000_000
+  elif failure in ('nan', 'range'):
+    controls.calibrated_pose.angular_velocity.xyz[2] = math.nan if failure == 'nan' else 3.1
+
+  cc = structs.CarControl(latActive=True)
+  cs = SimpleNamespace(vEgo=20., yawRate=-.028, canValid=True, steeringPressed=False, steeringTorque=0.)
+  model = straight()
+  model.action = SimpleNamespace(desiredCurvature=.001)
+  exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                    'lp': SimpleNamespace(roll=0.), 'math': math, 'clip_curvature': clip_curvature,
+                    'time': SimpleNamespace(monotonic=lambda: 1.)})
+  assert cc.latActive == controls.ford_path.valid == (not joint or failure is None)
+  msg = custom.CarControlSP.new_message()
+  exec(pipeline[1], {'self': controls, 'CC_SP': msg})
+  assert msg.fordLateralPath.valid == cc.latActive
+
+
 @pytest.mark.parametrize('sign', [-1., 1.])
 def test_feedback_through_actual_controlsd_publication_and_100hz_sender(pipeline, sign):
   call, publication = pipeline
