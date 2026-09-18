@@ -307,6 +307,16 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     with tempfile.TemporaryDirectory() as path:
       assert Params(path).get_default_value("FordGeometryReference") is False
 
+  def test_ford_joint_is_default_off_and_requires_action_mode(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    item = next(item for item in items if item["key"] == "FordPscmJointControl")
+    assert item["widget"] == "toggle" and item["needs_onroad_cycle"] is True
+    assert item["enablement"] == [{"type": "offroad_only"},
+                                  {"type": "param", "key": "FordModelActionController", "equals": True},
+                                  {"type": "param", "key": "FordGeometryReference", "equals": False}]
+    with tempfile.TemporaryDirectory() as path:
+      assert Params(path).get_default_value("FordPscmJointControl") is False
+
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys

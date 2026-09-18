@@ -21,6 +21,7 @@ class TogglesLayoutMiciSP(TogglesLayoutMici):
     super()._update_toggles()
     cp = ui_state.CP
     visible = bool(cp is not None and cp.brand == 'ford' and cp.flags & FordFlags.CANFD
-                   and ui_state.params.get_bool('FordModelActionController'))
+                   and ui_state.params.get_bool('FordModelActionController') and
+                   (not ui_state.params.get_bool('FordPscmJointControl') or ui_state.params.get_bool('FordGeometryReference')))
     self._ford_c0_toggle.set_visible(visible)
     self._ford_c0_help.set_visible(visible)

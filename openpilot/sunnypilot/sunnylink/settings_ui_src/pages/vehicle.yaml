@@ -29,6 +29,20 @@ sections:
     - type: param
       key: FordModelActionController
       equals: true
+  - key: FordPscmJointControl
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Coordinated C0/C1 Steering (Experimental)
+    description: Coordinate steering entry and release using an estimated Ford steering-controller response.
+    details: Uses the normal model-action steering target. Requires Selected-Action Path Tracking on and Model Geometry Reference off. Default off; turning this option off restores the existing selected-action controller. Turning Selected-Action Path Tracking off restores upstream Ford control. Changes apply after an offroad-to-onroad cycle. This trial uses a response reconstructed from older Ford firmware and has only been tested offline. C0 distance selection does not apply to this trial.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: param
+      key: FordModelActionController
+      equals: true
+    - type: param
+      key: FordGeometryReference
+      equals: false
 - id: hyundai
   title: Hyundai / Kia / Genesis Settings
   description: ''

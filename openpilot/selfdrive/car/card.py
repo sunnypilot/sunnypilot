@@ -22,6 +22,7 @@ from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
 from openpilot.selfdrive.car.helpers import convert_carControlSP, convert_to_capnp
 from openpilot.selfdrive.car.ford_pscm_status import populate_ford_pscm_status
+from openpilot.selfdrive.car.ford_joint_control import select_joint_control
 
 from openpilot.sunnypilot.mads.helpers import set_alternative_experience, set_car_specific_params
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
@@ -124,6 +125,7 @@ class Car:
       self.RI = RI
 
     self.CP.alternativeExperience = 0
+    self.ford_joint_control = select_joint_control(self.CP, self.params)
     # mads
     set_alternative_experience(self.CP, self.CP_SP, self.params)
     set_car_specific_params(self.CP, self.CP_SP, self.params)
@@ -200,6 +202,10 @@ class Car:
     CS, CS_SP = self.CI.update(can_list)
     CS_SP = convert_to_capnp(CS_SP)
     populate_ford_pscm_status(self.CP, self.CI.can_parsers, CS_SP, CS.canValid)
+    if self.ford_joint_control is not None and self.ford_joint_control.fault:
+      # Surface a latched loss of command history through the normal steering
+      # fault alert; never silently leave the UI engaged with this trial disabled.
+      CS.steerFaultTemporary = True
 
     # Update radar tracks from CAN
     RD: structs.RadarDataT | None = self.RI.update(can_list)
@@ -269,7 +275,7 @@ class Car:
     cs_sp_send.carStateSP = CS_SP
     self.pm.send('carStateSP', cs_sp_send)
 
-  def controls_update(self, CS: car.CarState, CC: car.CarControl, CC_SP: custom.CarControlSP):
+  def controls_update(self, CS: car.CarState, CC: car.CarControl, CC_SP: custom.CarControlSP, pscm_status=None):
     """control update loop, driven by carControl"""
 
     if not self.initialized_prev:
@@ -282,8 +288,16 @@ class Car:
     if self.sm.all_alive(['carControl']):
       # send car controls over can
       now_nanos = self.can_log_mono_time if REPLAY else int(time.monotonic() * 1e9)
-      self.last_actuators_output, can_sends = self.CI.apply(CC, convert_carControlSP(CC_SP), now_nanos)
+      control_sp = convert_carControlSP(CC_SP)
+      if self.ford_joint_control is not None:
+        CC = self.ford_joint_control.prepare(CC, control_sp, CS, now_nanos * 1e-9,
+                                            fresh=self.sm.all_checks(['carControl', 'carControlSP']), pscm_status=pscm_status)
+      self.last_actuators_output, can_sends = self.CI.apply(CC, control_sp, now_nanos)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
+      if self.ford_joint_control is not None:
+        self.ford_joint_control.record_sent(can_sends, now_nanos)
+        if self.sm.frame % 20 == 0:
+          cloudlog.event('Ford joint path tracking', **self.ford_joint_control.diagnostics)
 
       self.CC_prev = CC
 
@@ -295,7 +309,7 @@ class Car:
     initialized = (not any(e.name == EventName.selfdriveInitializing for e in self.sm['onroadEvents']) and
                    self.sm.seen['onroadEvents'])
     if not self.CP.passive and initialized:
-      self.controls_update(CS, self.sm['carControl'], self.sm['carControlSP'])
+      self.controls_update(CS, self.sm['carControl'], self.sm['carControlSP'], CS_SP.fordPscmStatus)
 
     self.initialized_prev = initialized
     self.CS_prev = CS

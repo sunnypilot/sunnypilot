@@ -1,0 +1,3 @@
+Import('env')
+
+env.SharedLibrary('encoder', 'encoder.cc', LIBS=[])

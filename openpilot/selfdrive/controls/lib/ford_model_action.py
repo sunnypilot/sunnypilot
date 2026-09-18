@@ -206,7 +206,11 @@ class FordModelActionController:
   neither a limit nor a repeated measurement freezes the model request.
   """
   def __init__(self, proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN, *, c0_time_based=False,
-               c0_proportional_gain=None, direct_path=False):
+               c0_proportional_gain=None, direct_path=False, joint_control=False):
+    self.joint_control = bool(joint_control and not direct_path)
+    if self.joint_control:
+      proportional_gain = integral_gain = c0_proportional_gain = 0.
+      c0_time_based = False
     if c0_proportional_gain is None:
       c0_proportional_gain = DIRECT_PATH_C0_PROPORTIONAL_GAIN if direct_path else C0_PROPORTIONAL_GAIN
     self.core = ModelActionController(proportional_gain=proportional_gain, integral_gain=integral_gain, c0_time_based=c0_time_based,
@@ -216,6 +220,8 @@ class FordModelActionController:
     self.request_buffer = deque([0.] * self.request_buffer_size, maxlen=self.request_buffer_size)
     self.hypothesis = ('model-path-direct-feedback-v23' if self.direct_path else
                        'model-action-curvature-c0-feedback-v23-soft-c0-c1')
+    if self.joint_control:
+      self.hypothesis = 'model-action-joint-reference-v24'
     self.reset()
 
   def path_curvature(self, model, speed):
@@ -225,7 +231,7 @@ class FordModelActionController:
 
   def set_c0_time_based(self, enabled, *, lateral_engaged):
     """Apply a distance change only after lateral assistance is disengaged."""
-    if lateral_engaged or self.core.c0_time_based == bool(enabled):
+    if self.joint_control or lateral_engaged or self.core.c0_time_based == bool(enabled):
       return False
     self.core.c0_time_based = bool(enabled)
     self.reset('c0_distance_changed')
@@ -312,13 +318,18 @@ class FordModelActionController:
                         'feedback_error': self.core.feedback_curvature-current_curvature,
                         'driver_override': driver_override, 'pscm_limited': pscm_limited, 'pscm_status_fresh': bool(status_fresh),
                         'command': (command.path_offset, command.path_angle, 0., 0.)}
+    if self.joint_control:
+      # card receives the normal desired steering angle and owns allocation at
+      # the transmit boundary. This path carries validity, never a second PI.
+      self.diagnostics['command_stage'] = 'reference_only'
+      return FordPath(valid=True)
     return command
 
 
-def select_model_action_controller(CP, enabled, *, c0_time_based=False, direct_path=False):
+def select_model_action_controller(CP, enabled, *, c0_time_based=False, direct_path=False, joint_control=False):
   """Only opt-in Ford CAN FD vehicles override upstream curvature control."""
   compatible = CP.brand == 'ford' and CP.flags & FordFlags.CANFD
   if enabled and compatible:
     return FordModelActionController(proportional_gain=C1_PROPORTIONAL_GAIN, integral_gain=C1_INTEGRAL_GAIN,
-                                     c0_time_based=c0_time_based, direct_path=direct_path)
+                                     c0_time_based=c0_time_based, direct_path=direct_path, joint_control=joint_control)
   return None
