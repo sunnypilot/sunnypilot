@@ -56,6 +56,8 @@ class FordJointControl:
     self.fault = ''
     self.angle_trim = 0.0
     self.wheel_rate = 0.0
+    self.last_target = None
+    self.requested_rate = 0.0
     self.diagnostics = {'hypothesis': 'ford-joint-v24', 'status': 'inactive'}
 
   def advance(self, now):
@@ -119,16 +121,23 @@ class FordJointControl:
     active = bool(CC.latActive and valid and not override and not self.fault)
     if not active:
       self.angle_trim = 0.0
+      self.last_target = None
+      self.requested_rate = 0.0
     command = (0.0, 0.0)
     details = {}
     if active:
       try:
         speed, angle, yaw = self.measurement
+        if self.last_target is not None and 0.0 < dt <= 0.1:
+          rate = (target - self.last_target) / dt
+          self.requested_rate += dt / (0.1 + dt) * (rate - self.requested_rate)
+        self.last_target = target
         error = target - angle
         settling = abs(error) <= ANGLE_TRIM_ERROR_MAX and abs(self.wheel_rate) <= ANGLE_TRIM_RATE_MAX
-        # Outside small, slow tracking, an opposite error invalidates the trim.
-        # Release it before allocation rather than carrying it into an unwind.
-        if not CS.steeringPressed and not settling and error * self.angle_trim < 0.0:
+        # Brief wheel motion freezes learning but does not invalidate a learned
+        # bias. Clear opposing trim for a large error or a fast-moving request.
+        release = abs(error) > ANGLE_TRIM_ERROR_MAX or abs(self.requested_rate) > ANGLE_TRIM_RATE_MAX
+        if not CS.steeringPressed and release and error * self.angle_trim < 0.0:
           self.angle_trim = 0.0
         trimmed_target = target + self.angle_trim
         inverse = invert_angle(self.angle, speed, trimmed_target, angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
@@ -141,6 +150,7 @@ class FordJointControl:
           'trimmed_angle': trimmed_target,
           'angle_trim': self.angle_trim,
           'wheel_rate': self.wheel_rate,
+          'requested_rate': self.requested_rate,
           'reachable_angle': inverse['reachable_target'],
           'target_curvature': inverse['curvature'],
           'predicted_curvature': float(info['first_state'][3]),

@@ -198,7 +198,8 @@ def test_limit_reached_does_not_grow_trim_but_allows_relief():
     status = SimpleNamespace(valid=True, canMonoTime=round(now*1e9), limit=2, denied=False)
     assert p.tick(now, 1.5, pscm_status=status).latActive
     assert p.joint.angle_trim == 1.
-  p.tick(2.01, -1.5, pscm_status=status)
+  p.cs.steeringAngleDeg = 3.
+  p.tick(2.01, 1.5, pscm_status=status)
   assert 0.99 < p.joint.angle_trim < 1.
 
 
@@ -210,6 +211,50 @@ def test_acceleration_clipping_does_not_grow_trim():
     p.tick(1.+i*.01, 201.5)
     assert p.joint.diagnostics['accel_limited']
     assert p.joint.angle_trim == 0.
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_small_wheel_motion_does_not_discard_steady_request_trim(sign):
+  # Route 17c, 1461 s: a ~1-degree trim disappears when a brief wheel
+  # movement crosses the target, although the requested angle barely changes.
+  p = Pipeline()
+  p.cs.vEgo = 24.
+  p.cs.steeringAngleDeg = sign * -2.1
+  for i in range(60):
+    p.tick(1. + i * .01, sign * -1.3)
+  p.joint.angle_trim = sign * .985
+  p.cs.steeringAngleDeg = sign * -.8
+  assert p.tick(1.6, sign * -1.3).latActive
+  assert abs(p.joint.wheel_rate) > 5.
+  assert not p.joint.diagnostics['trim_learning']
+  assert p.joint.diagnostics['angle_trim'] == pytest.approx(sign * .985)
+  assert .98 < sign * p.joint.angle_trim < .985  # Opposing error can bleed it.
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_fast_request_releases_opposing_trim_before_wheel_moves(sign):
+  p = Pipeline()
+  for i in range(60):
+    p.tick(1. + i * .01, 0.)
+  p.joint.angle_trim = sign
+  request = sign * -2.
+  p.tick(1.6, request)
+  assert p.joint.wheel_rate == 0.
+  assert p.joint.diagnostics['angle_trim'] == 0.
+  assert p.joint.diagnostics['trimmed_angle'] == request
+
+
+def test_inactive_request_history_cannot_clear_trim_after_reengagement():
+  p = Pipeline()
+  p.tick(1., 0.)
+  p.tick(1.01, 60.)
+  assert abs(p.joint.requested_rate) > 5.
+  p.tick(1.02, 0., active=False)
+  assert p.joint.requested_rate == 0. and p.joint.last_target is None
+  p.tick(1.03, 1.)
+  p.joint.angle_trim = -.5
+  p.tick(1.04, 1.)
+  assert p.joint.diagnostics['angle_trim'] == -.5
 
 
 @pytest.mark.parametrize('target,rate', [(-60., 0.), (-2., -30.)])
