@@ -24,8 +24,8 @@ class LongControlSP:
     return not (was_stopping and is_pid and a_target <= STOP_EXIT_ACCEL)
 
   @staticmethod
-  def limit_stop_release(last_output_accel: float, output_accel: float) -> float:
-    if last_output_accel < 0.0 and output_accel > last_output_accel:
+  def limit_stop_release(last_output_accel: float, output_accel: float, release_active: bool) -> float:
+    if release_active and output_accel > last_output_accel:
       return min(output_accel, last_output_accel + STOPPING_DECEL_RATE * DT_CTRL)
     return output_accel
 

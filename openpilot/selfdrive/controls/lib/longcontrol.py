@@ -49,6 +49,7 @@ class LongControl(LongControlSP):
     self.pid = PIDController(0.0, (CP.longitudinalTuning.kiBP, CP.longitudinalTuning.kiV),
                              rate=1 / DT_CTRL)
     self.last_output_accel = 0.0
+    self.stop_release_active = False
 
   def reset(self):
     self.pid.reset()
@@ -68,7 +69,11 @@ class LongControl(LongControlSP):
                                      a_target):
       self.long_control_state = LongCtrlState.stopping
 
+    if previous_state == LongCtrlState.stopping and self.long_control_state == LongCtrlState.pid:
+      self.stop_release_active = True
+
     if self.long_control_state == LongCtrlState.off:
+      self.stop_release_active = False
       self.reset()
       output_accel = 0.
 
@@ -86,7 +91,10 @@ class LongControl(LongControlSP):
                                      feedforward=a_target)
 
       if previous_state == LongCtrlState.stopping:
-        output_accel = self.limit_stop_release(self.last_output_accel, output_accel)
+        raw_output_accel = output_accel
+      output_accel = self.limit_stop_release(self.last_output_accel, raw_output_accel, self.stop_release_active)
+      if output_accel >= raw_output_accel:
+        self.stop_release_active = False
 
     self.last_output_accel = np.clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel

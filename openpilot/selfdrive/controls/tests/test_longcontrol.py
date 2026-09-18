@@ -59,7 +59,8 @@ class TestStoppingHold:
     assert LongControlSP.should_hold_stopping(control, car_state, -0.469)
 
   def test_stopping_decel_rate_is_smooth_while_rolling(self):
-    assert LongControlSP.stopping_decel_rate(0.1) == 0.3
+    assert abs(LongControlSP.stopping_decel_rate(0.1) - 0.07) < 1e-9
+    assert LongControlSP.stopping_decel_rate(1.5) == 0.3
 
   def test_stopping_decel_rate_remains_gentle_at_stop(self):
     assert LongControlSP.stopping_decel_rate(0.0) == 0.05
@@ -70,8 +71,14 @@ class TestStoppingHold:
 
   def test_stop_release_is_rate_limited(self):
     last_accel = -0.67
-    output_accel = LongControlSP.limit_stop_release(last_accel, 0.31)
+    output_accel = LongControlSP.limit_stop_release(last_accel, 0.31, True)
     assert abs(output_accel - (-0.667)) < 1e-9
 
   def test_stop_release_does_not_limit_stronger_braking(self):
-    assert LongControlSP.limit_stop_release(-0.67, -0.8) == -0.8
+    assert LongControlSP.limit_stop_release(-0.67, -0.8, True) == -0.8
+
+  def test_stop_release_stays_limited_through_zero(self):
+    value = -0.67
+    for _ in range(400):
+      value = LongControlSP.limit_stop_release(value, 0.31, True)
+    assert value < 0.31
