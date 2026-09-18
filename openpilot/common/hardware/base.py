@@ -1,4 +1,5 @@
 import os
+import time
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, fields
 
@@ -16,6 +17,17 @@ class ThermalZone:
   zone_number = -1
 
   def read(self) -> float:
+    start = time.monotonic()
+    try:
+      return self._read()
+    finally:
+      elapsed = time.monotonic() - start
+      if elapsed > 1.0:
+        # Import lazily: swaglog's hardware paths depend on this module.
+        from openpilot.common.swaglog import cloudlog
+        cloudlog.event("Thermal sensor read slow", sensor=self.name, zone=self.zone_number, elapsed=elapsed, error=True)
+
+  def _read(self) -> float:
     if self.zone_number < 0:
       for n in os.listdir("/sys/devices/virtual/thermal"):
         if not n.startswith("thermal_zone"):

@@ -242,6 +242,8 @@ def hardware_thread(end_event, hw_queue) -> None:
   should_start_prev = False
   in_car = False
   engaged_prev = False
+  network_metered_prev = None
+  runner_voltage_prev = None
   pwrsave = False
   offroad_cycle_count = 0
 
@@ -407,13 +409,14 @@ def hardware_thread(end_event, hw_queue) -> None:
       should_start = should_start and all(startup_conditions.values())
 
     if should_start != should_start_prev or (count == 0):
-      params.put_bool("IsEngaged", False, block=True)
+      params.put_bool("IsEngaged", False)
       engaged_prev = False
 
     if sm.updated['selfdriveState']:
       engaged = sm['selfdriveState'].enabled
       if engaged != engaged_prev:
-        params.put_bool("IsEngaged", engaged, block=True)
+        # Persistence must not hold up the deviceState heartbeat on slow I/O.
+        params.put_bool("IsEngaged", engaged)
         engaged_prev = engaged
 
       try:
@@ -453,7 +456,10 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     # GitHub runner auto off: 9V is used as the threshold because most desktop runners
     # will rarely exceed 5V so 9V is set as our buffer between desk use and car use.
-    params.put_bool("GithubRunnerSufficientVoltage", ((voltage or 0) and voltage > 9000))
+    runner_voltage = bool(voltage is not None and voltage > 9000)
+    if runner_voltage != runner_voltage_prev:
+      params.put_bool("GithubRunnerSufficientVoltage", runner_voltage)
+      runner_voltage_prev = runner_voltage
 
     power_monitor.calculate(voltage, onroad_conditions["ignition"])
     msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
@@ -518,11 +524,13 @@ def hardware_thread(end_event, hw_queue) -> None:
       # save last one before going onroad
       if rising_edge_started:
         try:
-          params.put("LastOffroadStatusPacket", dat, block=True)
+          params.put("LastOffroadStatusPacket", dat)
         except Exception:
           cloudlog.exception("failed to save offroad status")
 
-    params.put_bool("NetworkMetered", msg.deviceState.networkMetered)
+    if msg.deviceState.networkMetered != network_metered_prev:
+      params.put_bool("NetworkMetered", msg.deviceState.networkMetered)
+      network_metered_prev = msg.deviceState.networkMetered
 
     now_ts = time.monotonic()
     if off_ts:
@@ -532,8 +540,8 @@ def hardware_thread(end_event, hw_queue) -> None:
     last_uptime_ts = now_ts
 
     if (count % int(60. / DT_HW)) == 0:
-      params.put("UptimeOffroad", uptime_offroad, block=True)
-      params.put("UptimeOnroad", uptime_onroad, block=True)
+      params.put("UptimeOffroad", uptime_offroad)
+      params.put("UptimeOnroad", uptime_onroad)
 
     count += 1
     should_start_prev = should_start
