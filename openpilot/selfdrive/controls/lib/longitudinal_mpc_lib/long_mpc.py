@@ -70,6 +70,7 @@ def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
     raise NotImplementedError("Longitudinal personality not supported")
 
 
+<<<<<<< Updated upstream:openpilot/selfdrive/controls/lib/longitudinal_mpc_lib/long_mpc.py
 def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 2.5
@@ -82,6 +83,31 @@ def get_T_FOLLOW(personality=log.LongitudinalPersonality.standard):
   else:
     raise NotImplementedError("Longitudinal personality not supported")
 
+=======
+def compute_T_FOLLOW(personalities, min_val=1.0, max_val=2.0):
+  """Compute T_FOLLOW values on a logarithmic scale."""
+  N = len(personalities)
+  return dict(zip(personalities,
+    [min_val + (max_val - min_val) * (np.log(i + 1) / np.log(N)) for i in range(N)]
+  ))
+
+# Dynamically extract personalities and compute T_FOLLOW values
+personalities = list(custom.LongitudinalPersonalitySP)
+T_FOLLOW_VALUES = compute_T_FOLLOW(personalities)
+
+def get_T_FOLLOW(personality=custom.LongitudinalPersonalitySP.standard):
+  """Return T_FOLLOW for a given personality."""
+  if personality not in T_FOLLOW_VALUES:
+    raise NotImplementedError(f"Unsupported personality: {personality}")
+  return T_FOLLOW_VALUES[personality]
+
+def get_dynamic_personality(v_ego, personality=custom.LongitudinalPersonalitySP.standard):
+  """Adjust T_FOLLOW based on vehicle speed (scales 0.75-1.0 from 0-36 m/s)."""
+  scale_factor = np.clip(np.interp(v_ego, [0, 36], [0.75, 1.0]), 0.75, 1.0)
+  return get_T_FOLLOW(personality) * scale_factor
+
+
+>>>>>>> Stashed changes:selfdrive/controls/lib/longitudinal_mpc_lib/long_mpc.py
 def get_stopped_equivalence_factor(v_lead):
   return (v_lead**2) / (2 * COMFORT_BRAKE)
 
