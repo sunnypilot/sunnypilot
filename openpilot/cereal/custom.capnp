@@ -391,6 +391,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadTwo @3 :LeadData;
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
   longitudinalIdle @5 :Bool;
+  leadCoastMinDistance @6 :Float32;
 
   struct Param {
     key @0 :Text;

@@ -9,6 +9,7 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import get_T_FOLLOW
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
@@ -19,6 +20,13 @@ from openpilot.sunnypilot.models.helpers import get_active_bundle
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 
 SPEED_LIMIT_APPROACH_SHAPE = 1.5
+# Coasting behind a lead becomes eligible just inside the personality's own
+# steady-state gap, so a lead at normal following distance still qualifies.
+LEAD_COAST_FOLLOW_FACTOR = 0.95
+
+
+def lead_coast_min_distance(v_ego: float, personality) -> float:
+  return max(6., LEAD_COAST_FOLLOW_FACTOR * get_T_FOLLOW(personality) * max(v_ego, 0.))
 
 
 class SpeedLimitApproach:

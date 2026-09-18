@@ -160,7 +160,7 @@ Prefer the explicit keys for new configs.
 
 Both the dedicated lower-limit `"idle"` approach and manual set-speed reductions with `longitudinalNoLeadDecelMode: "idle"` can coast with a lead after two seconds of stable readings. Both detected leads must satisfy all of these initial conservative thresholds:
 
-- Distance at least `6 m + 2 seconds × ego speed`.
+- Distance at least `95%` of the personality follow distance (`T_FOLLOW × v_ego`, minimum `6 m`), so a lead at normal following distance qualifies.
 - Relative speed at least `-0.2 m/s` (no appreciable closing).
 - Lead acceleration at least `-0.2 m/s²` (no appreciable slowing).
 - No abrupt distance drop of more than `0.5 m` between planner updates.

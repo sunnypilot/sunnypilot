@@ -22,6 +22,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import (
   SpeedLimitApproach,
   LongitudinalPlanSource as SpeedLimitPlanSource,
   limit_speed_limit_decel_target,
+  lead_coast_min_distance,
   no_lead_normal_decel_idle_active,
   speed_limit_current_limit_decel_needed,
   speed_limit_idle_active,
@@ -157,8 +158,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     lead_appeared = any(present and not previous for present, previous in
                         zip(lead_present, self.coast_lead_present, strict=True))
     self.coast_lead_present = lead_present
+    lead_coast_min_gap = lead_coast_min_distance(v_ego, sm['selfdriveState'].personality)
     lead_coast_safe = sm.all_checks(['radarState']) and all(
-      lead_allows_coasting(lead.present, lead.dRel, lead.vRel, lead.aLeadK, v_ego) and
+      lead_allows_coasting(lead.present, lead.dRel, lead.vRel, lead.aLeadK, lead_coast_min_gap) and
       (not lead.present or (previous is not None and lead.dRel >= previous - 0.5))
       for lead, previous in zip(leads, self.coast_lead_distances, strict=True)
     )

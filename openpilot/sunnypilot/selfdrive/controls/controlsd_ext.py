@@ -17,6 +17,7 @@ from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import lead_coast_min_distance
 
 
 def longitudinal_plan_sp_idle_active(sm: messaging.SubMaster) -> bool:
@@ -119,6 +120,7 @@ class ControlsExt(ModelStateBase):
     CC_SP.intelligentCruiseButtonManagement.sendButton = icbm_src.sendButton
     CC_SP.intelligentCruiseButtonManagement.vTarget = icbm_src.vTarget
     CC_SP.longitudinalIdle = longitudinal_plan_sp_idle_active(sm)
+    CC_SP.leadCoastMinDistance = lead_coast_min_distance(sm['carState'].vEgo, sm['selfdriveState'].personality)
 
     return CC_SP
 

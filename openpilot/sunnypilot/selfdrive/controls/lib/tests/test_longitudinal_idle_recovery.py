@@ -391,6 +391,21 @@ def test_manual_pending_target_is_cleared_by_cancellation(manual_cruise_flow, ca
   assert not planner.longitudinal_idle
 
 
+def test_manual_coast_qualifies_at_personality_follow_distance(manual_cruise_flow):
+  # A lead at a realistic steady-state gap (personality follow distance plus
+  # standstill space) must qualify; the previous fixed 6 m + 2 s gate could
+  # never be satisfied while following.
+  planner, sm = manual_cruise_flow
+  sm['radarState'].leadOne.present = True
+  sm['radarState'].leadOne.dRel = 2.0 * sm['carState'].vEgo + 4.
+  for _ in range(45):
+    planner.update(sm)
+  sm['carState'].vCruise = 20.
+  for _ in range(10):
+    planner.update(sm)
+  assert planner.longitudinal_idle
+
+
 def test_manual_idle_does_not_override_curve_speed_control(manual_cruise_flow):
   from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanSource
   planner, sm = manual_cruise_flow
