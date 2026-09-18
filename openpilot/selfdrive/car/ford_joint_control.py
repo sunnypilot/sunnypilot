@@ -133,7 +133,9 @@ class FordJointControl:
       'wire_command': tuple(map(float, command)),
       **details,
     }
-    return cc
+    # Preserve card's reader contract: CarController copies actuators with
+    # as_builder(), which is only available on a Cap'n Proto reader.
+    return cc.as_reader()
 
   def record_sent(self, can_sends, now_nanos):
     packets = [msg for msg in can_sends if msg[0] == 0x3D6 and msg[2] == self.bus]

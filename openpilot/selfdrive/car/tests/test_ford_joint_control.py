@@ -12,6 +12,7 @@ import pytest
 from opendbc.car import Bus, structs
 from opendbc.car.ford.carcontroller import CarController
 from opendbc.car.ford.values import FordFlags
+from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params, ParamKeyFlag
 from openpilot.selfdrive.car.ford_joint_control import FordJointControl, joint_control_enabled, select_joint_control
 from openpilot.selfdrive.controls.lib.ford_joint.angle import AngleModel
@@ -42,11 +43,12 @@ class Pipeline:
     self.cs = structs.CarState(vEgo=5.36, vEgoRaw=5.36, canValid=True)
     self.vehicle = SimpleNamespace(out=self.cs, acc_tja_status_stock_values=defaultdict(int),
                                    lkas_status_stock_values=defaultdict(int), buttons_stock_values=defaultdict(int))
+    self.interface = SimpleNamespace(CC=self.sender, CS=self.vehicle)
 
   def tick(self, now, target=30., active=True, **kwargs):
     cc, sp = controls(target, active)
     result = self.joint.prepare(cc.as_reader(), sp, self.cs, now, **kwargs)
-    _, packets = self.sender.update(result.as_reader(), sp, self.vehicle, round(now * 1e9))
+    _, packets = CarInterfaceBase.apply(self.interface, result, sp, round(now * 1e9))
     assert sum(p[0] == 0x3d6 for p in packets) == 1
     self.joint.record_sent(packets, round(now * 1e9))
     assert result.longActive and result.actuators.accel == cc.actuators.accel
@@ -198,7 +200,8 @@ def test_candidate_does_not_mutate_state_and_native_step_matches_python():
     assert abs(info['first_state'][3]-info['planned_target']) <= info['immediate_error_bound']+1e-12
 
 
-def test_card_transmit_hook_and_fault_alert_use_actual_source():
+@pytest.mark.parametrize('active,override', list(itertools.product((False, True), repeat=2)))
+def test_card_transmit_hook_and_fault_alert_use_actual_source(active, override):
   import ast
   from pathlib import Path
   from openpilot.cereal import custom
@@ -211,19 +214,23 @@ def test_card_transmit_hook_and_fault_alert_use_actual_source():
   branch = next(n for n in method.body if isinstance(n, ast.If) and ast.unparse(n.test) == "self.sm.all_alive(['carControl'])")
   code = compile(ast.Module(body=[branch], type_ignores=[]), str(source_path), 'exec')
   p = Pipeline()
+  p.cs.steeringPressed = override
   sent = []
   owner = SimpleNamespace(ford_joint_control=p.joint, sm=SimpleNamespace(all_alive=lambda _: True, all_checks=lambda _: True, frame=1),
-                          CI=SimpleNamespace(apply=lambda cc, sp, now: p.sender.update(cc.as_reader(), sp, p.vehicle, now)),
+                          CI=SimpleNamespace(apply=lambda cc, sp, now: CarInterfaceBase.apply(p.interface, cc, sp, now)),
                           pm=SimpleNamespace(send=lambda service, data: sent.append((service, data))))
-  cc, _ = controls()
+  cc, _ = controls(active=active)
+  original = cc.to_dict()
   sp = custom.CarControlSP.new_message()
   sp.fordLateralPath.enabled = sp.fordLateralPath.valid = True
   exec(code, {'self': owner, 'CC': cc.as_reader(), 'CC_SP': sp, 'CS': p.cs, 'pscm_status': None, 'REPLAY': False,
               'time': SimpleNamespace(monotonic=lambda: 1.), 'convert_carControlSP': convert_carControlSP,
               'can_list_to_can_capnp': lambda data, **kwargs: data})
-  assert sent[0][0] == 'sendcan' and p.joint.sent[2]
+  assert sent[0][0] == 'sendcan'
+  assert p.joint.sent[2] == (active and not override)
   assert p.joint.last_sent_time == 1.
-  assert owner.CC_prev.latActive
+  assert owner.CC_prev.to_dict() == {**original, 'latActive': active and not override}
+  assert cc.to_dict() == original
 
   update_method = next(n for n in car.body if isinstance(n, ast.FunctionDef) and n.name == 'state_update')
   alert = next(n for n in update_method.body if isinstance(n, ast.If) and 'self.ford_joint_control.fault' in ast.unparse(n.test))

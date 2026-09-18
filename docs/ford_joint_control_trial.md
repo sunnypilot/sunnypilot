@@ -44,7 +44,11 @@ A separate replay executes the actual 100 Hz adapter and Ford CAN packer with th
 
 These are frozen measurements and nominal active-mode reconstruction, not observed improvements on the truck. The actual adapter made 12,031 packed command updates without a latched fault. The slowest per-window 99th-percentile cycle was 0.95 ms on the development Mac; comma hardware timing is unmeasured. Firmware-rate/calibration uncertainty remains material.
 
-The focused suite exercises default-off selection, rollback, zero second PI, CAN signs/bounds/cadence, inactive state retention, interventions, limitReached, stale/nonfinite inputs, timing faults, real card hooks, parameter/schema registration, and inverse/forward numerical agreement. Run:
+The focused suite exercises default-off selection, rollback, zero second PI, CAN signs/bounds/cadence, inactive state retention, interventions, limitReached, stale/nonfinite inputs, timing faults, real card hooks, parameter/schema registration, and inverse/forward numerical agreement.
+
+The first enabled on-device trial exposed a message-type crash: the adapter returned a Cap'n Proto builder, while Ford's sender expects a reader and copies its actuator fields with `as_builder()`. The adapter now returns a reader. Regression coverage passes its output unchanged through `CarInterfaceBase.apply` and the production Ford sender, including the actual card hook with active, inactive and driver-override inputs. The earlier harness converted the output to a reader itself and hid this integration error. The regression also checks that the incoming message is not mutated and all fields other than the selected lateral-active state are preserved.
+
+Run:
 
 ```sh
 python -m pytest openpilot/selfdrive/car/tests/test_ford_joint_control.py \
