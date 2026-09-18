@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sunnypilot.com/schemas/sdui/macros.schema.json",
+  "title": "Settings UI macros (named rule fragments)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["macros"],
+  "properties": {
+    "macros": {
+      "type": "object",
+      "description": "Named rule fragments. Each value is either a list of rules (typical) or a single rule object. Reference from items/layout via {$ref: '#/macros/<name>'}.",
+      "patternProperties": {
+        "^[A-Za-z_][A-Za-z0-9_]*$": {
+          "oneOf": [
+            {"type": "array", "items": {"$ref": "rule.schema.json"}},
+            {"$ref": "rule.schema.json"}
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
