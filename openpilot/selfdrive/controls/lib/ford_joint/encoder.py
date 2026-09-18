@@ -65,6 +65,8 @@ LIB.paired_cost.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, 
 LIB.paired_cost.restype = ctypes.c_double
 LIB.paired_select.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ctypes.c_int, ARRAY]
 LIB.paired_select.restype = None
+LIB.paired_immediate_bound.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int]
+LIB.paired_immediate_bound.restype = ctypes.c_double
 LIB.paired_preview_select.argtypes = [ARRAY, ARRAY, ARRAY, ARRAY, ctypes.c_int, ctypes.c_int, ctypes.c_double,
                                      ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY]
 LIB.paired_preview_select.restype = None
@@ -108,11 +110,11 @@ class PairedRelease:
     c0s = levels(m.c0, pref[0], max(p[10:12]), count, 0.01, 5.11, p[14])
     c1s = levels(m.c1, pref[1], max(p[12:14]), count, 0.0005, 0.5, p[15])
     result = np.full(9, np.nan)
-    LIB.paired_select(s, p, target, pref, count, c0s, len(c0s), c1s, len(c1s), int(self.preserve_now), result)
-    if not np.isfinite(result).all() or abs(result[0]) > 5.11 or abs(result[1]) > 0.5:
-      raise ValueError('No finite bounded joint command')
     preview_limited = False
     if preview and curvature_rate:
+      immediate_bound = LIB.paired_immediate_bound(s, p, target, pref, count, c0s, len(c0s)) if self.preserve_now else 1e300
+      if not math.isfinite(immediate_bound):
+        raise ValueError('No finite immediate accuracy bound')
       n = math.ceil(preview / 0.008)
       times = np.minimum(np.arange(n + 1) * 0.008, preview)
       forecast = curvature + curvature_rate * times
@@ -121,13 +123,16 @@ class PairedRelease:
       pairs = np.array([quantize(static_pair(m, float(k), speed_kmh, gains=(float(p[0]), float(p[1])))) for k in bounded])
       targets = np.ascontiguousarray(pairs[:, 0] * p[0] + pairs[:, 1] * p[1])
       # Include forecast return pairs while retaining every original candidate.
-      c0s = np.unique(np.r_[result[0], pairs[:, 0], c0s])
-      c1s = np.unique(np.r_[result[1], pairs[:, 1], c1s])
-      immediate_bound = float(result[8])
-      result = np.full(9, np.nan)
+      # The unused ordinary selection was already in these original grids.
+      c0s = np.unique(np.r_[pairs[:, 0], c0s])
+      c1s = np.unique(np.r_[pairs[:, 1], c1s])
       LIB.paired_preview_select(s, p, targets, pairs.ravel(), n, count, immediate_bound, c0s, len(c0s), c1s, len(c1s), result)
       if not np.isfinite(result).all() or abs(result[0]) > 5.11 or abs(result[1]) > 0.5 or abs(result[6] - target) > immediate_bound + 1.1e-12:
         raise ValueError('No bounded preview command preserving immediate accuracy')
+    else:
+      LIB.paired_select(s, p, target, pref, count, c0s, len(c0s), c1s, len(c1s), int(self.preserve_now), result)
+      if not np.isfinite(result).all() or abs(result[0]) > 5.11 or abs(result[1]) > 0.5:
+        raise ValueError('No finite bounded joint command')
     return tuple(result[:2]), {
       'cost': float(result[2]),
       'first_state': result[3:8].copy(),

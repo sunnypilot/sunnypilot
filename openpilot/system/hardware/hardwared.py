@@ -122,7 +122,9 @@ def set_offroad_alert_if_changed(offroad_alert: str, show_alert: bool, extra_tex
 def log_slow_hardware_stage(stage: str, start: float) -> float:
   now = time.monotonic()
   if now - start > 0.1:
-    cloudlog.event("Hardware loop slow stage", stage=stage, elapsed=now - start)
+    # Multi-second deviceState stalls need their stage trace in qlogs too;
+    # logmessaged includes ERROR events there. This does not create a UI alert.
+    cloudlog.event("Hardware loop slow stage", stage=stage, elapsed=now - start, error=now - start > 1.0)
   return now
 
 def touch_thread(end_event):

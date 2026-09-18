@@ -73,3 +73,17 @@ def test_target_trend_enters_real_adapter_without_changing_requested_angle():
   p.tick(1.81, 40., active=False)
   p.tick(1.82, -40.)
   assert p.joint.diagnostics['target_preview_delta'] == 0.
+
+
+def test_preview_does_not_run_an_unused_full_constant_target_search(monkeypatch):
+  from openpilot.selfdrive.controls.lib.ford_joint.encoder import LIB
+
+  def unused_search(*args):
+    pytest.fail('Preview needs only the current-target accuracy bound, not a second full search')
+
+  monkeypatch.setattr(LIB, 'paired_select', unused_search)
+  command, info = PairedRelease(MainRequest(native_lookup=True)).choose(
+    36., .002, curvature_rate=.015, preview=.1, curvature_bound=.03,
+  )
+  assert np.isfinite(command).all()
+  assert abs(info['first_state'][3] - info['planned_target']) <= info['immediate_error_bound'] + 1.1e-12

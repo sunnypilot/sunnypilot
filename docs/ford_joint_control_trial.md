@@ -16,6 +16,14 @@ This candidate did **not** pass every offline reject check. In an older raw-yaw 
 
 Numerical checks compare the native score with an independent 1,600-tick forward calculation, preserve exact zero-preview/zero-trend behavior, and exercise timing jitter, duplicate timestamps, abrupt reversals, inactivity, touches, and PSCM override/denial through the real sender. Production exactly reproduces all 438,519 command/observer updates of the tested 0.10-second replay tapes. All 611 focused controller/settings tests pass, as do Ruff, diff checks and the native library's real SConscript build. No comma-device timing is claimed.
 
+### Route 182 communication warnings
+
+The next drive ran `2fe855920` with preview enabled. Its first six quick-log segments contain communication warnings identifying `deviceState`, followed by `managerState`. Device-state publication gaps are 5.23, 8.76 and 6.35 seconds. The unrelated absent `alertDebug` and `lateralManeuverPlan` topics listed in diagnostic dictionaries are ignored by the health checks. The warnings do not identify a PSCM communication failure. Quick logs alone do not identify the blocking health-loop operation; full segments were requested. The same logs show card/controlsd/selfdrived approaching one CPU core in several sampled intervals. These are distinct observations, not proof of a single cause.
+
+Preview allocation no longer computes the entire ordinary C0/C1 search before computing its forecast search. It computes only the ordinary C1-anchored accuracy bound needed by the forecast. The skipped ordinary output already belonged to the original candidate grid, so removing it does not remove a candidate. All 3,600 deterministic before/after comparisons match commands, score, state, grid count and immediate-error bound exactly. All 438,519 updates of the five-route replay still match the released preview candidate. Local selection p95 falls from 0.273 to 0.180 ms, with 1.18× aggregate speedup; comma-device scheduling improvement remains unmeasured.
+
+Existing hardware-loop stage records now enter quick logs when a stage exceeds one second; 100 ms–one-second timings remain in full logs. This changes logging severity only, not watchdog thresholds, UI alerts, process scheduling or hardware operations. It enables diagnosis without requiring full logs for every subsequent warning. The optimization and instrumentation are not a claim that the observed health-process stalls are fixed. Validation: 612 controller/settings tests and six hardware timing/alert tests pass.
+
 ## Select and revert
 
 In sunnylink → Vehicle → Ford Settings, while offroad:

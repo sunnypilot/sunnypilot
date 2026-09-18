@@ -75,6 +75,30 @@ extern "C" double paired_cost(const double *initial, const double *p, double tar
   return return_cost(s, p, target, pref, cost);
 }
 
+// Preview uses the ordinary C1-anchored accuracy bound, but does not need the
+// ordinary full C0/C1 search. Keep its scoring and tie breaks exactly the same.
+extern "C" double paired_immediate_bound(const double *initial, const double *p, double target,
+                                         const double *pref, int count, const double *c0s, int n0) {
+  double max_error = 1e300, best = 1e300, best_move = 1e300, best_remaining = 1e300;
+  std::map<std::array<double, 6>, double> costs;
+  for (int i = 0; i < n0; i++) {
+    double first[5];
+    double cost = command_cost(initial, p, target, pref, count, c0s[i], pref[1], first);
+    std::array<double, 6> key = {first[0], first[1], first[2], first[3], first[4], cost};
+    auto entry = costs.emplace(key, 0.0);
+    if (entry.second) entry.first->second = return_cost(first, p, target, pref, cost);
+    double score = std::nearbyint(entry.first->second * 1e12) / 1e12;
+    double move = std::abs(c0s[i] - initial[0]), remaining = std::abs(c0s[i] - pref[0]);
+    if (score < best || (score == best && (move < best_move || (move == best_move && remaining < best_remaining)))) {
+      best = score;
+      best_move = move;
+      best_remaining = remaining;
+      max_error = std::abs(first[3] - target);
+    }
+  }
+  return max_error;
+}
+
 extern "C" void paired_select(const double *initial, const double *p, double target,
                               const double *pref, int count, const double *c0s, int n0,
                               const double *c1s, int n1, int preserve_now, double *result) {

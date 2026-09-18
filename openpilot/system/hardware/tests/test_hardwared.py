@@ -52,4 +52,14 @@ def test_stage_timing_reports_slow_stage_only(monkeypatch):
   start = hardwared.log_slow_hardware_stage('thermal_read', 1.)
   start = hardwared.log_slow_hardware_stage('system_stats', start)
   hardwared.log_slow_hardware_stage('chestnut_status', start)
-  report.assert_called_once_with('Hardware loop slow stage', stage='system_stats', elapsed=5.)
+  report.assert_called_once_with('Hardware loop slow stage', stage='system_stats', elapsed=5., error=True)
+
+
+@pytest.mark.parametrize('elapsed,error', [(.2, False), (1.2, True)])
+def test_long_health_stalls_are_included_in_quick_logs(monkeypatch, elapsed, error):
+  report = Mock()
+  monkeypatch.setattr(hardwared.time, 'monotonic', lambda: elapsed)
+  monkeypatch.setattr(hardwared.cloudlog, 'event', report)
+  hardwared.log_slow_hardware_stage('power_draw_read', 0.)
+  # logmessaged copies ERROR events to errorLogMessage, which is in qlogs.
+  report.assert_called_once_with('Hardware loop slow stage', stage='power_draw_read', elapsed=elapsed, error=error)
