@@ -276,9 +276,11 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target, selected_source, _ = min(candidates, key=lambda c: c[0])
     any_should_stop = any(should_stop for _, _, should_stop in candidates)
     speed_limit_source_active = self.source == SpeedLimitPlanSource.speedLimitAssist
-    speed_limit_current_limit_decel = speed_limit_current_limit_decel_needed(speed_limit_source_active, self.resolver.lower_lookahead_active,
-                                                                             v_ego, self.resolver.speed_limit_final_last,
-                                                                             no_lead_idle_overspeed_margin)
+    speed_limit_current_limit_decel = speed_limit_current_limit_decel_needed(
+      speed_limit_source_active or self.no_lead_idle_target > 0.,
+      self.resolver.lower_lookahead_active,
+      v_ego, self.resolver.speed_limit_final_last,
+      no_lead_idle_overspeed_margin)
     if speed_limit_current_limit_decel:
       self.longitudinal_idle_block_frames = max(self.longitudinal_idle_block_frames, no_lead_idle_decel_block_frames)
     idle_blocked = self.longitudinal_idle_block_frames > 0

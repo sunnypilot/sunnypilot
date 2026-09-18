@@ -406,6 +406,38 @@ def test_manual_coast_qualifies_at_personality_follow_distance(manual_cruise_flo
   assert planner.longitudinal_idle
 
 
+def test_manual_idle_exits_when_current_limit_drops_below_target(manual_cruise_flow):
+  from openpilot.common.constants import CV
+  planner, sm = manual_cruise_flow
+  planner.resolver.speed_limit_final_last = 100. * CV.KPH_TO_MS
+  sm['carState'].vCruise = 30.
+  for _ in range(10):
+    planner.update(sm)
+  assert planner.longitudinal_idle
+  # The manual target (30 kph) sits above the new 20 kph limit: idle must exit
+  # so normal control respects the lowered limit instead of coasting past it.
+  planner.resolver.speed_limit_final_last = 20. * CV.KPH_TO_MS
+  for _ in range(3):
+    planner.update(sm)
+  assert not planner.longitudinal_idle
+
+
+def test_manual_idle_survives_current_limit_drop_below_target(manual_cruise_flow):
+  from openpilot.common.constants import CV
+  planner, sm = manual_cruise_flow
+  planner.resolver.speed_limit_final_last = 100. * CV.KPH_TO_MS
+  sm['carState'].vCruise = 30.
+  for _ in range(10):
+    planner.update(sm)
+  assert planner.longitudinal_idle
+  # The idle target already lies below the new 50 kph limit: coasting to it
+  # never exceeds the limit, so idle must not be interrupted.
+  planner.resolver.speed_limit_final_last = 50. * CV.KPH_TO_MS
+  for _ in range(3):
+    planner.update(sm)
+  assert planner.longitudinal_idle
+
+
 def test_manual_idle_does_not_override_curve_speed_control(manual_cruise_flow):
   from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlanSource
   planner, sm = manual_cruise_flow
