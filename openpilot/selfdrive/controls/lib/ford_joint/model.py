@@ -14,13 +14,14 @@ DT = 0.008
 
 class Calibration:
   def __init__(self):
-    self.entries = json.loads(Path(__file__).with_name('calibration.json').read_text())['entries']
+    entries = json.loads(Path(__file__).with_name('calibration.json').read_text())['entries']
+    self.entries = {int(address, 16): (item['format'], tuple(item['values'])) for address, item in entries.items()}
 
   def read(self, address, fmt='f'):
-    item = self.entries[hex(address)]
-    if item['format'] != fmt:
+    stored_format, values = self.entries[address]
+    if stored_format != fmt:
       raise ValueError(f'Unexpected calibration format: {address:x}')
-    return tuple(item['values'])
+    return values
 
   def f(self, address):
     return self.read(address)[0]

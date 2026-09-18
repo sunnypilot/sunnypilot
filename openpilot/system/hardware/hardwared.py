@@ -109,10 +109,21 @@ prev_offroad_states: dict[str, tuple[bool, str | None]] = {}
 
 
 def set_offroad_alert_if_changed(offroad_alert: str, show_alert: bool, extra_text: str | None=None):
+  # Hidden alerts have no displayed text. Avoid taking the Params file lock
+  # again whenever a temperature changes while its alert remains hidden.
+  if not show_alert:
+    extra_text = None
   if prev_offroad_states.get(offroad_alert, None) == (show_alert, extra_text):
     return
-  prev_offroad_states[offroad_alert] = (show_alert, extra_text)
   set_offroad_alert(offroad_alert, show_alert, extra_text)
+  prev_offroad_states[offroad_alert] = (show_alert, extra_text)
+
+
+def log_slow_hardware_stage(stage: str, start: float) -> float:
+  now = time.monotonic()
+  if now - start > 0.1:
+    cloudlog.event("Hardware loop slow stage", stage=stage, elapsed=now - start)
+  return now
 
 def touch_thread(end_event):
   count = 0
@@ -278,9 +289,11 @@ def hardware_thread(end_event, hw_queue) -> None:
     if (sm.frame % round(SERVICE_LIST['pandaStates'].frequency * DT_HW) != 0) and not ign_edge:
       continue
 
+    stage_start = time.monotonic()
     msg = messaging.new_message('deviceState', valid=True)
     msg.deviceState = thermal_config.get_msg()
     msg.deviceState.deviceType = HARDWARE.get_device_type()
+    stage_start = log_slow_hardware_stage("thermal_read", stage_start)
 
     try:
       last_hw_state = hw_queue.get_nowait()
@@ -304,6 +317,7 @@ def hardware_thread(end_event, hw_queue) -> None:
     msg.deviceState.modemTempC = last_hw_state.modem_temps
 
     msg.deviceState.screenBrightnessPercent = HARDWARE.get_screen_brightness()
+    stage_start = log_slow_hardware_stage("system_stats", stage_start)
 
     set_usb_state(msg.deviceState, last_hw_state.usb_state)
     chestnut.update(started_ts is None, last_hw_state.usb_state)
@@ -312,6 +326,7 @@ def hardware_thread(end_event, hw_queue) -> None:
     chestnut_status.update(started_ts is None, branch, last_hw_state.usb_state, chestnut.failed,
                            params.get_bool("ChestnutLoading"), params.get("ChestnutActive"),
                            chestnut_state if chestnut_valid else None, set_offroad_alert_if_changed)
+    stage_start = log_slow_hardware_stage("chestnut_status", stage_start)
     # this subset is only used for offroad
     temp_sources = [
       msg.deviceState.memoryTempC,
@@ -372,13 +387,14 @@ def hardware_thread(end_event, hw_queue) -> None:
     is_unsupported_combo = COMMA_HARDWARE and HARDWARE.get_device_type() == "tici" and build_metadata.channel_type != "tici"
     startup_conditions["not_tici"] = not is_unsupported_combo
     onroad_conditions["not_tici"] = not is_unsupported_combo
-    set_offroad_alert("Offroad_TiciSupport", is_unsupported_combo, extra_text=build_metadata.channel)
+    set_offroad_alert_if_changed("Offroad_TiciSupport", is_unsupported_combo, extra_text=build_metadata.channel)
 
     # if the temperature enters the danger zone, go offroad to cool down
     onroad_conditions["device_temp_good"] = thermal_status < ThermalStatus.critical
     extra_text = f"{offroad_comp_temp:.1f}C"
     show_alert = (not onroad_conditions["device_temp_good"] or not startup_conditions["device_temp_engageable"]) and onroad_conditions["ignition"]
     set_offroad_alert_if_changed("Offroad_TemperatureTooHigh", show_alert, extra_text=extra_text)
+    stage_start = log_slow_hardware_stage("startup_conditions", stage_start)
 
     if show_alert:
       msg.deviceState.fanSpeedPercentDesired = 100
@@ -404,6 +420,7 @@ def hardware_thread(end_event, hw_queue) -> None:
       except Exception:
         pass
 
+    stage_start = log_slow_hardware_stage("engagement_params", stage_start)
     should_pwrsave = not onroad_conditions["ignition"] and msg.deviceState.screenBrightnessPercent < 1e-3
     if should_pwrsave != pwrsave or (count == 0):
       HARDWARE.set_power_save(should_pwrsave)
@@ -439,13 +456,16 @@ def hardware_thread(end_event, hw_queue) -> None:
     power_monitor.calculate(voltage, onroad_conditions["ignition"])
     msg.deviceState.offroadPowerUsageUwh = power_monitor.get_power_used()
     msg.deviceState.carBatteryCapacityUwh = max(0, power_monitor.get_car_battery_capacity())
+    stage_start = log_slow_hardware_stage("power_monitor", stage_start)
     current_power_draw = HARDWARE.get_current_power_draw()
     statlog.sample("power_draw", current_power_draw)
     msg.deviceState.powerDrawW = current_power_draw
+    stage_start = log_slow_hardware_stage("power_draw_read", stage_start)
 
     som_power_draw = HARDWARE.get_som_power_draw()
     statlog.sample("som_power_draw", som_power_draw)
     msg.deviceState.somPowerDrawW = som_power_draw
+    stage_start = log_slow_hardware_stage("som_power_read", stage_start)
 
     # Check if we need to shut down
     if power_monitor.should_shutdown(onroad_conditions["ignition"], in_car, off_ts, started_seen):
@@ -461,6 +481,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     msg.deviceState.thermalStatus = thermal_status
     pm.send("deviceState", msg)
+    stage_start = log_slow_hardware_stage("device_state_publish", stage_start)
 
     statlog.gauge("free_space_percent", msg.deviceState.freeSpacePercent)
     statlog.gauge("gpu_usage_percent", msg.deviceState.gpuUsagePercent)
@@ -514,6 +535,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     count += 1
     should_start_prev = should_start
+    log_slow_hardware_stage("stats_and_persistence", stage_start)
 
 
 def main():

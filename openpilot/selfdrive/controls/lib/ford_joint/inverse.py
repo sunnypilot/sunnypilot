@@ -65,12 +65,13 @@ def arc_pair(curvature, speed_kmh):
   return clip(c0, -C0_BOUND, C0_BOUND), clipped_c1
 
 
-def static_pair(request, curvature, speed_kmh):
+def static_pair(request, curvature, speed_kmh, *, gains=None):
   """Preserve the base's channel proportion, solve its static curvature sum."""
-  probe = copy.copy(request)
-  gains = probe.step(speed_kmh, request.c0, request.c1, freeze_i=True)
+  if gains is None:
+    probe = copy.copy(request).step(speed_kmh, request.c0, request.c1, freeze_i=True)
+    gains = probe['g0'], probe['g1']
   p0, p1 = arc_pair(curvature, speed_kmh)
-  total = gains['g0'] * p0 + gains['g1'] * p1
+  total = gains[0] * p0 + gains[1] * p1
   scale = curvature / total if total else 1.0
   return clip(p0 * scale, -C0_BOUND, C0_BOUND), clip(p1 * scale, -C1_BOUND, C1_BOUND)
 
