@@ -132,3 +132,51 @@ extern "C" void paired_select(const double *initial, const double *p, double tar
   }
   result[8] = max_error;
 }
+
+// Forecast the recent target trend briefly, then hold. The current-target
+// accuracy bound remains the ordinary encoder's feasible reference.
+extern "C" void paired_preview_select(const double *initial, const double *p,
+                                      const double *targets, const double *prefs, int n,
+                                      int count, double max_error, const double *c0s, int n0,
+                                      const double *c1s, int n1, double *result) {
+  double best = 1e300, best_move = 1e300, best_remaining = 1e300;
+  std::map<std::array<double, 6>, double> cache;
+  for (int i = 0; i < n0; i++) for (int j = 0; j < n1; j++) {
+    double first[5];
+    std::memcpy(first, initial, sizeof(first));
+    double cost = 0;
+    for (int k = 0; k < count; k++) {
+      step(first, p, c0s[i], c1s[j]);
+      double e = (first[3] - targets[std::min(k + 1, n)]) / .01;
+      cost += .008 * e * e;
+    }
+    // Preserve the ordinary C1-anchored bound against the current target.
+    if (std::abs(first[3] - targets[0]) > max_error + 1e-12) continue;
+    std::array<double, 6> key = {first[0], first[1], first[2], first[3], first[4], cost};
+    auto entry = cache.emplace(key, 0.);
+    if (entry.second) {
+      double s[5];
+      std::memcpy(s, first, sizeof(s));
+      for (int k = count; k < n; k++) {
+        step(s, p, prefs[2 * (k + 1)], prefs[2 * (k + 1) + 1]);
+        double e = (s[3] - targets[k + 1]) / .01;
+        cost += .008 * e * e;
+      }
+      entry.first->second = return_cost(s, p, targets[n], prefs + 2 * n, cost);
+    }
+    cost = entry.first->second;
+    double score = std::nearbyint(cost * 1e12) / 1e12;
+    double move = std::abs(c0s[i] - initial[0]) / 5.11 + std::abs(c1s[j] - initial[1]) / .5;
+    double remaining = std::abs(c0s[i] - prefs[2 * n]) / 5.11 + std::abs(c1s[j] - prefs[2 * n + 1]) / .5;
+    if (score < best || (score == best && (move < best_move || (move == best_move && remaining < best_remaining)))) {
+      best = score;
+      best_move = move;
+      best_remaining = remaining;
+      result[0] = c0s[i];
+      result[1] = c1s[j];
+      result[2] = cost;
+      std::memcpy(result + 3, first, sizeof(first));
+    }
+  }
+  result[8] = max_error;
+}

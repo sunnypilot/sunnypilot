@@ -1,8 +1,20 @@
 # Coordinated C0/C1 steering trial (v24)
 
-This default-off trial turns the normal action-derived desired steering angle into a jointly selected C0/C1 pair. It estimates the held fields and curvature filter of an older Ford PSCM and chooses one command whose predicted next-update error is no worse than a C1-anchored alternative. Among those candidates it minimizes error over the complete return to the steady pair, including the filter tail. It does not retain a future command plan or classify turns into maneuver states.
+This default-off trial turns the normal action-derived desired steering angle into a jointly selected C0/C1 pair. It estimates the held fields and curvature filter of an older Ford PSCM and chooses one command whose predicted next-update error is no worse than a C1-anchored alternative. Among those candidates it scores a short action-trend forecast followed by the complete return to its steady pair, including the filter tail. It does not retain a future command plan or classify turns into maneuver states.
 
 The later [residual wheel-angle trim](ford_joint_centering_trim.md) adds a small, bounded integral correction around this nominal encoder. The original validation below describes the earlier versions; the trim has separate validation and is not gainless.
+
+## 0.10-second action-trend preview
+
+The coordinated trial now extrapolates the existing filtered requested-angle rate for 0.10 seconds, then assumes that target holds. This changes allocation planning; the action-derived steering target itself is unchanged. Each forecast point uses the current inverse conversion, acceleration allowance and bounded/quantized C0/C1 mapping. Speed and measurement-driven states remain fixed within the forecast. The current-target immediate-error inequality is retained. The 0.10-second duration is a tuning parameter, not a firmware constant or additional model steerDelay.
+
+The preview is included under the existing default-off coordinated-controller toggle; there is no new setting. Master-off still selects upstream Ford. Diagnostics add `target_preview_seconds`, `target_preview_delta` (unclipped extrapolated angle change, degrees), and `target_preview_limited` (forecast curvature clipped by the acceleration allowance). Disengagement resets the requested-rate history as before.
+
+Frozen replays compared 0, 0.05, 0.10 and 0.15 seconds across routes 17c, 172, 177, 166 and 16a: 438,519 updates per variant through the real adapter and CAN packer. Under the nominal older-firmware model, the selected 0.10-second candidate changes internal-target MAE from 53.53 to 50.45 degrees and 33.00 to 30.36 degrees on two roundabout entries, and 8.00 to 4.94 degrees on the good unwind. Estimated release threshold crossings occur 19–152 ms earlier. These are internal target estimates with recorded vehicle motion frozen, not new wheel trajectories.
+
+This candidate did **not** pass every offline reject check. In an older raw-yaw sensitivity rocking window, periodic tracking-error amplitude increases from 4.94 to 5.90 degrees peak-to-peak; a calibrated-yaw route-172 bookmark increases from 0.694 to 0.815 degrees. Whole-route averages improve, but local oscillation and response-rate sensitivity regressions remain. The user explicitly selected implementation and push of the 0.10-second candidate after reviewing this tradeoff. No road improvement or closed-loop stability is established. The report is `pscm-trend-preview.html`; local research artifacts are under `.cache/ford_trend_preview`.
+
+Numerical checks compare the native score with an independent 1,600-tick forward calculation, preserve exact zero-preview/zero-trend behavior, and exercise timing jitter, duplicate timestamps, abrupt reversals, inactivity, touches, and PSCM override/denial through the real sender. Production exactly reproduces all 438,519 command/observer updates of the tested 0.10-second replay tapes. All 611 focused controller/settings tests pass, as do Ruff, diff checks and the native library's real SConscript build. No comma-device timing is claimed.
 
 ## Select and revert
 

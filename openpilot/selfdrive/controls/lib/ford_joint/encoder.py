@@ -1,7 +1,7 @@
-"""Joint C0/C1 allocation: one update, then a fixed steady-return policy.
+"""Joint C0/C1 allocation with optional short causal target-trend preview.
 
-No future tape, retained trajectory, maneuver modes or tunable tracking gain.
-The next-update accuracy constraint is enabled for the trial.
+No future tape, retained trajectory or maneuver modes. Preview duration is a
+tuning parameter; the next-update accuracy constraint retains the current target.
 """
 
 import copy
@@ -65,6 +65,9 @@ LIB.paired_cost.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, 
 LIB.paired_cost.restype = ctypes.c_double
 LIB.paired_select.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ctypes.c_int, ARRAY]
 LIB.paired_select.restype = None
+LIB.paired_preview_select.argtypes = [ARRAY, ARRAY, ARRAY, ARRAY, ctypes.c_int, ctypes.c_int, ctypes.c_double,
+                                     ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY]
+LIB.paired_preview_select.restype = None
 
 
 def levels(held, pref, rate, count, lsb, bound, clear):
@@ -86,13 +89,17 @@ class PairedRelease:
     self.interaction = interaction
     self.preserve_now = preserve_now
 
-  def choose(self, speed_kmh, curvature, phase=0):
+  def choose(self, speed_kmh, curvature, phase=0, *, curvature_rate=0.0, preview=0.0, curvature_bound=math.inf):
     m = self.request
     if not self.freeze_i or m.c0_i != 0:
       raise ValueError('Joint encoder requires its nominal zero-I estimate')
     s = state(m)
     if phase not in range(10) or speed_kmh <= 0 or not all(math.isfinite(x) for x in (speed_kmh, curvature, *s)):
       raise ValueError('Finite moving-vehicle inputs and scheduler phase required')
+    if not math.isfinite(curvature_rate) or not 0.0 <= preview <= 0.15:
+      raise ValueError('Finite target trend and bounded preview required')
+    if preview and (not math.isfinite(curvature_bound) or curvature_bound <= 0 or abs(curvature) > curvature_bound + 1e-12):
+      raise ValueError('Finite positive curvature bound must contain the current target')
     p = parameters(m, speed_kmh, True, self.interaction)
     # parameters() already probed this same state/speed for the channel gains.
     pref = np.array(quantize(static_pair(m, curvature, speed_kmh, gains=(float(p[0]), float(p[1])))))
@@ -104,6 +111,23 @@ class PairedRelease:
     LIB.paired_select(s, p, target, pref, count, c0s, len(c0s), c1s, len(c1s), int(self.preserve_now), result)
     if not np.isfinite(result).all() or abs(result[0]) > 5.11 or abs(result[1]) > 0.5:
       raise ValueError('No finite bounded joint command')
+    preview_limited = False
+    if preview and curvature_rate:
+      n = math.ceil(preview / 0.008)
+      times = np.minimum(np.arange(n + 1) * 0.008, preview)
+      forecast = curvature + curvature_rate * times
+      bounded = np.clip(forecast, -curvature_bound, curvature_bound)
+      preview_limited = bool(np.any(forecast != bounded))
+      pairs = np.array([quantize(static_pair(m, float(k), speed_kmh, gains=(float(p[0]), float(p[1])))) for k in bounded])
+      targets = np.ascontiguousarray(pairs[:, 0] * p[0] + pairs[:, 1] * p[1])
+      # Include forecast return pairs while retaining every original candidate.
+      c0s = np.unique(np.r_[result[0], pairs[:, 0], c0s])
+      c1s = np.unique(np.r_[result[1], pairs[:, 1], c1s])
+      immediate_bound = float(result[8])
+      result = np.full(9, np.nan)
+      LIB.paired_preview_select(s, p, targets, pairs.ravel(), n, count, immediate_bound, c0s, len(c0s), c1s, len(c1s), result)
+      if not np.isfinite(result).all() or abs(result[0]) > 5.11 or abs(result[1]) > 0.5 or abs(result[6] - target) > immediate_bound + 1.1e-12:
+        raise ValueError('No bounded preview command preserving immediate accuracy')
     return tuple(result[:2]), {
       'cost': float(result[2]),
       'first_state': result[3:8].copy(),
@@ -112,4 +136,5 @@ class PairedRelease:
       'planned_target': target,
       'evaluations': len(c0s) * len(c1s),
       'immediate_error_bound': result[8],
+      'preview_limited': preview_limited,
     }

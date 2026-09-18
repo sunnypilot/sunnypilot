@@ -14,6 +14,7 @@ ANGLE_TRIM_MAX = 2.0
 ANGLE_TRIM_KI = 0.2  # 1/s; error clipping limits adaptation to 0.4 deg/s.
 ANGLE_TRIM_ERROR_MAX = 5.0
 ANGLE_TRIM_RATE_MAX = 5.0  # deg/s: do not learn a bias from fast wheel motion.
+TARGET_PREVIEW = 0.1  # seconds; causal action-trend forecast, then hold.
 
 
 def joint_control_enabled(CP, params):
@@ -144,13 +145,20 @@ class FordJointControl:
         # Firmware phase is estimated from elapsed time. Cover the 1/2 firmware
         # ticks before the next nominal 100 Hz transmit; all phases are tested.
         ticks = max(1, min(2, int((self.phase + 0.01 + 1e-12) / 0.008)))
-        command, info = self.encoder.choose(speed, inverse['curvature'], phase=0 if ticks == 2 else 2)
+        command, info = self.encoder.choose(
+          speed, inverse['curvature'], phase=0 if ticks == 2 else 2,
+          curvature_rate=self.requested_rate / inverse['slope_per_curvature'], preview=TARGET_PREVIEW,
+          curvature_bound=inverse['allowance'] / (speed / 3.6)**2,
+        )
         details = {
           'requested_angle': target,
           'trimmed_angle': trimmed_target,
           'angle_trim': self.angle_trim,
           'wheel_rate': self.wheel_rate,
           'requested_rate': self.requested_rate,
+          'target_preview_seconds': TARGET_PREVIEW,
+          'target_preview_delta': self.requested_rate * TARGET_PREVIEW,
+          'target_preview_limited': info['preview_limited'],
           'reachable_angle': inverse['reachable_target'],
           'target_curvature': inverse['curvature'],
           'predicted_curvature': float(info['first_state'][3]),
