@@ -1,7 +1,9 @@
 // Opt-in Ford joint encoder. Numerical request state is estimated, not ECU RAM.
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <map>
 
 static double clip(double x, double lo, double hi) {
   return std::min(std::max(x, lo), hi);
@@ -31,19 +33,29 @@ static void step(double *s, const double *p, double c0, double c1) {
   s[3] += alpha * (raw - s[3]);
 }
 
-extern "C" double paired_cost(const double *initial, const double *p, double target,
-                              const double *pref, int count, double c0, double c1, double *first) {
-  double s[5];
-  std::memcpy(s, initial, sizeof(s));
+static double command_cost(const double *initial, const double *p, double target,
+                           const double *pref, int count, double c0, double c1, double *s) {
+  std::memcpy(s, initial, 5 * sizeof(double));
   double steady_raw = p[0] * pref[0] + p[1] * pref[1];
   double steady_error = (steady_raw - target) / .01, cost = 0;
+  for (int j = 0; j < count; j++) {
+    step(s, p, c0, c1);
+    double error = (s[3] - target) / .01;
+    cost += .008 * (error * error - steady_error * steady_error);
+  }
+  return cost;
+}
+
+static double return_cost(const double *first, const double *p, double target, const double *pref, double cost) {
+  double s[5];
+  std::memcpy(s, first, sizeof(s));
+  double steady_raw = p[0] * pref[0] + p[1] * pref[1];
+  double steady_error = (steady_raw - target) / .01;
   auto tick = [&](double a, double b) {
     step(s, p, a, b);
     double error = (s[3] - target) / .01;
     cost += .008 * (error * error - steady_error * steady_error);
   };
-  for (int j = 0; j < count; j++) tick(c0, c1);
-  if (first) std::memcpy(first, s, sizeof(s));
   // Include both channels' entire return, followed by the exact filter tail.
   // There is no adjustable planning horizon or retained future command plan.
   int n = 2 + std::ceil(std::max(std::abs(s[0] - pref[0]) / std::min(p[10], p[11]),
@@ -55,17 +67,37 @@ extern "C" double paired_cost(const double *initial, const double *p, double tar
   return cost + .008 * (2 * steady_error * d * a / alpha + d * d * a * a / (1 - a * a));
 }
 
+extern "C" double paired_cost(const double *initial, const double *p, double target,
+                              const double *pref, int count, double c0, double c1, double *first) {
+  double s[5];
+  double cost = command_cost(initial, p, target, pref, count, c0, c1, s);
+  if (first) std::memcpy(first, s, sizeof(s));
+  return return_cost(s, p, target, pref, cost);
+}
+
 extern "C" void paired_select(const double *initial, const double *p, double target,
                               const double *pref, int count, const double *c0s, int n0,
                               const double *c1s, int n1, int preserve_now, double *result) {
   double best = 1e300, best_move = 1e300, best_remaining = 1e300;
   double first[5];
+  // Slew clipping makes different command fields reach identical states. Reuse
+  // their exact return cost within this selection only. Include the prefix cost
+  // so the original floating-point accumulation and tie breaks are preserved.
+  std::map<std::array<double, 6>, double> costs;
+  auto finish = [&](double cost) {
+    if (!std::isfinite(cost)) return return_cost(first, p, target, pref, cost);
+    std::array<double, 6> key = {first[0], first[1], first[2], first[3], first[4], cost};
+    auto entry = costs.emplace(key, 0.0);
+    if (entry.second) entry.first->second = return_cost(first, p, target, pref, cost);
+    return entry.first->second;
+  };
   double max_error = 1e300, anchor_score = 1e300, anchor_move = 1e300, anchor_remaining = 1e300;
   if (preserve_now) {
     // Preserve the C1-anchored policy's immediate target accuracy.
     // An inequality against a feasible reference, not a new gain/deadband.
     for (int i = 0; i < n0; i++) {
-      double cost = paired_cost(initial, p, target, pref, count, c0s[i], pref[1], first);
+      double cost = command_cost(initial, p, target, pref, count, c0s[i], pref[1], first);
+      cost = finish(cost);
       double score = std::nearbyint(cost * 1e12) / 1e12;
       double move = std::abs(c0s[i] - initial[0]), remaining = std::abs(c0s[i] - pref[0]);
       if (score < anchor_score || (score == anchor_score && (move < anchor_move || (move == anchor_move && remaining < anchor_remaining)))) {
@@ -78,8 +110,10 @@ extern "C" void paired_select(const double *initial, const double *p, double tar
   }
   for (int i = 0; i < n0; i++) {
     for (int j = 0; j < n1; j++) {
-      double cost = paired_cost(initial, p, target, pref, count, c0s[i], c1s[j], first);
+      double cost = command_cost(initial, p, target, pref, count, c0s[i], c1s[j], first);
       if (std::abs(first[3] - target) > max_error + 1e-12) continue;
+      // Reject infeasible candidates before simulating their full return.
+      cost = finish(cost);
       // Numerical equality only. Tie breaks cannot trade worse tracking for
       // less channel motion; normalize them using the existing field spans.
       double score = std::nearbyint(cost * 1e12) / 1e12;

@@ -200,6 +200,24 @@ def test_candidate_does_not_mutate_state_and_native_step_matches_python():
     assert abs(info['first_state'][3]-info['planned_target']) <= info['immediate_error_bound']+1e-12
 
 
+@pytest.mark.parametrize('speed,c0,c1,filtered,fast,target,phase,pair,cost', [
+  (20., 0., 0., 0., False, .03, 0, (.03, .002), 5.6554469893989605),
+  (20., 3., .4, .03, False, -.03, 2, (2.98, .399), 151.49476621872228),
+  (40., 3., .4, .03, True, 0., 0, (2.95, .395), 12.167867914611671),
+  (6., 5.11, .5, .1, False, -.1, 0, (5.08, .498), 1391.5462859829215),
+  (80., -5.11, -.5, -.1, True, .03, 2, (-5.08, -.4975), 34.51646821335084),
+  (40., 3., -.4, 0., False, 0., 2, (3.02, -.399), 6.184073685045232),
+])
+def test_optimized_selection_preserves_v24_commands(speed, c0, c1, filtered, fast, target, phase, pair, cost):
+  # Frozen outputs from 528ed3615 before pruning/caching the full-return search.
+  # Cover entry, reversal, release, saturation, cancellation and both tick counts.
+  m = MainRequest(native_lookup=True)
+  m.c0, m.c1, m.filtered, m.fast = c0, c1, filtered, fast
+  command, info = PairedRelease(m).choose(speed, target, phase)
+  assert command == pytest.approx(pair, abs=1e-15, rel=0)
+  assert info['cost'] == pytest.approx(cost, abs=1e-12, rel=1e-12)
+
+
 @pytest.mark.parametrize('active,override', list(itertools.product((False, True), repeat=2)))
 def test_card_transmit_hook_and_fault_alert_use_actual_source(active, override):
   import ast

@@ -60,3 +60,11 @@ python -m pytest openpilot/selfdrive/car/tests/test_ford_joint_control.py \
 Build the native kernel through SCons. On the development checkout, its real SConscript and native parameter library were compiled successfully. A complete root build could not run because the checkout lacks the msgq/rednose SCons tool submodules. No on-device build or road validation is claimed.
 
 The trial's question is whether coordinating both channels preserves entry while reducing unnecessary correction during release. Offline results justify the opt-in comparison; they cannot establish smoothness or closed-loop stability.
+
+## Runtime optimization after route 174
+
+Route 174 ran v24 on `528ed3615` and recorded System Lagging during turns. Full rlogs show card using about 63% of one CPU core during the first alert; card, controlsd and selfdrived share that core and priority, and their combined measured load was about 101%. This supports CPU contention, not a PSCM limit, as the explanation for this alert. Comma timing must still be checked after the optimization.
+
+The search now rejects candidates that fail its existing immediate-error constraint before evaluating their full return. Within each selection it also reuses return costs for identical predicted states and prefix costs. No cache survives the selection, and the candidate set, full-return policy, scoring, tie breaks and command cadence are unchanged.
+
+Compared with the original native library built at the same optimization level, all nine outputs matched exactly in 600 deterministic stress cases and 720 comparisons using the 360 active logged states from route 174 at both firmware tick counts. On the development Mac, the recorded-state benchmark's 95th-percentile selection time fell from 0.317 ms to 0.090 ms; aggregate speedup was 1.47×. The broader stress benchmark improved 5.41× in aggregate. These are local encoder timings, not measured post-fix comma CPU utilization or a guarantee of system scheduling latency. Frozen pre-optimization commands and costs are also covered by the regression suite.
