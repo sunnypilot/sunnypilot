@@ -90,7 +90,8 @@ class TestUnifiedFrameResize(OpenpilotTestCase):
       v_horizon = CameraOffsetHelper.get_v_horizon(camera.intrinsics, rpy_calib)
       transforms[key] = CameraOffsetHelper.apply_camera_offset(native, height=1.22, offset_param=.2, v_horizon=v_horizon)
     original_transforms = {key: value.copy() for key, value in transforms.items()}
-    scale = np.diag([1344 / 1928, 760 / 1208, 1]).astype(np.float32)
+    sx, sy = 1344 / 1928, 760 / 1208
+    scale = np.array([[sx, 0, 0.5 * sx - 0.5], [0, sy, 0.5 * sy - 0.5], [0, 0, 1]], dtype=np.float32)
     inputs = {state.desire_key: np.zeros(8, dtype=np.float32)}
     for _ in range(2):
       self.assertEqual(state.run(frames, transforms, inputs), {})

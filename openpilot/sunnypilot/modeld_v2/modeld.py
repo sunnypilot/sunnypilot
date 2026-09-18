@@ -256,9 +256,14 @@ class ModelState(ModelStateBase):
     self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
     self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
     if self.frame_resize is not None:
+      # Center-anchored point sampling maps source pixel s to resized pixel
+      # d = (s + 0.5) * TARGET / SOURCE - 0.5, so correct the warp transform to
+      # sample the resized frame: new_row = scale * row + (0.5 * scale - 0.5) * w_row.
       for key in ('tfm', 'big_tfm'):
-        self.numpy_inputs[key][0] *= TARGET_SIZE[0] / SOURCE_SIZE[0]
-        self.numpy_inputs[key][1] *= TARGET_SIZE[1] / SOURCE_SIZE[1]
+        tfm = self.numpy_inputs[key]
+        for axis in (0, 1):
+          scale = TARGET_SIZE[axis] / SOURCE_SIZE[axis]
+          tfm[axis] = scale * tfm[axis] + (0.5 * scale - 0.5) * tfm[2]
 
     if self.run_model is not None:
       outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
