@@ -34,8 +34,8 @@ class TestFrameResize(unittest.TestCase):
 
     target_y = self.destination[:1081344].reshape(768, 1408)
     target_uv = self.destination[1081344:].reshape(384, 1408)
-    y_rows, y_cols = np.arange(760) * 1208 // 760, np.arange(1344) * 1928 // 1344
-    uv_rows, uv_cols = np.arange(380) * 604 // 380, np.arange(672) * 964 // 672
+    y_rows, y_cols = ((2 * np.arange(760) + 1) * 1208) // (2 * 760), ((2 * np.arange(1344) + 1) * 1928) // (2 * 1344)
+    uv_rows, uv_cols = ((2 * np.arange(380) + 1) * 604) // (2 * 380), ((2 * np.arange(672) + 1) * 964) // (2 * 672)
     np.testing.assert_array_equal(target_y[:760, :1344], (3 * y_rows[:, None] + 5 * y_cols) % 251)
     np.testing.assert_array_equal(target_uv[:380, :1344:2], (7 * uv_rows[:, None] + 11 * uv_cols) % 113)
     np.testing.assert_array_equal(target_uv[:380, 1:1344:2], 128 + (13 * uv_rows[:, None] + 17 * uv_cols) % 113)
