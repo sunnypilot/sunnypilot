@@ -9,12 +9,23 @@ import math
 from opendbc.car.ford.values import FordFlags
 
 # Small steering-wheel trim around the nominal inverse, in degrees. These are
-# trial tuning values, not recovered PSCM constants. No extra proportional loop.
+# trial tuning values, not recovered PSCM constants. Entry assist is separately gated.
 ANGLE_TRIM_MAX = 2.0
 ANGLE_TRIM_KI = 0.2  # 1/s; error clipping limits adaptation to 0.4 deg/s.
 ANGLE_TRIM_ERROR_MAX = 5.0
 ANGLE_TRIM_RATE_MAX = 5.0  # deg/s: do not learn a bias from fast wheel motion.
 TARGET_PREVIEW = 0.1  # seconds; causal action-trend forecast, then hold.
+TURN_ENTRY_C0_MAX = 0.60  # metres; experimental post-encoder correction budget.
+TURN_ENTRY_C1_MAX = 0.04  # radians; not a recovered Ford calibration value.
+
+
+def turn_entry_weight(target, angle, requested_rate):
+  """Fade in only for a large, growing turn request with substantial wheel lag."""
+  direction = math.copysign(1.0, target)
+  size = max(0.0, min(1.0, (abs(target) - 30.0) / 30.0))
+  lag = max(0.0, min(1.0, (direction * (target - angle) - 25.0) / 25.0))
+  growth = max(0.0, min(1.0, direction * requested_rate / 30.0))
+  return size * lag * growth
 
 
 def joint_control_enabled(CP, params):
@@ -30,17 +41,18 @@ def joint_control_enabled(CP, params):
 
 def select_joint_control(CP, params):
   # No calibration or native-library load on the normal/default path.
-  return FordJointControl(CP) if joint_control_enabled(CP, params) else None
+  return FordJointControl(CP, turn_entry_assist=params.get_bool('FordPscmTurnEntryAssist')) if joint_control_enabled(CP, params) else None
 
 
 class FordJointControl:
-  def __init__(self, CP):
+  def __init__(self, CP, *, turn_entry_assist=False):
     from opendbc.can import CANParser
     from opendbc.car.ford.fordcan import CanBus
     from openpilot.selfdrive.controls.lib.ford_joint.model import MainRequest
     from openpilot.selfdrive.controls.lib.ford_joint.angle import AngleModel
     from openpilot.selfdrive.controls.lib.ford_joint.encoder import PairedRelease
 
+    self.turn_entry_assist = turn_entry_assist
     self.wheelbase, self.ratio = CP.wheelbase, CP.steerRatio
     if not all(math.isfinite(v) and v > 0 for v in (self.wheelbase, self.ratio)):
       raise ValueError('Joint control requires finite positive vehicle geometry')
@@ -80,7 +92,7 @@ class FordJointControl:
     self.last_time = now
 
   def prepare(self, CC, CC_SP, CS, now, *, fresh=True, pscm_status=None):
-    from openpilot.selfdrive.controls.lib.ford_joint.inverse import C0_BOUND, C1_BOUND, invert_angle
+    from openpilot.selfdrive.controls.lib.ford_joint.inverse import C0_BOUND, C1_BOUND, invert_angle, quantize
 
     dt = now - self.last_time if self.last_time is not None else 0.0
     self.advance(now)
@@ -150,7 +162,21 @@ class FordJointControl:
           curvature_rate=self.requested_rate / inverse['slope_per_curvature'], preview=TARGET_PREVIEW,
           curvature_bound=inverse['allowance'] / (speed / 3.6)**2,
         )
+        base_command = command
+        entry_weight = 0.0
+        if self.turn_entry_assist and not CS.steeringPressed and not inverse['accel_limited'] and not (status_fresh and pscm_status.limit >= 2):
+          entry_weight = turn_entry_weight(target, angle, self.requested_rate)
+        if entry_weight:
+          extra = math.copysign(entry_weight, target)
+          command = quantize((command[0] + extra * TURN_ENTRY_C0_MAX, command[1] + extra * TURN_ENTRY_C1_MAX))
+        # Apply after selection so nominal slew equivalence cannot discard the
+        # added request. record_sent/advance still observe the actual packets;
+        # their retained state can affect later commands after this term clears.
         details = {
+          'base_wire_command': tuple(map(float, base_command)),
+          'turn_entry_weight': entry_weight,
+          'turn_entry_c0': float(command[0] - base_command[0]),
+          'turn_entry_c1': float(command[1] - base_command[1]),
           'requested_angle': target,
           'trimmed_angle': trimmed_target,
           'angle_trim': self.angle_trim,
@@ -161,7 +187,7 @@ class FordJointControl:
           'target_preview_limited': info['preview_limited'],
           'reachable_angle': inverse['reachable_target'],
           'target_curvature': inverse['curvature'],
-          'predicted_curvature': float(info['first_state'][3]),
+          'predicted_curvature': float(info['first_state'][3]),  # Encoder prediction before optional entry assist.
           'accel_limited': inverse['accel_limited'],
         }
         # Learn only small residual errors while the wheel is settling. Large
@@ -189,7 +215,11 @@ class FordJointControl:
     cc = CC.as_reader().as_builder() if hasattr(CC, 'as_reader') else CC.as_builder()
     cc.latActive = active
     self.diagnostics = {
-      'hypothesis': 'ford-joint-v24',
+      'hypothesis': 'ford-joint-turn-entry-v1' if self.turn_entry_assist else 'ford-joint-v24',
+      'turn_entry_enabled': self.turn_entry_assist,
+      'turn_entry_weight': 0.0,
+      'turn_entry_c0': 0.0,
+      'turn_entry_c1': 0.0,
       'status': self.fault or ('active' if active else 'inactive'),
       'driver_override': override,
       'driver_pressed': bool(CS.steeringPressed),

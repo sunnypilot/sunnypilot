@@ -43,6 +43,23 @@ sections:
     - type: param
       key: FordGeometryReference
       equals: false
+  - key: FordPscmTurnEntryAssist
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Large-Turn Entry Assist (Experimental)
+    description: Add bounded steering correction when a large turn request is growing and the wheel is behind.
+    details: Requires Coordinated C0/C1 Steering and Selected-Action Path Tracking on, with Model Geometry Reference off. Default off. Leaves the normal steering target and centering logic in place. This trial may increase turn authority but can affect later centering and hold a turn longer; physical improvement has not been established. Turning it off returns to the existing coordinated controller after an offroad-to-onroad cycle. Turning Selected-Action Path Tracking off restores upstream Ford control.
+    enablement:
+    - $ref: '#/macros/offroad'
+    - type: param
+      key: FordModelActionController
+      equals: true
+    - type: param
+      key: FordPscmJointControl
+      equals: true
+    - type: param
+      key: FordGeometryReference
+      equals: false
 - id: hyundai
   title: Hyundai / Kia / Genesis Settings
   description: ''

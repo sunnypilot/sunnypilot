@@ -317,6 +317,17 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     with tempfile.TemporaryDirectory() as path:
       assert Params(path).get_default_value("FordPscmJointControl") is False
 
+  def test_ford_turn_entry_is_separate_default_off_cycle_only_trial(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    item = next(item for item in items if item["key"] == "FordPscmTurnEntryAssist")
+    assert item["widget"] == "toggle" and item["needs_onroad_cycle"] is True
+    assert item["enablement"] == [{"type": "offroad_only"},
+                                  {"type": "param", "key": "FordModelActionController", "equals": True},
+                                  {"type": "param", "key": "FordPscmJointControl", "equals": True},
+                                  {"type": "param", "key": "FordGeometryReference", "equals": False}]
+    with tempfile.TemporaryDirectory() as path:
+      assert Params(path).get_default_value("FordPscmTurnEntryAssist") is False
+
   def test_hyundai_has_longitudinal_tuning(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
