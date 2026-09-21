@@ -14,7 +14,16 @@ import numpy as np
 from openpilot.selfdrive.controls.lib.ford_joint.model import DT, interp, interp_int
 from openpilot.selfdrive.controls.lib.ford_joint.inverse import static_pair, quantize
 
-ARRAY = np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS')
+class DoubleArray(np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS')):
+  @classmethod
+  def from_param(cls, value):
+    validated = super().from_param(value)
+    # NumPy's default _as_parameter_ uses ctypes.cast, creating reference cycles.
+    # card disables cyclic GC. Keep the array alive for this synchronous call
+    # with an acyclic owner reference instead, retaining ndpointer validation.
+    pointer = ctypes.c_void_p(validated.data)
+    pointer._owner = value
+    return pointer
 
 
 def state(m):
@@ -61,14 +70,15 @@ def parameters(m, speed, freeze_i=True, interaction=1.0):
 
 
 LIB = ctypes.CDLL(str(Path(__file__).with_name('libencoder' + ('.dylib' if sys.platform == 'darwin' else '.so'))))
-LIB.paired_cost.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ctypes.c_double, ctypes.c_double, ARRAY]
+LIB.paired_cost.argtypes = [DoubleArray, DoubleArray, ctypes.c_double, DoubleArray, ctypes.c_int, ctypes.c_double, ctypes.c_double, DoubleArray]
 LIB.paired_cost.restype = ctypes.c_double
-LIB.paired_select.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ctypes.c_int, ARRAY]
+LIB.paired_select.argtypes = [DoubleArray, DoubleArray, ctypes.c_double, DoubleArray, ctypes.c_int, DoubleArray, ctypes.c_int,
+                            DoubleArray, ctypes.c_int, ctypes.c_int, DoubleArray]
 LIB.paired_select.restype = None
-LIB.paired_immediate_bound.argtypes = [ARRAY, ARRAY, ctypes.c_double, ARRAY, ctypes.c_int, ARRAY, ctypes.c_int]
+LIB.paired_immediate_bound.argtypes = [DoubleArray, DoubleArray, ctypes.c_double, DoubleArray, ctypes.c_int, DoubleArray, ctypes.c_int]
 LIB.paired_immediate_bound.restype = ctypes.c_double
-LIB.paired_preview_select.argtypes = [ARRAY, ARRAY, ARRAY, ARRAY, ctypes.c_int, ctypes.c_int, ctypes.c_double,
-                                     ARRAY, ctypes.c_int, ARRAY, ctypes.c_int, ARRAY]
+LIB.paired_preview_select.argtypes = [DoubleArray, DoubleArray, DoubleArray, DoubleArray, ctypes.c_int, ctypes.c_int, ctypes.c_double,
+                                     DoubleArray, ctypes.c_int, DoubleArray, ctypes.c_int, DoubleArray]
 LIB.paired_preview_select.restype = None
 
 
