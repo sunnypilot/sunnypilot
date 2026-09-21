@@ -180,7 +180,7 @@ def test_malformed_model_arrays_cannot_reuse_a_previous_valid_command(model):
 
 
 @pytest.mark.parametrize('field,value,valid', [
-  ('speed', .2999, False), ('speed', .3, True), ('speed', 55., True), ('speed', 55.0001, False),
+  ('speed', -.0001, False), ('speed', 0., True), ('speed', .2999, True), ('speed', .3, True), ('speed', 55., True), ('speed', 55.0001, False),
   ('desired_curvature', -1., True), ('desired_curvature', 1., True), ('desired_curvature', -1.0001, False),
   ('dt', .001999, False), ('dt', .002, True), ('dt', .1, True), ('dt', .100001, False), ('dt', 0., False),
 ])

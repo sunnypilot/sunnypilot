@@ -124,7 +124,7 @@ class FordJointControl:
       fresh
       and CS.canValid
       and finite
-      and 0.3 <= CS.vEgo <= 55
+      and 0.0 <= CS.vEgo <= 55
       and abs(CS.yawRate) <= 3
       and abs(yaw) <= 3
       and path.enabled
@@ -142,7 +142,15 @@ class FordJointControl:
       self.requested_rate = 0.0
     command = (0.0, 0.0)
     details = {}
-    if active:
+    stop_hold = active and CS.vEgo < 0.3
+    if stop_hold:
+      # The moving inverse divides by v**2. At a stop retain the last actual
+      # active packet, not an inactive/zero request or a fictitious speed.
+      # A disengagement/fault packet clears this naturally via record_sent.
+      command = self.sent[:2] if self.sent[2] else command
+      self.last_target = target
+      self.requested_rate = 0.0
+    elif active:
       try:
         speed, angle, yaw = self.measurement
         if self.last_target is not None and 0.0 < dt <= 0.1:
@@ -159,8 +167,11 @@ class FordJointControl:
         trimmed_target = target + self.angle_trim
         entry_lead, cue = 0.0, 0.0
         if self.turn_preview and not CS.steeringPressed and not (status_fresh and pscm_status.limit >= 2):
-          from openpilot.selfdrive.controls.lib.ford_turn_preview import turn_preview_lead
+          from openpilot.selfdrive.controls.lib.ford_turn_preview import geometry_entry_lead, turn_preview_lead
           entry_lead, cue = turn_preview_lead(self.requested_rate, turn_preview, now)
+          independent = geometry_entry_lead(trimmed_target, self.requested_rate, turn_preview, now)
+          if abs(independent) > abs(entry_lead):
+            entry_lead = independent
           signal = int(CS.leftBlinker) - int(CS.rightBlinker)
           if signal * entry_lead <= 0.0:
             entry_lead = 0.0
@@ -230,7 +241,7 @@ class FordJointControl:
     cc = CC.as_reader().as_builder() if hasattr(CC, 'as_reader') else CC.as_builder()
     cc.latActive = active
     self.diagnostics = {
-      'hypothesis': 'ford-joint-signaled-preview-v1' if self.turn_preview else ('ford-joint-turn-entry-v1' if self.turn_entry_assist else 'ford-joint-v24'),
+      'hypothesis': 'ford-joint-geometry-entry-v2' if self.turn_preview else ('ford-joint-turn-entry-v1' if self.turn_entry_assist else 'ford-joint-v24'),
       'turn_preview_enabled': self.turn_preview,
       'turn_entry_enabled': self.turn_entry_assist,
       'turn_entry_weight': 0.0,
@@ -239,6 +250,7 @@ class FordJointControl:
       'status': self.fault or ('active' if active else 'inactive'),
       'driver_override': override,
       'driver_pressed': bool(CS.steeringPressed),
+      'stop_hold': bool(stop_hold),
       'yaw_source': 'calibrated_pose',
       'yaw_rate': yaw if math.isfinite(yaw) else None,
       'can_yaw_rate': float(CS.yawRate) if math.isfinite(CS.yawRate) else None,

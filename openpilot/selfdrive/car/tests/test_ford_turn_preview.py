@@ -9,13 +9,14 @@ import pytest
 
 from openpilot.cereal import custom, log
 from openpilot.common.params import Params, ParamKeyFlag
+from opendbc.car.vehicle_model import VehicleModel
 from openpilot.selfdrive.car.ford_joint_control import FordJointControl, select_joint_control
 from openpilot.selfdrive.car.helpers import convert_carControlSP
 from openpilot.selfdrive.car.tests.test_ford_joint_control import Pipeline, cp
 from openpilot.selfdrive.controls.lib.ford_joint.encoder import state
-from openpilot.selfdrive.controls.lib.ford_turn_preview import FordTurnPreview, turn_preview_lead
+from openpilot.selfdrive.controls.lib.ford_turn_preview import FordTurnPreview, geometry_entry_lead, turn_preview_lead
 from openpilot.selfdrive.controls.tests.test_ford_model_action_adapter import _method
-from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import startup
+from openpilot.selfdrive.controls.tests.test_ford_model_action_selection import car_params, startup
 
 
 def model(sign=1., action=-.01):
@@ -92,7 +93,9 @@ def publish_preview(tracker, message, stamp, *, healthy=True, maneuver=False):
   sp = custom.CarControlSP.new_message()
   sp.fordLateralPath.enabled = sp.fordLateralPath.valid = True
   exec(compile(ast.Module(body=nodes, type_ignores=[]), str(filename), 'exec'),
-       {'self': SimpleNamespace(ford_turn_preview=tracker), 'sm': Subscriptions(modelV2=message), 'CC_SP': sp})
+       {'self': SimpleNamespace(ford_turn_preview=tracker, VM=VehicleModel(car_params())),
+        'sm': Subscriptions(modelV2=message, carState=SimpleNamespace(vEgo=5.),
+                            vehicleParameters=SimpleNamespace(roll=0., angleOffsetDeg=0.)), 'CC_SP': sp})
   return sp
 
 
@@ -103,6 +106,7 @@ def test_actual_publication_gates_and_original_model_timestamp(healthy, maneuver
   sp = publish_preview(tracker, model(), 1_050_000_000, healthy=healthy, maneuver=maneuver)
   assert sp.fordTurnPreview.valid == (healthy and not maneuver)
   assert sp.fordTurnPreview.modelMonoTime == 1_050_000_000
+  assert sp.fordTurnPreview.geometryValid == healthy
   assert sp.fordLateralPath.valid
   convert_carControlSP(sp.as_reader())
 
@@ -236,3 +240,58 @@ def test_preview_respects_existing_health_and_override_gates(gate):
     assert p.joint.sent[2]
   else:
     assert p.joint.sent == (0., 0., False)
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_flat_action_geometry_reaches_wire_and_fades_when_action_takes_over(sign):
+  p, base = pipeline(), pipeline(False)
+  p.cs.leftBlinker, p.cs.rightBlinker = sign > 0, sign < 0
+  tracker = FordTurnPreview()
+  for i in range(30):
+    now = 1. + i*.01
+    sp = publish_preview(tracker, model(sign, action=0.), round((now-.001)*1e9))
+    with custom.CarControlSP.from_bytes(sp.to_bytes()) as parsed:
+      cue = parsed.fordTurnPreview
+      assert cue.valid and cue.geometryValid and cue.actionRate == 0.
+      p.tick(now, 0., turn_preview=cue)
+      base.tick(now, 0., turn_preview=cue)
+      d = p.joint.diagnostics
+      assert d['geometry_lead'] == sign*90.
+      assert d['inverse_target'] == sign*90. and d['requested_angle'] == 0.
+      assert geometry_entry_lead(sign*60., 0., cue, now) == pytest.approx(.5*(cue.geometryAngle-sign*60.))
+      assert geometry_entry_lead(sign*90., 0., cue, now) == 0.
+      assert geometry_entry_lead(0., -sign*30., cue, now) == 0.
+  assert p.joint.sent != base.joint.sent
+
+
+@pytest.mark.parametrize('speed', [0., .3, 5., 20., 40.])
+def test_geometry_angle_uses_local_heading_interval_and_vehicle_model(speed):
+  m = model()
+  station = np.asarray(m.position.x)
+  m.orientation.z = (-.001*station**2).tolist()
+  vm = VehicleModel(car_params())
+  data = FordTurnPreview().update(m, 1_000_000_000, True, speed=speed, VM=vm, roll=.01, angle_offset=1.2, geometry_valid=True)
+  lo, hi = max(0., speed*.8-1.), max(0., speed*.8-1.)+2.
+  if hi > station[-1]:
+    assert not data.get('geometryValid', False)
+  else:
+    curvature = -(np.interp(hi, station, m.orientation.z)-np.interp(lo, station, m.orientation.z))/2.
+    expected = np.degrees(vm.get_steer_from_curvature(curvature, speed, .01))+1.2
+    assert data['geometryValid'] and data['geometryAngle'] == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('gate', ['touch', 'limit', 'stale', 'missing', 'opposite', 'hazards', 'lane_change', 'unhealthy'])
+def test_independent_geometry_obeys_gates_with_flat_action(gate):
+  base, p = pipeline(False), pipeline()
+  p.cs.leftBlinker, p.cs.rightBlinker = gate != 'opposite', gate in ('opposite', 'hazards')
+  p.cs.steeringPressed = gate == 'touch'
+  m = model(action=0.)
+  if gate == 'lane_change':
+    m.meta.laneChangeState = 'laneChangeStarting'
+  sp = publish_preview(FordTurnPreview(), m, 1_000_000_000, healthy=gate != 'unhealthy')
+  status = SimpleNamespace(valid=True, canMonoTime=1_000_000_000, limit=2 if gate == 'limit' else 0, denied=False)
+  cue = sp.as_reader().fordTurnPreview
+  for pipe in (base, p):
+    pipe.tick(1.2 if gate == 'stale' else 1., 0., turn_preview=None if gate == 'missing' else cue, pscm_status=status)
+  assert p.joint.diagnostics['geometry_lead'] == 0.
+  assert p.joint.sent == base.joint.sent

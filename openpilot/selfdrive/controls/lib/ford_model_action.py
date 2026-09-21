@@ -58,7 +58,7 @@ def encode_model_action(model, desired_curvature, speed, *, c0_time_based=False)
   The arc starts at zero lateral position and heading. Original model geometry
   remains a health gate; selected curvature supplies both path commands.
   """
-  if not _finite(desired_curvature, speed) or not .3 <= speed <= 55 or abs(desired_curvature) > 1:
+  if not _finite(desired_curvature, speed) or not 0. <= speed <= 55 or abs(desired_curvature) > 1:
     return FordPath()
   try:
     path = _model_path(model)
@@ -267,7 +267,7 @@ class FordModelActionController:
       reason = 'nonfinite'
     elif not all(-.005 <= now - timestamp <= .15 for timestamp in (measurement_time, model_time, reference_time)):
       reason = 'stale_input'
-    elif not .3 <= speed <= 55 or abs(yaw_rate) > 3 or abs(desired_curvature) > 1 or abs(current_curvature) > 1:
+    elif not (0. if self.joint_control else .3) <= speed <= 55 or abs(yaw_rate) > 3 or abs(desired_curvature) > 1 or abs(current_curvature) > 1:
       reason = 'input_range'
     if reason is not None:
       self.reset(reason)

@@ -97,6 +97,61 @@ def test_reference_carrier_adds_no_second_feedback_loop():
   assert not c.set_c0_time_based(True, lateral_engaged=False)
 
 
+def test_joint_reference_carrier_stays_valid_through_stop():
+  from openpilot.selfdrive.controls.lib.ford_model_action import FordModelActionController
+  c = FordModelActionController(joint_control=True)
+  for i, speed in enumerate([5., .3, .29, .01, 0., 0., .01, .29, .3, 5.]):
+    path = update(c, now=1+i*.01, speed=speed)
+    assert path.valid, (speed, c.diagnostics)
+    assert path.path_offset == path.path_angle == 0.
+  assert not update(c, now=1.1, speed=0., valid=False).valid
+
+
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_stop_repeats_transmitted_request_and_resume_keeps_target(sign):
+  p = Pipeline()
+  p.cs.steeringAngleDeg = sign*120.
+  p.cs.yawRate = p.cs.vEgo*math.radians(sign*120.)/(3.7*16.9)
+  for i in range(200):
+    p.tick(1+i*.01, sign*120.)
+  sent = p.joint.sent
+  assert sent[2] and any(abs(v) > .01 for v in sent[:2])
+  p.joint.angle_trim = sign*.5
+  for i, speed in enumerate([.29, .01]+[0.]*200+[.01, .29]):
+    p.cs.vEgo = speed
+    p.cs.yawRate = speed*math.radians(sign*120.)/(3.7*16.9)
+    assert p.tick(3+i*.01, sign*120.).latActive
+    assert p.joint.sent == sent
+    assert p.joint.angle_trim == sign*.5
+    assert not p.joint.fault
+    json.dumps(p.joint.diagnostics, allow_nan=False)
+  p.cs.vEgo = .3
+  p.cs.yawRate = .3*math.radians(sign*120.)/(3.7*16.9)
+  assert p.tick(5.04, sign*120.).latActive
+  assert p.joint.diagnostics['requested_angle'] == sign*120.
+  assert p.joint.diagnostics['requested_rate'] == 0.
+  assert not p.joint.fault
+
+
+@pytest.mark.parametrize('failure', ['disengage', 'stale', 'can', 'steering_fault', 'override', 'denied'])
+def test_stopped_hold_still_releases_and_does_not_resurrect_old_command(failure):
+  p = Pipeline()
+  for i in range(20):
+    p.tick(1+i*.01, 120.)
+  previous = p.joint.sent
+  p.cs.vEgo = 0.
+  assert p.tick(1.2, 120.).latActive
+  assert p.joint.sent == previous
+  p.cs.canValid = failure != 'can'
+  p.cs.steerFaultTemporary = failure == 'steering_fault'
+  status = SimpleNamespace(valid=True, canMonoTime=1_210_000_000, limit=3 if failure == 'override' else 0, denied=failure == 'denied')
+  assert not p.tick(1.21, 120., active=failure != 'disengage', fresh=failure != 'stale', pscm_status=status).latActive
+  assert p.joint.sent == (0., 0., False)
+  p.cs.canValid, p.cs.steerFaultTemporary = True, False
+  assert p.tick(1.22, 120.).latActive
+  assert p.joint.sent == (0., 0., True)
+
+
 def test_can_yaw_zero_offset_does_not_bias_the_command():
   reference, biased = Pipeline(), Pipeline()
   biased.cs.yawRate = -.008  # Route 175: raw CAN disagrees with calibrated yaw.
@@ -336,7 +391,7 @@ def test_limit_reached_does_not_freeze_but_override_inhibits(limit, denied, acti
   assert p.tick(1., pscm_status=status).latActive == active
 
 
-@pytest.mark.parametrize('field,value', [('vEgo', 0.), ('vEgo', .29), ('vEgo', 56.), ('yawRate', 3.1),
+@pytest.mark.parametrize('field,value', [('vEgo', -.01), ('vEgo', 56.), ('yawRate', 3.1),
                                        ('steeringAngleDeg', math.nan), ('vEgo', math.inf), ('canValid', False),
                                        ('steerFaultTemporary', True), ('steerFaultPermanent', True)])
 def test_bad_measurements_never_send_previous_request(field, value):

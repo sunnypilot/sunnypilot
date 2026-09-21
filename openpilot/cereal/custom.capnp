@@ -411,6 +411,8 @@ struct FordTurnPreview {
   heading7 @2 :Float64;   # Heading change at 7 m of path distance, native pinion degrees.
   heading14 @3 :Float64;  # Heading change at 14 m of path distance, native pinion degrees.
   actionRate @4 :Float64; # Negative raw model curvature derivative; only its sign is used.
+  geometryAngle @5 :Float64; # Local path curvature converted to native wheel degrees at v*0.8 s.
+  geometryValid @6 :Bool;
 }
 
 struct FordLateralPath {

@@ -2265,8 +2265,8 @@
           "widget": "toggle",
           "needs_onroad_cycle": true,
           "title": "Signaled-Turn Preview (Experimental)",
-          "description": "Advance a growing steering request when the model path and your turn signal agree on a sharp turn ahead.",
-          "details": "Requires Coordinated C0/C1 Steering and Selected-Action Path Tracking on, with Model Geometry Reference off. Keep Large-Turn Entry Assist on to match the offline trial. Default off. Adds a bounded action forecast while one matching turn signal is on; hazards, lane changes, driver steering input, and reported steering limits suppress it. This does not steer directly from the model path. Offline results showed modest earlier entry and some retained command differences after turns; improved physical tracking is not established. Changes apply after an offroad-to-onroad cycle. Turning Selected-Action Path Tracking off restores upstream Ford control.",
+          "description": "Use the model path to begin a sharp turn earlier when your turn signal agrees, even before the action request grows.",
+          "details": "Requires Coordinated C0/C1 Steering and Selected-Action Path Tracking on, with Model Geometry Reference off. Keep Large-Turn Entry Assist on to match the offline trial. Default off. Adds bounded geometry entry preview that fades as the action takes over, alongside the existing action forecast. Hazards, lane changes, driver steering input, and reported steering limits suppress the preview. Offline checks showed earlier requests in several turns; improved physical tracking is not established. Changes apply after an offroad-to-onroad cycle. Turning Selected-Action Path Tracking off restores upstream Ford control.",
           "enablement": [
             {
               "type": "offroad_only"

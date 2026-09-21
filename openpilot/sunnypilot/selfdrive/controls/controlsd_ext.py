@@ -123,7 +123,13 @@ class ControlsExt(ModelStateBase):
 
     turn_preview = getattr(self, 'ford_turn_preview', None)
     if turn_preview is not None:
-      CC_SP.fordTurnPreview = turn_preview.update(sm['modelV2'], sm.logMonoTime['modelV2'], sm.valid['modelV2'])
+      lp = sm['vehicleParameters']
+      geometry_valid = sm.all_checks(['carState', 'vehicleParameters'])
+      CC_SP.fordTurnPreview = turn_preview.update(sm['modelV2'], sm.logMonoTime['modelV2'], sm.valid['modelV2'],
+                                                speed=sm['carState'].vEgo, VM=self.VM, roll=lp.roll, angle_offset=lp.angleOffsetDeg,
+                                                geometry_valid=geometry_valid)
+      if not geometry_valid:
+        CC_SP.fordTurnPreview.geometryValid = False
       # Maneuver injection must retain its own target, independent of the road model.
       if not sm.all_checks(['modelV2']) or sm.valid['lateralManeuverPlan']:
         CC_SP.fordTurnPreview.valid = False

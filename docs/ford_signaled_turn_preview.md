@@ -1,5 +1,9 @@
 # Signaled-turn preview trial
 
+The installed option now also includes the independently tested geometry entry
+candidate. See [stop continuity and geometry entry](ford_stop_geometry_entry.md)
+for current behavior. The original action-only trial and evidence follow below.
+
 The coordinated Ford controller can start a large intersection turn late even
 when the model geometry already shows the turn. This opt-in trial uses geometry
 as a timing cue for the existing action request. It does not replace the action
