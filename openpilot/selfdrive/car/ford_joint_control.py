@@ -41,11 +41,14 @@ def joint_control_enabled(CP, params):
 
 def select_joint_control(CP, params):
   # No calibration or native-library load on the normal/default path.
-  return FordJointControl(CP, turn_entry_assist=params.get_bool('FordPscmTurnEntryAssist')) if joint_control_enabled(CP, params) else None
+  if not joint_control_enabled(CP, params):
+    return None
+  return FordJointControl(CP, turn_entry_assist=params.get_bool('FordPscmTurnEntryAssist'),
+                          turn_preview=params.get_bool('FordPscmTurnPreview'))
 
 
 class FordJointControl:
-  def __init__(self, CP, *, turn_entry_assist=False):
+  def __init__(self, CP, *, turn_entry_assist=False, turn_preview=False):
     from opendbc.can import CANParser
     from opendbc.car.ford.fordcan import CanBus
     from openpilot.selfdrive.controls.lib.ford_joint.model import MainRequest
@@ -53,6 +56,7 @@ class FordJointControl:
     from openpilot.selfdrive.controls.lib.ford_joint.encoder import PairedRelease
 
     self.turn_entry_assist = turn_entry_assist
+    self.turn_preview = turn_preview
     self.wheelbase, self.ratio = CP.wheelbase, CP.steerRatio
     if not all(math.isfinite(v) and v > 0 for v in (self.wheelbase, self.ratio)):
       raise ValueError('Joint control requires finite positive vehicle geometry')
@@ -91,7 +95,7 @@ class FordJointControl:
           self.angle.step(speed, r['filtered_curvature'], angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
     self.last_time = now
 
-  def prepare(self, CC, CC_SP, CS, now, *, fresh=True, pscm_status=None):
+  def prepare(self, CC, CC_SP, CS, now, *, fresh=True, pscm_status=None, turn_preview=None):
     from openpilot.selfdrive.controls.lib.ford_joint.inverse import C0_BOUND, C1_BOUND, invert_angle, quantize
 
     dt = now - self.last_time if self.last_time is not None else 0.0
@@ -153,7 +157,15 @@ class FordJointControl:
         if not CS.steeringPressed and release and error * self.angle_trim < 0.0:
           self.angle_trim = 0.0
         trimmed_target = target + self.angle_trim
-        inverse = invert_angle(self.angle, speed, trimmed_target, angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
+        entry_lead, cue = 0.0, 0.0
+        if self.turn_preview and not CS.steeringPressed and not (status_fresh and pscm_status.limit >= 2):
+          from openpilot.selfdrive.controls.lib.ford_turn_preview import turn_preview_lead
+          entry_lead, cue = turn_preview_lead(self.requested_rate, turn_preview, now)
+          signal = int(CS.leftBlinker) - int(CS.rightBlinker)
+          if signal * entry_lead <= 0.0:
+            entry_lead = 0.0
+        inverse_target = trimmed_target + entry_lead
+        inverse = invert_angle(self.angle, speed, inverse_target, angle, yaw, yaw * speed / 3.6, self.wheelbase, self.ratio)
         # Firmware phase is estimated from elapsed time. Cover the 1/2 firmware
         # ticks before the next nominal 100 Hz transmit; all phases are tested.
         ticks = max(1, min(2, int((self.phase + 0.01 + 1e-12) / 0.008)))
@@ -173,6 +185,9 @@ class FordJointControl:
         # added request. record_sent/advance still observe the actual packets;
         # their retained state can affect later commands after this term clears.
         details = {
+          'geometry_lead': entry_lead,
+          'geometry_cue': cue,
+          'inverse_target': inverse_target,
           'base_wire_command': tuple(map(float, base_command)),
           'turn_entry_weight': entry_weight,
           'turn_entry_c0': float(command[0] - base_command[0]),
@@ -215,7 +230,8 @@ class FordJointControl:
     cc = CC.as_reader().as_builder() if hasattr(CC, 'as_reader') else CC.as_builder()
     cc.latActive = active
     self.diagnostics = {
-      'hypothesis': 'ford-joint-turn-entry-v1' if self.turn_entry_assist else 'ford-joint-v24',
+      'hypothesis': 'ford-joint-signaled-preview-v1' if self.turn_preview else ('ford-joint-turn-entry-v1' if self.turn_entry_assist else 'ford-joint-v24'),
+      'turn_preview_enabled': self.turn_preview,
       'turn_entry_enabled': self.turn_entry_assist,
       'turn_entry_weight': 0.0,
       'turn_entry_c0': 0.0,

@@ -384,6 +384,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadTwo @3 :LeadData;
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
   fordLateralPath @5 :FordLateralPath;
+  fordTurnPreview @6 :FordTurnPreview;
 
   struct Param {
     key @0 :Text;
@@ -402,6 +403,14 @@ struct CarControlSP @0xa5cd762cd951a455 {
     json @5;
     bytes @6;
   }
+}
+
+struct FordTurnPreview {
+  valid @0 :Bool;
+  modelMonoTime @1 :UInt64;
+  heading7 @2 :Float64;   # Heading change at 7 m of path distance, native pinion degrees.
+  heading14 @3 :Float64;  # Heading change at 14 m of path distance, native pinion degrees.
+  actionRate @4 :Float64; # Negative raw model curvature derivative; only its sign is used.
 }
 
 struct FordLateralPath {

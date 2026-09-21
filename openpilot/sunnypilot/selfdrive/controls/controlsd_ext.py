@@ -121,6 +121,13 @@ class ControlsExt(ModelStateBase):
       CC_SP.fordLateralPath.curvature = ford_path.curvature
       CC_SP.fordLateralPath.curvatureRate = ford_path.curvature_rate
 
+    turn_preview = getattr(self, 'ford_turn_preview', None)
+    if turn_preview is not None:
+      CC_SP.fordTurnPreview = turn_preview.update(sm['modelV2'], sm.logMonoTime['modelV2'], sm.valid['modelV2'])
+      # Maneuver injection must retain its own target, independent of the road model.
+      if not sm.all_checks(['modelV2']) or sm.valid['lateralManeuverPlan']:
+        CC_SP.fordTurnPreview.valid = False
+
     return CC_SP
 
   @staticmethod

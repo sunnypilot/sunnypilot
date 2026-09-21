@@ -243,6 +243,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"FordGeometryReference", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"FordPscmJointControl", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"FordPscmTurnEntryAssist", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"FordPscmTurnPreview", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"HyundaiLongitudinalTuning", {PERSISTENT | BACKUP, INT, "0"}},
     {"SubaruStopAndGo", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"SubaruStopAndGoManualParkingBrake", {PERSISTENT | BACKUP, BOOL, "0"}},

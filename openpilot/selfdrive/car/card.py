@@ -291,7 +291,8 @@ class Car:
       control_sp = convert_carControlSP(CC_SP)
       if self.ford_joint_control is not None:
         CC = self.ford_joint_control.prepare(CC, control_sp, CS, now_nanos * 1e-9,
-                                            fresh=self.sm.all_checks(['carControl', 'carControlSP']), pscm_status=pscm_status)
+                                            fresh=self.sm.all_checks(['carControl', 'carControlSP']), pscm_status=pscm_status,
+                                            turn_preview=CC_SP.fordTurnPreview)
       self.last_actuators_output, can_sends = self.CI.apply(CC, control_sp, now_nanos)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
       if self.ford_joint_control is not None:

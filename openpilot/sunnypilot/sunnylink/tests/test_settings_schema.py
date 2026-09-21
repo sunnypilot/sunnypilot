@@ -332,6 +332,17 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("hyundai"))}
     assert "HyundaiLongitudinalTuning" in keys
 
+  def test_ford_turn_preview_is_separate_default_off_cycle_only_trial(self, schema):
+    items = _brand_items(schema["vehicle_settings"].get("ford"))
+    item = next(item for item in items if item["key"] == "FordPscmTurnPreview")
+    assert item["widget"] == "toggle" and item["needs_onroad_cycle"] is True
+    assert item["enablement"] == [{"type": "offroad_only"},
+                                  {"type": "param", "key": "FordModelActionController", "equals": True},
+                                  {"type": "param", "key": "FordPscmJointControl", "equals": True},
+                                  {"type": "param", "key": "FordGeometryReference", "equals": False}]
+    with tempfile.TemporaryDirectory() as path:
+      assert Params(path).get_default_value("FordPscmTurnPreview") is False
+
   def test_toyota_has_enforce_stock_and_stop_go(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("toyota"))}
     assert "ToyotaEnforceStockLongitudinal" in keys

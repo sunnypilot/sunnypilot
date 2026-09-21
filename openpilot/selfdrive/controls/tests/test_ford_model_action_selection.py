@@ -30,7 +30,7 @@ def startup(cp=None, params=None):
   cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == 'Controls')
   body = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == '__init__').body
   start = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_path_controller')
-  end = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_path')
+  end = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign) and ast.unparse(n.targets[0]) == 'self.ford_turn_preview') + 1
   if params is None:
     params = SimpleNamespace(get_bool=lambda key: key == 'FordModelActionController')
   controls = SimpleNamespace(CP=cp or car_params(), params=params)

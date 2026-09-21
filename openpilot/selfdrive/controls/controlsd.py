@@ -65,6 +65,10 @@ class Controls(ControlsExt):
       cloudlog.event("Ford path controller selected",
                      controller=type(self.ford_path_controller).__name__ if self.ford_model_action else "upstream")
     self.ford_path = FordPath()
+    self.ford_turn_preview = None
+    if self.ford_model_action and self.ford_path_controller.joint_control and self.params.get_bool('FordPscmTurnPreview'):
+      from openpilot.selfdrive.controls.lib.ford_turn_preview import FordTurnPreview
+      self.ford_turn_preview = FordTurnPreview()
 
     self.pose_calibrator = PoseCalibrator()
     self.calibrated_pose: Pose | None = None
