@@ -180,7 +180,10 @@ class Controls(ControlsExt):
         reference_service = 'lateralManeuverPlan' if self.sm.valid['lateralManeuverPlan'] else 'modelV2'
         now = time.monotonic()
         yaw_rate, motion_valid = -CS.yawRate, True
+        ford_speed = CS.vEgo
         if self.ford_path_controller.joint_control:
+          from openpilot.selfdrive.controls.lib.ford_path import joint_control_speed
+          ford_speed = joint_control_speed(CS)
           # card's inverse uses the calibrated yaw published in carControl.
           # Never keep steering from a stale pose or fall back to raw CAN yaw.
           motion = self.sm['deviceMotion']
@@ -190,7 +193,7 @@ class Controls(ControlsExt):
                           and -0.005 <= now - self.sm.logMonoTime['deviceMotion'] * 1e-9 <= 0.15)
           yaw_rate = float(self.calibrated_pose.angular_velocity.xyz[2]) if motion_valid else math.nan
         self.ford_path = self.ford_path_controller.update(
-          ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=yaw_rate, speed=CS.vEgo, now=now,
+          ford_model, self.desired_curvature, current_curvature=self.curvature, yaw_rate=yaw_rate, speed=ford_speed, now=now,
           # Roll/angle offset cancel in the error; retain the normal steering-angle conversion's speed and stiffness effects.
           curvature_scale=self.VM.get_steer_from_curvature(1., CS.vEgo, 0.) / (self.CP.steerRatio*self.CP.wheelbase),
           measurement_time=self.sm.logMonoTime['carState'] * 1e-9,

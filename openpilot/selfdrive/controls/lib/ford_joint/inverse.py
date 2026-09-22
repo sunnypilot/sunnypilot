@@ -55,25 +55,24 @@ def invert_angle(output, speed_kmh, target_angle, angle, yaw, accel, wheelbase, 
   }
 
 
-def arc_pair(curvature, speed_kmh):
-  """Current base geometry only; no current OP proportional/integral terms."""
-  half = 0.5 * 7 * curvature
-  sinc = math.sin(half) / half if half else 1.0
-  c1 = max(7.0, speed_kmh / 3.6) * curvature
-  clipped_c1 = clip(c1, -C1_BOUND, C1_BOUND)
-  c0 = 0.5 * curvature * 49 * sinc * sinc + 7 * (c1 - clipped_c1)
-  return clip(c0, -C0_BOUND, C0_BOUND), clipped_c1
-
-
 def static_pair(request, curvature, speed_kmh, *, gains=None):
-  """Preserve the base's channel proportion, solve its static curvature sum."""
+  """Allocate equal nominal buildup times, then use remaining field capacity."""
   if gains is None:
     probe = copy.copy(request).step(speed_kmh, request.c0, request.c1, freeze_i=True)
     gains = probe['g0'], probe['g1']
-  p0, p1 = arc_pair(curvature, speed_kmh)
-  total = gains[0] * p0 + gains[1] * p1
-  scale = curvature / total if total else 1.0
-  return clip(p0 * scale, -C0_BOUND, C0_BOUND), clip(p1 * scale, -C1_BOUND, C1_BOUND)
+  # Recovered normal held-input rates; the dynamic selector still accounts for
+  # current held states, the fast latch, heading-dependent filter and release.
+  r0, r1 = request.cal.f(0xFEF259F8), request.cal.f(0xFEF25A08)
+  duration = curvature / (gains[0] * r0 + gains[1] * r1)
+  p0, p1 = duration * r0, duration * r1
+  c0, c1 = clip(p0, -C0_BOUND, C0_BOUND), clip(p1, -C1_BOUND, C1_BOUND)
+  if abs(p0) > C0_BOUND or abs(p1) > C1_BOUND:
+    # Clipping one field must not silently lower a target the pair can encode.
+    if gains[0]:
+      c0 = clip((curvature - gains[1] * c1) / gains[0], -C0_BOUND, C0_BOUND)
+    if gains[1]:
+      c1 = clip((curvature - gains[0] * c0) / gains[1], -C1_BOUND, C1_BOUND)
+  return c0, c1
 
 
 def quantize(pair):

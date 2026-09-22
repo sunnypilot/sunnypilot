@@ -7,6 +7,7 @@ It estimates older-firmware state; it cannot observe ECU RAM or prove acceptance
 import math
 
 from opendbc.car.ford.values import FordFlags
+from openpilot.selfdrive.controls.lib.ford_path import joint_control_speed
 
 # Small steering-wheel trim around the nominal inverse, in degrees. These are
 # trial tuning values, not recovered PSCM constants. Entry assist is separately gated.
@@ -102,18 +103,19 @@ class FordJointControl:
     self.advance(now)
     path = CC_SP.fordLateralPath
     target = float(CC.actuators.steeringAngleDeg)
+    speed_ms = joint_control_speed(CS)
     # controlsd publishes calibrated car-frame motion and gates the path on its
     # health/freshness. Raw Ford CAN yaw has a zero offset on the audited truck.
     # Calibrated Z is opposite the CAN/pinion sign used by the recovered model.
     yaw = -float(CC.angularVelocity[2]) if len(CC.angularVelocity) == 3 else math.nan
-    finite = all(math.isfinite(v) for v in (CS.vEgo, CS.steeringAngleDeg, CS.yawRate, yaw, target))
+    finite = all(math.isfinite(v) for v in (speed_ms, CS.steeringAngleDeg, CS.yawRate, yaw, target))
     if finite:
       # Ford does not populate CarState.steeringRateDeg. Derive motion from the
       # measured angle; 0.1 s filtering suppresses its 0.1-degree quantization.
       if 0.0 < dt <= 0.1:
         rate = (CS.steeringAngleDeg - self.measurement[1]) / dt
         self.wheel_rate += dt / (0.1 + dt) * (rate - self.wheel_rate)
-      self.measurement = (max(0.0, CS.vEgo * 3.6), CS.steeringAngleDeg, yaw)
+      self.measurement = (max(0.0, speed_ms * 3.6), CS.steeringAngleDeg, yaw)
     else:
       self.wheel_rate = 0.0
     status_fresh = pscm_status is not None and pscm_status.valid and pscm_status.canMonoTime > 0 and -0.005 <= now - pscm_status.canMonoTime * 1e-9 <= 0.15
@@ -124,7 +126,7 @@ class FordJointControl:
       fresh
       and CS.canValid
       and finite
-      and 0.0 <= CS.vEgo <= 55
+      and 0.0 <= speed_ms <= 55
       and abs(CS.yawRate) <= 3
       and abs(yaw) <= 3
       and path.enabled
@@ -142,7 +144,7 @@ class FordJointControl:
       self.requested_rate = 0.0
     command = (0.0, 0.0)
     details = {}
-    stop_hold = active and CS.vEgo < 0.3
+    stop_hold = active and speed_ms < 0.3
     if stop_hold:
       # The moving inverse divides by v**2. At a stop retain the last actual
       # active packet, not an inactive/zero request or a fictitious speed.
@@ -251,6 +253,7 @@ class FordJointControl:
       'driver_override': override,
       'driver_pressed': bool(CS.steeringPressed),
       'stop_hold': bool(stop_hold),
+      'allocation': 'equal-arrival',
       'yaw_source': 'calibrated_pose',
       'yaw_rate': yaw if math.isfinite(yaw) else None,
       'can_yaw_rate': float(CS.yawRate) if math.isfinite(CS.yawRate) else None,

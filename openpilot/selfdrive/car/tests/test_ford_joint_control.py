@@ -133,6 +133,28 @@ def test_stop_repeats_transmitted_request_and_resume_keeps_target(sign):
   assert not p.joint.fault
 
 
+@pytest.mark.parametrize('sign', [-1., 1.])
+def test_stop_speed_filter_undershoot_keeps_actual_transmitted_hold(sign):
+  p = Pipeline()
+  p.cs.gearShifter = structs.CarState.GearShifter.drive
+  for i in range(30):
+    p.tick(1+i*.01, sign*120.)
+  sent = p.joint.sent
+  assert sent[2] and any(abs(v) > .01 for v in sent[:2])
+  p.cs.vEgoRaw, p.cs.standstill = 0., True
+  for i, speed in enumerate([.01, 0., -.01, -.04, -.01, 0., .01, .29]):
+    p.cs.vEgo = speed
+    assert p.tick(1.3+i*.01, sign*120.).latActive
+    assert p.joint.sent == sent
+    assert p.joint.diagnostics['stop_hold']
+  p.cs.vEgo = p.cs.vEgoRaw = .3
+  assert p.tick(1.38, sign*120.).latActive
+  assert p.joint.sent[0]*sign > 0 and p.joint.sent[1]*sign > 0
+  p.cs.gearShifter = structs.CarState.GearShifter.reverse
+  assert not p.tick(1.39, sign*120.).latActive
+  assert p.joint.sent == (0., 0., False)
+
+
 @pytest.mark.parametrize('failure', ['disengage', 'stale', 'can', 'steering_fault', 'override', 'denied'])
 def test_stopped_hold_still_releases_and_does_not_resurrect_old_command(failure):
   p = Pipeline()
@@ -451,16 +473,18 @@ def test_candidate_does_not_mutate_state_and_native_step_matches_python():
 
 
 @pytest.mark.parametrize('speed,c0,c1,filtered,fast,target,phase,pair,cost', [
-  (20., 0., 0., 0., False, .03, 0, (.03, .002), 5.6554469893989605),
-  (20., 3., .4, .03, False, -.03, 2, (2.98, .399), 151.49476621872228),
+  (20., 0., 0., 0., False, .03, 0, (.03, .002), 4.719272529061328),
+  (20., 3., .4, .03, False, -.03, 2, (2.98, .399), 142.8506441410823),
   (40., 3., .4, .03, True, 0., 0, (2.95, .395), 12.167867914611671),
-  (6., 5.11, .5, .1, False, -.1, 0, (5.08, .498), 1391.5462859829215),
-  (80., -5.11, -.5, -.1, True, .03, 2, (-5.08, -.4975), 34.51646821335084),
+  (6., 5.11, .5, .1, False, -.1, 0, (5.08, .498), 1371.556512359005),
+  (80., -5.11, -.5, -.1, True, .03, 2, (-5.08, -.4975), 39.42744549117561),
   (40., 3., -.4, 0., False, 0., 2, (3.02, -.399), 6.184073685045232),
 ])
-def test_optimized_selection_preserves_v24_commands(speed, c0, c1, filtered, fast, target, phase, pair, cost):
+def test_optimized_selection_matches_frozen_cases(speed, c0, c1, filtered, fast, target, phase, pair, cost):
   # Frozen outputs from 528ed3615 before pruning/caching the full-return search.
   # Cover entry, reversal, release, saturation, cancellation and both tick counts.
+  # Costs refreshed for the equal-buildup endpoint and residual allocation at
+  # field bounds. All six immediate selected packets remain unchanged.
   m = MainRequest(native_lookup=True)
   m.c0, m.c1, m.filtered, m.fast = c0, c1, filtered, fast
   command, info = PairedRelease(m).choose(speed, target, phase)

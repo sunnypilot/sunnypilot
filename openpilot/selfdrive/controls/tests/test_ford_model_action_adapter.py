@@ -269,13 +269,42 @@ def test_joint_calibrated_motion_gate_only_affects_joint_mode(pipeline, joint, f
     controls.calibrated_pose.angular_velocity.xyz[2] = math.nan if failure == 'nan' else 3.1
 
   cc = structs.CarControl(latActive=True)
-  cs = SimpleNamespace(vEgo=20., yawRate=-.028, canValid=True, steeringPressed=False, steeringTorque=0.)
+  cs = SimpleNamespace(vEgo=20., vEgoRaw=20., gearShifter=structs.CarState.GearShifter.drive,
+                       yawRate=-.028, canValid=True, steeringPressed=False, steeringTorque=0.)
   model = straight()
   model.action = SimpleNamespace(desiredCurvature=.001)
   exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
                     'lp': SimpleNamespace(roll=0.), 'math': math, 'clip_curvature': clip_curvature,
                     'time': SimpleNamespace(monotonic=lambda: 1.)})
   assert cc.latActive == controls.ford_path.valid == (not joint or failure is None)
+  msg = custom.CarControlSP.new_message()
+  exec(pipeline[1], {'self': controls, 'CC_SP': msg})
+  assert msg.fordLateralPath.valid == cc.latActive
+
+
+@pytest.mark.parametrize('speed,raw,reverse,expected', [
+  (-.01, 0., False, True), (-.29, .1, False, True), (0., 0., False, True),
+  (-.31, 0., False, False), (-.01, 1., False, False), (-.01, math.nan, False, False),
+  (-.01, 0., True, False), (.1, .1, True, False),
+])
+def test_joint_controlsd_stop_speed_undershoot(pipeline, speed, raw, reverse, expected):
+  settings = {'FordModelActionController', 'FordPscmJointControl'}
+  controls = startup(params=SimpleNamespace(get_bool=lambda key: key in settings))
+  sm = Subscriptions(False)
+  controls.sm, controls.desired_curvature, controls.curvature = sm, 0., 0.
+  controls.calibrated_pose = SimpleNamespace(angular_velocity=SimpleNamespace(xyz=[0., 0., 0.]))
+  controls.pose_calibrator = SimpleNamespace(calib_valid=True)
+  sm.messages['deviceMotion'] = SimpleNamespace(inputsOK=True, sensorsOK=True, angularVelocityDevice=SimpleNamespace(valid=True))
+  sm.logMonoTime['deviceMotion'] = 980_000_000
+  cs = structs.CarState(vEgo=speed, vEgoRaw=raw, canValid=True, standstill=True,
+                        gearShifter=structs.CarState.GearShifter.reverse if reverse else structs.CarState.GearShifter.drive)
+  cc = structs.CarControl(latActive=True)
+  model = straight()
+  model.action = SimpleNamespace(desiredCurvature=.001)
+  exec(pipeline[0], {'self': controls, 'CS': cs, 'CC': cc, 'actuators': cc.actuators, 'model_v2': model,
+                    'lp': SimpleNamespace(roll=0.), 'math': math, 'clip_curvature': clip_curvature,
+                    'time': SimpleNamespace(monotonic=lambda: 1.)})
+  assert cc.latActive == controls.ford_path.valid == expected
   msg = custom.CarControlSP.new_message()
   exec(pipeline[1], {'self': controls, 'CC_SP': msg})
   assert msg.fordLateralPath.valid == cc.latActive

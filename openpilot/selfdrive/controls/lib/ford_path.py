@@ -5,6 +5,7 @@ import math
 import numpy as np
 
 from opendbc.car.ford.values import CarControllerParams
+from opendbc.car.structs import CarState
 
 
 DBC_OFFSET = (-5.12, 5.11)
@@ -39,6 +40,15 @@ class FordPath:
   path_angle: float = 0.0
   curvature: float = 0.0
   curvature_rate: float = 0.0
+
+
+def joint_control_speed(CS):
+  """Treat small speed-filter undershoot as stopped only near raw standstill."""
+  if CS.gearShifter == CarState.GearShifter.reverse:
+    return math.nan
+  if -0.3 <= CS.vEgo < 0.0 and 0.0 <= CS.vEgoRaw < 0.3:
+    return 0.0
+  return CS.vEgo
 
 
 @dataclass(frozen=True)
