@@ -7,6 +7,11 @@ from openpilot.selfdrive.controls.lib.ford_joint.model import clip, interp_int, 
 
 C0_BOUND = 5.11
 C1_BOUND = 0.5
+# Reference-calibration supervisor centre term clip(0.5 * held C0, +-0.5) saturates
+# here. Held C0 beyond it adds primary curvature but no turn-direction supervisor
+# allowance, and on release the supervisor keeps excluding zero demand until held
+# C0 slews (1.5 m/s) back below about 0.41 m.
+C0_SUPERVISOR_SATURATION = 1.0
 
 
 def invert_angle(output, speed_kmh, target_angle, angle, yaw, accel, wheelbase, ratio, accel_allowance=3.0):
@@ -56,7 +61,8 @@ def invert_angle(output, speed_kmh, target_angle, angle, yaw, accel, wheelbase, 
 
 
 def static_pair(request, curvature, speed_kmh, *, gains=None):
-  """Allocate equal nominal buildup times, then use remaining field capacity."""
+  """Allocate equal nominal buildup times, hold C0 at most at the supervisor's C0
+  saturation, then use remaining field capacity."""
   if gains is None:
     probe = copy.copy(request).step(speed_kmh, request.c0, request.c1, freeze_i=True)
     gains = probe['g0'], probe['g1']
@@ -65,6 +71,11 @@ def static_pair(request, curvature, speed_kmh, *, gains=None):
   r0, r1 = request.cal.f(0xFEF259F8), request.cal.f(0xFEF25A08)
   duration = curvature / (gains[0] * r0 + gains[1] * r1)
   p0, p1 = duration * r0, duration * r1
+  if abs(p0) > C0_SUPERVISOR_SATURATION and gains[1]:
+    # Only the held endpoint moves: the selector still builds with both fields,
+    # then trades C0 for C1 at constant curvature before a release is needed.
+    p0 = math.copysign(C0_SUPERVISOR_SATURATION, p0)
+    p1 = (curvature - gains[0] * p0) / gains[1]
   c0, c1 = clip(p0, -C0_BOUND, C0_BOUND), clip(p1, -C1_BOUND, C1_BOUND)
   if abs(p0) > C0_BOUND or abs(p1) > C1_BOUND:
     # Clipping one field must not silently lower a target the pair can encode.

@@ -473,10 +473,10 @@ def test_candidate_does_not_mutate_state_and_native_step_matches_python():
 
 
 @pytest.mark.parametrize('speed,c0,c1,filtered,fast,target,phase,pair,cost', [
-  (20., 0., 0., 0., False, .03, 0, (.03, .002), 4.719272529061328),
-  (20., 3., .4, .03, False, -.03, 2, (2.98, .399), 142.8506441410823),
+  (20., 0., 0., 0., False, .03, 0, (.03, .002), 5.206693787207076),
+  (20., 3., .4, .03, False, -.03, 2, (2.98, .399), 149.0975016923494),
   (40., 3., .4, .03, True, 0., 0, (2.95, .395), 12.167867914611671),
-  (6., 5.11, .5, .1, False, -.1, 0, (5.08, .498), 1371.556512359005),
+  (6., 5.11, .5, .1, False, -.1, 0, (5.08, .498), 1423.8735141422555),
   (80., -5.11, -.5, -.1, True, .03, 2, (-5.08, -.4975), 39.42744549117561),
   (40., 3., -.4, 0., False, 0., 2, (3.02, -.399), 6.184073685045232),
 ])
@@ -484,7 +484,8 @@ def test_optimized_selection_matches_frozen_cases(speed, c0, c1, filtered, fast,
   # Frozen outputs from 528ed3615 before pruning/caching the full-return search.
   # Cover entry, reversal, release, saturation, cancellation and both tick counts.
   # Costs refreshed for the equal-buildup endpoint and residual allocation at
-  # field bounds. All six immediate selected packets remain unchanged.
+  # field bounds, then for the supervisor-saturation C0 endpoint (its return
+  # path differs). All six immediate selected packets remain unchanged.
   m = MainRequest(native_lookup=True)
   m.c0, m.c1, m.filtered, m.fast = c0, c1, filtered, fast
   command, info = PairedRelease(m).choose(speed, target, phase)

@@ -253,7 +253,7 @@ class FordJointControl:
       'driver_override': override,
       'driver_pressed': bool(CS.steeringPressed),
       'stop_hold': bool(stop_hold),
-      'allocation': 'equal-arrival',
+      'allocation': 'equal-arrival-supervisor-c0',
       'yaw_source': 'calibrated_pose',
       'yaw_rate': yaw if math.isfinite(yaw) else None,
       'can_yaw_rate': float(CS.yawRate) if math.isfinite(CS.yawRate) else None,
