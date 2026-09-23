@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, WARP_INPUTS, derive_frame_skip,
+from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import nv12_copy_size
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -61,6 +61,22 @@ class BaseModelAdapter:
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     return dummy_frames, transforms, dummy_inputs
 
+  def _load_warp(self):
+    if (self.cam_w, self.cam_h) in self.jits:
+      self.warp_frame_size = self.nv12_info[3]
+      return self.jits[(self.cam_w, self.cam_h)]
+
+    warp_dir = Path(BASEDIR) / "openpilot/sunnypilot/modeld_v2/models"
+    warp_name = f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl'
+    with open(warp_dir / warp_name, 'rb') as f:
+      warp_data = pickle.load(f)
+      run_warp = warp_data['run']
+      if 'input_specs' in warp_data and 'input_frame' in warp_data['input_specs']:
+        self.warp_frame_size = warp_data['input_specs']['input_frame'][0][1]
+      else:
+        self.warp_frame_size = self.nv12_info[3] if self.chestnut else self.frame_copy_size
+      return run_warp
+
 
 class LegacyModelAdapter(BaseModelAdapter):
   def __init__(self, *args, **kwargs):
@@ -80,10 +96,8 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.frame_skip = derive_frame_skip({}, self.input_shapes)
       self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
       self.run_policy = self.jits['run_policy']
-      self.warp = self._load_warp()
     else:
       self.run_policy = self.jits['run_policy']
-      self.warp = self._load_warp()
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]
       self._combined_model_type = 'split' if policy_keys == ['policy'] else 'multi_policy'
@@ -98,15 +112,17 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.input_queues, self.numpy_inputs = make_split_input_queues(vision_metadata['input_shapes'], first_policy_meta['input_shapes'],
                                                                      self.frame_skip, device=self.QUEUE_DEV)
 
+    self.run_warp = self._load_warp()
     self._init_common()
-
     if self.chestnut:
       self._init_chestnut_packed_buffers()
     else:
-      if self.warp is not None:
-        self.full_frames = {k: Tensor(np.zeros(self.nv12_info[3], dtype=np.uint8),
-                            device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
-        self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+      self.full_frames = {k: Tensor(np.zeros(self.nv12_info[3], dtype=np.uint8),
+                          device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+      input_frame = Tensor.stack(self.full_frames[self._road_key][:self.warp_frame_size].to(self.DEV).flatten(),
+                                 self.full_frames[self._wide_key][:self.warp_frame_size].to(self.DEV).flatten())
+      M_inv = Tensor.stack(self.input_queues['tfm'].to(self.DEV).reshape(3, 3), self.input_queues['big_tfm'].to(self.DEV).reshape(3, 3))
+      self.run_warp(input_frame=input_frame, M_inv=M_inv)
 
   def _init_chestnut_packed_buffers(self):
     raw_npy_bytes = self.numpy_inputs['packed_npy_inputs'] if 'packed_npy_inputs' in self.numpy_inputs else self.input_queues['packed_npy_inputs'].numpy()
@@ -115,7 +131,6 @@ class LegacyModelAdapter(BaseModelAdapter):
     self.tfm_bytes_len = round_up(2 * 3 * 3 * 4, 128)
     self.npy_aligned_len = round_up(self.npy_bytes_len, 128)
 
-    self.warp_frame_size = self.nv12_info[3] if (self.cam_w, self.cam_h) in self.jits else self.frame_copy_size
     total_packed_size = self.tfm_bytes_len + self.npy_aligned_len + 2 * self.warp_frame_size
     self.packed_input = np.zeros(total_packed_size, dtype=np.uint8)
     self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
@@ -129,24 +144,6 @@ class LegacyModelAdapter(BaseModelAdapter):
     self.device_tfm = input_view(self.input_device, (2, 3, 3), dtypes.float32, 0)
     self.input_queues['packed_npy_inputs'] = input_view(self.input_device, (self.npy_bytes_len // 4,), dtypes.float32, self.tfm_bytes_len)
     self.device_frames = input_view(self.input_device, (2, self.warp_frame_size), dtypes.uint8, frames_offset)
-
-  def _load_warp(self):
-    if (self.cam_w, self.cam_h) in self.jits:
-      return self.jits[(self.cam_w, self.cam_h)]
-
-    warp_dir = Path(BASEDIR) / "openpilot/sunnypilot/modeld_v2/models"
-    warp_name = f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl'
-    with open(warp_dir / warp_name, 'rb') as f:
-      run_warp = pickle.load(f)['run']
-
-    def warp_fn(tfm=None, big_tfm=None, frame=None, big_frame=None):
-      if self.chestnut:
-        return run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
-      else:
-        input_frame = Tensor.stack(frame[:self.frame_copy_size].to(self.DEV).flatten(), big_frame[:self.frame_copy_size].to(self.DEV).flatten())
-        M_inv = Tensor.stack(tfm.to(self.DEV).reshape(3, 3), big_tfm.to(self.DEV).reshape(3, 3))
-        return run_warp(input_frame=input_frame, M_inv=M_inv)
-    return warp_fn
 
   def copy_frames(self, bufs):
     if self.chestnut:
@@ -172,8 +169,6 @@ class LegacyModelAdapter(BaseModelAdapter):
       self._blob_cache.clear()
 
   def run(self):
-    assert self.warp is not None and self.run_policy is not None
-
     if self.chestnut:
       self.tfm_host_view[0] = self.numpy_inputs['tfm']
       self.tfm_host_view[1] = self.numpy_inputs['big_tfm']
@@ -182,11 +177,13 @@ class LegacyModelAdapter(BaseModelAdapter):
         self.packed_input[self.tfm_bytes_len : self.tfm_bytes_len + self.npy_bytes_len] = \
           self.numpy_inputs['packed_npy_inputs'].view(np.uint8)
       self.input_device.copy_from(self.input_host)
-      warped = self.warp()
-      return self.run_policy( **{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+      warped = self.run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
     else:
-      warped = self.warp(**{k: self.input_queues[k] for k in WARP_INPUTS}, frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
-      return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
+      input_frame = Tensor.stack(self.full_frames[self._road_key][:self.warp_frame_size].to(self.DEV).flatten(),
+                                 self.full_frames[self._wide_key][:self.warp_frame_size].to(self.DEV).flatten())
+      M_inv = Tensor.stack(self.input_queues['tfm'].to(self.DEV).reshape(3, 3), self.input_queues['big_tfm'].to(self.DEV).reshape(3, 3))
+      warped = self.run_warp(input_frame=input_frame, M_inv=M_inv)
+    return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
 
 class NativeTinygradAdapter(BaseModelAdapter):
@@ -206,12 +203,9 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self._vision_input_names = [k for k in self.input_shapes_orig if 'img' in k]
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
 
+    self.run_warp = self._load_warp()
     self.reset_warmup_buffers()
     self._init_common()
-
-    warp_dir = Path(BASEDIR) / "openpilot/sunnypilot/modeld_v2/models"
-    with open(warp_dir / f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl', 'rb') as f:
-      self.run_warp = pickle.load(f)['run']
     self.run_model = self.jits['run']
 
     self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
@@ -223,15 +217,16 @@ class NativeTinygradAdapter(BaseModelAdapter):
     for i, key in enumerate(self._vision_input_names):
       if key in bufs:
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
 
   def reset_warmup_buffers(self) -> None:
+    warp_frame_size = getattr(self, 'warp_frame_size', self.nv12_info[3])
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
                          for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
     shapes = {'tfm': (2, 3, 3)} | {name: shape for name, (shape, _) in self.input_shapes.items()
                                    if name not in self.state_pairs and name != 'new_img'}
     npy_size = sum(round_up(math.prod(shape) * 4, 128) for shape in shapes.values())
-    self.packed_input = np.zeros(npy_size + 2 * self.frame_copy_size, dtype=np.uint8)
+    self.packed_input = np.zeros(npy_size + 2 * warp_frame_size, dtype=np.uint8)
     self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
     self.input_device = Tensor(self.packed_input, device=self.model_device)._buffer()
     self.numpy_inputs = {}
@@ -240,7 +235,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
       self.numpy_inputs[name] = np.ndarray(shape, dtype=np.float32, buffer=self.packed_input, offset=offset)
       self.input_queues[name] = input_view(self.input_device, shape, dtypes.float32, offset)
       offset += round_up(self.numpy_inputs[name].nbytes, 128)
-    self.frames = self.packed_input[npy_size:].reshape(2, self.frame_copy_size)
+    self.frames = self.packed_input[npy_size:].reshape(2, warp_frame_size)
     self.warp_inputs = {'input_frame': input_view(self.input_device, self.frames.shape, dtypes.uint8, npy_size), 'M_inv': self.input_queues.pop('tfm')}
 
   def run(self):

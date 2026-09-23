@@ -39,17 +39,17 @@ jobs:
           echo "Camera resolutions: $CAMERA_RES"
 
           for res in $CAMERA_RES; do
-            NV12_INFO=$(python3 -c "from openpilot.system.camerad.cameras.nv12_info import get_nv12_info; w, h = map(int, '${res}'.split('x')); print(','.join(map(str, get_nv12_info(w, h))))")
+            FRAME_PARAM=$(python3 -c "from openpilot.system.camerad.cameras.nv12_info import get_nv12_info; w, h = map(int, '${res}'.split('x')); stride, y_h, uv_h, _ = get_nv12_info(w, h); print(f'{w},{h},{stride},{y_h},{uv_h},{stride * (y_h + uv_h)}')")
 
             WARP_PKL="openpilot/sunnypilot/modeld_v2/models/driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $WARP_PKL on QCOM"
             taskset -c 7 env DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
-              --frame ${res/x/,},${NV12_INFO} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${WARP_PKL}"
+              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${WARP_PKL}"
 
             BIG_WARP_PKL="openpilot/sunnypilot/modeld_v2/models/big_driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $BIG_WARP_PKL on AMD"
             taskset -c 7 env DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
-              --frame ${res/x/,},${NV12_INFO} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${BIG_WARP_PKL}"
+              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${BIG_WARP_PKL}"
           done
 
       - name: Re-enable powersave
