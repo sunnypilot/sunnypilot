@@ -245,12 +245,6 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.frames = self.packed_input[npy_size:].reshape(2, self.frame_copy_size)
     self.warp_inputs = {'input_frame': input_view(self.input_device, self.frames.shape, dtypes.uint8, npy_size), 'M_inv': self.input_queues.pop('tfm')}
 
-    # Split tfm into tfm and big_tfm for modeld compatibility
-    if 'tfm' in self.numpy_inputs and self.numpy_inputs['tfm'].shape == (2, 3, 3):
-      real_tfm = self.numpy_inputs.pop('tfm')
-      self.numpy_inputs['tfm'] = real_tfm[0]
-      self.numpy_inputs['big_tfm'] = real_tfm[1]
-
   def run(self):
     self.input_device.copy_from(self.input_host)
     self.input_queues['new_img'] = self.run_warp(**self.warp_inputs)
