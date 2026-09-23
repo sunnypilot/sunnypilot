@@ -145,7 +145,7 @@ class LegacyModelAdapter(BaseModelAdapter):
       if self.chestnut:
         return run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
       else:
-        input_frame = Tensor.stack(frame.to(self.DEV).flatten(), big_frame.to(self.DEV).flatten())
+        input_frame = Tensor.stack(frame[:self.frame_copy_size].to(self.DEV).flatten(), big_frame[:self.frame_copy_size].to(self.DEV).flatten())
         M_inv = Tensor.stack(tfm.to(self.DEV).reshape(3, 3), big_tfm.to(self.DEV).reshape(3, 3))
         return run_warp(input_frame=input_frame, M_inv=M_inv)
     return warp_fn
