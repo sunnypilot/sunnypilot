@@ -119,10 +119,8 @@ class LegacyModelAdapter(BaseModelAdapter):
     else:
       self.full_frames = {k: Tensor(np.zeros(self.nv12_info[3], dtype=np.uint8),
                           device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
-      input_frame = Tensor.stack(self.full_frames[self._road_key][:self.warp_frame_size].to(self.DEV).flatten(),
-                                 self.full_frames[self._wide_key][:self.warp_frame_size].to(self.DEV).flatten())
-      M_inv = Tensor.stack(self.input_queues['tfm'].to(self.DEV).reshape(3, 3), self.input_queues['big_tfm'].to(self.DEV).reshape(3, 3))
-      self.run_warp(input_frame=input_frame, M_inv=M_inv)
+      self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
+                    frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
 
   def _init_chestnut_packed_buffers(self):
     raw_npy_bytes = self.numpy_inputs['packed_npy_inputs'] if 'packed_npy_inputs' in self.numpy_inputs else self.input_queues['packed_npy_inputs'].numpy()
@@ -179,10 +177,8 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.input_device.copy_from(self.input_host)
       warped = self.run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
     else:
-      input_frame = Tensor.stack(self.full_frames[self._road_key][:self.warp_frame_size].to(self.DEV).flatten(),
-                                 self.full_frames[self._wide_key][:self.warp_frame_size].to(self.DEV).flatten())
-      M_inv = Tensor.stack(self.input_queues['tfm'].to(self.DEV).reshape(3, 3), self.input_queues['big_tfm'].to(self.DEV).reshape(3, 3))
-      warped = self.run_warp(input_frame=input_frame, M_inv=M_inv)
+      warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
+                             frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
     return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
 
