@@ -55,11 +55,8 @@ class BaseModelAdapter:
     self.frame_buf_params = dict.fromkeys(getattr(self, '_vision_input_names', ['img', 'big_img']), self.nv12_info)
 
   def get_dummy_inputs(self):
-    dummy_size = self.frame_buf_params[self._road_key][3]
-    dummy_frames = {
-      k: np.zeros(self.frame_copy_size, dtype=np.uint8) if self.is_native else np.zeros(dummy_size, dtype=np.uint8)
-      for k in self._vision_input_names
-    }
+    dummy_size = getattr(self, 'warp_frame_size', self.frame_copy_size if self.is_native else self.frame_buf_params[self._road_key][3])
+    dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     return dummy_frames, transforms, dummy_inputs
@@ -118,19 +115,20 @@ class LegacyModelAdapter(BaseModelAdapter):
     self.tfm_bytes_len = round_up(2 * 3 * 3 * 4, 128)
     self.npy_aligned_len = round_up(self.npy_bytes_len, 128)
 
-    total_packed_size = self.tfm_bytes_len + self.npy_aligned_len + 2 * self.frame_copy_size
+    self.warp_frame_size = self.nv12_info[3] if (self.cam_w, self.cam_h) in self.jits else self.frame_copy_size
+    total_packed_size = self.tfm_bytes_len + self.npy_aligned_len + 2 * self.warp_frame_size
     self.packed_input = np.zeros(total_packed_size, dtype=np.uint8)
     self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
     self.input_device = Tensor(self.packed_input, device=self.DEV)._buffer()
 
     self.tfm_host_view = np.ndarray((2, 3, 3), dtype=np.float32, buffer=self.packed_input, offset=0)
     frames_offset = self.tfm_bytes_len + self.npy_aligned_len
-    self.frame_slots = {self._road_key: self.packed_input[frames_offset : frames_offset + self.frame_copy_size],
-                        self._wide_key: self.packed_input[frames_offset + self.frame_copy_size : frames_offset + 2 * self.frame_copy_size]}
+    self.frame_slots = {self._road_key: self.packed_input[frames_offset : frames_offset + self.warp_frame_size],
+                        self._wide_key: self.packed_input[frames_offset + self.warp_frame_size : frames_offset + 2 * self.warp_frame_size]}
 
     self.device_tfm = input_view(self.input_device, (2, 3, 3), dtypes.float32, 0)
     self.input_queues['packed_npy_inputs'] = input_view(self.input_device, (self.npy_bytes_len // 4,), dtypes.float32, self.tfm_bytes_len)
-    self.device_frames = input_view(self.input_device, (2, self.frame_copy_size), dtypes.uint8, frames_offset)
+    self.device_frames = input_view(self.input_device, (2, self.warp_frame_size), dtypes.uint8, frames_offset)
 
   def _load_warp(self):
     if (self.cam_w, self.cam_h) in self.jits:
@@ -155,7 +153,7 @@ class LegacyModelAdapter(BaseModelAdapter):
       for key in self._vision_input_names:
         if key in bufs:
           data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-          np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+          np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
     else:
       for key, buf in bufs.items():
         ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
