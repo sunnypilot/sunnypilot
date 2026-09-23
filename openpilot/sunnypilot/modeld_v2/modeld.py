@@ -171,8 +171,13 @@ class ModelState(ModelStateBase):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
-    self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
-    self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
+    if self.adapter.is_native:
+      for i, key in enumerate(self._vision_input_names):
+        if key in transforms:
+          self.numpy_inputs['tfm'][i] = transforms[key].reshape(3, 3)
+    else:
+      self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
+      self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
 
     raw_outputs = self.adapter.run()
 
