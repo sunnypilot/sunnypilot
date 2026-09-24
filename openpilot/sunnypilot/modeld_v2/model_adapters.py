@@ -200,22 +200,9 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
 
     self.run_warp = self._load_warp()
-    self.reset_warmup_buffers()
     self._init_common()
     self.run_model = self.jits['run']
 
-    self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
-    for name, next_name in self.state_pairs.items():
-      state = self.input_queues[name]
-      self.outputs[next_name] = input_view(state._buffer(), state.shape, state.dtype, 0)
-
-  def copy_frames(self, bufs):
-    for i, key in enumerate(self._vision_input_names):
-      if key in bufs:
-        data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
-
-  def reset_warmup_buffers(self) -> None:
     warp_frame_size = getattr(self, 'warp_frame_size', self.nv12_info[3])
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
                          for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
@@ -233,6 +220,22 @@ class NativeTinygradAdapter(BaseModelAdapter):
       offset += round_up(self.numpy_inputs[name].nbytes, 128)
     self.frames = self.packed_input[npy_size:].reshape(2, warp_frame_size)
     self.warp_inputs = {'input_frame': input_view(self.input_device, self.frames.shape, dtypes.uint8, npy_size), 'M_inv': self.input_queues.pop('tfm')}
+
+    self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
+    for name, next_name in self.state_pairs.items():
+      state = self.input_queues[name]
+      self.outputs[next_name] = input_view(state._buffer(), state.shape, state.dtype, 0)
+
+  def copy_frames(self, bufs):
+    for i, key in enumerate(self._vision_input_names):
+      if key in bufs:
+        data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
+        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
+
+  def reset_warmup_buffers(self) -> None:
+    self.packed_input[:] = 0
+    for key in self.state_pairs:
+      self.input_queues[key].assign(0).realize()
 
   def run(self):
     self.input_device.copy_from(self.input_host)
