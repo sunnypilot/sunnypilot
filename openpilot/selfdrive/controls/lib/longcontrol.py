@@ -4,7 +4,6 @@ from openpilot.common.realtime import DT_CTRL
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N
 from openpilot.common.pid import PIDController
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol import LongControlSP
 
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
@@ -40,8 +39,7 @@ def long_control_state_trans(CP_SP, active, long_control_state,
 
   return long_control_state
 
-
-class LongControl(LongControlSP):
+class LongControl:
   def __init__(self, CP, CP_SP):
     self.CP = CP
     self.CP_SP = CP_SP
@@ -58,17 +56,9 @@ class LongControl(LongControlSP):
     self.pid.neg_limit = accel_limits[0]
     self.pid.pos_limit = accel_limits[1]
 
-    previous_state = self.long_control_state
     self.long_control_state = long_control_state_trans(self.CP_SP, active, self.long_control_state,
                                                        should_stop, CS.brakePressed,
                                                        CS.cruiseState.standstill)
-
-    was_stopping = previous_state == LongCtrlState.stopping
-    exiting_to_pid = self.long_control_state == LongCtrlState.pid
-    if was_stopping and exiting_to_pid and (not self.should_exit_stopping(was_stopping, exiting_to_pid, a_target) or
-                                            self.should_hold_stopping(CS, a_target)):
-      self.long_control_state = LongCtrlState.stopping
-
     if self.long_control_state == LongCtrlState.off:
       self.reset()
       output_accel = 0.
@@ -78,16 +68,13 @@ class LongControl(LongControlSP):
       if output_accel > self.CP.stopAccel:
         output_accel = min(output_accel, 0.0)
         # TODO: can we just go straight to stopAccel?
-        output_accel -= self.stopping_decel_rate(CS.vEgo) * DT_CTRL
+        output_accel -= 1.0 * DT_CTRL  # m/s^2/s while trying to stop
       self.reset()
 
     else:  # LongCtrlState.pid
       error = a_target - CS.aEgo
       output_accel = self.pid.update(error, speed=CS.vEgo,
                                      feedforward=a_target)
-
-      if previous_state == LongCtrlState.stopping:
-        output_accel = self.limit_stop_release(self.last_output_accel, output_accel)
 
     self.last_output_accel = np.clip(output_accel, accel_limits[0], accel_limits[1])
     return self.last_output_accel
