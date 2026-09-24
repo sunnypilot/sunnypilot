@@ -131,6 +131,7 @@ jobs:
 
   process_replay:
     name: process replay
+    if: false #process replay disabled for angle steering until we are ready to merge it
     runs-on: ${{
       (github.repository == 'commaai/openpilot') &&
       ((github.event_name != 'pull_request') ||
