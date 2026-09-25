@@ -282,44 +282,56 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
   return run_policy
 
 
-def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark_runs: int = 1, clear_refs=None):
-  SEED = 42
-  def random_inputs_run(fn, seed, n_runs, test_val=None, expect_match=True):
-    queues_res = make_queues(Device.DEFAULT)
-    input_queues, npy = queues_res[0], queues_res[1]
-    frame_views = queues_res[2] if len(queues_res) > 2 else {}
-    rng = np.random.default_rng(seed)
-    Tensor.manual_seed(seed)
+def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_random_inputs=None, benchmark_runs: int = 1, clear_refs=None):
+  if callable(input_keys_or_make_inputs) and make_queues is None:
+    fn = jit_or_fn
+    make_inputs = input_keys_or_make_inputs
+    jit = TinyJit(fn, prune=True)
 
-    for i in range(n_runs):
-      for v in npy.values():
-        v[:] = rng.standard_normal(v.shape).astype(v.dtype)
-      for v in frame_views.values():
-        v[:] = rng.integers(0, 256, size=v.shape, dtype=np.uint8)
-      Device.default.synchronize()
-      random_inputs = make_random_inputs() if make_random_inputs is not None else {}
-      st = time.perf_counter()
-      outs = fn(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
-      mt = time.perf_counter()
-      Device.default.synchronize()
-      et = time.perf_counter()
-      print(f"  [{i+1}/{n_runs}] enqueue {(mt-st)*1e3:6.2f} ms -- total {(et-st)*1e3:6.2f} ms")
+    def run_eval(f, seed, count):
+      args, kwargs = make_inputs(seed)
+      result = None
+      for i in range(count):
+        Device.default.synchronize()
+        st = time.perf_counter()
+        f(*args, **kwargs)
+        Device.default.synchronize()
+        print(f"  [{i+1}/{count}] {(time.perf_counter()-st)*1e3:.2f} ms")
+        if i == 0:
+          result = [t.numpy().copy() for t in kwargs['output_buffers'].values()]
+      return result
+  else:
+    jit = jit_or_fn
+    input_keys = input_keys_or_make_inputs
 
-      if i == 0:
-        val = [np.copy(v.numpy()) for v in (outs if isinstance(outs, tuple) else [outs])] if outs is not None else []
+    def run_eval(f, seed, count):
+      queues_res = make_queues(Device.DEFAULT)
+      input_queues, npy = queues_res[0], queues_res[1]
+      frame_views = queues_res[2] if len(queues_res) > 2 else {}
+      rng = np.random.default_rng(seed)
+      Tensor.manual_seed(seed)
 
-    if test_val is not None:
-      if expect_match:
-        for a, b in zip(val, test_val, strict=True):
-          np.testing.assert_array_equal(a, b, err_msg=f"outputs differ from baseline (seed={seed})")
-      else:
-        match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
-        assert not match, f"outputs match baseline unexpectedly (seed={seed})"
-    return val
+      for i in range(count):
+        for v in npy.values():
+          v[:] = rng.standard_normal(v.shape).astype(v.dtype)
+        for v in frame_views.values():
+          v[:] = rng.integers(0, 256, size=v.shape, dtype=np.uint8)
+        Device.default.synchronize()
+        random_inputs = make_random_inputs() if make_random_inputs is not None else {}
+        st = time.perf_counter()
+        outs = f(**{k: input_queues[k] for k in input_keys if k in input_queues}, **random_inputs)
+        mt = time.perf_counter()
+        Device.default.synchronize()
+        et = time.perf_counter()
+        print(f"  [{i+1}/{count}] enqueue {(mt-st)*1e3:6.2f} ms -- total {(et-st)*1e3:6.2f} ms")
+
+        if i == 0:
+          val = [np.copy(v.numpy()) for v in (outs if isinstance(outs, tuple) else [outs])] if outs is not None else []
+      return val
 
   print('capture + replay')
   gc.collect()
-  test_val = random_inputs_run(jit, SEED, 3)
+  test_val = run_eval(jit, 42, 3)
   print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
@@ -330,8 +342,14 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
     f.seek(0)
     loaded_jit = load_oob(f)
 
-  random_inputs_run(loaded_jit, SEED, benchmark_runs, test_val, expect_match=True)
-  random_inputs_run(loaded_jit, SEED+1, benchmark_runs, test_val, expect_match=False)
+  for seed in (42, 43):
+    reference = test_val if seed == 42 else run_eval(jit_or_fn, seed, 1)
+    actual = run_eval(loaded_jit, seed, benchmark_runs)
+    for ref, val in zip(reference, actual, strict=True):
+      if seed == 42:
+        np.testing.assert_array_equal(ref, val)
+      else:
+        assert not np.array_equal(ref, val)
   return loaded_jit
 
 
@@ -476,7 +494,7 @@ if __name__ == "__main__":
       Tensor.realize(*outputs.values())
       Tensor.realize(*(output_buffers[name].assign(value) for name, value in outputs.items()))
 
-    output_data['run'] = compile_jit(run, make_inputs, args.benchmark_runs)
+    output_data['run'] = compile_jit(run, make_inputs, benchmark_runs=args.benchmark_runs)
     output_data['input_specs'] = specs
     output_data['output_specs'] = output_specs
     output_data['input_devices'] = {'model': Device.DEFAULT}

@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip, get_policy_npy_shapes,
+from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import nv12_copy_size
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -79,12 +79,8 @@ class BaseModelAdapter:
 class LegacyModelAdapter(BaseModelAdapter):
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
-
     metadata = self.jits['metadata']
     self.frame_copy_size = nv12_copy_size(*self.nv12_info[:3])
-
-    if self.chestnut:
-      self.WARP_DEV = self.DEV
 
     if 'model' in metadata:
       model_metadata = metadata.get('model', metadata)
@@ -112,80 +108,25 @@ class LegacyModelAdapter(BaseModelAdapter):
 
     self.run_warp = self._load_warp()
     self._init_common()
-    if self.chestnut:
-      self._init_chestnut_packed_buffers()
-    else:
-      yuv_size = self.frame_buf_params[self._road_key][3]
-      frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-      big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-      self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
-                    frame=frame_tensor, big_frame=big_frame_tensor)
-
-  def _init_chestnut_packed_buffers(self):
-    metadata = self.jits['metadata']
-    is_supercombo = 'model' in metadata
-    all_input_shapes = self.input_shapes if is_supercombo else {**metadata['vision']['input_shapes'], **metadata[self._policy_keys[0]]['input_shapes']}
-    shapes, sizes = get_policy_npy_shapes(all_input_shapes, is_supercombo=is_supercombo)
-    self.npy_bytes_len = sum(sizes) * 4
-
-    self.tfm_bytes_len = round_up(2 * 3 * 3 * 4, 128)
-    self.npy_aligned_len = round_up(self.npy_bytes_len, 128)
-
-    total_packed_size = self.tfm_bytes_len + self.npy_aligned_len + 2 * self.warp_frame_size
-    self.packed_input = np.zeros(total_packed_size, dtype=np.uint8)
-    self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
-    self.input_device = Tensor(self.packed_input, device=self.DEV)._buffer()
-
-    self.tfm_host_view = np.ndarray((2, 3, 3), dtype=np.float32, buffer=self.packed_input, offset=0)
-    self.numpy_inputs['tfm'] = self.tfm_host_view[0]
-    self.numpy_inputs['big_tfm'] = self.tfm_host_view[1]
-
-    packed_npy_slice = np.ndarray((self.npy_bytes_len // 4,), dtype=np.float32, buffer=self.packed_input, offset=self.tfm_bytes_len)
-    split_indices = np.cumsum(sizes[:-1]) if len(sizes) > 1 else []
-    split_views = np.split(packed_npy_slice, split_indices) if len(sizes) > 0 else []
-    for (key, shape), view in zip(shapes.items(), split_views, strict=True):
-      self.numpy_inputs[key] = view.reshape(shape)
-
-    frames_offset = self.tfm_bytes_len + self.npy_aligned_len
-    self.frame_slots = {self._road_key: self.packed_input[frames_offset : frames_offset + self.warp_frame_size],
-                        self._wide_key: self.packed_input[frames_offset + self.warp_frame_size : frames_offset + 2 * self.warp_frame_size]}
-
-    self.device_tfm = input_view(self.input_device, (2, 3, 3), dtypes.float32, 0)
-    self.input_queues['packed_npy_inputs'] = input_view(self.input_device, (self.npy_bytes_len // 4,), dtypes.float32, self.tfm_bytes_len)
-    self.device_frames = input_view(self.input_device, (2, self.warp_frame_size), dtypes.uint8, frames_offset)
+    yuv_size = self.frame_buf_params[self._road_key][3]
+    frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+    big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+    self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
+                  frame=frame_tensor, big_frame=big_frame_tensor)
 
   def copy_frames(self, bufs):
-    if self.chestnut:
-      for key in self._vision_input_names:
-        if key in bufs:
-          data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-          np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
-    else:
-      for key in bufs.keys():
-        data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-        ptr = np.frombuffer(data, dtype=np.uint8).ctypes.data
-        yuv_size = self.frame_buf_params[key][3]
-        cache_key = (key, ptr)
-        if cache_key not in self._blob_cache:
-          self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
-        self.full_frames[key] = self._blob_cache[cache_key]
-
-  def reset_warmup_buffers(self):
-    for v in self.numpy_inputs.values():
-      v[:] = 0
-    if self.chestnut:
-      self.packed_input[:] = 0
-    else:
-      self.full_frames.clear()
-      self._blob_cache.clear()
+    for key in bufs.keys():
+      data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
+      ptr = np.frombuffer(data, dtype=np.uint8).ctypes.data
+      yuv_size = self.frame_buf_params[key][3]
+      cache_key = (key, ptr)
+      if cache_key not in self._blob_cache:
+        self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
+      self.full_frames[key] = self._blob_cache[cache_key]
 
   def run(self):
-    if self.chestnut:
-      self.input_device.copy_from(self.input_host)
-      warped = self.run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
-    else:
-      warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
-                             frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+    warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
+                           frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
     return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
 
