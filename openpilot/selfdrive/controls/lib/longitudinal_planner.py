@@ -11,7 +11,7 @@ from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalMpc, LongitudinalPlanSource
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
-from openpilot.selfdrive.controls.lib.drive_helpers import ACCEL_BOOST_MAX, CONTROL_N, get_accel_from_plan, should_stop
+from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_accel_from_plan, should_stop
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
 
@@ -24,8 +24,6 @@ A_CRUISE_MIN = -1.2
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 ALLOW_THROTTLE_THRESHOLD = 0.4
 MIN_ALLOW_THROTTLE_SPEED = 2.5
-ACCEL_BOOST_RATE = 0.1
-ACCEL_BOOST_MIN_SPEED = 10 * CV.MPH_TO_MS
 
 # Lookup table for turns
 _A_TOTAL_MAX_V = [1.7, 3.2]
@@ -64,7 +62,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.fcw = False
     self.dt = dt
     self.allow_throttle = True
-    self.accel_boost = 0.0
 
     self.v_desired_filter = FirstOrderFilter(init_v, 2.0, self.dt)
     self.a_cruise = init_a
@@ -84,13 +81,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       accel_coast = ACCEL_MAX
 
     v_ego = sm['carState'].vEgo
-    if not sm['selfdriveState'].enabled:
-      self.accel_boost = 0.0
-    elif v_ego < ACCEL_BOOST_MIN_SPEED:
-      self.accel_boost = max(0.0, self.accel_boost - ACCEL_BOOST_RATE * self.dt)
-    elif sm['carState'].gasPressed:
-      self.accel_boost = min(ACCEL_BOOST_MAX, self.accel_boost + ACCEL_BOOST_RATE * self.dt)
-
     v_cruise_kph = min(sm['carState'].vCruise, V_CRUISE_MAX)
     v_cruise = v_cruise_kph * CV.KPH_TO_MS
     force_decel = sm['controlsState'].forceDecel
@@ -146,7 +136,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_mpc = get_accel_from_plan(self.v_desired_trajectory, self.a_desired_trajectory, CONTROL_N_T_IDX,
                                               action_t=action_t)
     output_should_stop_mpc = should_stop(v_ego, output_a_target_mpc)
-    output_a_target_e2e = sm['modelV2'].action.desiredAcceleration + self.accel_boost
+    output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
     is_e2e = self.is_e2e(sm)
@@ -194,7 +184,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     longitudinalPlan.fcw = self.fcw
 
     longitudinalPlan.aTarget = float(self.output_a_target)
-    longitudinalPlan.accelBoost = self.accel_boost
     longitudinalPlan.shouldStop = bool(self.output_should_stop)
     longitudinalPlan.allowBrake = True
     longitudinalPlan.allowThrottle = bool(self.allow_throttle)
