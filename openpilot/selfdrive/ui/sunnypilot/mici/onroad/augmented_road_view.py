@@ -17,7 +17,7 @@ class AugmentedRoadViewSP(AugmentedRoadView):
   def __init__(self, **kwargs):
     super().__init__(**kwargs)
     self._show_confidence_ball: bool = True
-    self._real_confidence_ball = self._confidence_ball
+    self._real_confidence_ball = self._boost_bar
     self._confidence_ball = _SuppressedConfidenceBall()
 
   def set_show_confidence_ball(self, show: bool) -> None:
