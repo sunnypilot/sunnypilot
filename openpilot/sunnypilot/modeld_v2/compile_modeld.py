@@ -195,9 +195,9 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
                        dtype=np.float32), device=device).contiguous().realize()
 
   for key in ('tfm', 'big_tfm'):
-    if key in npy_arrays:
+    if key not in npy_arrays:
       npy_arrays[key] = np.eye(3, dtype=np.float32)
-      queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
+    queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
 
   return queues, npy_arrays
 
