@@ -42,6 +42,7 @@ class BaseModelAdapter:
     self.policy_output_slices = {}
     self._policy_keys = []
     self.full_frames = {}
+    self._blob_cache = {}
     self.nv12_info = get_nv12_info(cam_w, cam_h)
     self.is_native = False
 
