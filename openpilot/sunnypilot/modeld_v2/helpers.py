@@ -27,7 +27,6 @@ def _patch_system_flock_acquire():
       lock_file_descriptor = original_flock_acquire(name)
       acquired_locks[name] = lock_file_descriptor
       return lock_file_descriptor
-
     System.flock_acquire = flock_acquire
   except (ImportError, AttributeError):
     pass

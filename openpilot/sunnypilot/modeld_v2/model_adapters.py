@@ -139,7 +139,7 @@ class LegacyModelAdapter(BaseModelAdapter):
                         self._wide_key: self.packed_input[frames_offset + self.warp_frame_size : frames_offset + 2 * self.warp_frame_size]}
 
     self.device_tfm = input_view(self.input_device, (2, 3, 3), dtypes.float32, 0)
-    self.input_queues['packed_npy_inputs'] = input_view(self.input_device, (self.npy_bytes_len // 4,), dtypes.float32, self.tfm_bytes_len)
+    self.input_queues['packed_npy_inputs'] = input_view(self.input_host, (self.npy_bytes_len // 4,), dtypes.float32, self.tfm_bytes_len)
     self.device_frames = input_view(self.input_device, (2, self.warp_frame_size), dtypes.uint8, frames_offset)
 
   def copy_frames(self, bufs):
