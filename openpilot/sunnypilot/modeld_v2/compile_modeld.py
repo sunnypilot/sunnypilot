@@ -185,7 +185,7 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
                   dtype=np.float32), device=device).contiguous().realize(),
-    'packed_npy_inputs': Tensor(packed_npy_inputs, device='NPY').realize(),
+    'packed_npy_inputs': Tensor(packed_npy_inputs, device=device if os.getenv('CHESTNUT') else 'NPY').realize(),
   }
 
   if features_buffer:
