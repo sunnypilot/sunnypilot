@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
+from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip, get_policy_npy_shapes,
                                                            make_split_input_queues, make_supercombo_input_queues)
 from openpilot.sunnypilot.modeld_v2.stock_dependencies import nv12_copy_size
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -122,8 +122,11 @@ class LegacyModelAdapter(BaseModelAdapter):
                     frame=frame_tensor, big_frame=big_frame_tensor)
 
   def _init_chestnut_packed_buffers(self):
-    raw_npy_bytes = self.numpy_inputs['packed_npy_inputs'] if 'packed_npy_inputs' in self.numpy_inputs else self.input_queues['packed_npy_inputs'].numpy()
-    self.npy_bytes_len = raw_npy_bytes.nbytes
+    metadata = self.jits['metadata']
+    is_supercombo = 'model' in metadata
+    all_input_shapes = self.input_shapes if is_supercombo else {**metadata['vision']['input_shapes'], **metadata[self._policy_keys[0]]['input_shapes']}
+    shapes, sizes = get_policy_npy_shapes(all_input_shapes, is_supercombo=is_supercombo)
+    self.npy_bytes_len = sum(sizes) * 4
 
     self.tfm_bytes_len = round_up(2 * 3 * 3 * 4, 128)
     self.npy_aligned_len = round_up(self.npy_bytes_len, 128)
@@ -134,6 +137,15 @@ class LegacyModelAdapter(BaseModelAdapter):
     self.input_device = Tensor(self.packed_input, device=self.DEV)._buffer()
 
     self.tfm_host_view = np.ndarray((2, 3, 3), dtype=np.float32, buffer=self.packed_input, offset=0)
+    self.numpy_inputs['tfm'] = self.tfm_host_view[0]
+    self.numpy_inputs['big_tfm'] = self.tfm_host_view[1]
+
+    packed_npy_slice = np.ndarray((self.npy_bytes_len // 4,), dtype=np.float32, buffer=self.packed_input, offset=self.tfm_bytes_len)
+    split_indices = np.cumsum(sizes[:-1]) if len(sizes) > 1 else []
+    split_views = np.split(packed_npy_slice, split_indices) if len(sizes) > 0 else []
+    for (key, shape), view in zip(shapes.items(), split_views, strict=True):
+      self.numpy_inputs[key] = view.reshape(shape)
+
     frames_offset = self.tfm_bytes_len + self.npy_aligned_len
     self.frame_slots = {self._road_key: self.packed_input[frames_offset : frames_offset + self.warp_frame_size],
                         self._wide_key: self.packed_input[frames_offset + self.warp_frame_size : frames_offset + 2 * self.warp_frame_size]}
@@ -169,12 +181,6 @@ class LegacyModelAdapter(BaseModelAdapter):
 
   def run(self):
     if self.chestnut:
-      self.tfm_host_view[0] = self.numpy_inputs['tfm']
-      self.tfm_host_view[1] = self.numpy_inputs['big_tfm']
-
-      if 'packed_npy_inputs' in self.numpy_inputs:
-        self.packed_input[self.tfm_bytes_len : self.tfm_bytes_len + self.npy_bytes_len] = \
-          self.numpy_inputs['packed_npy_inputs'].view(np.uint8)
       self.input_device.copy_from(self.input_host)
       warped = self.run_warp(input_frame=self.device_frames, M_inv=self.device_tfm)
     else:
