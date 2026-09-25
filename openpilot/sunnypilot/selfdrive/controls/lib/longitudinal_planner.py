@@ -56,17 +56,17 @@ class LongitudinalPlannerSP:
 
     return False
 
-  def get_max_accel_override(self, v_ego: float) -> float | None:
+  def get_max_accel_override(self, v_ego: float, engine_off: bool = False, has_lead: bool = True) -> float | None:
     if not self.accel_controller.is_enabled():
       return None
 
-    return self.accel_controller.get_max_accel(v_ego)
+    return self.accel_controller.get_max_accel(v_ego, engine_off, has_lead)
 
-  def get_cruise_target_override(self, v_ego: float, v_target: float, force_decel: bool) -> float:
+  def get_cruise_target_override(self, v_ego: float, v_target: float, force_decel: bool, accel_coast: float | None = None) -> float:
     if not self.accel_controller.is_enabled() or force_decel or self.source != LongitudinalPlanSource.cruise:
       return v_target
 
-    return self.accel_controller.get_cruise_target(v_ego, v_target)
+    return self.accel_controller.get_cruise_target(v_ego, v_target, accel_coast)
 
   def is_accel_controller_active(self, force_decel: bool) -> bool:
     return bool(self.accel_controller.is_enabled() and not force_decel and

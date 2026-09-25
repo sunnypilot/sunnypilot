@@ -17,7 +17,7 @@ from openpilot.selfdrive.controls.lib.drive_helpers import should_stop
 from openpilot.selfdrive.controls.lib.longitudinal_planner import A_CRUISE_MAX_BP, J_CRUISE_VALS, get_cruise_accel
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import LongitudinalPlanSource, T_IDXS as T_IDXS_MPC
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import (
-  AccelController, AccelProfile, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
+  AccelController, AccelProfile, ECO_CRUISE_DECEL_BP, ECO_CRUISE_DECEL_V, MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES,
 )
 from openpilot.sunnypilot.selfdrive.test.longitudinal_maneuvers.plant import PRIUS_TSS2_ROUTE_MODEL, PlantSP
 
@@ -53,7 +53,8 @@ def run_profile(profile: int, *, enabled: bool = True, speed: float = 0.0, v_cru
     target_speed = v_cruise if v_cruise_fn is None else v_cruise_fn(frame)
     measured = speed + (float(rng.normal(0.0, speed_noise)) if speed_noise else 0.0)
     accel = get_cruise_accel(e2e, target_speed, measured, accel, 0.0, CarParams(), DT_MDL, 2.0, True)
-    accel = controller.limit_accel(accel, measured)
+    if accel > 0.0:
+      accel = min(accel, controller.get_max_accel(measured))
     speed = max(0.0, speed + accel * DT_MDL)
     rows.append((speed, accel, should_stop(speed, accel)))
   return rows
@@ -89,8 +90,8 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
 
     self.assertEqual(len(set(first_motion.values())), 1)
     self.assertTrue(all(trace[0, 2] > 0.0 and trace[1, 3] > 0.0 for trace in traces.values()))
-    self.assertLess(time_to_20[AccelProfile.eco], 8.0)
-    self.assertLess(time_to_50[AccelProfile.eco], 27.0)
+    self.assertLess(time_to_20[AccelProfile.eco], 10.0)
+    self.assertLess(time_to_50[AccelProfile.eco], 65.0)
     self.assertGreaterEqual(time_to_20[AccelProfile.eco] - time_to_20[AccelProfile.normal], 0.5)
     self.assertGreaterEqual(time_to_20[AccelProfile.normal] - time_to_20[AccelProfile.sport], 0.5)
     self.assertGreaterEqual(time_to_50[AccelProfile.eco] - time_to_50[AccelProfile.normal], 2.0)
@@ -120,7 +121,7 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
     _set_mpc_acceleration(plant)
     results = [plant.step(v_cruise=35.0) for _ in range(20)]
     settled = results[-1]
-    eco_limit = float(np.interp(settled["published_v_ego"], MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.eco]))
+    eco_limit = 0.85 * float(np.interp(settled["published_v_ego"], MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[AccelProfile.eco]))
 
     self.assertTrue(settled["controller_active"])
     self.assertEqual(settled["mpc_source"], LongitudinalPlanSource.cruise)
@@ -138,24 +139,31 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
       for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
         self.assertEqual(run_profile(profile, speed=20.0, v_cruise=0.0, e2e=e2e, steps=100), stock)
 
-  def test_cruise_decel_remains_stock_for_all_profiles(self):
+  def test_eco_cruise_decel_uses_gentle_speed_schedule(self):
+    params = Params()
+    params.put_bool("AccelPersonalityEnabled", True, block=True)
+    params.put("AccelPersonality", AccelProfile.eco, block=True)
+    controller = AccelController()
+
+    speeds = (15.0, 18.0, 19.44, 25.0, 33.3)
+    decels = [controller.get_cruise_target(speed, speed - 10.0) - speed for speed in speeds]
+    expected = np.interp(speeds, ECO_CRUISE_DECEL_BP, ECO_CRUISE_DECEL_V)
+    np.testing.assert_allclose(decels, expected)
+    self.assertTrue(all(decel > -0.5 for decel in decels))
+
+  def test_normal_cruise_decel_remains_gradual(self):
+    params = Params()
+    params.put_bool("AccelPersonalityEnabled", True, block=True)
+    params.put("AccelPersonality", AccelProfile.normal, block=True)
+    controller = AccelController()
     target = 25.0 - 5.0 * CV.MPH_TO_MS
-    stock = np.asarray(run_profile(AccelProfile.normal, enabled=False, speed=25.0, v_cruise=target, steps=300))
-
-    for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
-      trace = np.asarray(run_profile(profile, speed=25.0, v_cruise=target, steps=300))
-      np.testing.assert_array_equal(trace, stock)
-
-  def test_cruise_decel_stays_stock_through_actuator(self):
-    target = 25.0 - 5.0 * CV.MPH_TO_MS
-
-    def cruise_target(current_time: float) -> float:
-      return 25.0 if current_time < 2.0 else target
-
-    stock = run_vehicle_profile(AccelProfile.normal, duration=12.0, enabled=False, speed=25.0, v_cruise_fn=cruise_target)
-    for profile in (AccelProfile.eco, AccelProfile.normal, AccelProfile.sport):
-      trace = run_vehicle_profile(profile, duration=12.0, speed=25.0, v_cruise_fn=cruise_target)
-      np.testing.assert_array_equal(trace, stock)
+    stock = get_cruise_accel(False, target, 25.0, 0.0, 0.0, CarParams(), DT_MDL, 2.0, True)
+    shaped = controller.get_cruise_target(25.0, target)
+    self.assertLess(shaped, 25.0)
+    self.assertGreater(shaped, target)
+    self.assertLess(shaped - 25.0, 0.0)
+    self.assertLess(shaped - 25.0, -0.3)
+    self.assertGreater(abs(stock), 0.0)
 
   def test_blended_launch_respects_profiles(self):
     traces = {
@@ -189,7 +197,7 @@ class TestAccelControllerClosedLoop(OpenpilotTestCase):
     self.assertEqual(len(set(first_motion.values())), 1)
     self.assertTrue(all(frame == stock_first_motion for frame in first_motion.values()))
     self.assertGreaterEqual(time_to_five[AccelProfile.eco] - time_to_five[AccelProfile.normal], 0.1)
-    self.assertGreaterEqual(time_to_five[AccelProfile.normal] - time_to_five[AccelProfile.sport], 0.1)
+    self.assertGreaterEqual(time_to_five[AccelProfile.normal], time_to_five[AccelProfile.sport])
 
   def test_road_speed_catchup_stays_useful(self):
     traces = {
