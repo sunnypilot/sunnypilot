@@ -19,6 +19,16 @@ MAX_ACCEL_PROFILES = {
   AccelProfile.normal: [1.90, 1.70, 1.42, 0.99, 0.80, 0.66, 0.52],
   AccelProfile.sport:  [2.00, 2.00, 1.86, 1.30, 1.02, 0.86, 0.72],
 }
+CRUISE_DECEL_RESPONSE_TIME = {  # seconds
+  AccelProfile.eco: 4.0,
+  AccelProfile.normal: 3.5,
+  AccelProfile.sport: 3.0,
+}
+CRUISE_DECEL_ACCEL = {  # m/s^2; comfort-first cruise deceleration target
+  AccelProfile.eco: -0.35,
+  AccelProfile.normal: -0.50,
+  AccelProfile.sport: -0.65,
+}
 
 
 class AccelController:
@@ -40,7 +50,12 @@ class AccelController:
   def get_max_accel(self, v_ego: float) -> float:
     return float(np.interp(max(0.0, v_ego), MAX_ACCEL_BREAKPOINTS, MAX_ACCEL_PROFILES[self._profile]))
 
-  def limit_accel(self, accel: float, v_ego: float) -> float:
-    if not self.is_enabled() or accel <= 0.0:
-      return accel
-    return min(accel, self.get_max_accel(v_ego))
+  def get_cruise_target(self, v_ego: float, v_target: float) -> float:
+    if not np.isfinite(v_target) or v_target <= 0.0 or v_target >= v_ego:
+      return v_target
+
+    response_time = CRUISE_DECEL_RESPONSE_TIME[self._profile]
+    target_delta = v_target - v_ego
+    if target_delta < CRUISE_DECEL_ACCEL[self._profile] * response_time * 2.0:
+      return v_target
+    return float(v_ego + target_delta / response_time)

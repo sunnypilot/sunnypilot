@@ -35,8 +35,12 @@ def get_max_accel(v_ego):
 def get_coast_accel(pitch):
   return np.sin(pitch) * -5.65 - 0.3  # fitted from data using xx/projects/allow_throttle/compute_coast_accel.py
 
-def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, accel_coast, allow_throttle):
-  max_accel = ACCEL_MAX if e2e else get_max_accel(v_ego)
+def get_cruise_accel(e2e, v_cruise, v_ego, a_cruise_prev, angle_steers, CP, dt, accel_coast, allow_throttle,
+                      max_accel_override=None):
+  if max_accel_override is not None:
+    max_accel = max_accel_override
+  else:
+    max_accel = ACCEL_MAX if e2e else get_max_accel(v_ego)
   if not e2e:
     a_total_max = np.interp(v_ego, _A_TOTAL_MAX_BP, _A_TOTAL_MAX_V)
     a_y = v_ego ** 2 * angle_steers * CV.DEG_TO_RAD / (CP.steerRatio * CP.wheelbase)
@@ -141,11 +145,13 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     is_e2e = self.is_e2e(sm)
 
+    max_accel_override = self.get_max_accel_override(v_ego)
+    v_cruise = self.get_cruise_target_override(v_ego, v_cruise, force_decel)
     a_cruise_prev = self.a_cruise
     gated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
-                                    self.CP, self.dt, accel_coast, self.allow_throttle)
+                                    self.CP, self.dt, accel_coast, self.allow_throttle, max_accel_override)
     ungated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
-                                      self.CP, self.dt, accel_coast, True)
+                                      self.CP, self.dt, accel_coast, True, max_accel_override)
     self.a_cruise = self.arbitrate_cruise_candidate(
       sm, gated_cruise, ungated_cruise, output_a_target_mpc, self.mpc.source,
       allow_throttle=self.allow_throttle, e2e=is_e2e, force_decel=force_decel,
@@ -157,11 +163,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if is_e2e:
       candidates.append((output_a_target_e2e, LongitudinalPlanSource.e2e, output_should_stop_e2e))
 
-    output_a_target, self.mpc.source, self.output_should_stop = min(candidates, key=lambda candidate: candidate[0])
-    output_a_target = self.accel_controller.limit_accel(output_a_target, v_ego)
-
+    output_a_target, self.mpc.source, _ = min(candidates, key=lambda c: c[0])
+    self.output_should_stop = any(should_stop for _, _, should_stop in candidates)
     self.output_a_target = np.clip(output_a_target, ACCEL_MIN, ACCEL_MAX)
-    self.accel_controller_active = self.is_accel_controller_active(force_decel, self.output_a_target)
+    self.accel_controller_active = self.is_accel_controller_active(force_decel)
 
     self.v_desired_filter.x = self.v_desired_filter.x + self.dt * (self.output_a_target + a_prev) / 2.0
 

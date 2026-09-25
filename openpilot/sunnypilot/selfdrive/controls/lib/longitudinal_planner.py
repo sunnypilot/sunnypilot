@@ -56,8 +56,21 @@ class LongitudinalPlannerSP:
 
     return False
 
-  def is_accel_controller_active(self, force_decel: bool, accel_target: float) -> bool:
-    return bool(self.accel_controller.is_enabled() and not force_decel and accel_target >= 0.0)
+  def get_max_accel_override(self, v_ego: float) -> float | None:
+    if not self.accel_controller.is_enabled():
+      return None
+
+    return self.accel_controller.get_max_accel(v_ego)
+
+  def get_cruise_target_override(self, v_ego: float, v_target: float, force_decel: bool) -> float:
+    if not self.accel_controller.is_enabled() or force_decel or self.source != LongitudinalPlanSource.cruise:
+      return v_target
+
+    return self.accel_controller.get_cruise_target(v_ego, v_target)
+
+  def is_accel_controller_active(self, force_decel: bool) -> bool:
+    return bool(self.accel_controller.is_enabled() and not force_decel and
+                self.mpc.source == MpcPlanSource.cruise)
 
   def _has_valid_selected_lead(self, sm: messaging.SubMaster, source: MpcPlanSource) -> bool:
     radar_valid = sm.valid.get('radarState', False) and getattr(sm, 'alive', {}).get('radarState', False)
