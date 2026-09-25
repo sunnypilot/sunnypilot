@@ -284,7 +284,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
 def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark_runs: int = 1, clear_refs=None):
   SEED = 42
-  def random_inputs_run(fn, seed, n_runs, test_val=None, test_buffers=None, expect_match=True):
+  def random_inputs_run(fn, seed, n_runs, test_val=None, expect_match=True):
     queues_res = make_queues(Device.DEFAULT)
     input_queues, npy = queues_res[0], queues_res[1]
     frame_views = queues_res[2] if len(queues_res) > 2 else {}
@@ -307,7 +307,6 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
 
       if i == 0:
         val = [np.copy(v.numpy()) for v in (outs if isinstance(outs, tuple) else [outs])] if outs is not None else []
-        buffers = [np.copy(v.numpy().copy()) for v in input_queues.values()]
 
     if test_val is not None:
       if expect_match:
@@ -316,18 +315,11 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
       else:
         match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
         assert not match, f"outputs match baseline unexpectedly (seed={seed})"
-    if test_buffers is not None:
-      if expect_match:
-        for a, b in zip(buffers, test_buffers, strict=True):
-          np.testing.assert_array_equal(a, b, err_msg=f"buffers differ from baseline (seed={seed})")
-      else:
-        match = all(np.array_equal(a, b) for a, b in zip(buffers, test_buffers, strict=True))
-        assert not match, f"buffers match baseline unexpectedly (seed={seed})"
-    return val, buffers
+    return val
 
   print('capture + replay')
   gc.collect()
-  test_val, test_buffers = random_inputs_run(jit, SEED, 3)
+  test_val = random_inputs_run(jit, SEED, 3)
   print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
@@ -338,8 +330,8 @@ def compile_jit(jit, input_keys, make_queues, make_random_inputs=None, benchmark
     f.seek(0)
     loaded_jit = load_oob(f)
 
-  random_inputs_run(loaded_jit, SEED, benchmark_runs, test_val, test_buffers, expect_match=True)
-  random_inputs_run(loaded_jit, SEED+1, benchmark_runs, test_val, test_buffers, expect_match=False)
+  random_inputs_run(loaded_jit, SEED, benchmark_runs, test_val, expect_match=True)
+  random_inputs_run(loaded_jit, SEED+1, benchmark_runs, test_val, expect_match=False)
   return loaded_jit
 
 

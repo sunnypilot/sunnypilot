@@ -105,6 +105,7 @@ def dump_oob(obj, f):
       data = buffer.raw()
       tmp.write(struct.pack('<q', len(data)))
       tmp.write(data)
+      buffer.release()
       return False
 
     stream = io.BytesIO()
