@@ -195,26 +195,27 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.is_native = True
     self.input_specs = self.jits['input_specs']
 
-    self.model_device = self.input_specs['new_img'][2]
+    self.model_device = next(iter(self.input_specs.values()))[2]
     self.input_shapes = {name: (shape, np.dtype(dtype)) for name, (shape, dtype, _) in self.input_specs.items()}
     self.state_pairs = {name: f'next_{name}' for name in self.input_shapes if f'next_{name}' in self.jits['metadata']['output_shapes']}
 
     stride, y_height, uv_height, _ = get_nv12_info(self.cam_w, self.cam_h)
     self.frame_copy_size = stride * (y_height + uv_height)
 
-    self.input_shapes_orig = self.jits['metadata']['input_shapes']
-    self._vision_input_names = [k for k in self.input_shapes_orig if 'img' in k]
+    self._vision_input_names = [k for k in self.input_shapes if 'img' in k]
+    self._init_common()
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
 
     self.run_warp = self._load_warp()
-    self._init_common()
     self.run_model = self.jits['run']
 
     warp_frame_size = getattr(self, 'warp_frame_size', self.nv12_info[3])
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
-                         for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
-    shapes = {'tfm': (2, 3, 3)} | {name: shape for name, (shape, _) in self.input_shapes.items()
-                                   if name not in self.state_pairs and name != 'new_img'}
+                         for name, (shape, dtype) in self.input_shapes.items()
+                         if name in self.state_pairs or name in (self._road_key, self._wide_key)}
+
+    ignored = set(self.state_pairs) | {'new_img', self._road_key, self._wide_key}
+    shapes = {'tfm': (2, 3, 3)} | {name: shape for name, (shape, _) in self.input_shapes.items() if name not in ignored}
     npy_size = sum(round_up(math.prod(shape) * 4, 128) for shape in shapes.values())
     self.packed_input = np.zeros(npy_size + 2 * warp_frame_size, dtype=np.uint8)
     self.input_host = Tensor(self.packed_input, device='NPY')._buffer()
@@ -234,7 +235,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
       self.outputs[next_name] = input_view(state._buffer(), state.shape, state.dtype, 0)
 
   def copy_frames(self, bufs):
-    for i, key in enumerate(self._vision_input_names):
+    for i, key in enumerate((self._road_key, self._wide_key)):
       if key in bufs:
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
         np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
@@ -246,7 +247,12 @@ class NativeTinygradAdapter(BaseModelAdapter):
 
   def run(self):
     self.input_device.copy_from(self.input_host)
-    self.input_queues['new_img'] = self.run_warp(**self.warp_inputs)
+    warped = self.run_warp(**self.warp_inputs)
+    if 'new_img' in self.input_specs:
+      self.input_queues['new_img'] = warped
+    else:
+      self.input_queues[self._road_key] = Tensor.cat(self.input_queues[self._road_key][:, 6:], warped[0:1], dim=1).realize()
+      self.input_queues[self._wide_key] = Tensor.cat(self.input_queues[self._wide_key][:, 6:], warped[1:2], dim=1).realize()
     self.run_model(output_buffers=self.outputs, **self.input_queues)
     return self.outputs['outputs']
 

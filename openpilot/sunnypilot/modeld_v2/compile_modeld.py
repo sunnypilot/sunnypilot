@@ -443,23 +443,43 @@ if __name__ == "__main__":
 
   if is_unified_supercombo:
     output_data['metadata'] = {'model': model_metadata, **model_metadata}
-    features_slice = model_metadata['output_slices']['hidden_state']
-    print(f"Compiling supercombo run_policy JIT (model_size={model_w}x{model_h}, frame_skip={derived_frame_skip})")
-    policy_runner = OnnxRunner(args.supercombo_onnx)
-    run_policy_func = make_run_policy(None, [policy_runner], features_slice, derived_frame_skip, model_metadata['input_shapes'])
-    run_policy_jit = TinyJit(run_policy_func, prune=True)
-    make_policy_queues = partial(generate_queues_and_npy, model_metadata['input_shapes'], derived_frame_skip, is_supercombo=True)
-    WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
-    make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
+    print(f"Compiling supercombo ONNX JIT (model_size={model_w}x{model_h})")
+    runner = OnnxRunner(args.supercombo_onnx)
+    from tinygrad.dtype import _to_np_dtype
+    specs = {name: (tuple(s if isinstance(s, int) else 1 for s in spec.shape), np.dtype(_to_np_dtype(spec.dtype)).str,
+                    Device.DEFAULT) for name, spec in runner.graph_inputs.items()}
 
-    def cleanup_policy():
-      global run_policy_jit, run_policy_func, policy_runner
-      run_policy_jit, run_policy_func, policy_runner = None, None, None
+    def model(inputs):
+      return {name: value.contiguous() for name, value in runner({name: value.to(Device.DEFAULT) for name, value in inputs.items()}).items()}
 
-    output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues, make_random_inputs=make_random_model_inputs,
-                                            benchmark_runs=args.benchmark_runs, clear_refs=cleanup_policy)
+    def allocate_inputs(input_specs, initialize=None):
+      arrays = {name: np.zeros(shape, dtype=dtype) for name, (shape, dtype, _) in input_specs.items()}
+      if initialize is not None:
+        initialize(arrays)
+      return {name: Tensor(arrays[name], device=device).realize() for name, (_, _, device) in input_specs.items()}
+
+    output_specs = {name: (value.shape, np.dtype(_to_np_dtype(value.dtype)).name, Device.DEFAULT)
+                    for name, value in model(allocate_inputs(specs)).items()}
+
+    def make_inputs(seed):
+      rng = np.random.default_rng(seed)
+      def initialize(arrays):
+        for name, value in arrays.items():
+          dtype = runner.graph_inputs[name].dtype
+          value[...] = (rng.standard_normal(value.shape) if dtypes.is_float(dtype) else
+                        rng.integers(0, 256, value.shape, dtype=np.uint8) if dtype == dtypes.uint8 else
+                        rng.integers(0, 2 if dtype == dtypes.bool else 16, value.shape))
+      return (), allocate_inputs(specs, initialize) | {'output_buffers': allocate_inputs(output_specs)}
+
+    def run(output_buffers, **inputs):
+      outputs = model(inputs)
+      Tensor.realize(*outputs.values())
+      Tensor.realize(*(output_buffers[name].assign(value) for name, value in outputs.items()))
+
+    output_data['run'] = compile_jit(run, make_inputs, args.benchmark_runs)
+    output_data['input_specs'] = specs
+    output_data['output_specs'] = output_specs
     output_data['input_devices'] = {'model': Device.DEFAULT}
-    output_data['metadata']['warp_dev'] = WARP_DEV
   else:
     vision_runner = OnnxRunner(args.vision_onnx) if args.vision_onnx else None
 
