@@ -346,10 +346,7 @@ def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_ran
     reference = test_val if seed == 42 else run_eval(jit_or_fn, seed, 1)
     actual = run_eval(loaded_jit, seed, benchmark_runs)
     for ref, val in zip(reference, actual, strict=True):
-      if seed == 42:
-        np.testing.assert_array_equal(ref, val)
-      else:
-        assert not np.array_equal(ref, val)
+      np.testing.assert_array_equal(ref, val)
   return loaded_jit
 
 
