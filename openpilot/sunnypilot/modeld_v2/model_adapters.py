@@ -42,9 +42,6 @@ class BaseModelAdapter:
     self.policy_output_slices = {}
     self._policy_keys = []
     self.full_frames = {}
-    self._blob_cache = {}
-    self.frame_buffers = {}
-    self.frame_views = {}
     self.nv12_info = get_nv12_info(cam_w, cam_h)
     self.is_native = False
 
@@ -117,10 +114,11 @@ class LegacyModelAdapter(BaseModelAdapter):
     if self.chestnut:
       self._init_chestnut_packed_buffers()
     else:
-      self.full_frames = {k: Tensor(np.zeros(self.nv12_info[3], dtype=np.uint8),
-                          device=self.WARP_DEV).contiguous().realize() for k in self._vision_input_names}
+      yuv_size = self.frame_buf_params[self._road_key][3]
+      frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+      big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
       self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
-                    frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+                    frame=frame_tensor, big_frame=big_frame_tensor)
 
   def _init_chestnut_packed_buffers(self):
     raw_npy_bytes = self.numpy_inputs['packed_npy_inputs'] if 'packed_npy_inputs' in self.numpy_inputs else self.input_queues['packed_npy_inputs'].numpy()
@@ -150,11 +148,13 @@ class LegacyModelAdapter(BaseModelAdapter):
           data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
           np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
     else:
-      for key, buf in bufs.items():
-        ptr = np.frombuffer(buf.data, dtype=np.uint8).ctypes.data
+      for key in bufs.keys():
+        data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
+        ptr = np.frombuffer(data, dtype=np.uint8).ctypes.data
+        yuv_size = self.frame_buf_params[key][3]
         cache_key = (key, ptr)
         if cache_key not in self._blob_cache:
-          self._blob_cache[cache_key] = Tensor.from_blob(ptr, (self.frame_buf_params[key][3],), dtype='uint8', device=self.WARP_DEV)
+          self._blob_cache[cache_key] = Tensor.from_blob(ptr, (yuv_size,), dtype='uint8', device=self.WARP_DEV)
         self.full_frames[key] = self._blob_cache[cache_key]
 
   def reset_warmup_buffers(self):
