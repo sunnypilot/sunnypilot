@@ -13,9 +13,25 @@ import importlib
 import tempfile
 import shutil
 import enum
-# OptOps and UOp objects in the .pkl are left over from the compilation phase,
-# reassignment does nothing because they aren't tied to the execution graph
-# It never executes or evaluates the UOp nodes again.
+
+
+def _patch_system_flock_acquire():
+  try:
+    from tinygrad.runtime.support.system import System
+    original_flock_acquire = System.flock_acquire
+    acquired_locks: dict[str, int] = {}
+
+    def flock_acquire(name: str) -> int:
+      if name in acquired_locks:
+        return acquired_locks[name]
+      lock_file_descriptor = original_flock_acquire(name)
+      acquired_locks[name] = lock_file_descriptor
+      return lock_file_descriptor
+
+    System.flock_acquire = flock_acquire
+  except (ImportError, AttributeError):
+    pass
+_patch_system_flock_acquire()
 
 def _pad_args(func, args, kwargs):
   try:
