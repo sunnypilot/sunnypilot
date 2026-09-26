@@ -303,9 +303,11 @@ def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_ran
   else:
     jit = jit_or_fn
     input_keys = input_keys_or_make_inputs
+    assert make_queues is not None
+    queues_maker = make_queues
 
     def run_eval(f, seed, count):
-      queues_res = make_queues(Device.DEFAULT)
+      queues_res = queues_maker(Device.DEFAULT)
       input_queues, npy = queues_res[0], queues_res[1]
       frame_views = queues_res[2] if len(queues_res) > 2 else {}
       rng = np.random.default_rng(seed)
@@ -519,9 +521,12 @@ if __name__ == "__main__":
     vision_meta = output_data['metadata'].get('vision', {})
 
     derived_frame_skip = args.frame_skip or derive_frame_skip(vision_meta.get('input_shapes', {}), first_policy_meta.get('input_shapes', {}))
-    all_shapes = {key: value for meta in output_data['metadata'].values() for key, value in meta['input_shapes'].items()}
+    all_shapes = {
+      key: value for meta in output_data['metadata'].values()
+      if isinstance(meta, dict) and 'input_shapes' in meta for key, value in meta['input_shapes'].items()
+    }
     feat_meta = output_data['metadata'].get('vision') or output_data['metadata'].get('model') or output_data['metadata'].get('policy')
-    assert feat_meta is not None
+    assert isinstance(feat_meta, dict)
     features_slice = feat_meta['output_slices']['hidden_state']
     is_supercombo = vision_runner is None
     gc.collect()

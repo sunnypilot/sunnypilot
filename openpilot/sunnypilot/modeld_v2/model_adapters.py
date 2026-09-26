@@ -76,7 +76,7 @@ class BaseModelAdapter:
       return run_warp
 
 
-class LegacyModelAdapter(BaseModelAdapter):
+class LegacyModelAdapter(BaseModelAdapter):  # this is a compiled wrapper, jit captured the run_policy, including tempral slicing.
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     metadata = self.jits['metadata']
@@ -130,7 +130,7 @@ class LegacyModelAdapter(BaseModelAdapter):
     return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
 
-class NativeTinygradAdapter(BaseModelAdapter):
+class NativeTinygradAdapter(BaseModelAdapter): # root onnx graph: 1:1 tensor input/output nodes not queued with frame slicing
   def __init__(self, *args, **kwargs):
     super().__init__(*args, **kwargs)
     self.is_native = True
@@ -195,6 +195,8 @@ class NativeTinygradAdapter(BaseModelAdapter):
       self.input_queues[self._road_key] = Tensor.cat(self.input_queues[self._road_key][:, 6:], warped[0:1], dim=1).realize()
       self.input_queues[self._wide_key] = Tensor.cat(self.input_queues[self._wide_key][:, 6:], warped[1:2], dim=1).realize()
     self.run_model(output_buffers=self.outputs, **self.input_queues)
+    if 'features_buffer' in self.input_queues and 'hidden_state' in self.vision_output_slices and not self.state_pairs:
+      self.input_queues['features_buffer'].assign(self.outputs['outputs'][:, self.vision_output_slices['hidden_state']]).realize()
     return self.outputs['outputs']
 
 
