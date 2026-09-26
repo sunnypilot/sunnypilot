@@ -10,8 +10,27 @@ import struct
 import pickle
 import inspect
 import importlib
+import tempfile
+import shutil
 import enum
 
+
+def _patch_system_flock_acquire():
+  try:
+    from tinygrad.runtime.support.system import System
+    original_flock_acquire = System.flock_acquire
+    acquired_locks: dict[str, int] = {}
+
+    def flock_acquire(name: str) -> int:
+      if name in acquired_locks:
+        return acquired_locks[name]
+      lock_file_descriptor = original_flock_acquire(name)
+      acquired_locks[name] = lock_file_descriptor
+      return lock_file_descriptor
+    System.flock_acquire = flock_acquire
+  except (ImportError, AttributeError):
+    pass
+_patch_system_flock_acquire()
 
 def _pad_args(func, args, kwargs):
   try:
@@ -36,23 +55,9 @@ def _pad_args(func, args, kwargs):
   return new_args, kwargs
 
 
-def _enum_factory(enum_class):
-  def factory(*args, **kwargs):
-    try:
-      return enum_class(*args, **kwargs)
-    # OptOps and UOp objects in the .pkl are left over from the compilation phase,
-    # reassignment does nothing because they aren't tied to the execution graph
-    # It never executes or evaluates the UOp nodes again.
-    except ValueError:
-      return list(enum_class)[0]
-  factory.__name__ = enum_class.__name__
-  factory.__module__ = enum_class.__module__
-  return factory
-
-
 def _dynamic_factory(real_class):
   if isinstance(real_class, type) and issubclass(real_class, enum.Enum):
-    return _enum_factory(real_class)
+    return real_class
 
   def factory(*args, **kwargs):
     try:
@@ -78,12 +83,6 @@ def _dynamic_factory(real_class):
 
 class DynamicTinygradUnpickler(pickle.Unpickler):
   def find_class(self, module, name):
-    if module == "tinygrad.ops":
-      try:
-        importlib.import_module("tinygrad.uops")
-        module = "tinygrad.uops"
-      except ImportError:
-        pass
     real_class = getattr(importlib.import_module(module), name)
     if module.startswith("tinygrad"):
       return _dynamic_factory(real_class)
@@ -98,3 +97,21 @@ def load_oob(f):
       f.readinto(pb)
       yield pb
   return DynamicTinygradUnpickler(io.BytesIO(opcodes), buffers=buffers()).load()
+
+
+def dump_oob(obj, f):
+  with tempfile.TemporaryFile(dir=".") as tmp:
+    def buffer_cb(buffer):
+      data = buffer.raw()
+      tmp.write(struct.pack('<q', len(data)))
+      tmp.write(data)
+      buffer.release()
+      return False
+
+    stream = io.BytesIO()
+    pickle.Pickler(stream, protocol=5, buffer_callback=buffer_cb).dump(obj)
+    opcodes = stream.getvalue()
+    f.write(struct.pack('<q', len(opcodes)))
+    f.write(opcodes)
+    tmp.seek(0)
+    shutil.copyfileobj(tmp, f)

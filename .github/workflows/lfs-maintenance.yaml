@@ -1,8 +1,8 @@
 name: Sync comma's LFS
 
 env:
-  LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
-  LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
+  LFS_URL: 'https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs'
+  LFS_PUSH_URL: 'https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs'
 
 on:
   schedule:
@@ -40,14 +40,12 @@ jobs:
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add GitLab public keys
+      - name: Setup hf
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+          git config --global credential.helper store
+          echo "https://user:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
 
       - name: Ensure branch
         run: |
