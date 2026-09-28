@@ -145,7 +145,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
 
     is_e2e = self.is_e2e(sm)
 
-    max_accel_override = self.get_max_accel_override(v_ego, sm['carStateSP'].engineOff, sm['radarState'].leadOne.present)
+    max_accel_override = self.get_max_accel_override(v_ego, sm['carStateSP'].engineOff)
     v_cruise = self.get_cruise_target_override(v_ego, v_cruise, force_decel, accel_coast if accel_coast < 0.0 else None)
     a_cruise_prev = self.a_cruise
     gated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
