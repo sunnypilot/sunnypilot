@@ -921,6 +921,10 @@
                     {
                       "value": 2,
                       "label": "Percentage"
+                    },
+                    {
+                      "value": 3,
+                      "label": "Per Speed"
                     }
                   ]
                 },
@@ -937,10 +941,121 @@
                   },
                   "visibility": [
                     {
+                      "type": "any",
+                      "conditions": [
+                        {
+                          "type": "param_compare",
+                          "key": "SpeedLimitOffsetType",
+                          "op": "equals",
+                          "value": 1
+                        },
+                        {
+                          "type": "param_compare",
+                          "key": "SpeedLimitOffsetType",
+                          "op": "equals",
+                          "value": 2
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "key": "SpeedLimitOffsetBelow50",
+                  "widget": "option",
+                  "title": "<50",
+                  "min": -30,
+                  "max": 30,
+                  "step": 1,
+                  "unit": {
+                    "metric": "km/h",
+                    "imperial": "mph"
+                  },
+                  "visibility": [
+                    {
                       "type": "param_compare",
                       "key": "SpeedLimitOffsetType",
-                      "op": ">",
-                      "value": 0
+                      "op": "equals",
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "key": "SpeedLimitOffset60",
+                  "widget": "option",
+                  "title": "60",
+                  "min": -30,
+                  "max": 30,
+                  "step": 1,
+                  "unit": {
+                    "metric": "km/h",
+                    "imperial": "mph"
+                  },
+                  "visibility": [
+                    {
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "key": "SpeedLimitOffset70",
+                  "widget": "option",
+                  "title": "70",
+                  "min": -30,
+                  "max": 30,
+                  "step": 1,
+                  "unit": {
+                    "metric": "km/h",
+                    "imperial": "mph"
+                  },
+                  "visibility": [
+                    {
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "key": "SpeedLimitOffset80",
+                  "widget": "option",
+                  "title": "80",
+                  "min": -30,
+                  "max": 30,
+                  "step": 1,
+                  "unit": {
+                    "metric": "km/h",
+                    "imperial": "mph"
+                  },
+                  "visibility": [
+                    {
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 3
+                    }
+                  ]
+                },
+                {
+                  "key": "SpeedLimitOffsetAbove90",
+                  "widget": "option",
+                  "title": ">90",
+                  "min": -30,
+                  "max": 30,
+                  "step": 1,
+                  "unit": {
+                    "metric": "km/h",
+                    "imperial": "mph"
+                  },
+                  "visibility": [
+                    {
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 3
                     }
                   ]
                 }
@@ -2340,3 +2455,4 @@
     }
   }
 }
+
