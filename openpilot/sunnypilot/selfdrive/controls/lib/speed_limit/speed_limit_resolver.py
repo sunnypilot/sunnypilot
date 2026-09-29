@@ -125,9 +125,7 @@ class SpeedLimitResolver:
       80-89     -> SpeedLimitOffset80
       >=90      -> SpeedLimitOffsetAbove90
     """
-    speed_limit_user_units = self.speed_limit / (
-      CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS
-    )
+    speed_limit_user_units = self.speed_limit / (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
 
     if speed_limit_user_units < 50:
       return float(self.offset_below_50)
@@ -145,20 +143,14 @@ class SpeedLimitResolver:
       return 0
 
     elif self.offset_type == OffsetType.fixed:
-      return float(
-        self.offset_value *
-        (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
-      )
+      return float(self.offset_value * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
 
     elif self.offset_type == OffsetType.percentage:
       return float(self.offset_value * 0.01 * self.speed_limit)
 
     elif self.offset_type == OffsetType.per_speed:
       per_speed_offset = self._get_per_speed_offset_value()
-      return float(
-        per_speed_offset *
-        (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
-      )
+      return float(per_speed_offset * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
 
     else:
       raise NotImplementedError("Offset not supported")
@@ -189,22 +181,12 @@ class SpeedLimitResolver:
 
     self._calculate_map_data_limits(sm, speed_limit, next_speed_limit)
 
-  def _calculate_map_data_limits(
-    self,
-    sm: messaging.SubMaster,
-    speed_limit: float,
-    next_speed_limit: float
-  ) -> None:
+  def _calculate_map_data_limits(self, sm: messaging.SubMaster, speed_limit: float, next_speed_limit: float) -> None:
     gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    distance_since_fix = self.v_ego * (
-      time.monotonic() - gps_data.unixTimestampMillis * 1e-3
-    )
-    distance_to_speed_limit_ahead = max(
-      0.,
-      map_data.speedLimitAheadDistance - distance_since_fix
-    )
+    distance_since_fix = self.v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
+    distance_to_speed_limit_ahead = max(0.,map_data.speedLimitAheadDistance - distance_since_fix)
 
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
@@ -212,18 +194,13 @@ class SpeedLimitResolver:
     # FIXME-SP: this is not working as expected
     if 0. < next_speed_limit < self.v_ego:
       adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = (
-        self.v_ego * adapt_time +
-        0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
-      )
+      adapt_distance = (self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2)
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
-  def _get_source_solution_according_to_policy(
-    self
-  ) -> custom.LongitudinalPlanSP.SpeedLimit.Source:
+  def _get_source_solution_according_to_policy(self) -> custom.LongitudinalPlanSP.SpeedLimit.Source:
     sources_for_policy = self._policy_to_sources_map[Policy(self.policy)]
 
     if Policy(self.policy) != Policy.combined:
@@ -233,23 +210,14 @@ class SpeedLimitResolver:
           return source
       return SpeedLimitSource.none
 
-    sources_with_limits = [
-      (s, limit)
-      for s, limit in [
-        (s, self.limit_solutions[s]) for s in sources_for_policy
-      ]
-      if limit > 0.
-    ]
+    sources_with_limits = [(s, limit) for s, limit in [(s, self.limit_solutions[s]) for s in sources_for_policy] if limit > 0.]
 
     if sources_with_limits:
       return min(sources_with_limits, key=lambda x: x[1])[0]
 
     return SpeedLimitSource.none
 
-  def _resolve_limit_sources(
-    self,
-    sm: messaging.SubMaster
-  ) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimit.Source]:
+  def _resolve_limit_sources(self, sm: messaging.SubMaster) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimit.Source]:
     """Get limit solutions from each data source"""
     self._get_from_car_state(sm)
     self._get_from_map_data(sm)
@@ -270,4 +238,3 @@ class SpeedLimitResolver:
     self.update_speed_limit_states()
 
     self.frame += 1
-
