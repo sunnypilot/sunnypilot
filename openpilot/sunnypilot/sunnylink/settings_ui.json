@@ -941,16 +941,19 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
-                      "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 1
-                    },
-                    {
-                      "type": "param_compare",
-                      "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 2
+                      "type": "any",
+                      "conditions": [
+                        {
+                          "type": "param",
+                          "key": "SpeedLimitOffsetType",
+                          "equals": 1
+                        },
+                        {
+                          "type": "param",
+                          "key": "SpeedLimitOffsetType",
+                          "equals": 2
+                        }
+                      ]
                     }
                   ]
                 },
@@ -967,10 +970,9 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
+                      "type": "param",
                       "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 3
+                      "equals": 3
                     }
                   ]
                 },
@@ -987,10 +989,9 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
+                      "type": "param",
                       "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 3
+                      "equals": 3
                     }
                   ]
                 },
@@ -1007,10 +1008,9 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
+                      "type": "param",
                       "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 3
+                      "equals": 3
                     }
                   ]
                 },
@@ -1027,10 +1027,9 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
+                      "type": "param",
                       "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 3
+                      "equals": 3
                     }
                   ]
                 },
@@ -1047,10 +1046,9 @@
                   },
                   "visibility": [
                     {
-                      "type": "param_compare",
+                      "type": "param",
                       "key": "SpeedLimitOffsetType",
-                      "op": "equals",
-                      "value": 3
+                      "equals": 3
                     }
                   ]
                 }
