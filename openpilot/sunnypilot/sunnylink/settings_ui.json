@@ -941,21 +941,16 @@
                   },
                   "visibility": [
                     {
-                      "type": "any",
-                      "conditions": [
-                        {
-                          "type": "param_compare",
-                          "key": "SpeedLimitOffsetType",
-                          "op": "equals",
-                          "value": 1
-                        },
-                        {
-                          "type": "param_compare",
-                          "key": "SpeedLimitOffsetType",
-                          "op": "equals",
-                          "value": 2
-                        }
-                      ]
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 1
+                    },
+                    {
+                      "type": "param_compare",
+                      "key": "SpeedLimitOffsetType",
+                      "op": "equals",
+                      "value": 2
                     }
                   ]
                 },
