@@ -4,6 +4,10 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
+
+import pyray as rl
+
 from openpilot.selfdrive.ui.mici.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsBigButton
 from openpilot.selfdrive.ui.mici.layouts.settings.device import DeviceLayoutMici
@@ -11,6 +15,7 @@ from openpilot.selfdrive.ui.mici.widgets.button import BigCircleButton
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.models import ModelsLayoutMici
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnydrive import SunnydriveLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.multilang import tr
@@ -27,6 +32,40 @@ class SunnylinkBigButton(SettingsBigButton):
   def _get_label_font_size(self):
     # Audiowide runs wider than Inter: "sunnylink" wraps to two lines at 64
     return 56
+
+
+def sunnydrive_icon(width, height):
+  """The sunnydrive icon (a sun over a car roof), drawn once in code so it needs no image asset.
+  Drawn at 4x on a 336x312 grid, then scaled down for smooth edges."""
+  s = 4
+  img = rl.gen_image_color(336 * s, 312 * s, rl.BLANK)
+  p = rl.ffi.addressof(img)
+
+  def dot(x, y, r, color):
+    rl.image_draw_circle(p, int(x * s), int(y * s), int(r * s), color)
+
+  def roof(r, color):   # a shallow circular arc, apex under the sun, ends reaching down beside the wheels
+    for i in range(-52, 53):
+      t = math.radians(i)
+      dot(168 + 194 * math.sin(t), 399 - 194 * math.cos(t), r, color)
+
+  dot(168, 100, 100, rl.WHITE)   # the sun
+  roof(28, rl.BLANK)            # a gap between the sun and the roof
+  roof(14, rl.WHITE)            # the roof
+  rl.image_draw_rectangle(p, 70 * s, 284 * s, 196 * s, 28 * s, rl.WHITE)   # the car's body between its wheels
+  for x in (84, 252):
+    dot(x, 300, 18, rl.WHITE)
+    dot(x, 300, 11, rl.BLANK)   # wheel
+  rl.image_resize(p, width, height)
+  texture = rl.load_texture_from_image(img)
+  rl.unload_image(img)
+  rl.set_texture_filter(texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
+  return texture
+
+
+class SunnydriveBigButton(SettingsBigButton):
+  def _get_label_font_size(self):
+    return 54   # "sunnydrive" wraps under the icon at 64
 
 
 class SettingsLayoutSP(OP.SettingsLayout):
@@ -50,6 +89,10 @@ class SettingsLayoutSP(OP.SettingsLayout):
     models_btn = SettingsBigButton(tr("models"), "", gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_models.png", ICON_SIZE, ICON_SIZE))
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
+    sunnydrive_panel = SunnydriveLayoutMici()
+    sunnydrive_btn = SunnydriveBigButton(tr("sunnydrive"), "", sunnydrive_icon(64, 59))
+    sunnydrive_btn.set_click_callback(lambda: gui_app.push_widget(sunnydrive_panel))
+
     # onroad: enable button sits at the front (left of toggles)
     self._enable_offroad_btn_onroad = BigCircleButton(self.icon_offroad_enable, red=True)
     self._enable_offroad_btn_onroad.set_click_callback(lambda: self._handle_always_offroad(True))
@@ -72,6 +115,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # front slots (only one ever visible at a time): exit-always-offroad, then enable-onroad
     items.insert(0, self._enable_offroad_btn_onroad)
     items.insert(0, self._disable_offroad_btn)
+    items.insert(0, sunnydrive_btn)
     # end slot: enable-offroad (right of developer)
     items.append(self._enable_offroad_btn_offroad)
 
