@@ -22,6 +22,21 @@ def hash_file(path: str) -> str:
   return digest.hexdigest()
 
 
+def update_defaults_json(defaults_json: dict, bundle: dict, dedup_key: str, tinygrad_ref: str) -> dict:
+  def matches_bundle(target_bundle):
+    bundle_hash = target_bundle.get("onnx_sha256")
+    bundle_tinygrad_ref = target_bundle.get("tinygrad_ref") or defaults_json.get("tinygrad_ref")
+    return bundle_hash == dedup_key and bundle_tinygrad_ref == tinygrad_ref
+
+  defaults_json["tinygrad_ref"] = tinygrad_ref
+  existing_index = next((i for i, b in enumerate(defaults_json.get("bundles", [])) if matches_bundle(b)), None)
+  if existing_index is not None:
+    defaults_json["bundles"][existing_index] = bundle
+  else:
+    defaults_json.setdefault("bundles", []).append(bundle)
+  return defaults_json
+
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--hf-repo", required=True)
@@ -58,6 +73,7 @@ def main():
   if onnx_sha256 is not None:
     bundle['onnx_sha256'] = onnx_sha256
     bundle['onnx_ref'] = args.onnx_ref
+  bundle['tinygrad_ref'] = args.tinygrad_ref
   dedup_key = onnx_sha256 or bundle.get('onnx_sha256', '')
 
   artifact = bundle['models'][0]['artifact']
@@ -82,14 +98,7 @@ def main():
   except Exception:
     defaults_json = {"tinygrad_ref": args.tinygrad_ref, "bundles": []}
 
-  defaults_json['tinygrad_ref'] = args.tinygrad_ref
-
-  existing_idx = next((i for i, b in enumerate(defaults_json['bundles'])
-                       if b.get('onnx_sha256') == dedup_key), None)
-  if existing_idx is not None:
-    defaults_json['bundles'][existing_idx] = bundle
-  else:
-    defaults_json['bundles'].append(bundle)
+  update_defaults_json(defaults_json, bundle, dedup_key, args.tinygrad_ref)
 
   print(json.dumps(defaults_json, indent=2))
 

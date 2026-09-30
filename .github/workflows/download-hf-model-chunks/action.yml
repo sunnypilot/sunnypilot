@@ -11,6 +11,10 @@ inputs:
   dest_dir:
     description: Destination directory for downloaded chunks
     required: true
+  tinygrad_ref:
+    description: 'Tinygrad ref to match bundle against'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -21,6 +25,7 @@ runs:
         HF_REPO: ${{ inputs.hf_repo }}
         MODELS_JSON: ${{ inputs.models }}
         DEST_DIR: ${{ inputs.dest_dir }}
+        TINYGRAD_REF: ${{ inputs.tinygrad_ref }}
       run: |
         set -eo pipefail
         DOWNLOAD_LIST=$(mktemp)
@@ -30,7 +35,21 @@ runs:
           local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_PATH}/default_models.json"
           local DEFAULTS BUNDLE ARTIFACT BASE_URL NUM_CHUNKS
           DEFAULTS=$(curl -fsSL "$JSON_URL")
-          BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)')
+          if [ -n "$TINYGRAD_REF" ]; then
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" --arg tg "$TINYGRAD_REF" '
+              . as $root | [.bundles[] | select(.onnx_sha256 == $hash and (.tinygrad_ref == $tg or (.tinygrad_ref == null and $root.tinygrad_ref == $tg)))] | .[0] // empty
+            ')
+          else
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '
+              [.bundles[] | select(.onnx_sha256 == $hash)] | .[0] // empty
+            ')
+          fi
+
+          if [ -z "$BUNDLE" ] || [ "$BUNDLE" = "null" ]; then
+            echo "::error::No model bundle found matching ONNX hash $ONNX_HASH (tinygrad ref: $TINYGRAD_REF) in $HF_PATH"
+            return 1
+          fi
+
           ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
           BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
           NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')

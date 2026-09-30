@@ -224,6 +224,7 @@ jobs:
       cancel-in-progress: false
     outputs:
       onnx_sha256: ${{ steps.resolve.outputs.onnx_sha256 }}
+      tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
     env:
       GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
@@ -239,17 +240,19 @@ jobs:
           ONNX_HASH=$(gh api "repos/${GH_REPO}/git/blobs/${BLOB_SHA}" --jq '.content' | base64 -d | grep '^oid sha256:' | cut -d: -f2)
           echo "big PKL hash: $ONNX_HASH"
           [ -n "$ONNX_HASH" ] || { echo "::error::Failed to extract big PKL hash"; exit 1; }
+          echo "onnx_sha256=$ONNX_HASH" >> "$GITHUB_OUTPUT"
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
           echo "tinygrad ref: $TINYGRAD_REF"
+          echo "tinygrad_ref=$TINYGRAD_REF" >> "$GITHUB_OUTPUT"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
             DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
-            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
-            [ "$TINYGRAD_MATCH" = "true" ] || return 1
-            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
+            BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" --arg ref "$TINYGRAD_REF" '
+              . as $root | [.bundles[] | select(.onnx_sha256 == $hash and (.tinygrad_ref == $ref or (.tinygrad_ref == null and $root.tinygrad_ref == $ref)))] | .[0] // empty
+            ' 2>/dev/null)
             [ -n "$BUNDLE" ] && [ "$BUNDLE" != "null" ]
           }
 
@@ -307,6 +310,7 @@ jobs:
       cancel-in-progress: false
     outputs:
       driving_onnx_sha256: ${{ steps.resolve.outputs.driving_onnx_sha256 }}
+      tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
     env:
       GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
@@ -325,15 +329,16 @@ jobs:
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
           echo "tinygrad ref: $TINYGRAD_REF"
+          echo "tinygrad_ref=$TINYGRAD_REF" >> "$GITHUB_OUTPUT"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
             DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
-            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
-            [ "$TINYGRAD_MATCH" = "true" ] || return 1
-            DRIVING=$(echo "$DEFAULTS" | jq --arg hash "$DRIVING_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
-            [ -n "$DRIVING" ] && [ "$DRIVING" != "null" ] || return 1
+            DRIVING=$(echo "$DEFAULTS" | jq --arg hash "$DRIVING_HASH" --arg ref "$TINYGRAD_REF" '
+              . as $root | [.bundles[] | select(.onnx_sha256 == $hash and (.tinygrad_ref == $ref or (.tinygrad_ref == null and $root.tinygrad_ref == $ref)))] | .[0] // empty
+            ' 2>/dev/null)
+            [ -n "$DRIVING" ] && [ "$DRIVING" != "null" ]
           }
 
           if check_defaults; then
@@ -390,6 +395,7 @@ jobs:
       cancel-in-progress: false
     outputs:
       dm_onnx_sha256: ${{ steps.resolve.outputs.dm_onnx_sha256 }}
+      tinygrad_ref: ${{ steps.resolve.outputs.tinygrad_ref }}
     env:
       GH_REPO: ${{ github.repository }}
       HF_REPO: sunnypilot/sunnypilot_models_v1
@@ -408,15 +414,16 @@ jobs:
 
           TINYGRAD_REF=$(gh api "repos/${GH_REPO}/contents/tinygrad_repo?ref=${REF}" --jq '.sha')
           echo "tinygrad ref: $TINYGRAD_REF"
+          echo "tinygrad_ref=$TINYGRAD_REF" >> "$GITHUB_OUTPUT"
 
           JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_DEFAULTS_PATH}/default_models.json"
 
           check_defaults() {
             DEFAULTS=$(curl -fsSL "${JSON_URL}?t=$(date +%s)" 2>/dev/null) || return 1
-            TINYGRAD_MATCH=$(echo "$DEFAULTS" | jq -r --arg ref "$TINYGRAD_REF" '.tinygrad_ref == $ref' 2>/dev/null)
-            [ "$TINYGRAD_MATCH" = "true" ] || return 1
-            DM=$(echo "$DEFAULTS" | jq --arg hash "$DM_HASH" '.bundles[] | select(.onnx_sha256 == $hash)' 2>/dev/null)
-            [ -n "$DM" ] && [ "$DM" != "null" ] || return 1
+            DM=$(echo "$DEFAULTS" | jq --arg hash "$DM_HASH" --arg ref "$TINYGRAD_REF" '
+              . as $root | [.bundles[] | select(.onnx_sha256 == $hash and (.tinygrad_ref == $ref or (.tinygrad_ref == null and $root.tinygrad_ref == $ref)))] | .[0] // empty
+            ' 2>/dev/null)
+            [ -n "$DM" ] && [ "$DM" != "null" ]
           }
 
           if check_defaults; then
@@ -501,6 +508,7 @@ jobs:
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
+          tinygrad_ref: ${{ needs.prepare_dm_model.outputs.tinygrad_ref }}
           models: |
             [
               {"hf_path": "models/defaults/small", "onnx_hash": "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}", "canonical": "driving_tinygrad.pkl"},
@@ -570,6 +578,7 @@ jobs:
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
+          tinygrad_ref: ${{ needs.prepare_dm_model.outputs.tinygrad_ref }}
           models: |
             [
               {"hf_path": "models/defaults/small", "onnx_hash": "${{ needs.prepare_small_model.outputs.driving_onnx_sha256 }}", "canonical": "driving_tinygrad.pkl"},

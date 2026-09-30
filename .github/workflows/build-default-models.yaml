@@ -382,6 +382,7 @@ jobs:
                   'short_name': 'DMMODEL',
                   'display_name': '${{ needs.resolve.outputs.model_name }}',
                   'ref': '${{ needs.resolve.outputs.onnx_ref }}',
+                  'tinygrad_ref': '${{ needs.resolve.outputs.tinygrad_ref }}',
                   'runner': 'tinygrad',
                   'build_time': datetime.now(UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
                   'models': [{
