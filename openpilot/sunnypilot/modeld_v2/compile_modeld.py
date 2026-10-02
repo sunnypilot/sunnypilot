@@ -96,16 +96,12 @@ def get_metadata_value_by_name(model: dict[str, Any], name: str) -> str | Any:
 def make_metadata_dict(model_path):
   with Context(DEV='CPU'):
     model = MetadataOnnxPBParser(model_path).parse()
-    output_slices_raw = get_metadata_value_by_name(model, 'output_slices')
-    assert output_slices_raw is not None, 'output_slices not found in metadata'
-
-    output_slices = pickle.loads(codecs.decode(output_slices_raw.encode(), "base64"))
-    if 'hidden_state' not in output_slices:
-      output_slices['hidden_state'] = slice(0, 512)
+    output_slices = get_metadata_value_by_name(model, 'output_slices')
+    assert output_slices is not None, 'output_slices not found in metadata'
 
     meta_dict = {
       'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
-      'output_slices': output_slices,
+      'output_slices': pickle.loads(codecs.decode(output_slices.encode(), "base64")),
       'input_shapes': dict(get_name_and_shape(x) for x in model["graph"]["input"]),
       'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
     }
