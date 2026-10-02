@@ -99,15 +99,12 @@ def make_metadata_dict(model_path):
     output_slices = get_metadata_value_by_name(model, 'output_slices')
     assert output_slices is not None, 'output_slices not found in metadata'
 
-    meta_dict = {
+    return {
       'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
       'output_slices': pickle.loads(codecs.decode(output_slices.encode(), "base64")),
       'input_shapes': dict(get_name_and_shape(x) for x in model["graph"]["input"]),
       'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
     }
-    del model
-    gc.collect()
-    return meta_dict
 
 
 def _detect_desire_key(shapes: dict) -> str | None:
@@ -279,7 +276,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
 
 def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_random_inputs=None,
-                benchmark_runs: int = 1, clear_refs=None, return_loaded: bool = True):
+                benchmark_runs: int = 1, return_loaded: bool = True):
   if callable(input_keys_or_make_inputs) and make_queues is None:
     fn = jit_or_fn
     make_inputs = input_keys_or_make_inputs
@@ -329,14 +326,10 @@ def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_ran
       return val
 
   print('capture + replay')
-  gc.collect()
   test_val = run_eval(jit, 42, 3)
   print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
-    if clear_refs:
-      clear_refs()
-    gc.collect()
     f.seek(0)
     loaded_jit = load_oob(f)
 
@@ -378,11 +371,8 @@ def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_ru
   make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=WARP_DEV)
   warp = TinyJit(stock.make_warp(nv12, model_w, model_h), prune=True)
 
-  def cleanup_warp():
-    nonlocal warp
-    warp = None
   compiled_jit = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs,
-                            benchmark_runs=benchmark_runs, clear_refs=cleanup_warp)
+                            benchmark_runs=benchmark_runs)
 
   result_data = (compiled_jit, Device.DEFAULT)
   with open(result_path, "wb") as f:
@@ -491,12 +481,8 @@ if __name__ == "__main__":
     WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
     make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
 
-    def cleanup_policy():
-      global run_policy_jit, run_policy_func, vision_runner, policy_runners
-      run_policy_jit, run_policy_func, vision_runner, policy_runners = None, None, None, None
-
     output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues,
-                                            make_random_inputs=make_random_model_inputs, benchmark_runs=args.benchmark_runs, clear_refs=cleanup_policy)
+                                            make_random_inputs=make_random_model_inputs, benchmark_runs=args.benchmark_runs)
 
     ctx = mp.get_context('spawn')
     output_data['input_devices'] = {}
