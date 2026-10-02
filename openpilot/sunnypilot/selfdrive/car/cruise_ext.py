@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
+import math
 import time
 
 from openpilot.cereal import custom
@@ -59,6 +60,7 @@ class VCruiseHelperSP:
     self.mode_read_at = 0.
     self.auto_target = None
     self.auto_control_ok = False
+    self.auto_params_valid = True
     self.auto_map = StableMapLimit()
     self.auto_gps_service = get_gps_location_service(self.params)
     self.auto_offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
@@ -126,12 +128,30 @@ class VCruiseHelperSP:
   def update_speed_limit_assist(self, is_metric, LP_SP: custom.LongitudinalPlanSP,
                                 *, plan_fresh=False, control_fresh=False, long_active=False, override=True, map_sm=None) -> None:
     now = time.monotonic()
-    if now - self.mode_read_at >= 0.5:
-      self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
-      self.mode_read_at = now
-      self.auto_offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
-      self.auto_offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+    # Optional input failures must not reuse a target or interrupt driver takeover.
     self.auto_target = None
+    self.auto_control_ok = False
+    if now - self.mode_read_at >= 0.5:
+      self.mode_read_at = now
+      try:
+        mode = self.params.get("SpeedLimitMode", return_default=True)
+        offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
+        offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+        if (type(mode) is not int or mode not in range(5) or type(offset_type) is not int or offset_type not in range(3)
+            or type(offset_value) not in (int, float) or not math.isfinite(offset_value)):
+          raise ValueError("Invalid speed-limit settings")
+      except (OSError, RuntimeError, ValueError, OverflowError):
+        self.auto_params_valid = False
+      else:
+        self.speed_limit_mode, self.auto_offset_type, self.auto_offset_value = mode, offset_type, offset_value
+        self.auto_params_valid = True
+    if not self.auto_params_valid:
+      self.auto_map.reset()
+      self.auto_evidence = None
+      self.auto_evidence_read_at = 0.
+      self.sla_state = SpeedLimitAssistState.disabled
+      self.has_speed_limit = self.req_plus = self.req_minus = False
+      return
     if self.speed_limit_mode == Mode.automatic and map_sm is not None:
       # Read the small SHM sidecar at 10 Hz; it binds a limit to mapd's input fix.
       if now - getattr(self, 'auto_evidence_read_at', 0.) >= 0.1:

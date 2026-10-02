@@ -35,6 +35,11 @@ missing, outdated, or matched to the wrong road.
 - Missing/stale/incompatible evidence stops new SET updates and retains the
   already applied SET. Existing longitudinal control may still accelerate
   toward that SET; source loss does not cancel cruise or command a slowdown.
+- An explicitly invalid proof clears the stability window, so recovered evidence
+  must establish a new two-second interval. Settings read failures clear the
+  pending target and suspend automatic updates until a complete settings snapshot
+  succeeds; the normal pedal/button takeover path continues during that failure.
+  Excessively nested sidecar JSON is treated as unavailable input.
 
 ## Mapd dependency and validation
 
@@ -52,6 +57,6 @@ v1.12.0 producer: if the bundled file is missing/replaced and that fallback is
 used, Auto stays inactive without a compatible sidecar. Restore the pinned
 repository binary to recover the producer; this is not automatic recovery.
 
-This is a draft proposal. Offline tests do not establish physical operation,
+This is an experimental proposal. Offline tests do not establish physical operation,
 full process integration, replay compatibility, or vehicle acceptance. No
 device installation or driving validation is part of preparing this PR.

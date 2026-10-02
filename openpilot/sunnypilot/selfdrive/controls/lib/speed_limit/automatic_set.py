@@ -11,7 +11,7 @@ def read_map_evidence():
     with open('/dev/shm/params/d/MapSpeedLimitEvidence', 'rb') as stream:
       raw = stream.read(4097)
     return json.loads(raw) if len(raw) <= 4096 else None
-  except (OSError, ValueError, UnicodeError):
+  except (OSError, ValueError, UnicodeError, RecursionError):
     return None
 
 

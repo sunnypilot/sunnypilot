@@ -1,9 +1,10 @@
 import math
 import unittest
 from types import SimpleNamespace as NS
+from unittest.mock import mock_open, patch
 
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set import (
-  AutomaticSet, StableMapLimit, auto_supported, fresh_message, resolve_auto_map,
+  AutomaticSet, StableMapLimit, auto_supported, fresh_message, read_map_evidence, resolve_auto_map,
 )
 
 
@@ -130,6 +131,28 @@ class TestMapEvidence(unittest.TestCase):
     self.assertIsNone(self.resolve(108.))
     self.assertIsNone(self.resolve(109., token=107_500_000_000))
     self.assertAlmostEqual(self.resolve(111.), 50 / 3.6)
+
+  def test_explicit_invalid_proof_restarts_active_stability(self):
+    self.assertIsNone(self.resolve(100.))
+    self.assertIsNone(self.resolve(101.))
+    self.assertIsNone(self.resolve(101.5, valid=False))
+    self.assertIsNone(self.stable.candidate)
+    self.assertEqual(self.stable.first_stamp, 0)
+    self.assertIsNone(self.resolve(102.))
+    self.assertEqual(self.stable.first_stamp, 102_000_000_000)
+    self.assertIsNone(self.resolve(103.9))
+    self.assertAlmostEqual(self.resolve(104.), 50 / 3.6)
+
+  def test_evidence_read_errors_are_unavailable_input(self):
+    with patch('builtins.open', side_effect=OSError('unavailable')):
+      self.assertIsNone(read_map_evidence())
+    with patch('builtins.open', mock_open(read_data=b'invalid json')):
+      self.assertIsNone(read_map_evidence())
+    with patch('builtins.open', mock_open(read_data=b'{}')), patch(
+      'openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set.json.loads',
+      side_effect=RecursionError('excessive JSON nesting'),
+    ):
+      self.assertIsNone(read_map_evidence())
 
   def test_missing_proof_mismatched_limit_and_bad_messages(self):
     messages = MapMessages(100., 50 / 3.6)
