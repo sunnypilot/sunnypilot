@@ -31,7 +31,7 @@ class TestAutoCruiseReadFailures(unittest.TestCase):
     self.helper.auto_gps_service = 'gpsLocationExternal'
     self.helper.auto_target = 80.
     self.helper.auto_control_ok = True
-    self.helper.v_cruise_kph = self.helper.v_cruise_cluster_kph = 50.
+    self.helper.v_cruise_kph = self.helper.v_cruise_cluster_kph = 50
     self.helper.v_cruise_min = 30
     self.helper.sla_state = SpeedLimitAssistState.disabled
     self.helper.enable_button_timers = CRUISE_BUTTON_TIMER.copy()
