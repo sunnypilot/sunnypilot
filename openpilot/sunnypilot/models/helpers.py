@@ -209,13 +209,13 @@ def plan_x_idxs_helper(constants, plan, model_output) -> list[float]:
     while tidx < constants.IDX_N - 1 and plan_x[tidx + 1] < constants.X_IDXS[xidx]:
       tidx += 1
     if tidx == constants.IDX_N - 1:
-      # if the plan doesn't extend far enough, set plan_t to the max value (10s), then break
-      LINE_T_IDXS[xidx] = constants.T_IDXS[constants.IDX_N - 1]
+      for rem_idx in range(xidx, constants.IDX_N):
+        LINE_T_IDXS[rem_idx] = constants.T_IDXS[constants.IDX_N - 1]
       break
     # interpolate to find `t` for the current xidx
     current_x_val = plan_x[tidx]
     next_x_val = plan_x[tidx + 1]
     p = (constants.X_IDXS[xidx] - current_x_val) / (next_x_val - current_x_val) if abs(
-      next_x_val - current_x_val) > 1e-9 else float('nan')
+      next_x_val - current_x_val) > 1e-9 else 0.0
     LINE_T_IDXS[xidx] = p * constants.T_IDXS[tidx + 1] + (1 - p) * constants.T_IDXS[tidx]
   return LINE_T_IDXS
