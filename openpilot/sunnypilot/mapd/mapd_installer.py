@@ -20,6 +20,8 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.common.spinner import Spinner
 from openpilot.common.version import is_prebuilt
 from openpilot.sunnypilot.mapd import MAPD_PATH, MAPD_BIN_DIR
+from openpilot.sunnypilot import get_file_hash
+from openpilot.common.basedir import BASEDIR
 import openpilot.system.sentry as sentry
 
 VERSION = "v1.12.0"
@@ -48,6 +50,14 @@ class MapdInstallManager:
       self.download()
 
   def download_needed(self) -> bool:
+    if os.path.exists(MAPD_PATH):
+      hash_path = Path(BASEDIR) / "openpilot/sunnypilot/mapd/tests/mapd_hash"
+      try:
+        if get_file_hash(MAPD_PATH) == hash_path.read_text().strip():
+          update_installed_version(VERSION, self._params)
+          return False
+      except OSError:
+        pass
     return not os.path.exists(MAPD_PATH) or self.get_installed_version() != VERSION
 
   @staticmethod
