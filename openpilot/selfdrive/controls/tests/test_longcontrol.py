@@ -167,6 +167,29 @@ class TestStoppingController(OpenpilotTestCase):
       update_long_control(LoC, StopC, True, still, 1.2, False, (-3.5, 1.5), has_lead=True); n += 1
     assert abs(n * DT_CTRL - StoppingController.STOPPING_EXIT_DEBOUNCE) < 0.03, n
 
+  def test_terminal_support_is_soft_and_rate_limited(self):
+    from opendbc.car.structs import car
+    from openpilot.common.realtime import DT_CTRL
+    StopC = StoppingController(-1.0)
+    rolling = car.CarState.new_message(vEgo=1.0, standstill=False)
+    prev_accel = -0.1
+    requests = []
+    for i in range(50):
+      a_target = -0.4 if i == 0 else -0.2  # initial stop intent, then let the terminal support finish gently
+      _, prev_accel = StopC.update(LongCtrlState.pid, LongCtrlState.pid, rolling, a_target,
+                                   prev_accel, 0.0, (-3.5, 1.5))
+      requests.append(prev_accel)
+    assert min(requests) >= StoppingController.END_REQUEST
+    assert max(abs(b - a) for a, b in zip(requests, requests[1:], strict=False)) <= StoppingController.END_RATE * DT_CTRL
+
+    # The softer support must not cap a stronger request coming from the plan.
+    strong_stop = StoppingController(-1.0)
+    strong_accel = -0.1
+    for _ in range(50):
+      _, strong_accel = strong_stop.update(LongCtrlState.pid, LongCtrlState.pid, rolling, -0.8,
+                                           strong_accel, 0.0, (-3.5, 1.5))
+    assert strong_accel < StoppingController.END_REQUEST
+
   def test_request_keeps_easing_with_the_plan_before_the_wheels_stop(self):
     from opendbc.car.structs import car
     CP = car.CarParams.new_message(stopAccel=-1.0)

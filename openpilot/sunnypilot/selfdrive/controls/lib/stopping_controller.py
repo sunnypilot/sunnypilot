@@ -28,9 +28,9 @@ class StoppingController:
 
   BLEND_V = 10.0 / 3.6  # m/s
   BLEND_POW = 1.0
-  END_REQUEST = -0.50  # m/s^2
+  END_REQUEST = -0.30  # m/s^2, softer terminal support to avoid a brake jab
   END_PLAN_MIN = -0.25  # m/s^2
-  END_RATE = 2.0  # m/s^3
+  END_RATE = 1.0  # m/s^3, ease the terminal request in more gradually
 
   def __init__(self, stop_accel):
     self.stop_accel = stop_accel
