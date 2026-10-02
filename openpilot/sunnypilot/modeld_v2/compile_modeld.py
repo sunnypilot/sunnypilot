@@ -233,14 +233,14 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
-    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
+    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn).realize()
+    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn).realize()
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
 
     desire_dev = unpacked_dict['desire']
-    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
+    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn).realize()
 
     inputs = {desire_key: desire_buf}
     for key, tensor_val in unpacked_dict.items():
@@ -249,7 +249,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
+      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize().reshape(input_shapes['features_buffer'])
 
     if vision_runner:
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
