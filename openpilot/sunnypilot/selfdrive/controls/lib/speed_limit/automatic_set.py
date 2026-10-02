@@ -33,6 +33,9 @@ def resolve_auto_map(stable, sm, gps_service, now, offset_type, offset_value, is
            and fresh_message(sm, 'liveMapDataSP', now, 3)
            and gps.hasFix and mapped.speedLimitValid)
   limit = mapped.speedLimit
+  if evidence is None:
+    stable.reset()
+    return None
   try:
     token = evidence['position']['logMonoTime']
     proof_limit = evidence['speedLimit']

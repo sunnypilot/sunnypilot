@@ -4,6 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from openpilot.common.params import Params
 from openpilot.sunnypilot.mapd import mapd_installer
 
 
@@ -18,8 +19,7 @@ class TestBundledMapd(unittest.TestCase):
     self.hash_path.parent.mkdir(parents=True)
     self.hash_path.write_text(hashlib.sha256(self.binary.read_bytes()).hexdigest())
     self.manager = mapd_installer.MapdInstallManager.__new__(mapd_installer.MapdInstallManager)
-    self.manager._params = object()
-    self.manager.get_installed_version = lambda: ''
+    self.manager._params = Params(str(self.root / 'params'))
     for name, value in (('BASEDIR', str(self.root)), ('MAPD_PATH', str(self.binary))):
       patcher = patch.object(mapd_installer, name, value)
       patcher.start()
@@ -39,7 +39,7 @@ class TestBundledMapd(unittest.TestCase):
     with patch.object(mapd_installer, 'update_installed_version') as record_version:
       self.assertTrue(self.manager.download_needed())
       record_version.assert_not_called()
-      self.manager.get_installed_version = lambda: mapd_installer.VERSION
+      self.manager._params.put('MapdVersion', mapd_installer.VERSION, block=True)
       self.assertFalse(self.manager.download_needed())
 
   def test_missing_hash_uses_legacy_fallback(self):
