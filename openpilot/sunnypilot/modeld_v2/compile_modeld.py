@@ -252,18 +252,18 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
       inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize().reshape(input_shapes['features_buffer'])
 
     if vision_runner:
-      vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
+      vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').contiguous().realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
         inputs['features_buffer'] = stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
-      policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
+      policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').contiguous().realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
     inputs.update({road_key: img, wide_key: big_img})
     if 'features_buffer' not in inputs:
       inputs['features_buffer'] = sample_skip_fn(feat_q).reshape(input_shapes['features_buffer'])
 
-    policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').realize()
+    policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').contiguous().realize()
     if 'features_buffer' not in inputs and features_slice is not None:
       new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
       stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
