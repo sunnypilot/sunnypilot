@@ -263,7 +263,7 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
     dump_oob(jit, f)
     f.seek(0)
     deserialized_jit = load_oob(f)
-  random_inputs_run(deserialized_jit, SEED, test_val=test_val, test_buffers=test_buffers)
+  random_inputs_run(deserialized_jit, SEED)
   return deserialized_jit
 
 
