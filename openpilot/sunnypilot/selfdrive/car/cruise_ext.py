@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
+import time
 
 from openpilot.cereal import custom
 from opendbc.car.structs import car
@@ -14,6 +15,11 @@ from openpilot.common.params import Params
 from openpilot.sunnypilot.selfdrive.car.intelligent_cruise_button_management.helpers import get_minimum_set_speed
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import ACTIVE_STATES as SLA_ACTIVE_STATES
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import compare_cluster_target
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Mode
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set import (
+  AutomaticSet, StableMapLimit, auto_supported, read_map_evidence, resolve_auto_map,
+)
+from openpilot.common.gps import get_gps_location_service
 
 ButtonType = car.CarState.ButtonEvent.Type
 SpeedLimitAssistState = custom.LongitudinalPlanSP.SpeedLimit.AssistState
@@ -48,6 +54,15 @@ class VCruiseHelperSP:
     self.params = Params()
     self.v_cruise_min = 0
     self.enabled_prev = False
+    self.auto_set = AutomaticSet()
+    self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
+    self.mode_read_at = 0.
+    self.auto_target = None
+    self.auto_control_ok = False
+    self.auto_map = StableMapLimit()
+    self.auto_gps_service = get_gps_location_service(self.params)
+    self.auto_offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
+    self.auto_offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
     self.custom_acc_enabled = self.params.get_bool("CustomAccIncrementsEnabled")
     self.short_increment = self.params.get("CustomAccShortPressIncrement", return_default=True)
@@ -108,12 +123,34 @@ class VCruiseHelperSP:
 
     return enabled
 
-  def update_speed_limit_assist(self, is_metric, LP_SP: custom.LongitudinalPlanSP) -> None:
+  def update_speed_limit_assist(self, is_metric, LP_SP: custom.LongitudinalPlanSP,
+                                *, plan_fresh=False, control_fresh=False, long_active=False, override=True, map_sm=None) -> None:
+    now = time.monotonic()
+    if now - self.mode_read_at >= 0.5:
+      self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
+      self.mode_read_at = now
+      self.auto_offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
+      self.auto_offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+    self.auto_target = None
+    if self.speed_limit_mode == Mode.automatic and map_sm is not None:
+      # Read the small SHM sidecar at 10 Hz; it binds a limit to mapd's input fix.
+      if now - getattr(self, 'auto_evidence_read_at', 0.) >= 0.1:
+        self.auto_evidence = read_map_evidence()
+        self.auto_evidence_read_at = now
+      target = resolve_auto_map(self.auto_map, map_sm, self.auto_gps_service, now,
+                                self.auto_offset_type, self.auto_offset_value, is_metric,
+                                getattr(self, 'auto_evidence', None))
+      self.auto_target = target * CV.MS_TO_KPH if target is not None else None
+    else:
+      self.auto_map.reset()
+    self.auto_control_ok = (plan_fresh and control_fresh and long_active and not override
+                            and not LP_SP.speedLimit.assist.enabled)
     resolver = LP_SP.speedLimit.resolver
     self.has_speed_limit = resolver.speedLimitValid or resolver.speedLimitLastValid
     self.speed_limit_final_last = LP_SP.speedLimit.resolver.speedLimitFinalLast
     self.speed_limit_final_last_kph = self.speed_limit_final_last * CV.MS_TO_KPH
-    self.sla_state = LP_SP.speedLimit.assist.state
+    self.sla_state = (SpeedLimitAssistState.disabled if self.speed_limit_mode == Mode.automatic
+                      else LP_SP.speedLimit.assist.state)
     self.req_plus, self.req_minus = compare_cluster_target(self.v_cruise_cluster_kph * CV.KPH_TO_MS,
                                                            self.speed_limit_final_last, is_metric)
 
@@ -122,6 +159,8 @@ class VCruiseHelperSP:
     return self.has_speed_limit and bool(self.speed_limit_final_last_kph != self.prev_speed_limit_final_last_kph)
 
   def update_speed_limit_assist_pre_active_confirmed(self, button_type: car.CarState.ButtonEvent.Type) -> bool:
+    if self.speed_limit_mode == Mode.automatic:
+      return False
     if self.sla_state == SpeedLimitAssistState.preActive or self.prev_sla_state == SpeedLimitAssistState.preActive:
       if button_type == ButtonType.decelCruise and self.req_minus:
         return True
@@ -129,6 +168,21 @@ class VCruiseHelperSP:
         return True
 
     return False
+
+  def update_automatic_set(self, CS, enabled: bool) -> None:
+    manual = [b for b in CS.buttonEvents if b.type.raw in CRUISE_BUTTON_TIMER]
+    held = any(self.enable_button_timers.values())
+    target = self.auto_set.update(
+      now=time.monotonic(), selected=self.speed_limit_mode == Mode.automatic,
+      supported=auto_supported(self.CP), enabled=enabled,
+      available=CS.cruiseState.available, control_ok=self.auto_control_ok and CS.canValid and not CS.canTimeout,
+      pedal=CS.gasPressed or CS.brakePressed, manual_event=bool(manual),
+      manual_press=any(b.pressed for b in manual),
+      cancel=any(b.type == ButtonType.cancel for b in manual), held=held,
+      target=self.auto_target, current=self.v_cruise_kph, minimum=self.v_cruise_min,
+    )
+    if target is not None:
+      self.v_cruise_kph = target
 
   def update_speed_limit_assist_v_cruise_non_pcm(self) -> None:
     if self.sla_state in SLA_ACTIVE_STATES and (self.prev_sla_state not in SLA_ACTIVE_STATES or

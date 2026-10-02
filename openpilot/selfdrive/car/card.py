@@ -20,6 +20,7 @@ from opendbc.car.car_helpers import get_car, interfaces
 from opendbc.car.interfaces import CarInterfaceBase, RadarInterfaceBase
 from openpilot.selfdrive.pandad import can_capnp_to_list, can_list_to_can_capnp
 from openpilot.selfdrive.car.cruise import VCruiseHelper
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set import fresh_message, auto_supported
 from openpilot.selfdrive.car.helpers import convert_carControlSP, convert_to_capnp
 
 from openpilot.sunnypilot.mads.helpers import set_alternative_experience, set_car_specific_params
@@ -179,6 +180,9 @@ class Car:
     self.params.put("CarParamsSPPersistent", cp_sp_bytes)
 
     self.v_cruise_helper = VCruiseHelper(self.CP, self.CP_SP)
+    # Independent subscriber: map availability does not alter existing health checks.
+    self.auto_map_sm = (messaging.SubMaster([self.v_cruise_helper.auto_gps_service, "liveMapDataSP"])
+                        if auto_supported(self.CP) else None)
 
     self.is_metric = self.params.get_bool("IsMetric")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
@@ -213,7 +217,16 @@ class Car:
     if can_rcv_valid and REPLAY:
       self.can_log_mono_time = messaging.log_from_bytes(can_strs[0]).logMonoTime
 
-    self.v_cruise_helper.update_speed_limit_assist(self.is_metric, self.sm['longitudinalPlanSP'])
+    if self.auto_map_sm is not None:
+      self.auto_map_sm.update(0)
+    now = time.monotonic()
+    self.v_cruise_helper.update_speed_limit_assist(
+      self.is_metric, self.sm['longitudinalPlanSP'],
+      plan_fresh=fresh_message(self.sm, 'longitudinalPlanSP', now, 0.5),
+      control_fresh=fresh_message(self.sm, 'carControl', now, 0.5),
+      long_active=self.sm['carControl'].longActive,
+      override=self.sm['carControl'].cruiseControl.override, map_sm=self.auto_map_sm,
+    )
     self.v_cruise_helper.update_v_cruise(CS, self.sm['carControl'].enabled, self.is_metric)
     if self.sm['carControl'].enabled and not self.CC_prev.enabled:
       # Use CarState w/ buttons from the step selfdrived enables on
