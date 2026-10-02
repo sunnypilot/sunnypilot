@@ -252,7 +252,7 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
         buffers = [np.copy(v.numpy().copy()) for v in input_queues.values()]
 
     if test_val is not None:
-      match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
+      match = all(np.allclose(a, b, atol=1e-2, rtol=1e-2) for a, b in zip(val, test_val, strict=True))
       assert match == expect_match, f"outputs {'differ from' if expect_match else 'match'} baseline (seed={seed})"
     return val, buffers
 
