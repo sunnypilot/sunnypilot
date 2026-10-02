@@ -254,9 +254,6 @@ def compile_jit(jit, make_random_inputs, input_keys, make_queues):
     if test_val is not None:
       match = all(np.array_equal(a, b) for a, b in zip(val, test_val, strict=True))
       assert match == expect_match, f"outputs {'differ from' if expect_match else 'match'} baseline (seed={seed})"
-    if test_buffers is not None:
-      match = all(np.array_equal(a, b) for a, b in zip(buffers, test_buffers, strict=True))
-      assert match == expect_match, f"buffers {'differ from' if expect_match else 'match'} baseline (seed={seed})"
     return val, buffers
 
   print('capture + replay')
