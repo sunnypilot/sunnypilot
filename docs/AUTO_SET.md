@@ -4,21 +4,25 @@ Auto adds an opt-in mode after Assist in **Settings > Cruise > Speed Limit**.
 It updates the cruise SET to the current mapped road limit plus the configured
 offset, instead of retaining a fixed SET while another planner drives slower.
 The non-PCM cruise path also updates `carState.vCruiseCluster`; controls passes
-this to `hudControl.setSpeed`, and the existing Honda `ACC_HUD.CRUISE_SPEED`
-message sends the SET to the **instrument cluster**. No new Honda CAN message
-or simulated cruise button is introduced. Physical display validation is pending.
+this to `hudControl.setSpeed`. Each platform's existing carcontroller determines
+whether and how the SET reaches the **instrument cluster**. The Honda path uses
+`ACC_HUD.CRUISE_SPEED`; physical display validation is pending. No new CAN
+message or simulated cruise button is introduced.
 
-The intended benefits are fewer manual SET changes and a visible instrument-
-cluster SET that follows the requested cruise target. Actual speed can remain
+The intended benefit is fewer manual SET changes, with a matching instrument-
+cluster SET where the platform supports it. Actual speed can remain
 below the SET because of traffic, the driving model, or other existing controls.
 This does not guarantee compliance with posted speed limits: map data can be
 missing, outdated, or matched to the wrong road.
 
 ## Scope and behavior
 
-- Only `HONDA_CITY_7G`, openpilot longitudinal control, non-PCM cruise, and
-  neither passive nor dashcam-only operation are eligible. No other platform
-  is enabled by this proposal. Existing modes 0–3 retain their meaning.
+- Eligibility depends on capabilities, not a brand or fingerprint: openpilot
+  longitudinal control, non-PCM cruise, and neither passive nor dashcam-only
+  operation. PCM/stock-ACC configurations are excluded. This does not establish
+  physical acceptance or instrument-cluster support for every platform.
+  Existing modes 0–3 retain their meaning and each configuration's native
+  minimum SET is preserved.
 - Auto uses only the current mapped limit, not last-valid, ahead, or dashboard
   limits. Existing fixed/percentage offsets apply, including positive offsets.
 - GPS, map envelope, and the mapd input token must be valid/recent within 3 s;
@@ -29,6 +33,9 @@ missing, outdated, or matched to the wrong road.
 - After engagement, Auto waits for 0.5 s without held buttons. Manual +/-
   adjustments, Cancel and pedals suspend updates until cruise is disengaged
   and engaged again. Driver controls retain priority.
+- Held-button tracking for Auto is independent of `pcmCruiseSpeed`; an
+  engagement button must be released before the quiet interval starts in
+  either configuration. Native button timers and SET handling are unchanged.
 - Targets outside the existing minimum/145 km/h range are rejected rather
   than raised to the minimum. The evidence's double-precision limit avoids
   Float32 transport rounding at that boundary.

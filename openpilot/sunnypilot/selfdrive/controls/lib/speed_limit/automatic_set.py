@@ -1,4 +1,4 @@
-"""Map-based automatic SET for the Honda City non-PCM longitudinal configuration.
+"""Map-based automatic SET for openpilot longitudinal, non-PCM cruise.
 
 Decision helpers and a bounded read of mapd's SHM evidence. No CAN or services.
 """
@@ -16,8 +16,7 @@ def read_map_evidence():
 
 
 def auto_supported(cp):
-  return (cp.brand == 'honda' and cp.carFingerprint == 'HONDA_CITY_7G'
-          and cp.openpilotLongitudinalControl and not cp.pcmCruise
+  return (cp.openpilotLongitudinalControl and not cp.pcmCruise
           and not cp.dashcamOnly and not cp.passive)
 
 

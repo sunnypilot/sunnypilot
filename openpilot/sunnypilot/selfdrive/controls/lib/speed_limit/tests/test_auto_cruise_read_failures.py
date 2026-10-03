@@ -22,6 +22,7 @@ class TestAutoCruiseReadFailures(unittest.TestCase):
     self.helper.CP = car.CarParams.new_message(brand='honda', carFingerprint='HONDA_CITY_7G',
                                              openpilotLongitudinalControl=True, pcmCruise=False)
     self.helper.auto_set = AutomaticSet()
+    self.helper.auto_button_timers = dict.fromkeys(CRUISE_BUTTON_TIMER, 0)
     self.helper.auto_map = StableMapLimit()
     self.helper.speed_limit_mode = Mode.automatic
     self.helper.mode_read_at = 0.

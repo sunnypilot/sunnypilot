@@ -78,7 +78,10 @@ class TestAutomaticSet(unittest.TestCase):
     values = {'brand': 'honda', 'carFingerprint': 'HONDA_CITY_7G', 'openpilotLongitudinalControl': True,
               'pcmCruise': False, 'dashcamOnly': False, 'passive': False}
     self.assertTrue(auto_supported(NS(**values)))
-    for change in ({'brand': 'toyota'}, {'carFingerprint': 'HONDA_CIVIC'}, {'openpilotLongitudinalControl': False},
+    for brand in ('honda', 'toyota', 'hyundai', 'subaru', 'ford', 'volkswagen'):
+      with self.subTest(brand=brand):
+        self.assertTrue(auto_supported(NS(**(values | {'brand': brand, 'carFingerprint': 'SYNTHETIC_NON_PCM'}))))
+    for change in ({'openpilotLongitudinalControl': False},
                    {'pcmCruise': True}, {'dashcamOnly': True}, {'passive': True}):
       with self.subTest(change=change):
         self.assertFalse(auto_supported(NS(**(values | change))))

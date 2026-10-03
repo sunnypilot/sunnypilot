@@ -28,7 +28,7 @@ SPEED_LIMIT_MODE_DESCRIPTIONS = [
   tr("Information: Displays the current road's speed limit."),
   tr("Warning: Provides a warning when exceeding the current road's speed limit."),
   tr("Assist: Adjusts the vehicle's cruise speed based on the current road's speed limit when operating the +/- buttons."),
-  tr("Auto: Map-based SET, also shown in the instrument cluster. Honda City only. +/- or pedals suspend Auto until re-engagement. Maps may be wrong."),
+  tr("Auto: Map-based SET. +/- and pedals suspend Auto until re-engagement. Instrument-cluster display depends on the vehicle. Maps may be wrong."),
 ]
 
 SPEED_LIMIT_OFFSET_DESCRIPTIONS = [

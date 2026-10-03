@@ -56,6 +56,7 @@ class VCruiseHelperSP:
     self.v_cruise_min = 0
     self.enabled_prev = False
     self.auto_set = AutomaticSet()
+    self.auto_button_timers = dict.fromkeys(CRUISE_BUTTON_TIMER, 0)
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
     self.mode_read_at = 0.
     self.auto_target = None
@@ -190,8 +191,10 @@ class VCruiseHelperSP:
     return False
 
   def update_automatic_set(self, CS, enabled: bool) -> None:
+    # Track held buttons independently of the native pcmCruiseSpeed path.
+    update_manual_button_timers(CS, self.auto_button_timers)
     manual = [b for b in CS.buttonEvents if b.type.raw in CRUISE_BUTTON_TIMER]
-    held = any(self.enable_button_timers.values())
+    held = any(self.auto_button_timers.values())
     target = self.auto_set.update(
       now=time.monotonic(), selected=self.speed_limit_mode == Mode.automatic,
       supported=auto_supported(self.CP), enabled=enabled,
