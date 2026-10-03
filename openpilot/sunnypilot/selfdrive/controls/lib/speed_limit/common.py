@@ -27,3 +27,4 @@ class Mode(IntEnumBase):
   information = 1
   warning = 2
   assist = 3
+  automatic = 4

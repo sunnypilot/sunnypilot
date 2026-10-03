@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 import json
 import math
 import platform
+import time
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set import fresh_message
 
 from openpilot.cereal import log
 from openpilot.common.params import Params
@@ -30,7 +32,12 @@ class OsmMapData(BaseMapData):
     if self.last_position is None:
       return
 
+    # Preserve the existing coordinates for legacy modes. Only a fresh, valid
+    # localizer input may attest an Auto result; never stamp a cached position anew.
+    input_valid = (self.localizer_valid and location.gpsOK and location.calibratedOrientationNED.valid
+                   and fresh_message(self.sm, 'liveLocationKalman', time.monotonic(), 3))
     params = {
+      "logMonoTime": int(self.sm.logMonoTime['liveLocationKalman']) if input_valid else 0,
       "latitude": self.last_position.latitude,
       "longitude": self.last_position.longitude,
     }

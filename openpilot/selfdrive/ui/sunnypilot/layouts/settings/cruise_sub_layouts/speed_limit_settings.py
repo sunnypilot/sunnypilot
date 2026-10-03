@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.automatic_set import auto_supported
 from collections.abc import Callable
 from enum import IntEnum
 
@@ -19,7 +20,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
-SPEED_LIMIT_MODE_BUTTONS = [tr("Off"), tr("Info"), tr("Warning"), tr("Assist")]
+SPEED_LIMIT_MODE_BUTTONS = [tr("Off"), tr("Info"), tr("Warning"), tr("Assist"), tr("Auto")]
 SPEED_LIMIT_OFFSET_TYPE_BUTTONS = [tr("None"), tr("Fixed"), tr("%")]
 
 SPEED_LIMIT_MODE_DESCRIPTIONS = [
@@ -27,6 +28,7 @@ SPEED_LIMIT_MODE_DESCRIPTIONS = [
   tr("Information: Displays the current road's speed limit."),
   tr("Warning: Provides a warning when exceeding the current road's speed limit."),
   tr("Assist: Adjusts the vehicle's cruise speed based on the current road's speed limit when operating the +/- buttons."),
+  tr("Auto: Map-based SET. +/- and pedals suspend Auto until re-engagement. Instrument-cluster display depends on the vehicle. Maps may be wrong."),
 ]
 
 SPEED_LIMIT_OFFSET_DESCRIPTIONS = [
@@ -60,7 +62,7 @@ class SpeedLimitSettingsLayout(Widget):
       description=self._get_mode_description,
       buttons=SPEED_LIMIT_MODE_BUTTONS,
       param="SpeedLimitMode",
-      button_width=380,
+      button_width=300,
     )
 
     self._source_button = simple_button_item_sp(
@@ -145,14 +147,12 @@ class SpeedLimitSettingsLayout(Widget):
     else:
       sla_available = False
 
-    if not sla_available:
-      self._speed_limit_mode.action_item.set_enabled_buttons({
-        int(SpeedLimitMode.off),
-        int(SpeedLimitMode.information),
-        int(SpeedLimitMode.warning),
-      })
-    else:
-      self._speed_limit_mode.action_item.set_enabled_buttons(None)
+    enabled_modes = {int(SpeedLimitMode.off), int(SpeedLimitMode.information), int(SpeedLimitMode.warning)}
+    if sla_available:
+      enabled_modes.add(int(SpeedLimitMode.assist))
+    if ui_state.CP is not None and auto_supported(ui_state.CP):
+      enabled_modes.add(int(SpeedLimitMode.automatic))
+    self._speed_limit_mode.action_item.set_enabled_buttons(enabled_modes)
 
     offset_type = ui_state.params.get("SpeedLimitOffsetType", return_default=True)
     self._speed_limit_value_offset.set_visible(offset_type != int(SpeedLimitOffsetType.off))

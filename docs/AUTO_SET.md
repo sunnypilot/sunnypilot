@@ -1,0 +1,69 @@
+# Map-based Auto SET (proposal)
+
+Auto adds an opt-in mode after Assist in **Settings > Cruise > Speed Limit**.
+It updates the cruise SET to the current mapped road limit plus the configured
+offset, instead of retaining a fixed SET while another planner drives slower.
+The non-PCM cruise path also updates `carState.vCruiseCluster`; controls passes
+this to `hudControl.setSpeed`. Each platform's existing carcontroller determines
+whether and how the SET reaches the **instrument cluster**. The Honda path uses
+`ACC_HUD.CRUISE_SPEED`; physical display validation is pending. No new CAN
+message or simulated cruise button is introduced.
+
+The intended benefit is fewer manual SET changes, with a matching instrument-
+cluster SET where the platform supports it. Actual speed can remain
+below the SET because of traffic, the driving model, or other existing controls.
+This does not guarantee compliance with posted speed limits: map data can be
+missing, outdated, or matched to the wrong road.
+
+## Scope and behavior
+
+- Eligibility depends on capabilities, not a brand or fingerprint: openpilot
+  longitudinal control, non-PCM cruise, and neither passive nor dashcam-only
+  operation. PCM/stock-ACC configurations are excluded. This does not establish
+  physical acceptance or instrument-cluster support for every platform.
+  Existing modes 0–3 retain their meaning and each configuration's native
+  minimum SET is preserved.
+- Auto uses only the current mapped limit, not last-valid, ahead, or dashboard
+  limits. Existing fixed/percentage offsets apply, including positive offsets.
+- GPS, map envelope, and the mapd input token must be valid/recent within 3 s;
+  distinct input tokens must retain the same target for at least 2 s.
+- The plan and carControl must be fresh within 0.5 s, with active longitudinal
+  control, no override/overlapping Assist, valid CAN, available cruise and an
+  initialized SET. No engagement, resume or RES command is generated.
+- After engagement, Auto waits for 0.5 s without held buttons. Manual +/-
+  adjustments, Cancel and pedals suspend updates until cruise is disengaged
+  and engaged again. Driver controls retain priority.
+- Held-button tracking for Auto is independent of `pcmCruiseSpeed`; an
+  engagement button must be released before the quiet interval starts in
+  either configuration. Native button timers and SET handling are unchanged.
+- Targets outside the existing minimum/145 km/h range are rejected rather
+  than raised to the minimum. The evidence's double-precision limit avoids
+  Float32 transport rounding at that boundary.
+- Missing/stale/incompatible evidence stops new SET updates and retains the
+  already applied SET. Existing longitudinal control may still accelerate
+  toward that SET; source loss does not cancel cruise or command a slowdown.
+- An explicitly invalid proof clears the stability window, so recovered evidence
+  must establish a new two-second interval. Settings read failures clear the
+  pending target and suspend automatic updates until a complete settings snapshot
+  succeeds; the normal pedal/button takeover path continues during that failure.
+  Excessively nested sidecar JSON is treated as unavailable input.
+
+## Mapd dependency and validation
+
+The bundled mapd is rebuilt from v1.12.0 / commit
+`46cd71ade6f630f1564c83bf1763f9d949a9ff30` plus
+`openpilot/third_party/mapd_pfeiferj/auto_set.patch`; see the adjacent README
+for the source/build recipe. The JSON sidecar `MapSpeedLimitEvidence` v1 binds
+the result to the consumed position's `logMonoTime`. Atomic writes prevent
+partial JSON; after an I/O failure, a previous result can survive until its
+token expires. This sidecar is not recorded in native route logs.
+
+The installer recognizes the repository's pinned bundled hash even when
+MapdVersion is absent. Its legacy download fallback still retrieves the stock
+v1.12.0 producer: if the bundled file is missing/replaced and that fallback is
+used, Auto stays inactive without a compatible sidecar. Restore the pinned
+repository binary to recover the producer; this is not automatic recovery.
+
+This is an experimental proposal. Offline tests do not establish physical operation,
+full process integration, replay compatibility, or vehicle acceptance. No
+device installation or driving validation is part of preparing this PR.

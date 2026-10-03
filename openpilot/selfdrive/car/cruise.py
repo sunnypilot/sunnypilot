@@ -50,6 +50,9 @@ class VCruiseHelper(VCruiseHelperSP):
 
     _enabled = self.update_enabled_state(CS, enabled)
 
+    # Run even while disengaged so a normal new engagement clears manual takeover.
+    self.update_automatic_set(CS, enabled)
+
     if CS.cruiseState.available:
       if not self.CP.pcmCruise or (not self.CP_SP.pcmCruiseSpeed and _enabled):
         # if stock cruise is completely disabled, then we can use our own set speed logic

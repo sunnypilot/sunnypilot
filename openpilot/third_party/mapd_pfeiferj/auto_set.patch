@@ -1,0 +1,236 @@
+--- a/mapd.go
++++ b/mapd.go
+@@ -29,9 +29,10 @@
+ }
+ 
+ type Position struct {
+-	Latitude  float64 `json:"latitude"`
+-	Longitude float64 `json:"longitude"`
+-	Bearing   float64 `json:"bearing"`
++	LogMonoTime int64   `json:"logMonoTime"`
++	Latitude        float64 `json:"latitude"`
++	Longitude       float64 `json:"longitude"`
++	Bearing         float64 `json:"bearing"`
+ }
+ 
+ type NextSpeedLimit struct {
+@@ -209,10 +210,12 @@
+ }
+ 
+ func loop(state *State) {
++	evidence := MapSpeedLimitEvidence{}
+ 	defer func() {
+ 		if err := recover(); err != nil {
+ 			e := errors.Errorf("panic occured: %v", err)
+ 			loge(e)
++			evidence = MapSpeedLimitEvidence{}
+ 			// reset state for next loop
+ 			state.Data = []uint8{}
+ 			state.NextWays = []NextWayResult{}
+@@ -221,6 +224,7 @@
+ 			state.LastPosition = Position{}
+ 			state.StableWayCounter = 0
+ 		}
++		logwe(writeMapSpeedLimitEvidence(MAP_SPEED_LIMIT_EVIDENCE, evidence))
+ 	}()
+ 
+ 	logLevelData, err := GetParam(MAPD_LOG_LEVEL)
+@@ -281,6 +285,7 @@
+ 
+ 	state.CurrentWay, err = GetCurrentWay(state.CurrentWay, state.NextWays, offline, pos, state.LastPosition, gpsAccuracy)
+ 	logde(errors.Wrap(err, "could not get current way"))
++	currentMatchOK := err == nil && state.CurrentWay.Way.HasNodes()
+ 
+ 	if hasRoadInfoChanged(oldWay, state.CurrentWay.Way) {
+ 		state.LastWayChange = time.Now()
+@@ -380,6 +385,7 @@
+ 			logde(errors.Wrap(err, "could not marshal speed limit"))
+ 			err = PutParam(MAP_SPEED_LIMIT, data)
+ 			logwe(errors.Wrap(err, "could not write speed limit"))
++			evidence = makeMapSpeedLimitEvidence(pos, currentMatchOK && err == nil, currentMaxSpeed)
+ 
+ 			nextSpeedLimit := calculateNextSpeedLimit(state, currentMaxSpeed)
+ 			data, err = json.Marshal(nextSpeedLimit)
+--- a/params.go
++++ b/params.go
+@@ -16,6 +16,8 @@
+ 	MemParamsPath string = "/dev/shm/params/d"
+ 	BasePath      string = GetBasePath()
+ )
++
++var MAP_SPEED_LIMIT_EVIDENCE = ParamPath("MapSpeedLimitEvidence", true)
+ 
+ // Params
+ var (
+@@ -71,6 +73,7 @@
+ }
+ 
+ func ResetParams() {
++	logwe(writeMapSpeedLimitEvidence(MAP_SPEED_LIMIT_EVIDENCE, MapSpeedLimitEvidence{}))
+ 	empty_data := []uint8{}
+ 	empty_object := []uint8{'{', '}'}
+ 	empty_array := []uint8{'[', ']'}
+--- /dev/null
++++ b/speed_limit_evidence.go
+@@ -0,0 +1,67 @@
++package main
++
++import (
++	"encoding/json"
++	"math"
++	"os"
++	"path/filepath"
++	"runtime"
++)
++
++// One atomic result binds the limit to the position actually consumed by mapd.
++// This is freshness/provenance evidence, not a claim that OSM is correct.
++type MapSpeedLimitEvidence struct {
++	Version    int      `json:"version"`
++	Valid      bool     `json:"valid"`
++	Position   Position `json:"position"`
++	SpeedLimit float64  `json:"speedLimit"`
++}
++
++func makeMapSpeedLimitEvidence(pos Position, matched bool, limit float64) MapSpeedLimitEvidence {
++	evidence := MapSpeedLimitEvidence{Version: 1}
++	finite := func(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
++	if matched && pos.LogMonoTime > 0 && finite(pos.Latitude) && finite(pos.Longitude) && finite(pos.Bearing) &&
++		math.Abs(pos.Latitude) <= 90 && math.Abs(pos.Longitude) <= 180 && finite(limit) && limit > 0 && limit <= 145.0/3.6 {
++		evidence.Valid = true
++		evidence.Position = pos
++		evidence.SpeedLimit = limit
++	}
++	return evidence
++}
++
++func writeMapSpeedLimitEvidence(path string, evidence MapSpeedLimitEvidence) error {
++	data, err := json.Marshal(evidence)
++	if err != nil {
++		return err
++	}
++	file, err := os.CreateTemp(filepath.Dir(path), ".map_speed_limit_evidence_")
++	if err != nil {
++		return err
++	}
++	name := file.Name()
++	defer os.Remove(name)
++	_, err = file.Write(data)
++	if err == nil {
++		err = file.Sync()
++	}
++	closeErr := file.Close()
++	if err != nil {
++		return err
++	}
++	if closeErr != nil {
++		return closeErr
++	}
++	if err = os.Rename(name, path); err != nil {
++		return err
++	}
++	// Windows is only used by the isolated test harness; directory fsync is Unix.
++	if runtime.GOOS == "windows" {
++		return nil
++	}
++	dir, err := os.Open(filepath.Dir(path))
++	if err != nil {
++		return err
++	}
++	defer dir.Close()
++	return dir.Sync()
++}
+--- /dev/null
++++ b/speed_limit_evidence_test.go
+@@ -0,0 +1,91 @@
++package main
++
++import (
++	"encoding/json"
++	"math"
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestEvidenceBindsConsumedPosition(t *testing.T) {
++	pos := Position{Latitude: -23, Longitude: -46, Bearing: 90, LogMonoTime: 100000000000}
++	evidence := makeMapSpeedLimitEvidence(pos, true, 50.0/3.6)
++	pos.Latitude = -24
++	pos.LogMonoTime += 1000000000
++	if !evidence.Valid || evidence.Position.Latitude != -23 || evidence.Position.LogMonoTime != 100000000000 {
++		t.Fatal("result did not retain the consumed input", evidence)
++	}
++	data, err := json.Marshal(evidence)
++	if err != nil {
++		t.Fatal(err)
++	}
++	var decoded MapSpeedLimitEvidence
++	if err = json.Unmarshal(data, &decoded); err != nil || decoded != evidence {
++		t.Fatal("round trip", err)
++	}
++}
++
++func TestEvidenceInvalidInputs(t *testing.T) {
++	good := Position{Latitude: -23, Longitude: -46, Bearing: 90, LogMonoTime: 100000000000}
++	for _, limit := range []float64{0, -1, math.NaN(), math.Inf(1), 200.0 / 3.6} {
++		if makeMapSpeedLimitEvidence(good, true, limit).Valid {
++			t.Fatal("accepted bad limit", limit)
++		}
++	}
++	if makeMapSpeedLimitEvidence(good, false, 50.0/3.6).Valid {
++		t.Fatal("accepted failed matching")
++	}
++	good.LogMonoTime = 0
++	if makeMapSpeedLimitEvidence(good, true, 50.0/3.6).Valid {
++		t.Fatal("accepted missing input token")
++	}
++	good.LogMonoTime = 1
++	good.Latitude = 91
++	if makeMapSpeedLimitEvidence(good, true, 50.0/3.6).Valid {
++		t.Fatal("accepted invalid latitude")
++	}
++	good.Latitude = math.NaN()
++	invalid := makeMapSpeedLimitEvidence(good, true, 10)
++	if _, err := json.Marshal(invalid); err != nil {
++		t.Fatal("invalid evidence must be serializable", err)
++	}
++}
++
++func TestEvidenceAtomicReplacementAndInvalidation(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "proof")
++	valid := makeMapSpeedLimitEvidence(Position{Latitude: 1, Longitude: 2, LogMonoTime: 123}, true, 10)
++	for _, expected := range []MapSpeedLimitEvidence{valid, {}, valid} {
++		if err := writeMapSpeedLimitEvidence(path, expected); err != nil {
++			t.Fatal(err)
++		}
++		raw, err := os.ReadFile(path)
++		if err != nil {
++			t.Fatal(err)
++		}
++		var actual MapSpeedLimitEvidence
++		if err = json.Unmarshal(raw, &actual); err != nil || actual != expected {
++			t.Fatal("partial/wrong evidence", err, actual)
++		}
++	}
++	files, err := os.ReadDir(filepath.Dir(path))
++	if err != nil || len(files) != 1 {
++		t.Fatal("temporary file leak", err, files)
++	}
++}
++
++func TestEvidenceWriteFailure(t *testing.T) {
++	dir := t.TempDir()
++	if err := writeMapSpeedLimitEvidence(filepath.Join(dir, "missing", "proof"), MapSpeedLimitEvidence{}); err == nil {
++		t.Fatal("missing parent must report failure")
++	}
++}
++
++func TestEvidenceRepeatedInputDoesNotRenewToken(t *testing.T) {
++	pos := Position{Latitude: 1, Longitude: 2, Bearing: 0, LogMonoTime: 123456789}
++	first := makeMapSpeedLimitEvidence(pos, true, 10)
++	next := makeMapSpeedLimitEvidence(pos, true, 10)
++	if first != next {
++		t.Fatal("republication changed the evidence token")
++	}
++}
