@@ -180,7 +180,9 @@ class TestStoppingController(OpenpilotTestCase):
                                    prev_accel, 0.0, (-3.5, 1.5))
       requests.append(prev_accel)
     assert min(requests) >= StoppingController.END_REQUEST
-    assert max(abs(b - a) for a, b in zip(requests, requests[1:], strict=False)) <= StoppingController.END_RATE * DT_CTRL
+    max_request_rate = max(abs(b - a) / DT_CTRL for a, b in zip(requests, requests[1:], strict=False))
+    assert max_request_rate <= 0.5
+    assert max_request_rate <= StoppingController.END_RATE
 
     # The softer support must not cap a stronger request coming from the plan.
     strong_stop = StoppingController(-1.0)
