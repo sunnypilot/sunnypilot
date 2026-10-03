@@ -67,13 +67,14 @@ class TestAutoCruiseReadFailures(unittest.TestCase):
           self.assertTrue(self.helper.auto_set.takeover)
           self.assertEqual(self.helper.v_cruise_kph, 50.)
           self.cs.gasPressed = self.cs.brakePressed = False
-          self.cs.buttonEvents = []
+          self.cs.buttonEvents = [{'type': 'cancel', 'pressed': False}] if event == 'cancel' else []
           with patch('openpilot.sunnypilot.selfdrive.car.cruise_ext.time.monotonic', return_value=101.):
             self.helper.update_speed_limit_assist(True, self.lp)
             self.helper.auto_target = 80.
             self.helper.auto_control_ok = True
             self.helper.update_automatic_set(self.cs, True)
           self.assertEqual(self.helper.v_cruise_kph, 50.)
+          self.cs.buttonEvents = []
           self.helper.update_automatic_set(self.cs, False)
           for now in (102., 102.1, 102.7):
             with patch('openpilot.sunnypilot.selfdrive.car.cruise_ext.time.monotonic', return_value=now):
