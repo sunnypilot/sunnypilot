@@ -59,8 +59,8 @@ class TestFindDrivingPkl(OpenpilotTestCase):
 class TestModelStateCombinedInit(OpenpilotTestCase):
   def test_asserts_when_no_pkl(self, monkeypatch):
     bundle = DummyBundle(models=[], is_20hz=True)
-    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle)
-    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle)
+    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
+    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
     with self.assertRaisesRegex(AssertionError, "No driving pkl found"):
       ModelState(cam_w=CAM_W, cam_h=CAM_H)
 
@@ -75,11 +75,11 @@ class TestStockEquivalence(OpenpilotTestCase):
 
     frame_skip = derive_frame_skip(SPLIT_VISION_INPUT_SHAPES, SPLIT_POLICY_INPUT_SHAPES)
     stock_shapes = {**SPLIT_VISION_INPUT_SHAPES, **SPLIT_POLICY_INPUT_SHAPES, 'action_t': (1, 2)}
-    stock_queues, stock_npy = make_input_queues(stock_shapes, frame_skip, device='NPY')
+    stock_queues, stock_npy, _frame_views = make_input_queues(stock_shapes, frame_skip, device='NPY', frame_copy_size=49152)
 
-    assert set(state.input_queues.keys()) == set(stock_queues.keys())
+    # sunnypilot split pipeline has tfm/big_tfm as queues (stock has them in npy only)
+    assert set(stock_queues.keys()) <= set(state.input_queues.keys())
     assert {'desire', 'traffic_convention'} <= set(state.numpy_inputs.keys())
-    assert set(state.numpy_inputs.keys()) == set(stock_npy.keys()) - {'action_t', 'prev_feat'}
 
   def test_split_queue_keys_work_with_desire_key(self, model_state_factory):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, make_split_input_queues
@@ -102,6 +102,23 @@ class TestStockEquivalence(OpenpilotTestCase):
     state = model_state_factory(arch)
     assert state.vision_output_slices == arch.metadata_structure['vision']['output_slices']
     assert state.policy_output_slices == arch.metadata_structure['policy']['output_slices']
+
+  def test_unified_run_model(self, tmp_path, monkeypatch, patch_modeld):
+    from openpilot.common.hardware import hw
+    from openpilot.selfdrive.modeld.helpers import dump_oob
+    shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
+              'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
+    pkl_data = {'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}},
+                'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}}
+    with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
+      dump_oob(pkl_data, f)
+    bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
+    patch_modeld(bundle)
+    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
+    state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
+    assert state.is_run_model and state.run_model is not None
+    assert state.run_policy is None and state.warp is None
+    assert 'img' in state.frame_views and 'big_img' in state.frame_views
 
 
 ARCHETYPE_NAMES = list(ARCHETYPES.keys())

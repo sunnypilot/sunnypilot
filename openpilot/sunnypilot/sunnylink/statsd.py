@@ -65,6 +65,7 @@ def sp_stats(end_event):
     'MadsSteeringMode',
     'MadsUnifiedEngagementMode',
     'ModelManager_ActiveBundle',
+    'ModelManager_ActiveBundleChestnut',
     'ModelManager_Favs',
     'EnableSunnylinkUploader',
     'SunnylinkEnabled',
