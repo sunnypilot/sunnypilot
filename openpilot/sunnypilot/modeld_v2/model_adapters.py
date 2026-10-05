@@ -117,6 +117,12 @@ class LegacyModelAdapter(BaseModelAdapter):
     self.run_warp = self._load_warp()
     self._init_common()
     if not self.chestnut:
+      if 'packed_npy_inputs' in self.input_queues:
+        packed_shape = self.input_queues['packed_npy_inputs'].shape
+        self.packed_npy_host = self.input_queues['packed_npy_inputs']._buffer()
+        self.packed_npy_device = Tensor(np.zeros(packed_shape, dtype=np.float32), device=self.QUEUE_DEV).contiguous().realize()._buffer()
+        self.input_queues['packed_npy_inputs'] = input_view(self.packed_npy_device, packed_shape, dtypes.float32, 0)
+
       yuv_size = self.frame_buf_params[self._road_key][3]
       frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
       big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
@@ -149,6 +155,9 @@ class LegacyModelAdapter(BaseModelAdapter):
   def run(self):
     if self.chestnut:
       return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues})
+
+    if hasattr(self, 'packed_npy_device'):
+      self.packed_npy_device.copy_from(self.packed_npy_host)
 
     warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
                            frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
