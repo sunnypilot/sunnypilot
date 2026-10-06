@@ -120,7 +120,7 @@ class LegacyModelAdapter(BaseModelAdapter):
       if 'packed_npy_inputs' in self.input_queues:
         packed_shape = self.input_queues['packed_npy_inputs'].shape
         self.packed_npy_host = self.input_queues['packed_npy_inputs']._buffer()
-        self.packed_npy_device = Tensor(np.zeros(packed_shape, dtype=np.float32), device=self.QUEUE_DEV).contiguous().realize()._buffer()
+        self.packed_npy_device = Tensor(np.zeros(packed_shape, dtype=np.float32), device='NPY').contiguous().realize()._buffer()
         self.input_queues['packed_npy_inputs'] = input_view(self.packed_npy_device, packed_shape, dtypes.float32, 0)
 
       yuv_size = self.frame_buf_params[self._road_key][3]
