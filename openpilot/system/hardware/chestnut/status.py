@@ -5,7 +5,7 @@ from openpilot.common.version import get_build_metadata, CHESTNUT_BRANCHES
 from openpilot.selfdrive.modeld.helpers import MODELS_DIR, chestnut_compiled
 
 
-CHESTNUT_RELEASE_BRANCHES = ("release-chestnut", "release-chestnut-staging")
+CHESTNUT_RELEASE_BRANCHES = ("release-chestnut", "release-chestnut-staging", "nightly-chestnut")
 CHESTNUT_POWERED_VOLTAGE = 5000
 GPU_TEMP_LIMIT = 100.
 MEMORY_TEMP_LIMIT = 95.
