@@ -131,6 +131,7 @@ The tables below describe the **compiled** `settings_ui.json` schema — what th
 | `options` | For selectors | Array of `{"value": 0, "label": "Off"}` objects (see per-option enablement below) |
 | `min`, `max`, `step` | For sliders | Numeric range constraints |
 | `unit` | No | Unit label. Static: `"seconds"`. Dynamic: `{"metric": "km/h", "imperial": "mph"}` (resolved by IsMetric) |
+| `value_transform` | No | Per-unit display transform for parameters stored in one canonical unit |
 | `visibility` | No | Rules for show/hide. Settings are never hidden, always dimmed with UNAVAILABLE badge when rules fail |
 | `enablement` | No | Rules for enabled/disabled (all must pass). Dimmed with badge when rules fail |
 | `blocked` | No | `true` for device-only settings that cannot be modified remotely. Frontend shows as read-only |
@@ -266,6 +267,22 @@ For an item that is intentionally minimal inline (no inline body, only the modal
 ```
 
 Frontend resolves the unit string based on the device's `IsMetric` param. Static units (e.g. `seconds`, `m/s²`) stay plain strings.
+
+If a parameter is always stored in one canonical unit, declare how Sunnylink should transform its numeric value for each display system:
+
+```yaml
+- key: LaneTurnValue
+  widget: option
+  min: 0
+  max: 20
+  step: 1
+  unit: {metric: km/h, imperial: mph}
+  value_transform:
+    metric: {scale: 1.609344, precision: 0, step: 1}
+    imperial: {scale: 1, precision: 0, step: 1}
+```
+
+Sunnylink multiplies stored values and bounds by `scale`, rounds them to `precision`, and uses the optional display-space `step`. Choose a step on the same decimal grid as the declared precision (for example, `step: 0.1` with `precision: 1`) so every rounded value is valid for the native range input. Writes divide the displayed value by the active scale so storage semantics remain unchanged. Do not add this field to parameters whose stored unit already follows `IsMetric`.
 
 ### Add a dynamic title suffix
 
