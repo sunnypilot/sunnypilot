@@ -2094,6 +2094,31 @@
                   "equals": true
                 }
               ]
+            },
+            {
+              "key": "LagdCityDelayBoost",
+              "widget": "option",
+              "title": "City Delay Boost",
+              "description": "Add extra steering delay at lower speeds. The total delay is capped at 0.50s.",
+              "min": 0,
+              "max": 0.3,
+              "step": 0.01,
+              "unit": "seconds",
+              "enablement": [
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "param",
+                    "key": "LagdToggle",
+                    "equals": true
+                  }
+                },
+                {
+                  "type": "param",
+                  "key": "ShowAdvancedControls",
+                  "equals": true
+                }
+              ]
             }
           ]
         },

@@ -19,6 +19,11 @@ from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import Bl
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
 
 
+CITY_SPEED_KPH = 50.0
+HIGHWAY_SPEED_KPH = 80.0
+MAX_DELAY = 0.50
+
+
 class ControlsExt(ModelStateBase):
   def __init__(self, CP: structs.CarParams, params: Params):
     ModelStateBase.__init__(self)
@@ -47,12 +52,45 @@ class ControlsExt(ModelStateBase):
     else:
       return lac
 
+  @staticmethod
+  def get_speed_based_delay(v_ego: float, highway_delay: float, city_delay_offset: float) -> float:
+    speed_kph = v_ego * 3.6
+
+    highway_delay = min(highway_delay, MAX_DELAY)
+    city_delay = min(highway_delay + city_delay_offset, MAX_DELAY)
+
+    if speed_kph <= CITY_SPEED_KPH:
+      return city_delay
+
+    if speed_kph >= HIGHWAY_SPEED_KPH:
+      return highway_delay
+
+    ratio = (speed_kph - CITY_SPEED_KPH) / (HIGHWAY_SPEED_KPH - CITY_SPEED_KPH)
+
+    return city_delay + ratio * (highway_delay - city_delay)
+
   def get_params_sp(self, sm: messaging.SubMaster) -> None:
     if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
       self.blinker_pause_lateral.get_params()
 
       if self.CP.lateralTuning.which() == 'torque':
-        self.lat_delay = get_lat_delay(self.params, sm["lateralDelay"].lateralDelay)
+        if self.params.get_bool("LagdToggle"):
+          self.lat_delay = sm["lateralDelay"].lateralDelay
+        else:
+          highway_delay = get_lat_delay(
+            self.params,
+            sm["lateralDelay"].lateralDelay,
+          )
+
+          city_delay_offset = float(
+            self.params.get("LagdCityDelayBoost", return_default=True)
+          )
+
+          self.lat_delay = self.get_speed_based_delay(
+            sm["carState"].vEgo,
+            highway_delay,
+            city_delay_offset,
+          )
 
       self._param_update_time = time.monotonic()
 
