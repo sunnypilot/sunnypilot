@@ -5,21 +5,34 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
-
+from functools import partial
 
 from openpilot.cereal import custom
+from openpilot.common.version import sunnylink_consent_version, sunnylink_consent_declined
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog, BigDialogBase
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.athena.local_discovery import latest_discovered_app
+from openpilot.sunnypilot.sunnylink.athena.local_pairing import (
+  LocalApp,
+  arm_pairing,
+  clear_pairing_request,
+  get_local_apps,
+  local_app_display_name,
+  pairing_requested,
+  read_pairing_code,
+  remove_local_app,
+)
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
-from openpilot.common.version import sunnylink_consent_version, sunnylink_consent_declined
+
+MAX_LOCAL_APPS = 4
 
 class SunnylinkInfo(Widget):
   def __init__(self):
@@ -73,11 +86,15 @@ class SunnylinkLayoutMici(NavScroller):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
+    self._mobile_app_btn = BigButton(tr("sunnylink local"), "")
+    self._mobile_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalAppsPanelMici()))
+
     self._scroller.add_widgets([
       self._sunnylink_info,
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
+      self._mobile_app_btn,
       self._backup_btn,
       self._restore_btn,
       self._sunnylink_uploader_toggle
@@ -110,6 +127,7 @@ class SunnylinkLayoutMici(NavScroller):
       self._sunnylink_pair_button.set_text(tr("paired"))
     else:
       self._sunnylink_pair_button.set_text(tr("pair"))
+    self._mobile_app_btn.set_visible(self._sunnylink_enabled)
 
   def show_event(self):
     super().show_event()
@@ -140,6 +158,8 @@ class SunnylinkLayoutMici(NavScroller):
       gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
+      if not state:
+        clear_pairing_request()
 
     ui_state.update_params()
 
@@ -252,3 +272,108 @@ class SunnylinkPairBigButton(BigButton):
       dlg = SunnylinkPairingDialog(sponsor_pairing=False)
     if dlg:
       gui_app.push_widget(dlg)
+
+
+class LocalAppsPanelMici(NavScroller):
+
+  def __init__(self):
+    super().__init__()
+    self._local_apps_cache: list[LocalApp] = []
+
+    self._pair_app_btn = BigButton(tr("pair app"), "")
+    self._pair_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalPairingCodeDialogMici()))
+
+    self._local_app_btns: list[BigButton] = []
+    for i in range(MAX_LOCAL_APPS):
+      btn = BigButton("", "")
+      btn.set_click_callback(partial(self._confirm_unpair_local_app, i))
+      self._local_app_btns.append(btn)
+
+    self._scroller.add_widgets([self._pair_app_btn, *self._local_app_btns])
+
+  def _update_state(self):
+    super()._update_state()
+    self._local_apps_cache = get_local_apps()
+    for i, btn in enumerate(self._local_app_btns):
+      btn.set_visible(i < len(self._local_apps_cache))
+      if i < len(self._local_apps_cache):
+        app = self._local_apps_cache[i]
+        btn.set_text(local_app_display_name(app))
+        btn.set_value(app.endpoint)
+
+  def _confirm_unpair_local_app(self, index: int):
+    apps = self._local_apps_cache
+    if index >= len(apps):
+      return
+    app = apps[index]
+
+    def unpair():
+      remove_local_app(app.app_id)
+
+    icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
+    dlg = BigConfirmationDialog(
+      tr("slide to unpair"),
+      icon,
+      confirm_callback=unpair,
+      red=True,
+    )
+    gui_app.push_widget(dlg)
+
+
+class LocalPairingCodeDialogMici(BigDialogBase):
+
+  def __init__(self):
+    super().__init__()
+    self._apps_before = len(get_local_apps())
+    arm_pairing()
+    self.set_back_callback(clear_pairing_request)
+
+    header_color = rl.Color(255, 255, 255, int(255 * 0.9))
+    subheader_color = rl.Color(255, 255, 255, int(255 * 0.9 * 0.65))
+    self._title = UnifiedLabel(tr("pair with mobile app"), font_size=48, font_weight=FontWeight.BOLD,
+                               text_color=header_color, line_height=0.8)
+    self._code_label = UnifiedLabel("", font_size=110, font_weight=FontWeight.DISPLAY,
+                                    text_color=rl.Color(0, 255, 0, 255))
+    self._hint = UnifiedLabel(tr("enter this code in the sunnylink app"), font_size=32,
+                              text_color=subheader_color, line_height=0.9)
+    self._status = UnifiedLabel("", font_size=28,
+                                text_color=rl.Color(255, 255, 255, int(255 * 0.45)), line_height=0.9)
+
+  def _update_state(self):
+    super()._update_state()
+    if self.is_dismissing:
+      return
+    if len(get_local_apps()) > self._apps_before:
+      self.dismiss()  # paired — window already cleared
+    elif not pairing_requested():
+      self.dismiss()  # window expired
+
+  def _render(self, _):
+    self._code_label.set_text(read_pairing_code() or "—")
+
+    discovered = latest_discovered_app()
+    if discovered is not None:
+      endpoint, age = discovered
+      self._status.set_text(endpoint if age < 2 else f"{endpoint} ({age}s)")
+      self._status.set_text_color(rl.Color(0, 255, 0, 255))
+    else:
+      self._status.set_text(tr("waiting for the app…"))
+      self._status.set_text_color(rl.Color(255, 255, 255, int(255 * 0.45)))
+
+    x = self._rect.x + 20
+    width = int(self._rect.width - 40)
+    self._title.set_max_width(width)
+    self._title.set_position(x, self._rect.y + 40)
+    self._title.render()
+
+    self._code_label.set_max_width(width)
+    self._code_label.set_position(x, self._rect.y + 130)
+    self._code_label.render()
+
+    self._hint.set_max_width(width)
+    self._hint.set_position(x, self._rect.y + 290)
+    self._hint.render()
+
+    self._status.set_max_width(width)
+    self._status.set_position(x, self._rect.y + 360)
+    self._status.render()
