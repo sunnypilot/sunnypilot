@@ -249,7 +249,8 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize().reshape(input_shapes['features_buffer'])
+      shifted_feat = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize()
+      inputs['features_buffer'] = shifted_feat.reshape(input_shapes['features_buffer'])
 
     if vision_runner:
       vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').contiguous().realize()
@@ -261,10 +262,10 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     inputs.update({road_key: img, wide_key: big_img})
     if 'features_buffer' not in inputs:
-      inputs['features_buffer'] = sample_skip_fn(feat_q).reshape(input_shapes['features_buffer'])
+      inputs['features_buffer'] = sample_skip_fn(feat_q).realize().reshape(input_shapes['features_buffer'])
 
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').contiguous().realize()
-    if 'features_buffer' not in inputs and features_slice is not None:
+    if 'prev_feat' not in unpacked_dict and features_slice is not None:
       new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
       stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out

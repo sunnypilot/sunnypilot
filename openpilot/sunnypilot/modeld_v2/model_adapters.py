@@ -160,7 +160,7 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.packed_npy_device.copy_from(self.packed_npy_host)
 
     warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
-                           frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key])
+                           frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key]).contiguous().realize()
     return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
 
 
