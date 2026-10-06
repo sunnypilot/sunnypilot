@@ -22,18 +22,19 @@ class SunnylinkConsentPage(Widget):
 
     self._title = self._child(Label(tr("sunnylink"), font_size=90, font_weight=FontWeight.AUDIOWIDE, text_alignment=TextAlignment.LEFT))
 
+    sunnylink_description = tr(
+      "sunnylink enables secured remote access to your comma device from anywhere, including settings management, remote monitoring, real-time dashboard, etc."
+    )
     self._content = [
       {
-        "text": tr("sunnylink enables secured remote access to your comma device from anywhere, " +
-                   "including settings management, remote monitoring, real-time dashboard, etc."),
+        "text": sunnylink_description,
         "primary_btn": tr("Enable"),
         "secondary_btn": tr("Disable"),
         "highlight_primary": True
       },
       {
-        "text": tr("sunnylink is designed to be enabled as part of sunnypilot's core functionality. " +
-                   "If sunnylink is disabled, features such as settings management, remote monitoring, " +
-                   "real-time dashboards will be unavailable."),
+        "text": tr("sunnylink is designed to be enabled as part of sunnypilot's core functionality.") + " " +
+                tr("If sunnylink is disabled, features such as settings management, remote monitoring, real-time dashboards will be unavailable."),
         "secondary_btn": tr("Back"),
         "danger_btn": tr("Disable"),
         "highlight_primary": True

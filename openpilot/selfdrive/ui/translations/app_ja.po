@@ -16,6 +16,14 @@ msgstr " ステアリングトルク応答のキャリブレーションは{}%�
 msgid " Your device is pointed {:.1f}° {} and {:.1f}° {}."
 msgstr " デバイスは{:.1f}°{}、{:.1f}°{}の向きです。"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "(Only for highest tiers, and does NOT bring ANY benefit to you yet. We are just testing data volume.)"
+msgstr "（最上位のスポンサー限定です。現在はデータ量のテスト段階であり、利用者向けの特典はまだありません。）"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid ", but we'll be here when you're ready to come back."
+msgstr "。またのご利用をお待ちしています。"
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "--"
 msgstr "--"
@@ -52,7 +60,7 @@ msgstr "<br><br>ステアリング遅延のキャリブレーションは{}%完�
 msgid "ADD"
 msgstr "追加"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "APN Setting"
 msgstr "APN設定"
 
@@ -60,7 +68,7 @@ msgstr "APN設定"
 msgid "Acknowledge Excessive Actuation"
 msgstr "過度な作動を承認"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Advanced"
 msgstr "詳細設定"
 
@@ -76,6 +84,10 @@ msgstr "同意する"
 msgid "Always-On Driver Monitoring"
 msgstr "常時ドライバーモニタリング"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Are you sure you want to backup your current sunnypilot settings?"
+msgstr "現在の sunnypilot 設定をバックアップしますか？"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Are you sure you want to power off?"
 msgstr "本当に電源をオフにしますか？"
@@ -88,18 +100,43 @@ msgstr "本当に再起動しますか？"
 msgid "Are you sure you want to reset calibration?"
 msgstr "本当にキャリブレーションをリセットしますか？"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Are you sure you want to restore the last backed up sunnypilot settings?"
+msgstr "最後にバックアップした sunnypilot 設定を復元しますか？"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Are you sure you want to uninstall?"
 msgstr "本当にアンインストールしますか？"
 
 #: openpilot/selfdrive/ui/layouts/onboarding.py
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Back"
 msgstr "戻る"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backing up {progress}%"
+msgstr "バックアップ中 {progress}%"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup"
+msgstr "バックアップ"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup Failed"
+msgstr "バックアップ失敗"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Backup Settings"
+msgstr "設定をバックアップ"
 
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "Become a comma prime member at connect.comma.ai"
 msgstr "connect.comma.aiで comma prime に加入"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Become a sponsor of sunnypilot to get early access to sunnylink features when they become available."
+msgstr "sunnypilot のスポンサーになると、新しい sunnylink 機能を先行利用できます。"
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Bookmark connect.comma.ai to your home screen to use it like an app"
@@ -118,22 +155,22 @@ msgid "CHILL MODE ON"
 msgstr "チルモードON"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECT"
 msgstr "接続"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECTING..."
 msgstr "接続中..."
 
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/keyboard.py
-#: system/ui/widgets/network.py
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/keyboard.py
+#: openpilot/system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Cancel"
 msgstr "キャンセル"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Cellular Metered"
 msgstr "従量課金の携帯回線"
 
@@ -145,13 +182,17 @@ msgstr "言語を変更"
 msgid "Changing this setting will restart sunnypilot if the car is powered on."
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Choose your sponsorship tier and confirm your support"
-msgstr ""
+msgstr "スポンサーランクを選択し、支援を確定してください"
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
 msgstr "\"add new device\"を押して右側のQRコードをスキャン"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Click the Sponsor button for more details"
+msgstr "詳しくはスポンサーボタンを押してください"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"
@@ -181,6 +222,10 @@ msgstr "開発者"
 msgid "Device"
 msgstr "デバイス"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "Disable"
+msgstr "無効にする"
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Disengage on Accelerator Pedal"
 msgstr "アクセルで解除"
@@ -202,8 +247,9 @@ msgid "Display speed in km/h instead of mph."
 msgstr "速度をmphではなくkm/hで表示します。"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
 msgid "Dongle ID"
-msgstr "ドングルID"
+msgstr "デバイス ID"
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Download"
@@ -217,7 +263,7 @@ msgstr "ドライバーカメラ"
 msgid "Driving Personality"
 msgstr "走行性格"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "EDIT"
 msgstr "編集"
 
@@ -233,14 +279,15 @@ msgstr "ETH"
 msgid "EXPERIMENTAL MODE ON"
 msgstr "実験モードON"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Early Access: Become a sunnypilot Sponsor"
-msgstr ""
+msgstr "先行アクセス：sunnypilot のスポンサーになる"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
 msgid "Enable"
-msgstr "有効化"
+msgstr "有効にする"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Enable ADB"
@@ -250,7 +297,7 @@ msgstr "ADBを有効化"
 msgid "Enable Lane Departure Warnings"
 msgstr "車線逸脱警報を有効化"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Roaming"
 msgstr "ローミングを有効化"
 
@@ -258,13 +305,25 @@ msgstr "ローミングを有効化"
 msgid "Enable SSH"
 msgstr "SSHを有効化"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Tethering"
 msgstr "テザリングを有効化"
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Enable driver monitoring even when sunnypilot is not engaged."
 msgstr ""
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink"
+msgstr "sunnylink を有効にする"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink uploader (infrastructure test)"
+msgstr "sunnylink アップローダーを有効にする（インフラテスト）"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Enable sunnylink uploader to allow sunnypilot to upload your driving data to sunnypilot servers. "
+msgstr "sunnylink アップローダーを有効にすると、走行データを sunnypilot のサーバーにアップロードできます。"
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Enable sunnypilot"
@@ -274,23 +333,23 @@ msgstr ""
 msgid "Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter APN"
 msgstr "APNを入力"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter SSID"
 msgstr "SSIDを入力"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter new tethering password"
 msgstr "新しいテザリングのパスワードを入力"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter password"
 msgstr "パスワードを入力"
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Enter search query"
 msgstr ""
 
@@ -298,7 +357,7 @@ msgstr ""
 msgid "Enter your GitHub username"
 msgstr "GitHubユーザー名を入力"
 
-#: system/ui/widgets/list_view.py
+#: openpilot/system/ui/widgets/list_view.py
 msgid "Error"
 msgstr "エラー"
 
@@ -310,7 +369,7 @@ msgstr "実験モード"
 msgid "Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control."
 msgstr "この車では縦制御に純正ACCを使用するため、現在実験モードは利用できません。"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "FORGETTING..."
 msgstr "削除中..."
 
@@ -323,18 +382,23 @@ msgid "Firehose"
 msgstr "大量配信"
 
 #: openpilot/selfdrive/ui/layouts/settings/firehose.py
+#: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Firehose Mode"
 msgstr "Firehoseモード"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Follow the prompts to complete the pairing process"
-msgstr ""
+msgstr "画面の案内に従って連携を完了してください"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "For secure backup, restore, and remote configuration"
+msgstr "安全なバックアップ、復元、リモート設定に対応"
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget"
 msgstr "削除"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget Wi-Fi Network \"{}\"?"
 msgstr "Wi‑Fiネットワーク「{}」を削除しますか？"
 
@@ -350,7 +414,7 @@ msgstr "スマートフォンで https://connect.comma.ai にアクセス"
 msgid "HIGH"
 msgstr "高温"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Hidden Network"
 msgstr "非公開ネットワーク"
 
@@ -358,21 +422,25 @@ msgstr "非公開ネットワーク"
 msgid "INSTALL"
 msgstr "インストール"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "IP Address"
 msgstr "IPアドレス"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai"
-msgstr ""
+msgstr "スポンサー登録状況が更新されない場合は、https://community.sunnypilot.ai のコミュニティフォーラムでモデレーターにお問い合わせください"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "If sunnylink is disabled, features such as settings management, remote monitoring, real-time dashboards will be unavailable."
+msgstr "無効にすると、設定の管理、遠隔監視、リアルタイムダッシュボードなどを利用できなくなります。"
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Install Update"
 msgstr "アップデートをインストール"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues"
-msgstr ""
+msgstr "ご不明な点がある場合は、https://community.sunnypilot.ai のコミュニティフォーラムに参加して、モデレーターにお問い合わせください"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Joystick Debug Mode"
@@ -403,6 +471,8 @@ msgid "Maximize your training data uploads to improve openpilot's driving models
 msgstr "学習データのアップロードを最大化してopenpilotの運転モデルを改善しましょう。"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
 msgid "N/A"
 msgstr "該当なし"
 
@@ -422,15 +492,27 @@ msgstr "ユーザー'{}'のSSH鍵が見つかりません"
 msgid "No release notes available."
 msgstr "リリースノートはありません。"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not Paired"
+msgstr "未連携"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not Sponsor"
+msgstr "スポンサー未登録"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Not going to lie, it's sad to see you disabled sunnylink"
+msgstr "sunnylink が無効になり、残念です"
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "OFFLINE"
 msgstr "オフライン"
 
-#: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/html_render.py
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/html_render.py
 msgid "OK"
-msgstr "OK"
+msgstr "確認"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "ONLINE"
@@ -460,13 +542,21 @@ msgstr "prime の特典:"
 msgid "Pair Device"
 msgstr "デバイスをペアリング"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Pair GitHub Account"
+msgstr "GitHub アカウントを連携"
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Pair device"
 msgstr "デバイスをペアリング"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Pair your GitHub account"
-msgstr ""
+msgstr "GitHub アカウントを連携"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Pair your GitHub account to grant your device sponsor benefits, including API access on sunnylink."
+msgstr "GitHub アカウントを連携すると、sunnylink API へのアクセスなどのスポンサー特典をデバイスで利用できます。"
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Pair your device to your comma account"
@@ -477,19 +567,27 @@ msgstr "デバイスをあなたの comma アカウントにペアリング"
 msgid "Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."
 msgstr "デバイスを comma connect（connect.comma.ai）とペアリングして、comma prime 特典を受け取りましょう。"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Paired"
+msgstr "連携済み"
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Please connect to Wi-Fi to complete initial pairing"
 msgstr "初回ペアリングを完了するにはWi‑Fiに接続してください"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Please reboot and try again."
+msgstr "再起動してから、もう一度お試しください。"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Power Off"
 msgstr "電源オフ"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered Wi-Fi connection"
 msgstr "従量課金のWi‑Fi接続時は大きなデータのアップロードを抑制"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered cellular connection"
 msgstr "従量課金の携帯回線接続時は大きなデータのアップロードを抑制"
 
@@ -513,9 +611,9 @@ msgstr "リセット"
 msgid "REVIEW"
 msgstr "確認"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Re-enter the \"sunnylink\" panel to verify sponsorship status"
-msgstr ""
+msgstr "「sunnylink」画面を開き直して、スポンサー登録状況を確認してください"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Reboot"
@@ -569,6 +667,22 @@ msgstr "リセット"
 msgid "Reset Calibration"
 msgstr "キャリブレーションをリセット"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore"
+msgstr "復元"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore Failed"
+msgstr "復元失敗"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restore Settings"
+msgstr "設定を復元"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Restoring {progress}%"
+msgstr "復元中 {progress}%"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Review Training Guide"
 msgstr "トレーニングガイドを確認"
@@ -581,27 +695,31 @@ msgstr ""
 msgid "SELECT"
 msgstr "選択"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "SPONSOR"
+msgstr "スポンサーになる"
+
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "SSH Keys"
 msgstr "SSH鍵"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to login to your GitHub account"
-msgstr ""
+msgstr "QR コードを読み取り、GitHub アカウントにログインしてください"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"
-msgstr ""
+msgstr "QR コードを読み取り、sunnyhaibin の GitHub Sponsors ページを開いてください"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Scanning Wi-Fi networks..."
 msgstr "Wi‑Fiネットワークを検索中..."
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Search"
 msgstr ""
 
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Select"
 msgstr "選択"
 
@@ -617,6 +735,14 @@ msgstr "言語を選択"
 msgid "Serial"
 msgstr "シリアル"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Settings backup completed."
+msgstr "設定のバックアップが完了しました。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Settings restored. Confirm to restart the interface."
+msgstr "設定を復元しました。確認すると画面を再起動します。"
+
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Snooze Update"
 msgstr "更新を後で通知"
@@ -624,6 +750,14 @@ msgstr "更新を後で通知"
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Software"
 msgstr "ソフトウェア"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Sponsor Status"
+msgstr "スポンサー登録状況"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Sponsorship isn't required for basic backup/restore"
+msgstr "基本的なバックアップ・復元にはスポンサー登録は不要です"
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Standard"
@@ -641,13 +775,25 @@ msgstr "すぐに手動介入してください"
 msgid "TEMP"
 msgstr "温度"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "THANKS ♥"
+msgstr "ありがとう ♥"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Target Branch"
 msgstr "対象ブランチ"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Tethering Password"
 msgstr "テザリングのパスワード"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "This is the master switch, it will allow you to cutoff any sunnylink requests should you want to do that."
+msgstr "これはメインスイッチです。必要に応じて sunnylink へのすべてのリクエストを停止できます。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "This may be due to weak internet connection or sunnylink registration issue. "
+msgstr "インターネット接続が不安定か、sunnylink の登録に問題がある可能性があります。"
 
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Toggles"
@@ -664,6 +810,10 @@ msgstr "アンインストール"
 #: openpilot/selfdrive/ui/layouts/home.py
 msgid "UPDATE"
 msgstr "更新"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Unable to restore the settings, try again later."
+msgstr "設定を復元できません。しばらくしてから、もう一度お試しください。"
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Uninstall"
@@ -701,6 +851,10 @@ msgstr "表示"
 msgid "Waiting to start"
 msgstr "開始待機中"
 
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "Welcome back!! We're excited to see you've enabled sunnylink again!"
+msgstr "おかえりなさい！sunnylink を再び有効にしていただき、ありがとうございます！"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Welcome to sunnypilot"
 msgstr ""
@@ -713,11 +867,11 @@ msgstr ""
 msgid "Wi-Fi"
 msgstr "Wi‑Fi"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wi-Fi Network Metered"
 msgstr "Wi‑Fiネットワーク（従量課金）"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wrong password"
 msgstr "パスワードが違います"
 
@@ -729,7 +883,23 @@ msgstr ""
 msgid "You must accept the Terms of Service to use sunnypilot. Read the latest terms at https://sunnypilot.ai/terms before continuing."
 msgstr ""
 
-#: openpilot/selfdrive/ui/onroad/driver_camera_dialog.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backing up"
+msgstr "バックアップ中"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backup"
+msgstr "バックアップ"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "backup settings"
+msgstr "設定をバックアップ"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/widgets/sunnylink_pairing_dialog.py
+msgid "become a sunnypilot sponsor"
+msgstr "sunnypilot を支援"
+
+#: openpilot/selfdrive/ui/onroad/cabin_camera_dialog.py
 msgid "camera starting"
 msgstr "カメラを起動中"
 
@@ -741,9 +911,21 @@ msgstr "チェック中..."
 msgid "comma prime"
 msgstr "comma prime"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "default"
 msgstr "既定"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "device id"
+msgstr "デバイス ID"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid ""
+"disable\n"
+"sunnylink"
+msgstr ""
+"sunnylink を\n"
+"無効にする"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "down"
@@ -753,6 +935,22 @@ msgstr "下"
 msgid "downloading..."
 msgstr "ダウンロード中..."
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid ""
+"enable\n"
+"sunnylink"
+msgstr ""
+"sunnylink を\n"
+"有効にする"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "enable sunnylink"
+msgstr "sunnylink を有効にする"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "failed"
+msgstr "失敗"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "failed to check for update"
 msgstr "アップデートの確認に失敗しました"
@@ -761,7 +959,7 @@ msgstr "アップデートの確認に失敗しました"
 msgid "finalizing update..."
 msgstr "アップデートを終了しています..."
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "for \"{}\""
 msgstr "「{}」向け"
 
@@ -769,7 +967,7 @@ msgstr "「{}」向け"
 msgid "km/h"
 msgstr "km/h"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "leave blank for automatic configuration"
 msgstr "自動設定の場合は空欄のままにしてください"
 
@@ -777,7 +975,7 @@ msgstr "自動設定の場合は空欄のままにしてください"
 msgid "left"
 msgstr "左"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "metered"
 msgstr "従量"
 
@@ -789,13 +987,105 @@ msgstr "mph"
 msgid "never"
 msgstr "なし"
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "no internet"
+msgstr "インターネット未接続"
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "now"
 msgstr "今"
 
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "pair"
+msgstr "連携する"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/widgets/sunnylink_pairing_dialog.py
+msgid "pair with sunnylink"
+msgstr "sunnylink と連携"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "paired"
+msgstr "連携済み"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "please connect to WiFi & try again"
+msgstr "Wi-Fi に接続して再試行してください"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "please reboot & try again"
+msgstr "再起動して再試行してください"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restore"
+msgstr "復元"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restore settings"
+msgstr "設定を復元"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "restoring"
+msgstr "復元中"
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "right"
 msgstr "右"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid "scroll to continue"
+msgstr "スクロールして続行"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "settings backed up"
+msgstr "設定をバックアップしました"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to backup"
+msgstr "スライドしてバックアップ"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to restart"
+msgstr "スライドして再起動"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "slide to restore"
+msgstr "スライドして復元"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sponsor"
+msgstr "スポンサーになる"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sponsor tier"
+msgstr "スポンサーランク"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink"
+msgstr "sunnylink"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/settings/sunnylink.py
+msgid "sunnylink Dongle ID not found. "
+msgstr "sunnylink デバイス ID が見つかりません。"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sunnylink dongle id not found"
+msgstr "sunnylink デバイス ID が見つかりません"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink enables secured remote access to your comma device from anywhere, including settings management, remote monitoring, real-time dashboard, etc."
+msgstr "sunnylink を使用すると、どこからでも comma デバイスに安全にリモートアクセスし、設定の管理、遠隔監視、リアルタイムダッシュボードなどを利用できます。"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/onboarding.py
+msgid "sunnylink enables secured remote access to your comma device from anywhere."
+msgstr "sunnylink を使用すると、どこからでも comma デバイスに安全にリモートアクセスできます。"
+
+#: openpilot/selfdrive/ui/sunnypilot/layouts/onboarding.py
+msgid "sunnylink is designed to be enabled as part of sunnypilot's core functionality."
+msgstr "sunnylink は sunnypilot の主要機能の一部として有効にすることを前提に設計されています。"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "sunnylink uploader"
+msgstr "sunnylink アップローダー"
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "sunnypilot Longitudinal Control (Alpha)"
@@ -813,7 +1103,19 @@ msgstr ""
 msgid "sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "thanks"
+msgstr "ありがとう"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "try again later."
+msgstr "後でもう一度お試しください。"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "unable to restore"
+msgstr "復元できません"
+
+#: openpilot/system/ui/widgets/network.py
 msgid "unmetered"
 msgstr "非従量"
 
@@ -832,6 +1134,10 @@ msgstr "最新です。最終確認: {}"
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "update available"
 msgstr "更新があります"
+
+#: openpilot/selfdrive/ui/sunnypilot/mici/layouts/sunnylink.py
+msgid "{progress}%"
+msgstr "{progress}%"
 
 #: openpilot/selfdrive/ui/layouts/home.py
 msgid "{} ALERT"
@@ -853,16 +1159,7 @@ msgid "{} minute ago"
 msgid_plural "{} minutes ago"
 msgstr[0] "{}分前"
 
-#: openpilot/selfdrive/ui/layouts/settings/firehose.py
-msgid "{} segment of your driving is in the training dataset so far."
-msgid_plural "{} segments of your driving is in the training dataset so far."
-msgstr[0] "これまでにあなたの走行の{}セグメントが学習データセットに含まれています。"
-
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "✓ SUBSCRIBED"
 msgstr "✓ 登録済み"
-
-#: openpilot/selfdrive/ui/widgets/setup.py
-msgid "🔥 Firehose Mode 🔥"
-msgstr "🔥 Firehoseモード 🔥"
 
