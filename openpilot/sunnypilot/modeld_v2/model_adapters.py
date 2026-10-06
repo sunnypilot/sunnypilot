@@ -57,7 +57,10 @@ class BaseModelAdapter:
     self.frame_buf_params = dict.fromkeys(getattr(self, '_vision_input_names', ['img', 'big_img']), self.nv12_info)
 
   def get_dummy_inputs(self):
-    dummy_size = getattr(self, 'warp_frame_size', self.frame_copy_size if self.is_native else self.frame_buf_params[self._road_key][3])
+    if self.frame_resize is not None:
+      dummy_size = self.nv12_info[3]
+    else:
+      dummy_size = getattr(self, 'warp_frame_size', self.frame_copy_size if self.is_native else self.frame_buf_params[self._road_key][3])
     dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
@@ -179,7 +182,11 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self._vision_input_names = ['img', 'big_img']
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
 
-    self.warp_frame_size = self.frame_copy_size
+    if self.chestnut and self.resize_frames:
+      self.frame_resize = FrameResize()
+      self.warp_frame_size = self.frame_resize.target_copy_size
+    else:
+      self.warp_frame_size = self.frame_copy_size
     self._init_common()
     self.run_model = self.jits['run']
 
@@ -202,7 +209,10 @@ class NativeTinygradAdapter(BaseModelAdapter):
     for i, key in enumerate(self._vision_input_names):
       if key in bufs:
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
+        if self.frame_resize is not None:
+          self.frame_resize.resize(data, self.frames[i])
+        else:
+          np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
 
   def reset_warmup_buffers(self) -> None:
     self.packed_input[:] = 0
