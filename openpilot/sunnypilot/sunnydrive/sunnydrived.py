@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT))
 from openpilot.cereal import messaging  # noqa: E402
 from openpilot.sunnypilot.sunnydrive import pairing  # noqa: E402
 
-SERVICES = ["carState", "selfdriveState", "selfdriveStateSP", "carControl", "gpsLocationExternal", "deviceState", "carParams", "modelV2", "driverMonitoringState", "longitudinalPlanSP", "liveMapDataSP", "extrinsicsCalibration"]
+SERVICES = ["carState", "selfdriveState", "selfdriveStateSP", "carControl", "gpsLocationExternal", "deviceState", "carParams", "modelV2", "driverMonitoringState", "longitudinalPlanSP", "liveMapDataSP", "extrinsicsCalibration", "radarTracks"]
 LLM_GET = {"/v1/models", "/api/v0/models"}
 LLM_POST = {"/v1/chat/completions"}
 SUNNYLINK_WIDGETS = {"toggle", "option", "multiple_button"}   # the setting kinds the app can change
@@ -54,25 +54,33 @@ def road_camera(device_type, rpy, height, wide_from_device=None):
   cameras = DEVICE_CAMERAS.get((device_type, "os04c10" if device_type == "mici" else "ox03c10"))
   if cameras is None:
     return None
-  cam = cameras.wide_road if wide_from_device else cameras.narrow_road
+  cam = cameras.wide_road if wide_from_device is not None else cameras.narrow_road
   intrinsic = np.array([[cam.focal_length, 0, cam.width / 2], [0, cam.focal_length, cam.height / 2], [0, 0, 1]])
   view_from_road = get_view_frame_from_road_frame(*rpy, height)
-  if wide_from_device:   # view <- wide <- device <- road, instead of view <- device <- road
+  if wide_from_device is not None:   # view <- wide <- device <- road, instead of view <- device <- road
     device_from_view = view_frame_from_device_frame.T
     view_from_road = np.hstack((view_frame_from_device_frame @ orient.rot_from_euler(list(wide_from_device)) @ device_from_view @ view_from_road[:, :3], view_from_road[:, 3:]))
   ground = intrinsic @ view_from_road[:, [0, 1, 3]]
-  return {"width": cam.width, "height": cam.height, "focal": cam.focal_length, "ground": [round(float(v), 6) for v in ground.flatten()]}
+  view_from_calib = view_frame_from_device_frame @ orient.rot_from_euler(list(rpy))
+  if wide_from_device is not None:
+    view_from_calib = view_frame_from_device_frame @ orient.rot_from_euler(list(wide_from_device)) @ orient.rot_from_euler(list(rpy))
+  projection = intrinsic @ view_from_calib
+  return {"width": cam.width, "height": cam.height, "cameraHeight": float(height), "focal": cam.focal_length, "ground": [round(float(v), 6) for v in ground.flatten()],
+          "modelProjection": [round(float(v), 6) for v in projection.flatten()]}
 
 
 def snapshot(sm):
   data = {"timestampMs": round(time.time() * 1000), "car": None, "selfdrive": None, "mads": None, "lateral": None, "gps": None, "device": None, "vehicle": None, "model": None, "driverMonitoring": None, "speedLimit": None, "map": None, "dec": None}
+  from tools.yolo.yolo_radar import decode_tracks, radar_snapshot
+  raw_tracks=decode_tracks(sm['radarTracks']) if sm.seen['radarTracks'] else None
+  data['radar']=radar_snapshot(raw_tracks,sm.logMonoTime['radarTracks']/1e9,time.monotonic())
   if sm.seen["carParams"]:
     params = sm["carParams"]
     data["vehicle"] = {"brand": params.brand, "fingerprint": params.carFingerprint, "openpilotLongitudinal": params.openpilotLongitudinalControl}
   if fresh(sm, "carState"):
     car = sm["carState"]
     data["car"] = {
-      "speedMps": car.vEgo, "clusterSpeedMps": car.vEgoCluster, "accelMps2": car.aEgo,
+      "speedMps": car.vEgo, "clusterSpeedMps": car.vEgoCluster, "accelMps2": car.aEgo, "yawRateRps": car.yawRate,
       "gear": str(car.gearShifter), "standstill": car.standstill,
       "steeringAngleDeg": car.steeringAngleDeg, "steeringPressed": car.steeringPressed,
       "gasPressed": car.gasPressed, "brakePressed": car.brakePressed,
@@ -118,7 +126,7 @@ def snapshot(sm):
   if fresh(sm, "modelV2", 2):
     model = sm["modelV2"]
     def line(points):
-      return {"x": list(points.x), "y": list(points.y)}
+      return {"x": list(points.x), "y": list(points.y), "z": list(points.z)}
     data["model"] = {
       "frameId": model.frameId,
       "path": line(model.position),

@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+cd "$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+exec /private/tmp/roadseg-venv/bin/python tools/yolo/yolo_viewer.py --cache /private/tmp/yolo26-models "$@"
