@@ -59,6 +59,35 @@ sections:
       label: 24h
     - value: 1800
       label: 30h (Default)
+  - key: CustomShutdownVoltage
+    widget: option
+    title: Minimum Battery Voltage
+    description: Device will shutdown if the car battery reaches the set voltage. < 11.8V disables the minimum battery voltage check.
+    options:
+    - value: 11.7
+      label: Always On
+    - value: 11.8
+      label: 11.8V (Default)
+    - value: 11.9
+      label: 11.9V
+    - value: 12.0
+      label: 12.0V
+    - value: 12.1
+      label: 12.1V
+    - value: 12.2
+      label: 12.2V
+    - value: 12.3
+      label: 12.3V
+    - value: 12.4
+      label: 12.4V
+    - value: 12.5
+      label: 12.5V
+    - value: 12.6
+      label: 12.6V
+    - value: 12.7
+      label: 12.7V
+    - value: 12.8
+      label: 12.8V
 - id: language
   title: Language
   items:
