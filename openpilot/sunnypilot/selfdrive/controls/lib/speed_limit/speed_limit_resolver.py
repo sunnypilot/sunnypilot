@@ -38,8 +38,8 @@ class SpeedLimitResolver:
     self.frame = -1
 
     self._gps_location_service = get_gps_location_service(self.params)
-    self.limit_solutions = {}  # Store for speed limit solutions from different sources
-    self.distance_solutions = {}  # Store for distance to current speed limit start for different sources
+    self.limit_solutions = {}
+    self.distance_solutions = {}
 
     self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
     self.policy = get_sanitize_int_param(
@@ -48,6 +48,7 @@ class SpeedLimitResolver:
       Policy.max().value,
       self.params
     )
+
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.map_data_only: [SpeedLimitSource.map],
@@ -55,18 +56,29 @@ class SpeedLimitResolver:
       Policy.map_data_priority: [SpeedLimitSource.map, SpeedLimitSource.car],
       Policy.combined: [SpeedLimitSource.car, SpeedLimitSource.map],
     }
+
     self.source = SpeedLimitSource.none
     for source in ALL_SOURCES:
       self._reset_limit_sources(source)
 
     self.is_metric = self.params.get_bool("IsMetric")
+
     self.offset_type = get_sanitize_int_param(
       "SpeedLimitOffsetType",
       OffsetType.min().value,
       OffsetType.max().value,
       self.params
     )
+
     self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
+
+    # Per-speed offsets.
+    # Values are stored in the user's selected unit (km/h or mph).
+    self.offset_below_50 = self.params.get("SpeedLimitOffsetBelow50", return_default=True) or "0"
+    self.offset_60 = self.params.get("SpeedLimitOffset60", return_default=True) or "0"
+    self.offset_70 = self.params.get("SpeedLimitOffset70", return_default=True) or "0"
+    self.offset_80 = self.params.get("SpeedLimitOffset80", return_default=True) or "0"
+    self.offset_above_90 = self.params.get("SpeedLimitOffsetAbove90", return_default=True) or "0"
 
     self.speed_limit = 0.
     self.speed_limit_last = 0.
@@ -96,13 +108,50 @@ class SpeedLimitResolver:
       self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
 
+      self.offset_below_50 = self.params.get("SpeedLimitOffsetBelow50", return_default=True)
+      self.offset_60 = self.params.get("SpeedLimitOffset60", return_default=True)
+      self.offset_70 = self.params.get("SpeedLimitOffset70", return_default=True)
+      self.offset_80 = self.params.get("SpeedLimitOffset80", return_default=True)
+      self.offset_above_90 = self.params.get("SpeedLimitOffsetAbove90", return_default=True)
+
+  def _get_per_speed_offset_value(self) -> float:
+    """
+    Return the configured per-speed offset in the user's selected unit.
+
+    Buckets:
+      <50       -> SpeedLimitOffsetBelow50
+      50-69     -> SpeedLimitOffset60
+      70-79     -> SpeedLimitOffset70
+      80-89     -> SpeedLimitOffset80
+      >=90      -> SpeedLimitOffsetAbove90
+    """
+    speed_limit_user_units = self.speed_limit / (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS)
+
+    if speed_limit_user_units < 50:
+      return float(self.offset_below_50)
+    elif speed_limit_user_units < 70:
+      return float(self.offset_60)
+    elif speed_limit_user_units < 80:
+      return float(self.offset_70)
+    elif speed_limit_user_units < 90:
+      return float(self.offset_80)
+    else:
+      return float(self.offset_above_90)
+
   def _get_speed_limit_offset(self) -> float:
     if self.offset_type == OffsetType.off:
       return 0
+
     elif self.offset_type == OffsetType.fixed:
       return float(self.offset_value * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
+
     elif self.offset_type == OffsetType.percentage:
       return float(self.offset_value * 0.01 * self.speed_limit)
+
+    elif self.offset_type == OffsetType.per_speed:
+      per_speed_offset = self._get_per_speed_offset_value()
+      return float(per_speed_offset * (CV.KPH_TO_MS if self.is_metric else CV.MPH_TO_MS))
+
     else:
       raise NotImplementedError("Offset not supported")
 
@@ -137,7 +186,7 @@ class SpeedLimitResolver:
     map_data = sm['liveMapDataSP']
 
     distance_since_fix = self.v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
-    distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
+    distance_to_speed_limit_ahead = max(0.,map_data.speedLimitAheadDistance - distance_since_fix)
 
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
@@ -145,7 +194,7 @@ class SpeedLimitResolver:
     # FIXME-SP: this is not working as expected
     if 0. < next_speed_limit < self.v_ego:
       adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
+      adapt_distance = (self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2)
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
@@ -162,6 +211,7 @@ class SpeedLimitResolver:
       return SpeedLimitSource.none
 
     sources_with_limits = [(s, limit) for s, limit in [(s, self.limit_solutions[s]) for s in sources_for_policy] if limit > 0.]
+
     if sources_with_limits:
       return min(sources_with_limits, key=lambda x: x[1])[0]
 
