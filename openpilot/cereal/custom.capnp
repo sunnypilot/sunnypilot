@@ -138,6 +138,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     status @0 :DownloadStatus;
     progress @1 :Float32;
     eta @2 :UInt32;
+    speed @3 :Float32;  # bytes per second, smoothed
   }
 
   struct Chunk {
