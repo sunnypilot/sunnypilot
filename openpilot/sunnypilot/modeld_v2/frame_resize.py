@@ -15,6 +15,15 @@ SOURCE_SIZE = (1928, 1208)
 TARGET_SIZE = (1344, 760)
 
 
+def scale_transform(transform: np.ndarray) -> None:
+  """Update native-frame warp transforms, shaped (..., 3, 3), to sample the resized frame."""
+  # Center-anchored point sampling maps source pixel s to resized pixel
+  # d = (s + 0.5) * TARGET / SOURCE - 0.5, so new_row = scale * row + (0.5 * scale - 0.5) * w_row.
+  for axis in (0, 1):
+    scale = TARGET_SIZE[axis] / SOURCE_SIZE[axis]
+    transform[..., axis, :] = scale * transform[..., axis, :] + (0.5 * scale - 0.5) * transform[..., 2, :]
+
+
 class FrameResize:
   """Fixed NV12 point sampling: center-anchored floor((2*dst + 1) * source / (2 * target)), with edge-filled padding."""
 

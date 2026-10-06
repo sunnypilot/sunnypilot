@@ -56,19 +56,23 @@ class BaseModelAdapter:
     self.frame_buf_params = dict.fromkeys(getattr(self, '_vision_input_names', ['img', 'big_img']), self.nv12_info)
 
   def get_dummy_inputs(self):
-    dummy_size = getattr(self, 'warp_frame_size', self.frame_copy_size if self.is_native else self.frame_buf_params[self._road_key][3])
+    if self.frame_resize is not None:
+      dummy_size = self.nv12_info[3]
+    else:
+      dummy_size = getattr(self, 'warp_frame_size', self.frame_copy_size if self.is_native else self.frame_buf_params[self._road_key][3])
     dummy_frames = {k: np.zeros(dummy_size, dtype=np.uint8) for k in self._vision_input_names}
     transforms = {k: np.eye(3, dtype=np.float32) for k in [self._road_key, self._wide_key] if k}
     dummy_inputs = {k: np.zeros(v.shape, dtype=v.dtype) for k, v in self.numpy_inputs.items() if k not in ['tfm', 'big_tfm', 'prev_feat']}
     return dummy_frames, transforms, dummy_inputs
 
-  def _load_warp(self):
-    if (self.cam_w, self.cam_h) in self.jits:
+  def _load_warp(self, cam_w=None, cam_h=None):
+    cam_w, cam_h = cam_w or self.cam_w, cam_h or self.cam_h
+    if (cam_w, cam_h) in self.jits:
       self.warp_frame_size = self.nv12_info[3]
-      return self.jits[(self.cam_w, self.cam_h)]
+      return self.jits[(cam_w, cam_h)]
 
     warp_dir = Path(BASEDIR) / "openpilot/sunnypilot/modeld_v2/models"
-    warp_name = f'{"big_" if self.chestnut else ""}driving_warp_{self.cam_w}x{self.cam_h}_tinygrad.pkl'
+    warp_name = f'{"big_" if self.chestnut else ""}driving_warp_{cam_w}x{cam_h}_tinygrad.pkl'
     with open(warp_dir / warp_name, 'rb') as f:
       warp_data = pickle.load(f)
       run_warp = warp_data['run']
@@ -185,7 +189,13 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self._vision_input_names = [k for k in self.input_shapes_orig if 'img' in k]
     self.vision_output_slices = pickle.loads(codecs.decode(self.jits['metadata']['metadata']['output_slices'].encode(), 'base64'))
 
-    self.run_warp = self._load_warp()
+    if self.chestnut and self.resize_frames:
+      self.frame_resize = FrameResize()
+      self.run_warp = self._load_warp(*TARGET_SIZE)
+      if self.warp_frame_size < self.frame_resize.target_copy_size:
+        raise RuntimeError("Comma 3X native AMD model requires a 1344x760 warp for resized NV12 frames")
+    else:
+      self.run_warp = self._load_warp()
     self._init_common()
     self.run_model = self.jits['run']
 
@@ -216,7 +226,11 @@ class NativeTinygradAdapter(BaseModelAdapter):
     for i, key in enumerate(self._vision_input_names):
       if key in bufs:
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
-        np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
+        if self.frame_resize is not None:
+          # Target warps accept a full VisionIPC allocation; only its leading NV12 planes are used.
+          self.frame_resize.resize(data, self.frames[i, :self.frame_resize.target_copy_size])
+        else:
+          np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
 
   def reset_warmup_buffers(self) -> None:
     self.packed_input[:] = 0

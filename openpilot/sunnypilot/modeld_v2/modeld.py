@@ -40,7 +40,7 @@ from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
-from openpilot.sunnypilot.modeld_v2.frame_resize import SOURCE_SIZE, TARGET_SIZE
+from openpilot.sunnypilot.modeld_v2.frame_resize import SOURCE_SIZE, TARGET_SIZE, scale_transform
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_oob
@@ -120,7 +120,7 @@ class ModelState(ModelStateBase):
     self.adapter = get_model_adapter(jits, cam_w, cam_h, self.DEV, self.QUEUE_DEV, self.WARP_DEV, self.chestnut,
                                      resize_frames=resize_frames)
     if self.adapter.frame_resize is not None:
-      cloudlog.warning(f"Comma 3X unified AMD frame resize: {cam_w}x{cam_h} -> {TARGET_SIZE[0]}x{TARGET_SIZE[1]}")
+      cloudlog.warning(f"Comma 3X AMD frame resize: {cam_w}x{cam_h} -> {TARGET_SIZE[0]}x{TARGET_SIZE[1]}")
     self.vision_output_slices = self.adapter.vision_output_slices
     self.policy_output_slices = self.adapter.policy_output_slices
     self._policy_slices_list = self.adapter._policy_slices_list
@@ -177,22 +177,19 @@ class ModelState(ModelStateBase):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
+    resize = self.adapter.frame_resize is not None
     if self.adapter.is_native:
       for i, key in enumerate(self._vision_input_names):
         if key in transforms:
           self.numpy_inputs['tfm'][i] = transforms[key].reshape(3, 3)
+          if resize:
+            scale_transform(self.numpy_inputs['tfm'][i])
     else:
       self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
       self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
-      if self.adapter.frame_resize is not None:
-        # Center-anchored point sampling maps source pixel s to resized pixel
-        # d = (s + 0.5) * TARGET / SOURCE - 0.5, so correct the warp transform to
-        # sample the resized frame: new_row = scale * row + (0.5 * scale - 0.5) * w_row.
+      if resize:
         for key in ('tfm', 'big_tfm'):
-          tfm = self.numpy_inputs[key]
-          for axis in (0, 1):
-            scale = TARGET_SIZE[axis] / SOURCE_SIZE[axis]
-            tfm[axis] = scale * tfm[axis] + (0.5 * scale - 0.5) * tfm[2]
+          scale_transform(self.numpy_inputs[key])
 
     raw_outputs = self.adapter.run()
 
