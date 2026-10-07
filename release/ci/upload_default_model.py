@@ -22,22 +22,41 @@ def hash_file(path: str) -> str:
   return digest.hexdigest()
 
 
+def update_defaults_json(defaults_json: dict, bundle: dict, dedup_key: str, tinygrad_ref: str) -> dict:
+  def matches_bundle(target_bundle):
+    bundle_hash = target_bundle.get("onnx_sha256")
+    bundle_tinygrad_ref = target_bundle.get("tinygrad_ref") or defaults_json.get("tinygrad_ref")
+    return bundle_hash == dedup_key and bundle_tinygrad_ref == tinygrad_ref
+
+  defaults_json["tinygrad_ref"] = tinygrad_ref
+  existing_index = next((i for i, b in enumerate(defaults_json.get("bundles", [])) if matches_bundle(b)), None)
+  if existing_index is not None:
+    defaults_json["bundles"][existing_index] = bundle
+  else:
+    defaults_json.setdefault("bundles", []).append(bundle)
+  return defaults_json
+
+
 def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--hf-repo", required=True)
   parser.add_argument("--hf-defaults-path", required=True)
   parser.add_argument("--artifact-name", required=True)
   parser.add_argument("--model-dir", required=True)
-  parser.add_argument("--onnx-path", required=True)
-  parser.add_argument("--onnx-ref", required=True)
+  parser.add_argument("--onnx-path", default="")
+  parser.add_argument("--onnx-ref", default="")
   parser.add_argument("--model-name", required=True)
   parser.add_argument("--tinygrad-ref", required=True)
   parser.add_argument("--run-number", required=True)
   args = parser.parse_args()
 
   api = HfApi()
-  onnx_sha256 = hash_file(args.onnx_path)
-  short_ref = args.onnx_ref[:8]
+  if args.onnx_path:
+    onnx_sha256 = hash_file(args.onnx_path)
+    short_ref = args.onnx_ref[:8]
+  else:
+    onnx_sha256 = None
+    short_ref = args.run_number
   safe_name = args.model_name.replace(" ", "-")
   folder_name = f"model-{safe_name}-{short_ref}-{args.run_number}"
 
@@ -51,8 +70,11 @@ def main():
 
   bundle = metadata['bundles'][0]
   bundle['display_name'] = args.model_name
-  bundle['onnx_sha256'] = onnx_sha256
-  bundle['onnx_ref'] = args.onnx_ref
+  if onnx_sha256 is not None:
+    bundle['onnx_sha256'] = onnx_sha256
+    bundle['onnx_ref'] = args.onnx_ref
+  bundle['tinygrad_ref'] = args.tinygrad_ref
+  dedup_key = onnx_sha256 or bundle.get('onnx_sha256', '')
 
   artifact = bundle['models'][0]['artifact']
   hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{folder_name}"
@@ -76,14 +98,7 @@ def main():
   except Exception:
     defaults_json = {"tinygrad_ref": args.tinygrad_ref, "bundles": []}
 
-  defaults_json['tinygrad_ref'] = args.tinygrad_ref
-
-  existing_idx = next((i for i, b in enumerate(defaults_json['bundles'])
-                       if b.get('onnx_sha256') == onnx_sha256), None)
-  if existing_idx is not None:
-    defaults_json['bundles'][existing_idx] = bundle
-  else:
-    defaults_json['bundles'].append(bundle)
+  update_defaults_json(defaults_json, bundle, dedup_key, args.tinygrad_ref)
 
   print(json.dumps(defaults_json, indent=2))
 
