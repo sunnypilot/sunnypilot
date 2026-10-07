@@ -143,7 +143,7 @@ class LegacyModelAdapter(BaseModelAdapter):
     elif self.chestnut:
       for key in self._vision_input_names:
         if key in bufs:
-          data = buf.data if hasattr(bufs[key], 'data') else bufs[key]
+          data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
           np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key in bufs.keys():
