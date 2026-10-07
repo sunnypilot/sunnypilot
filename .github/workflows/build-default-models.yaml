@@ -236,6 +236,34 @@ jobs:
           print(f'Chunked into {len(targets)} files')
           "
 
+      - name: Compile big warp
+        run: |
+          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
+          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+
+          CHESTNUT_TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32"
+          COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
+          MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
+          MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
+
+          for res in $(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')"); do
+            CAM_W=$(echo $res | cut -d x -f1)
+            CAM_H=$(echo $res | cut -d x -f2)
+            STRIDE_INFO=$(python3 -c "
+          import sys
+          from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
+          s,y,u,sz = get_nv12_info(int(sys.argv[1]), int(sys.argv[2]))
+          print(f'{s},{y},{u},{sz}')
+          " $CAM_W $CAM_H)
+            WARP_PKL="${MODELS_DIR}/big_driving_warp_${res}_tinygrad.pkl"
+            env ${CHESTNUT_TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
+              --frame ${CAM_W},${CAM_H},${STRIDE_INFO} \
+              --warp-to ${MODEL_SIZE} \
+              --layout yuv420 \
+              --frames 2 \
+              --output "${WARP_PKL}"
+          done
+
       - name: Prepare output
         env:
           MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
@@ -249,6 +277,7 @@ jobs:
 
           cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
           cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+          cp "$MODELS_DIR"/big_driving_warp_* "$OUTPUT_DIR/" || true
 
           PKL_LFS_SHA256=$(git cat-file blob "$(git ls-files -s "${{ github.workspace }}/${{ env.BIG_PKL }}" | awk '{print $2}')" | grep '^oid sha256:' | cut -d: -f2)
 
