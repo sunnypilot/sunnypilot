@@ -47,6 +47,7 @@ jobs:
           if [ "${{ inputs.target }}" = "big" ]; then
             NAME=$(python3 -c "from openpilot.sunnypilot.models.model_name import DEFAULT_BIG_MODEL; print(DEFAULT_BIG_MODEL)")
             HF_DEFAULTS_PATH="models/defaults/big"
+            ONNX_PATH="openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl"
           elif [ "${{ inputs.target }}" = "dm" ]; then
             ONNX_PATH="openpilot/selfdrive/modeld/models/dmonitoring_model.onnx"
             HF_DEFAULTS_PATH="models/defaults/dm"
@@ -335,6 +336,8 @@ jobs:
             --hf-defaults-path "${{ needs.resolve.outputs.hf_defaults_path }}" \
             --artifact-name "$ARTIFACT_NAME" \
             --model-dir output \
+            --onnx-path "${{ needs.resolve.outputs.onnx_path }}" \
+            --onnx-ref "${{ needs.resolve.outputs.onnx_ref }}" \
             --model-name "${{ needs.resolve.outputs.model_name }}" \
             --tinygrad-ref "${{ needs.resolve.outputs.tinygrad_ref }}" \
             --run-number "${{ github.run_number }}"
