@@ -250,7 +250,7 @@ jobs:
           cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
           cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
 
-          PKL_LFS_SHA256=$(sha256sum "$MODELS_DIR/${PKL_BASE}" | cut -d' ' -f1)
+          PKL_LFS_SHA256=$(git cat-file blob "$(git ls-files -s "${{ github.workspace }}/${{ env.BIG_PKL }}" | awk '{print $2}')" | grep '^oid sha256:' | cut -d: -f2)
 
           python3 "${{ github.workspace }}/release/ci/model_generator.py" \
             --model-dir "$MODELS_DIR" \
