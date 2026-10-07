@@ -16,7 +16,7 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 19
+REQUIRED_JSON_VERSION = 20
 
 CUSTOM_MODEL_PATH = Paths.model_root()
 ModelManager = custom.ModelManagerSP
