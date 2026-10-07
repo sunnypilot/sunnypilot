@@ -85,6 +85,23 @@ class LongitudinalPlannerSP:
 
     longitudinalPlanSP = plan_sp_send.longitudinalPlanSP
     longitudinalPlanSP.longitudinalPlanSource = self.source
+    # Custom stop sign & traffic light hold logic
+    if self.experimental_mode and sm.updated['modelV2']:
+        if self.output_v_target < 1.0:
+            self.output_v_target = 0.0
+
+        # Smooth low-speed takeoff without being sluggish at higher speeds
+        if self.output_a_target > 0:
+            if v_ego < 8.3:
+                self.output_a_target *= 0.85
+            elif v_ego < 16.6:
+                self.output_a_target *= 0.92
+
+        # Smooth cruise control speed adjustment response
+        if self.v_cruise_cluster_kph > 0:
+            target_diff = abs(self.v_cruise_cluster_kph - (v_ego * 3.6))
+            if target_diff > 15:
+                self.output_a_target = max(-1.5, min(self.output_a_target, 1.2))
     longitudinalPlanSP.vTarget = float(self.output_v_target)
     longitudinalPlanSP.aTarget = float(self.output_a_target)
     longitudinalPlanSP.events = self.events_sp.to_msg()
