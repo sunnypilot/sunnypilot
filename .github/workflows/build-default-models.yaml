@@ -277,7 +277,6 @@ jobs:
 
           cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
           cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
-          cp "$MODELS_DIR"/big_driving_warp_* "$OUTPUT_DIR/" || true
 
           PKL_LFS_SHA256=$(git cat-file blob "$(git ls-files -s "${{ github.workspace }}/${{ env.BIG_PKL }}" | awk '{print $2}')" | grep '^oid sha256:' | cut -d: -f2)
 
@@ -287,6 +286,8 @@ jobs:
             --custom-name "$MODEL_NAME" \
             --upstream-branch "${{ needs.resolve.outputs.onnx_ref }}" \
             --onnx-sha256 "$PKL_LFS_SHA256"
+
+          cp "$MODELS_DIR"/big_driving_warp_* "$OUTPUT_DIR/" || true
 
           echo "model-${MODEL_NAME}-${{ github.run_number }}" > "$OUTPUT_DIR/artifact_name.txt"
 
