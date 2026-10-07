@@ -13,7 +13,7 @@ import numpy as np
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
-from openpilot.sunnypilot.modeld_v2.stock_dependencies import make_input_queues as stock_make_input_queues, nv12_copy_size
+from openpilot.sunnypilot.modeld_v2.stock_dependencies import MODELD_INPUTS, make_input_queues as stock_make_input_queues, nv12_copy_size
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
 from tinygrad.device import Buffer
 from tinygrad.dtype import DType, dtypes
@@ -82,24 +82,34 @@ class LegacyModelAdapter(BaseModelAdapter):
 
     metadata = self.jits['metadata']
     self.frame_copy_size = nv12_copy_size(*self.nv12_info[:3])
+    self.is_run_model = 'run_model' in self.jits
 
     if self.chestnut:
       self.WARP_DEV = self.DEV
 
-    if 'model' in metadata:
+    if self.is_run_model or 'model' in metadata:
       model_metadata = metadata.get('model', metadata)
       self.input_shapes = model_metadata['input_shapes']
       self.vision_output_slices = model_metadata['output_slices']
       self._vision_input_names = [key for key in self.input_shapes if 'img' in key]
       self.frame_skip = derive_frame_skip({}, self.input_shapes)
-      if self.chestnut:
-        self.input_queues, self.numpy_inputs, self.frame_slots = stock_make_input_queues(
-          self.input_shapes, self.frame_skip, device=self.QUEUE_DEV, frame_copy_size=self.frame_copy_size)
+      if self.is_run_model:
+        self.input_queues, self.numpy_inputs, self.frame_buffers = stock_make_input_queues(
+          self.input_shapes, self.frame_skip, device=self.DEV, frame_copy_size=self.frame_copy_size)
+        self.frame_views, self.npy = self.frame_buffers, self.numpy_inputs
+        self.run_model = self.jits['run_model'][(self.cam_w, self.cam_h)]
+        self.run_policy, self.run_warp = None, None
       else:
-        self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
-      self.run_policy = self.jits['run_policy'] if 'run_policy' in self.jits else self.jits[(self.cam_w, self.cam_h)]
+        if self.chestnut:
+          self.input_queues, self.numpy_inputs, self.frame_slots = stock_make_input_queues(
+            self.input_shapes, self.frame_skip, device=self.QUEUE_DEV, frame_copy_size=self.frame_copy_size)
+        else:
+          self.input_queues, self.numpy_inputs = make_supercombo_input_queues(self.input_shapes, self.frame_skip, device=self.QUEUE_DEV)
+        self.run_policy = self.jits['run_policy'] if 'run_policy' in self.jits else self.jits[(self.cam_w, self.cam_h)]
+        self.run_model = None
     else:
       self.run_policy = self.jits['run_policy']
+      self.run_model = None
       vision_metadata = metadata['vision']
       policy_keys = [k for k in metadata if k not in ('vision', 'warp_dev')]
       self._combined_model_type = 'split' if policy_keys == ['policy'] else 'multi_policy'
@@ -114,20 +124,26 @@ class LegacyModelAdapter(BaseModelAdapter):
       self.input_queues, self.numpy_inputs = make_split_input_queues(vision_metadata['input_shapes'], first_policy_meta['input_shapes'],
                                                                      self.frame_skip, device=self.QUEUE_DEV)
 
-    self.run_warp = self._load_warp()
     self._init_common()
-    if not self.chestnut:
-      yuv_size = self.frame_buf_params[self._road_key][3]
-      frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-      big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
-      self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
-                    frame=frame_tensor, big_frame=big_frame_tensor)
+    if not self.is_run_model:
+      self.run_warp = self._load_warp()
+      if not self.chestnut:
+        yuv_size = self.frame_buf_params[self._road_key][3]
+        frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+        big_frame_tensor = Tensor(np.zeros(yuv_size, dtype=np.uint8), device=self.WARP_DEV).contiguous().realize()
+        self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
+                      frame=frame_tensor, big_frame=big_frame_tensor)
 
   def copy_frames(self, bufs):
-    if self.chestnut:
+    if self.is_run_model:
+      for key, buf in bufs.items():
+        if key in self.frame_buffers:
+          data = buf.data if hasattr(buf, 'data') else buf
+          np.copyto(self.frame_buffers[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
+    elif self.chestnut:
       for key in self._vision_input_names:
         if key in bufs:
-          data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
+          data = buf.data if hasattr(bufs[key], 'data') else bufs[key]
           np.copyto(self.frame_slots[key], np.frombuffer(data, dtype=np.uint8, count=self.frame_copy_size))
     else:
       for key in bufs.keys():
@@ -147,6 +163,9 @@ class LegacyModelAdapter(BaseModelAdapter):
       self._blob_cache.clear()
 
   def run(self):
+    if self.is_run_model:
+      outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
+      return outs
     if self.chestnut:
       return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues})
 

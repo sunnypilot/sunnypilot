@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from functools import partial
 import math
 import numpy as np
 from collections import namedtuple
@@ -115,11 +116,14 @@ def get_policy_npy_shapes(input_shapes):
 
 
 def make_input_queues(input_shapes, frame_skip, device, frame_copy_size):
-  road_key, _ = _detect_vision_keys(input_shapes)
+  road_key, wide_key = _detect_vision_keys(input_shapes)
+  road_key = road_key or 'img'
+  wide_key = wide_key or 'big_img'
   img = input_shapes[road_key]
   fb = input_shapes['features_buffer']
   feat_dim = math.prod(fb[2:])
-  dp = input_shapes[_detect_desire_key(input_shapes)]
+  desire_key = _detect_desire_key(input_shapes)
+  dp = input_shapes[desire_key]
   n_frames = img[1] // 6
   img_buf_shape = (frame_skip * (n_frames - 1) + 1, 6, img[2], img[3])
 
@@ -130,7 +134,7 @@ def make_input_queues(input_shapes, frame_skip, device, frame_copy_size):
   packed_input = np.zeros(packed_npy_size + 2 * frame_copy_size, dtype=np.uint8)
   packed_npy_inputs = packed_input[:packed_npy_size].view(np.float32)
   frames = packed_input[packed_npy_size:]
-  frame_views = {'img': frames[:frame_copy_size], 'big_img': frames[frame_copy_size:]}
+  frame_views = {road_key: frames[:frame_copy_size], wide_key: frames[frame_copy_size:]}
   npy = {k: v.reshape(s) for (k, s), v in zip(shapes.items(), np.split(packed_npy_inputs, np.cumsum(sizes[:-1])), strict=True)}
   input_queues = {
     'img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
@@ -167,6 +171,48 @@ def make_warp(nv12, model_w, model_h):
     warped_big_frame = frame_prepare(big_frame, big_tfm).unsqueeze(0)
     return Tensor.cat(warped_frame, warped_big_frame)
   return warp
+
+
+def make_run_policy(model_runner, model_metadata, frame_skip):
+  sample_desire_fn = partial(sample_desire, frame_skip=frame_skip)
+  sample_skip_fn = partial(sample_skip, frame_skip=frame_skip)
+  npy_shapes, npy_sizes = get_policy_npy_shapes(model_metadata['input_shapes'])
+  desire_key = _detect_desire_key(model_metadata['input_shapes'])
+  road_key, wide_key = _detect_vision_keys(model_metadata['input_shapes'])
+  road_key = road_key or 'img'
+  wide_key = wide_key or 'big_img'
+  model_input_dtypes = {name: spec.dtype for name, spec in model_runner.graph_inputs.items()}
+
+  def run_policy(warped, img_q, big_img_q, feat_q, desire_q, packed_npy_inputs):
+    packed_npy_inputs = packed_npy_inputs.to(Device.DEFAULT)
+    warped = warped.to(Device.DEFAULT)
+    Tensor.realize(packed_npy_inputs, warped)
+
+    img = shift_and_sample(img_q, warped[0:1], sample_skip_fn)
+    big_img = shift_and_sample(big_img_q, warped[1:2], sample_skip_fn)
+
+    unpacked_tensors = [t.reshape(s) for t, s in zip(packed_npy_inputs.split(npy_sizes), npy_shapes.values(), strict=True)]
+    unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
+
+    desire_buf = shift_and_sample(desire_q, unpacked_dict['desire'].reshape(1, 1, -1), sample_desire_fn)
+
+    inputs = {
+      road_key: img,
+      wide_key: big_img,
+      desire_key: desire_buf,
+    }
+    for key, tensor_val in unpacked_dict.items():
+      if key not in ('desire', 'prev_feat'):
+        inputs[key] = tensor_val
+
+    if 'prev_feat' in unpacked_dict:
+      feat_buf = shift_and_sample(feat_q, unpacked_dict['prev_feat'].reshape(1, 1, -1), sample_skip_fn)
+      inputs['features_buffer'] = feat_buf
+
+    inputs = {name: value.cast(model_input_dtypes[name]) for name, value in inputs.items() if name in model_input_dtypes}
+    out = next(iter(model_runner(inputs).values())).cast('float32')
+    return out,
+  return run_policy
 
 
 def make_run_model(warp, run_policy, model_metadata, frame_copy_size):

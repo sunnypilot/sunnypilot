@@ -412,12 +412,16 @@ if __name__ == "__main__":
   args.supercombo_onnx = read_file_chunked_to_disk(args.supercombo_onnx)
 
   is_unified_supercombo = False
+  is_run_model = False
   if args.model_type == 'supercombo':
     assert args.supercombo_onnx
     model_metadata = make_metadata_dict(args.supercombo_onnx)
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
-    if derived_frame_skip != 1 and os.getenv('CHESTNUT'):
+    if os.getenv('CHESTNUT'):
       is_unified_supercombo = True
+    else:
+      if derived_frame_skip != 1:
+        is_run_model = True
 
   if is_unified_supercombo:
     output_data['metadata'] = {'model': model_metadata, **model_metadata}
@@ -435,6 +439,26 @@ if __name__ == "__main__":
       run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
       compiled_jit = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs, return_loaded=False)
       output_data[(cam_w, cam_h)] = compiled_jit
+      gc.collect()
+    del model_runner, run_policy
+    gc.collect()
+    output_data['metadata']['warp_dev'] = Device.DEFAULT
+  elif is_run_model:
+    output_data['metadata'] = {'model': model_metadata, **model_metadata}
+    output_data['input_devices'] = {'model': Device.DEFAULT}
+    output_data['run_model'] = {}
+    model_runner = OnnxRunner(args.supercombo_onnx)
+    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
+    for cam_w, cam_h in set(args.camera_resolutions):
+      print(f"Compiling run_model JIT for {cam_w}x{cam_h}")
+      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+                                  frame_copy_size=frame_copy_size)
+      warp = stock.make_warp(nv12, model_w, model_h)
+      run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+      compiled_jit = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs, return_loaded=False)
+      output_data['run_model'][(cam_w, cam_h)] = compiled_jit
       gc.collect()
     del model_runner, run_policy
     gc.collect()

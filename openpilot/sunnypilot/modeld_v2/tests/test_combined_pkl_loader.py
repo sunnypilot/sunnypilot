@@ -99,6 +99,29 @@ class TestStockEquivalence(OpenpilotTestCase):
     pkl_data = {
       'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}, 'metadata': {'output_slices': slices_b64},
                    'input_shapes': shapes, 'output_slices': {}, 'output_shapes': {}},
+      'run_model': {(CAM_W, CAM_H): tests_helpers._noop_jit}
+    }
+    with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
+      dump_oob(pkl_data, f)
+    bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
+    patch_modeld(bundle)
+    monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
+    state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
+    assert state.adapter.is_run_model and state.adapter.run_model is not None
+    assert state.adapter.run_policy is None and getattr(state.adapter, 'run_warp', None) is None
+    assert 'img' in state.adapter.frame_views and 'big_img' in state.adapter.frame_views
+
+  def test_split_supercombo_policy(self, tmp_path, monkeypatch, patch_modeld):
+    from openpilot.common.hardware import hw
+    from openpilot.sunnypilot.modeld_v2.helpers import dump_oob
+    shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
+              'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
+    import codecs
+    import pickle
+    slices_b64 = codecs.encode(pickle.dumps({}), 'base64').decode()
+    pkl_data = {
+      'metadata': {'model': {'input_shapes': shapes, 'output_slices': {}}, 'metadata': {'output_slices': slices_b64},
+                   'input_shapes': shapes, 'output_slices': {}, 'output_shapes': {}},
       (CAM_W, CAM_H): tests_helpers._noop_jit,
       'run_policy': tests_helpers._noop_jit,
     }
@@ -108,6 +131,7 @@ class TestStockEquivalence(OpenpilotTestCase):
     patch_modeld(bundle)
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))
     state = ModelState(cam_w=CAM_W, cam_h=CAM_H)
+    assert not state.adapter.is_run_model
     assert state.adapter.run_policy is not None
 
 
