@@ -164,11 +164,14 @@ class LegacyModelAdapter(BaseModelAdapter):
 
   def run(self):
     if self.is_run_model:
+      assert self.run_model is not None
       outs, = self.run_model(**{k: self.input_queues[k] for k in MODELD_INPUTS})
       return outs
+    assert self.run_policy is not None
     if self.chestnut:
       return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues})
 
+    assert self.run_warp is not None
     warped = self.run_warp(**{k: self.input_queues[k] for k in ('tfm', 'big_tfm')},
                            frame=self.full_frames[self._road_key], big_frame=self.full_frames[self._wide_key]).contiguous().realize()
     return self.run_policy(**{k: self.input_queues[k] for k in POLICY_INPUTS if k in self.input_queues}, warped=warped)
