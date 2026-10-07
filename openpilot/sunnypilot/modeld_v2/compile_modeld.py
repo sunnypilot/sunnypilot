@@ -233,14 +233,14 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
     warped_dev = warped.to(Device.DEFAULT)
     Tensor.realize(packed_npy_inputs_dev, warped_dev)
 
-    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn).realize()
-    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn).realize()
+    img = stock.shift_and_sample(img_q, warped_dev[0:1], sample_skip_fn)
+    big_img = stock.shift_and_sample(big_img_q, warped_dev[1:2], sample_skip_fn)
 
     unpacked_tensors = [tensor.reshape(shape) for tensor, shape in zip(packed_npy_inputs_dev.split(npy_sizes), npy_shapes.values(), strict=True)]
     unpacked_dict = dict(zip(npy_shapes.keys(), unpacked_tensors, strict=True))
 
     desire_dev = unpacked_dict['desire']
-    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn).realize()
+    desire_buf = stock.shift_and_sample(desire_q, desire_dev.reshape(1, 1, -1), sample_desire_fn)
 
     inputs = {desire_key: desire_buf}
     for key, tensor_val in unpacked_dict.items():
@@ -249,7 +249,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      shifted_feat = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).realize()
+      shifted_feat = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn)
       inputs['features_buffer'] = shifted_feat.reshape(input_shapes['features_buffer'])
 
     if vision_runner:
@@ -262,7 +262,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     inputs.update({road_key: img, wide_key: big_img})
     if 'features_buffer' not in inputs:
-      inputs['features_buffer'] = sample_skip_fn(feat_q).realize().reshape(input_shapes['features_buffer'])
+      inputs['features_buffer'] = sample_skip_fn(feat_q).reshape(input_shapes['features_buffer'])
 
     policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').contiguous().realize()
     if 'prev_feat' not in unpacked_dict and features_slice is not None:
