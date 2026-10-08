@@ -50,7 +50,7 @@ st[0-9A-Za-z][0-9A-Za-z][0-9A-Za-z][0-9A-Za-z][0-9A-Za-z][0-9A-Za-z]
 *.stats
 *.pkl
 *.pkl*
-!openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl
+!openpilot/selfdrive/modeld/models/big_*_tinygrad.pkl
 !openpilot/sunnypilot/modeld_v2/models/*.pkl
 config.json
 compile_commands.json
