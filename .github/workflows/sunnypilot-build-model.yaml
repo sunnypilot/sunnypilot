@@ -224,7 +224,7 @@ jobs:
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
-          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
             echo "CHESTNUT build"
             export CHESTNUT=1
