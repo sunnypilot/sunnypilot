@@ -96,22 +96,15 @@ def get_metadata_value_by_name(model: dict[str, Any], name: str) -> str | Any:
 def make_metadata_dict(model_path):
   with Context(DEV='CPU'):
     model = MetadataOnnxPBParser(model_path).parse()
-    output_slices_raw = get_metadata_value_by_name(model, 'output_slices')
-    assert output_slices_raw is not None, 'output_slices not found in metadata'
+    output_slices = get_metadata_value_by_name(model, 'output_slices')
+    assert output_slices is not None, 'output_slices not found in metadata'
 
-    output_slices = pickle.loads(codecs.decode(output_slices_raw.encode(), "base64"))
-    if 'hidden_state' not in output_slices:
-      output_slices['hidden_state'] = slice(0, 512)
-
-    meta_dict = {
+    return {
       'model_checkpoint': get_metadata_value_by_name(model, 'model_checkpoint'),
-      'output_slices': output_slices,
+      'output_slices': pickle.loads(codecs.decode(output_slices.encode(), "base64")),
       'input_shapes': dict(get_name_and_shape(x) for x in model["graph"]["input"]),
       'output_shapes': dict(get_name_and_shape(x) for x in model["graph"]["output"]),
     }
-    del model
-    gc.collect()
-    return meta_dict
 
 
 def _detect_desire_key(shapes: dict) -> str | None:
@@ -194,10 +187,7 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     queues['feat_q'] = Tensor(np.zeros((feat_q_len, features_buffer[0], feat_dim),
                        dtype=np.float32), device=device).contiguous().realize()
 
-  for key in ('tfm', 'big_tfm'):
-    if key not in npy_arrays:
-      npy_arrays[key] = np.eye(3, dtype=np.float32)
-    queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
+  queues.update({key: Tensor(value, device='NPY').realize() for key, value in npy_arrays.items() if key in ('tfm', 'big_tfm')})
 
   return queues, npy_arrays
 
@@ -259,22 +249,23 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
     if 'prev_feat' in unpacked_dict:
       prev_feat_dev = unpacked_dict['prev_feat']
-      inputs['features_buffer'] = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn).reshape(input_shapes['features_buffer'])
+      shifted_feat = stock.shift_and_sample(feat_q, prev_feat_dev.reshape(1, 1, -1), sample_skip_fn)
+      inputs['features_buffer'] = shifted_feat.reshape(input_shapes['features_buffer'])
 
     if vision_runner:
-      vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').realize()
+      vision_out_cast = next(iter(vision_runner({road_key: img, wide_key: big_img}).values())).cast('float32').contiguous().realize()
       if 'features_buffer' not in inputs:
         new_feat = vision_out_cast[:, features_slice].reshape(1, -1).unsqueeze(0)
         inputs['features_buffer'] = stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
-      policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').realize() for pol_runner in policy_runners]
+      policy_outs = [next(iter(pol_runner(inputs).values())).cast('float32').contiguous().realize() for pol_runner in policy_runners]
       return (vision_out_cast, *policy_outs) if len(policy_outs) > 1 else (vision_out_cast, policy_outs[0])
 
     inputs.update({road_key: img, wide_key: big_img})
     if 'features_buffer' not in inputs:
       inputs['features_buffer'] = sample_skip_fn(feat_q).reshape(input_shapes['features_buffer'])
 
-    policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').realize()
-    if 'features_buffer' not in inputs and features_slice is not None:
+    policy_out = next(iter(policy_runners[0](inputs).values())).cast('float32').contiguous().realize()
+    if 'prev_feat' not in unpacked_dict and features_slice is not None:
       new_feat = policy_out[:, features_slice].reshape(1, -1).unsqueeze(0)
       stock.shift_and_sample(feat_q, new_feat, sample_skip_fn).realize()
     return policy_out
@@ -283,7 +274,7 @@ def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, 
 
 
 def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_random_inputs=None,
-                benchmark_runs: int = 1, clear_refs=None, return_loaded: bool = True):
+                benchmark_runs: int = 1, return_loaded: bool = True):
   if callable(input_keys_or_make_inputs) and make_queues is None:
     fn = jit_or_fn
     make_inputs = input_keys_or_make_inputs
@@ -333,14 +324,10 @@ def compile_jit(jit_or_fn, input_keys_or_make_inputs, make_queues=None, make_ran
       return val
 
   print('capture + replay')
-  gc.collect()
   test_val = run_eval(jit, 42, 3)
   print(f'pickle round trip ({benchmark_runs} runs per seed)')
   with tempfile.TemporaryFile(dir=".") as f:
     dump_oob(jit, f)
-    if clear_refs:
-      clear_refs()
-    gc.collect()
     f.seek(0)
     loaded_jit = load_oob(f)
 
@@ -382,11 +369,8 @@ def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_ru
   make_random_warp_inputs = partial(make_random_images, keys=['frame', 'big_frame'], shape=nv12.size, device=WARP_DEV)
   warp = TinyJit(stock.make_warp(nv12, model_w, model_h), prune=True)
 
-  def cleanup_warp():
-    nonlocal warp
-    warp = None
   compiled_jit = compile_jit(warp, WARP_INPUTS, make_warp_queues, make_random_inputs=make_random_warp_inputs,
-                            benchmark_runs=benchmark_runs, clear_refs=cleanup_warp)
+                            benchmark_runs=benchmark_runs)
 
   result_data = (compiled_jit, Device.DEFAULT)
   with open(result_path, "wb") as f:
@@ -428,12 +412,16 @@ if __name__ == "__main__":
   args.supercombo_onnx = read_file_chunked_to_disk(args.supercombo_onnx)
 
   is_unified_supercombo = False
+  is_run_model = False
   if args.model_type == 'supercombo':
     assert args.supercombo_onnx
     model_metadata = make_metadata_dict(args.supercombo_onnx)
     derived_frame_skip = args.frame_skip or derive_frame_skip({}, model_metadata['input_shapes'])
-    if derived_frame_skip != 1 and os.getenv('CHESTNUT'):
+    if os.getenv('CHESTNUT'):
       is_unified_supercombo = True
+    else:
+      if derived_frame_skip != 1:
+        is_run_model = True
 
   if is_unified_supercombo:
     output_data['metadata'] = {'model': model_metadata, **model_metadata}
@@ -451,6 +439,26 @@ if __name__ == "__main__":
       run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
       compiled_jit = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs, return_loaded=False)
       output_data[(cam_w, cam_h)] = compiled_jit
+      gc.collect()
+    del model_runner, run_policy
+    gc.collect()
+    output_data['metadata']['warp_dev'] = Device.DEFAULT
+  elif is_run_model:
+    output_data['metadata'] = {'model': model_metadata, **model_metadata}
+    output_data['input_devices'] = {'model': Device.DEFAULT}
+    output_data['run_model'] = {}
+    model_runner = OnnxRunner(args.supercombo_onnx)
+    run_policy = stock.make_run_policy(model_runner, model_metadata, derived_frame_skip)
+    for cam_w, cam_h in set(args.camera_resolutions):
+      print(f"Compiling run_model JIT for {cam_w}x{cam_h}")
+      nv12 = stock.NV12Frame(cam_w, cam_h, *get_nv12_info(cam_w, cam_h))
+      frame_copy_size = stock.nv12_copy_size(nv12.stride, nv12.y_height, nv12.uv_height)
+      make_model_queues = partial(stock.make_input_queues, model_metadata['input_shapes'], derived_frame_skip,
+                                  frame_copy_size=frame_copy_size)
+      warp = stock.make_warp(nv12, model_w, model_h)
+      run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
+      compiled_jit = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs, return_loaded=False)
+      output_data['run_model'][(cam_w, cam_h)] = compiled_jit
       gc.collect()
     del model_runner, run_policy
     gc.collect()
@@ -495,12 +503,8 @@ if __name__ == "__main__":
     WARP_DEV = os.getenv('WARP_DEV', Device.DEFAULT)
     make_random_model_inputs = partial(make_random_images, keys=['warped'], shape=(2, 6, model_h // 2, model_w // 2), device=WARP_DEV)
 
-    def cleanup_policy():
-      global run_policy_jit, run_policy_func, vision_runner, policy_runners
-      run_policy_jit, run_policy_func, vision_runner, policy_runners = None, None, None, None
-
     output_data['run_policy'] = compile_jit(run_policy_jit, POLICY_INPUTS, make_policy_queues,
-                                            make_random_inputs=make_random_model_inputs, benchmark_runs=args.benchmark_runs, clear_refs=cleanup_policy)
+                                            make_random_inputs=make_random_model_inputs, benchmark_runs=args.benchmark_runs)
 
     ctx = mp.get_context('spawn')
     output_data['input_devices'] = {}

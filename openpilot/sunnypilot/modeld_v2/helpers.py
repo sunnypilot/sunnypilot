@@ -60,6 +60,8 @@ def _dynamic_factory(real_class):
     return real_class
 
   def factory(*args, **kwargs):
+    if real_class.__name__ == "Buffer" and len(args) >= 7 and isinstance(args[6], int):
+      args = args[:6] + args[7:]
     try:
       return real_class(*args, **kwargs)
     except TypeError:

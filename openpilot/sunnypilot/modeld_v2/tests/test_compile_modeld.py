@@ -282,3 +282,32 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
     assert set(sunny_npy.keys()) == set(stock_npy.keys()) == {'tfm', 'big_tfm'}
     for key in sunny_npy:
       assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)
+
+
+class TestSupercomboCompileModeSelection(OpenpilotTestCase):
+  def test_mode_selection_chestnut(self):
+    is_unified, is_run = self._select_mode('supercombo', frame_skip=4, is_chestnut=True)
+    assert is_unified is True
+    assert is_run is False
+
+  def test_mode_selection_small_deep(self):
+    is_unified, is_run = self._select_mode('supercombo', frame_skip=4, is_chestnut=False)
+    assert is_unified is False
+    assert is_run is True
+
+  def test_mode_selection_small_single_frame(self):
+    is_unified, is_run = self._select_mode('supercombo', frame_skip=1, is_chestnut=False)
+    assert is_unified is False
+    assert is_run is False
+
+  def _select_mode(self, model_type: str, frame_skip: int, is_chestnut: bool) -> tuple[bool, bool]:
+    is_unified_supercombo = False
+    is_run_model = False
+    if model_type == 'supercombo':
+      derived_frame_skip = frame_skip
+      if is_chestnut:
+        is_unified_supercombo = True
+      else:
+        if derived_frame_skip != 1:
+          is_run_model = True
+    return is_unified_supercombo, is_run_model

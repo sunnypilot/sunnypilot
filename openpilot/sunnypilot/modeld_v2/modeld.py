@@ -186,8 +186,11 @@ class ModelState(ModelStateBase):
 
     if self._combined_model_type == 'supercombo':
       model_output = raw_outputs.numpy().flatten()
-      if self.chestnut and not np.all(np.isfinite(model_output)):
-        raise RuntimeError("model output not finite")
+      if not np.all(np.isfinite(model_output)):
+        if self.chestnut:
+          raise RuntimeError("model output not finite")
+        cloudlog.error("model output not finite, dropping frame")
+        return None
       sliced = {k: model_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_outputs(sliced)
       if 'prev_feat' in self.numpy_inputs and 'hidden_state' in self.vision_output_slices:
@@ -195,6 +198,9 @@ class ModelState(ModelStateBase):
           model_output[self.vision_output_slices['hidden_state']]
     else:
       vision_output = raw_outputs[0].numpy().flatten()
+      if not np.all(np.isfinite(vision_output)):
+        cloudlog.error("vision model output not finite, dropping frame")
+        return None
       vision_sliced = {k: vision_output[np.newaxis, v] for k, v in self.vision_output_slices.items()}
       outputs = self.parser.parse_vision_outputs(vision_sliced)
 

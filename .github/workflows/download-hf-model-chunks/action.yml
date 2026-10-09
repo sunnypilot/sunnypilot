@@ -71,6 +71,11 @@ runs:
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${warp}', safe=':/'))")
               printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${warp}" >> "$DOWNLOAD_LIST"
             done
+          elif [ "$CANONICAL" = "big_driving_tinygrad.pkl" ]; then
+            for warp in big_driving_warp_1928x1208_tinygrad.pkl big_driving_warp_1344x760_tinygrad.pkl; do
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${warp}', safe=':/'))")
+              printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${warp}" >> "$DOWNLOAD_LIST"
+            done
           fi
         }
 
