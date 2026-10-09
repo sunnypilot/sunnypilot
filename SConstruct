@@ -87,7 +87,6 @@ acados_include_dirs = [
 # vendored in commaai/dependencies.
 allowed_system_libs = {
   "EGL", "GLESv2", "GL",
-  "Qt5Charts", "Qt5Core", "Qt5Gui", "Qt5Widgets",
   "dl", "drm", "gbm", "m", "pthread",
 }
 
@@ -121,6 +120,7 @@ def _libflags(target, source, env, for_signature):
 env = Environment(
   ENV={
     "PATH": os.environ['PATH'],
+    "TMPDIR": os.environ.get('TMPDIR', '/tmp'),
     "PYTHONPATH": os.pathsep.join(submodule_python_paths),
     "ACADOS_SOURCE_DIR": acados.DIR,
     "ACADOS_PYTHON_INTERFACE_PATH": acados.TEMPLATE_DIR,
@@ -346,6 +346,8 @@ AddPostAction(BUILD_TARGETS or [Dir('.')], prune_cache_dir)
 def check_build_product_size(target, source, env):
   limit = 50 * 1024 * 1024  # GitHub max size
   for t in target:
+    if str(t).endswith('.pkl'):  # chunked during release packaging
+      continue
     if hasattr(t, 'isfile') and t.isfile() and (size := os.path.getsize(t.abspath)) > limit:
       raise SCons.Errors.UserError(f"{t} is {size / (1024 * 1024):.1f} MiB, exceeding the {limit / (1024 * 1024):.1f} MiB limit")
 if not GetOption('extras'):

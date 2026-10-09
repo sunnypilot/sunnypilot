@@ -91,7 +91,7 @@ def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
 
 
 def _hash_onnx_files(model_dir: Path) -> str | None:
-  onnx_files = sorted(model_dir.glob("*.onnx"))
+  onnx_files = [f for f in sorted(model_dir.glob("*.onnx")) if f.stat().st_size > 1024]
   if not onnx_files:
     return None
   digest = hashlib.sha256()
@@ -175,6 +175,7 @@ if __name__ == "__main__":
   parser.add_argument("--custom-name", help="Custom display name for the model")
   parser.add_argument("--is-20hz", action="store_true", help="Whether this is a 20Hz model")
   parser.add_argument("--upstream-branch", default="unknown", help="Upstream branch name")
+  parser.add_argument("--onnx-sha256", default=None, help="Pre-computed LFS SHA256 for the model file (used when no ONNX is present)")
   args = parser.parse_args()
 
   _output_dir = Path(args.output_dir)
@@ -197,6 +198,6 @@ if __name__ == "__main__":
       _driving_pkl = new_pkl
 
   _model_metadata = generate_chunked_model(_driving_pkl)
-  _onnx_sha256 = _hash_onnx_files(Path(args.model_dir))
+  _onnx_sha256 = args.onnx_sha256 or _hash_onnx_files(Path(args.model_dir))
   create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch,
                        onnx_sha256=_onnx_sha256, is_big=is_big)

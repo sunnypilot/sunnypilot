@@ -331,8 +331,7 @@ class ModelManagerSP:
         if get_selected_bundle(self.params, "chestnut") is not None and get_selected_bundle(self.params, "qcom") is None:
           if self.params.get("ModelManager_DownloadRef") is None:
             from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL_REF
-            if DEFAULT_MODEL_REF:
-              self.params.put("ModelManager_DownloadRef", DEFAULT_MODEL_REF)
+            self.params.put("ModelManager_DownloadRef", DEFAULT_MODEL_REF)
 
         self._process_download_requests()
 

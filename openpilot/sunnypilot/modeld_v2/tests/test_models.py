@@ -39,5 +39,39 @@ class TestLegacyModels(unittest.TestCase):
     with patch.object(Device.__class__, "__getitem__", safe_getitem):
       obj = load_oob(f)
 
-    assert isinstance(obj, dict), "Parsed object is not a dictionary"
-    assert "metadata" in obj, "Metadata key is missing"
+      assert isinstance(obj, dict), "Parsed object is not a dictionary"
+      assert "metadata" in obj, "Metadata key is missing"
+
+      def traverse_jits(d):
+        if hasattr(d, "captured") and d.captured is not None:
+          linear_attr = getattr(d.captured, "_linear", None)
+          if linear_attr is None:
+            try:
+              linear_attr = getattr(d.captured, "linear", None)
+            except AssertionError as e:
+              if "alloc size must be positive" in str(e):
+                return
+              raise
+
+          if linear_attr is not None:
+            stack = [linear_attr]
+            visited = set()
+            while stack:
+              node = stack.pop()
+              if id(node) in visited:
+                continue
+              visited.add(id(node))
+              if hasattr(node, "src") and node.src is not None:
+                for child in node.src:
+                  stack.append(child)
+        elif isinstance(d, dict):
+          for v in d.values():
+            traverse_jits(v)
+        elif isinstance(d, (list, tuple)):
+          for v in d:
+            traverse_jits(v)
+
+      if "run_model" in obj:
+        traverse_jits(obj["run_model"])
+      if "run_policy" in obj:
+        traverse_jits(obj["run_policy"])
