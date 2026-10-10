@@ -144,10 +144,10 @@ class LongitudinalPlannerSP:
     dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
     dec.enabled = self.dec.enabled()
     dec.active = self.dec.active()
-    dec.decelIntent = float(self.dec.signals.decel_intent)
-    dec.curveDetected = bool(self.dec.signals.curve_detected)
-    dec.wantBlended = bool(self.dec.want_blended)
-    dec.leadVeto = bool(self.dec.lead_veto)
+    #dec.decelIntent = float(self.dec.signals.decel_intent)
+    #dec.curveDetected = bool(self.dec.signals.curve_detected)
+    #dec.wantBlended = bool(self.dec.want_blended)
+    #dec.leadVeto = bool(self.dec.lead_veto)
 
     accel_controller = longitudinalPlanSP.accelController
     accel_controller.enabled = bool(self.accel_controller.is_enabled())
