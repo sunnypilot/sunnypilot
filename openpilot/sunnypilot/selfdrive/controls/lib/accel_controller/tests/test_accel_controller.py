@@ -5,6 +5,8 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+from types import SimpleNamespace
+
 import numpy as np
 
 from opendbc.car.interfaces import ACCEL_MAX
@@ -67,13 +69,15 @@ class TestAccelController(OpenpilotTestCase):
       wheel_power = 1500 * controller.get_max_accel(speed, engine_off=True) * speed + road_load
       assert wheel_power <= budget_kw * 1e3, kph
 
-  def test_eco_without_lead_reduces_throttle_after_launch(self):
+  def test_lead_boost_is_eco_only_and_absent_without_a_lead(self):
+    # the eco lead pull-away boost: no lead is the plain table lookup, and normal/sport ignore the lead entirely
     eco = self.set_profile(AccelProfile.eco)
-    assert eco.get_max_accel(1.0, has_lead=False) == eco.get_max_accel(1.0, has_lead=True)
-    assert np.isclose(eco.get_max_accel(20.0, has_lead=False), 0.85 * eco.get_max_accel(20.0, has_lead=True))
+    assert eco.get_max_accel(1.0, lead=None) == eco.get_max_accel(1.0)
+    assert eco.get_max_accel(20.0, lead=None) == eco.get_max_accel(20.0)
 
     normal = self.set_profile(AccelProfile.normal)
-    assert normal.get_max_accel(20.0, has_lead=False) == normal.get_max_accel(20.0, has_lead=True)
+    lead = SimpleNamespace(present=True, modelProb=0.9, dRel=30.0, vLead=23.0)
+    assert normal.get_max_accel(20.0, lead=lead) == normal.get_max_accel(20.0)
 
   def test_sport_uses_openpilot_accel_max_at_launch(self):
     controller = self.set_profile(AccelProfile.sport)

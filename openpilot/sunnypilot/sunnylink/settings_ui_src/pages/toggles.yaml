@@ -32,6 +32,14 @@ sections:
     widget: toggle
     title: Use Metric System
     description: Display speed in km/h instead of mph.
+  - key: SunnypilotStoppingController
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Stopping Controller
+    description: Take over the end of a stop. The request follows the speed down to the wheel stop, then holds the car at a
+      standstill.
+    enablement:
+    - $ref: '#/macros/offroad'
 - id: recording
   title: Recording
   description: Camera and audio recording during drives

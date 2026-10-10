@@ -31,6 +31,7 @@ class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
     self.accel_controller = AccelController()
     self.accel_controller_active = False
+    self.lead_one = None
     self.events_sp = EventsSP()
     self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
@@ -56,11 +57,11 @@ class LongitudinalPlannerSP:
 
     return False
 
-  def get_max_accel_override(self, v_ego: float, engine_off: bool = False) -> float | None:
+  def get_max_accel_override(self, v_ego: float, engine_off: bool = False, lead=None) -> float | None:
     if not self.accel_controller.is_enabled():
       return None
 
-    return self.accel_controller.get_max_accel(v_ego, engine_off)
+    return self.accel_controller.get_max_accel(v_ego, engine_off, lead if lead is not None else self.lead_one)
 
   def get_cruise_target_override(self, v_ego: float, v_target: float, force_decel: bool, accel_coast: float | None = None) -> float:
     if not self.accel_controller.is_enabled() or force_decel or self.source != LongitudinalPlanSource.cruise:
@@ -120,6 +121,7 @@ class LongitudinalPlannerSP:
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.accel_controller.update()
+    self.lead_one = sm['radarState'].leadOne
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
 

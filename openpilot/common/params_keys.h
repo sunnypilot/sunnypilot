@@ -192,10 +192,12 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"ShowAdvancedControls", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ShowTurnSignals", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"StandstillTimer", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"SunnypilotStoppingController", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"TrueVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
 
     // toyota specific params
     {"ToyotaAutoHold", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"ToyotaBrakeOnset", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaEnhancedBsm", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaTSS2Long", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"ToyotaDriveMode", {PERSISTENT | BACKUP, BOOL, "0"}},

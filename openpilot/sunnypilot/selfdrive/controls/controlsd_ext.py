@@ -12,11 +12,13 @@ from openpilot.cereal import log, custom
 from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+from openpilot.sunnypilot.selfdrive.controls.lib.stopping_controller import StoppingController
 
 
 class ControlsExt(ModelStateBase):
@@ -30,6 +32,9 @@ class ControlsExt(ModelStateBase):
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
+
+    self.stopping_controller = StoppingController(self.CP.stopAccel) if params.get_bool("SunnypilotStoppingController") else None
+    self._stopping_prev = (LongCtrlState.off, 0.0)
 
     self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
@@ -46,6 +51,27 @@ class ControlsExt(ModelStateBase):
       return LatControlTorqueV0(self.CP, self.CP_SP, CI, dt)
     else:
       return lac
+
+  def long_accel_sp(self, actuators, CS, long_plan, accel_limits: tuple[float, float]) -> None:
+    """sunnypilot: terminal-stop policy applied after the stock LongControl.update() (see stopping_controller.py)."""
+    stock_state = self.LoC.long_control_state
+    stock_accel = actuators.accel
+    prev_state, prev_accel = self._stopping_prev
+    self._stopping_prev = (stock_state, stock_accel)
+
+    if self.stopping_controller is None:
+      return
+
+    state, accel = self.stopping_controller.update(
+      prev_state, stock_state, CS, long_plan.aTarget, prev_accel, stock_accel, accel_limits, long_plan.hasLead,
+      pitch=self.calibrated_pose.orientation.pitch if self.calibrated_pose is not None else None,
+      a_long=self.calibrated_pose.acceleration.x if self.calibrated_pose is not None else None)
+    if state != stock_state:
+      self.LoC.reset()
+    self.LoC.long_control_state = state
+    self.LoC.last_output_accel = accel
+    self._stopping_prev = (state, accel)
+    actuators.accel = float(accel)
 
   def get_params_sp(self, sm: messaging.SubMaster) -> None:
     if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:

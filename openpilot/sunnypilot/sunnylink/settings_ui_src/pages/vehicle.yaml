@@ -88,6 +88,12 @@ sections:
     title: 'Toyota: Auto Brake Hold FOR TSS2 HYBRID CARS'
     enablement:
     - $ref: '#/macros/not_engaged'
+  - key: ToyotaBrakeOnset
+    widget: toggle
+    needs_onroad_cycle: true
+    title: 'Toyota: soft brake onset, overshoot limit and regen hand-over'
+    enablement:
+    - $ref: '#/macros/not_engaged'
   - key: ToyotaEnhancedBsm
     widget: toggle
     needs_onroad_cycle: true
