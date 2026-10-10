@@ -11,12 +11,12 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.params import Params
 
 NEARSIDE_PROB = 0.2
-EDGE_PROB = 0.50
+EDGE_PROB = 0.35
 EDGE_REACTION_TIME = 1.0
-EDGE_CLEAR_TIME = 0.5
+EDGE_CLEAR_TIME = 0.3
 MIN_SPEED = 20 * CV.MPH_TO_MS
 VEHICLE_EDGE_MARGIN = 1.08
-EDGE_CLEARANCE = 3.0
+EDGE_CLEARANCE = 3.7
 
 
 class RoadEdgeLaneChangeController:
