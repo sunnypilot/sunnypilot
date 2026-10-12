@@ -240,14 +240,15 @@ jobs:
 
           if [ -f "${{ env.MODELS_DIR }}/new_arch.txt" ]; then
             echo "Detected new arch"
-            DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*driving*.onnx" -print -quit)
+            if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
+              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "big_*driving*.onnx" -print -quit)
+            else
+              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*driving*.onnx" ! -name "big_*" -print -quit)
+            fi
             if [ -n "$DOWNLOADED_ONNX" ]; then
               echo "Compiling ONNX: $DOWNLOADED_ONNX"
               env ${TG_FLAGS} taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/compile_modeld_v2.py \
-                "$DOWNLOADED_ONNX" "$OUTPUT_PKL" --device-input "*" --out-of-band --benchmark-runs 1
-
-              echo "Chunking pkl"
-              python3 -c "from openpilot.common.file_chunker import chunk_file, get_chunk_targets; import os; p='$OUTPUT_PKL'; chunk_file(p, get_chunk_targets(p, os.path.getsize(p)))"
+                "$DOWNLOADED_ONNX" "$OUTPUT_PKL" --device-input "*" --benchmark-runs 1
             else
               echo "Failed to find downloaded ONNX."
               exit 1
@@ -317,8 +318,7 @@ jobs:
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*.chunk*' \
-            --include='*.chunkmanifest' \
+            --include='*driving_tinygrad.pkl' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \

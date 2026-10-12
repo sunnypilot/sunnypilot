@@ -6,72 +6,15 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import os
-import unittest
-from unittest.mock import patch
-from openpilot.common.file_chunker import open_file_chunked
-from openpilot.sunnypilot.modeld_v2.helpers import load_oob
-from tinygrad.device import Device
+
+from openpilot.common.test import OpenpilotTestCase
+from openpilot.sunnypilot.modeld_v2.helpers import PlainJit, load_model
 
 
-class TestLegacyModels(unittest.TestCase):
-  def test_legacy_model_load(self):
-    base_name = os.environ.get("MODEL_BASE_NAME")
-    if not base_name:
-      raise unittest.SkipTest("MODEL_BASE_NAME env var not set, skipping integration test.")
-    chunk_dir = os.environ.get("MODEL_CHUNK_DIR", "/tmp/model_chunks")
-    base_path = os.path.join(chunk_dir, base_name)
-
-    try:
-      f = open_file_chunked(base_path)
-    except Exception as error:
-      self.fail(f"Failed to open chunked file {base_path}: {error}")
-    self.addCleanup(f.close)
-
-    real_getitem = Device.__class__.__getitem__
-
-    def safe_getitem(device_self, ix):
-      if ix == "QCOM" and not os.path.exists("/dev/kgsl-3d0"):
-        return real_getitem(device_self, "CPU")
-      if ix == "AMD" and not os.path.exists("/dev/kfd"):
-        return real_getitem(device_self, "CPU")
-      return real_getitem(device_self, ix)
-
-    with patch.object(Device.__class__, "__getitem__", safe_getitem):
-      obj = load_oob(f)
-
-      assert isinstance(obj, dict), "Parsed object is not a dictionary"
-      assert "metadata" in obj, "Metadata key is missing"
-
-      def traverse_jits(d):
-        if hasattr(d, "captured") and d.captured is not None:
-          linear_attr = getattr(d.captured, "_linear", None)
-          if linear_attr is None:
-            try:
-              linear_attr = getattr(d.captured, "linear", None)
-            except AssertionError as e:
-              if "alloc size must be positive" in str(e):
-                return
-              raise
-
-          if linear_attr is not None:
-            stack = [linear_attr]
-            visited = set()
-            while stack:
-              node = stack.pop()
-              if id(node) in visited:
-                continue
-              visited.add(id(node))
-              if hasattr(node, "src") and node.src is not None:
-                for child in node.src:
-                  stack.append(child)
-        elif isinstance(d, dict):
-          for v in d.values():
-            traverse_jits(v)
-        elif isinstance(d, (list, tuple)):
-          for v in d:
-            traverse_jits(v)
-
-      if "run_model" in obj:
-        traverse_jits(obj["run_model"])
-      if "run_policy" in obj:
-        traverse_jits(obj["run_policy"])
+class TestRegistryModels(OpenpilotTestCase):
+  def test_model_loads(self):
+    if not (base_name := os.environ.get("MODEL_BASE_NAME")):
+      self.skipTest("MODEL_BASE_NAME env var not set, skipping integration test.")
+    bundle = load_model(os.path.join(os.environ.get("MODEL_DIR", "/tmp/models"), base_name), {"QCOM": "CPU", "AMD": "CPU"}, verify=False, cache=False)
+    jits = [value for value in bundle.values() if isinstance(value, PlainJit)]
+    assert "metadata" in bundle and jits and all(len(jit.captured.linear.src) > 0 for jit in jits)

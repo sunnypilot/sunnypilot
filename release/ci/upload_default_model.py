@@ -79,8 +79,6 @@ def main():
   artifact = bundle['models'][0]['artifact']
   hf_base = f"https://huggingface.co/datasets/{args.hf_repo}/resolve/main/{args.hf_defaults_path}/{folder_name}"
   artifact['download_uri']['url'] = f"{hf_base}/{artifact['file_name']}"
-  for chunk in artifact.get('chunks', []):
-    chunk['url'] = f"{hf_base}/{chunk['file_name']}"
 
   print(f"Uploading model to {args.hf_defaults_path}/{folder_name}/")
   api.upload_folder(

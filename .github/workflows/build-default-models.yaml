@@ -116,20 +116,6 @@ jobs:
             ${{ github.workspace }}/${{ env.SMALL_PKL }} \
             --device-input "*" --out-of-band --benchmark-runs 1
 
-      - name: Chunk small pkl
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH=${{ github.workspace }}
-          python3 -c "
-          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-          import os
-          pkl = '${{ github.workspace }}/${{ env.SMALL_PKL }}'
-          size = os.path.getsize(pkl)
-          targets = get_chunk_targets(pkl, size)
-          chunk_file(pkl, targets)
-          print(f'Chunked into {len(targets)} files')
-          "
-
       - name: Prepare output
         env:
           MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
@@ -141,8 +127,7 @@ jobs:
           PKL_BASE="driving_tinygrad.pkl"
           mkdir -p "$OUTPUT_DIR"
 
-          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
-          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}" "$OUTPUT_DIR/"
 
           ONNX_SHA256=$(git cat-file blob "$(git ls-files -s "${{ github.workspace }}/${{ env.SMALL_ONNX }}" | awk '{print $2}')" | grep '^oid sha256:' | cut -d: -f2)
 
@@ -221,20 +206,6 @@ jobs:
               raise RuntimeError('Chestnut PCIe link not ready after 10 attempts')
           "
 
-      - name: Chunk big pkl
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH=${{ github.workspace }}
-          python3 -c "
-          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-          import os
-          pkl = '${{ github.workspace }}/${{ env.BIG_PKL }}'
-          size = os.path.getsize(pkl)
-          targets = get_chunk_targets(pkl, size)
-          chunk_file(pkl, targets)
-          print(f'Chunked into {len(targets)} files')
-          "
-
       - name: Prepare output
         env:
           MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
@@ -246,8 +217,7 @@ jobs:
           PKL_BASE="big_driving_tinygrad.pkl"
           mkdir -p "$OUTPUT_DIR"
 
-          cp "$MODELS_DIR/${PKL_BASE}".chunk* "$OUTPUT_DIR/"
-          cp "$MODELS_DIR/${PKL_BASE}.chunkmanifest" "$OUTPUT_DIR/"
+          cp "$MODELS_DIR/${PKL_BASE}" "$OUTPUT_DIR/"
 
           PKL_LFS_SHA256=$(sha256sum "$MODELS_DIR/${PKL_BASE}" | cut -d' ' -f1)
 
@@ -358,24 +328,14 @@ jobs:
           from datetime import datetime, UTC
 
           dm_dir = Path('dm_output')
-          manifest = list(dm_dir.glob('*.chunkmanifest'))
-          assert manifest, 'No chunkmanifest found'
-          pkl_name = manifest[0].name.removesuffix('.chunkmanifest')
-          num_chunks = int(manifest[0].read_text().strip())
-
-          chunks = []
-          for i in range(num_chunks):
-              chunk = dm_dir / f'{pkl_name}.chunk{i+1:02d}of{num_chunks:02d}'
-              chunks.append({
-                  'file_name': chunk.name,
-                  'sha256': hashlib.sha256(chunk.read_bytes()).hexdigest()
-              })
+          matches = sorted(dm_dir.glob('dmonitoring_*_tinygrad.pkl'))
+          assert len(matches) == 1, f'expected one DM pkl in {dm_dir}, found {matches}'
+          pkl_name = matches[0].name
 
           digest = hashlib.sha256()
-          for c in chunks:
-              with open(dm_dir / c['file_name'], 'rb') as f:
-                  while block := f.read(1024*1024):
-                      digest.update(block)
+          with open(dm_dir / pkl_name, 'rb') as f:
+              while block := f.read(1024*1024):
+                  digest.update(block)
 
           metadata = {
               'bundles': [{
@@ -389,8 +349,7 @@ jobs:
                       'type': 'chunked',
                       'artifact': {
                           'file_name': pkl_name,
-                          'download_uri': {'url': '', 'sha256': digest.hexdigest()},
-                          'chunks': chunks
+                          'download_uri': {'url': '', 'sha256': digest.hexdigest()}
                       }
                   }]
               }]
@@ -453,20 +412,6 @@ jobs:
             ${{ github.workspace }}/${{ env.DM_ONNX }} \
             ${{ github.workspace }}/${{ env.DM_PKL }}
 
-      - name: Chunk DM pkl
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH=${{ github.workspace }}
-          python3 -c "
-          from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-          import os
-          pkl = '${{ github.workspace }}/${{ env.DM_PKL }}'
-          size = os.path.getsize(pkl)
-          targets = get_chunk_targets(pkl, size)
-          chunk_file(pkl, targets)
-          print(f'Chunked {pkl} into {len(targets)} chunks')
-          "
-
       - name: Compile DM warp
         run: |
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
@@ -499,8 +444,7 @@ jobs:
       - name: Prepare DM output
         run: |
           mkdir -p dm_output
-          cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunk* dm_output/
-          cp ${{ github.workspace }}/${{ env.DM_PKL }}.chunkmanifest dm_output/
+          cp ${{ github.workspace }}/${{ env.DM_PKL }} dm_output/
           cp ${{ github.workspace }}/openpilot/selfdrive/modeld/models/dm_warp_* dm_output/
 
       - name: Upload DM artifact
