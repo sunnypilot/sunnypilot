@@ -47,15 +47,15 @@ class ArtifactMismatch(RuntimeError):
 
 
 class Blob:
-  def __init__(self):
+  def __init__(self, sink=None):
     self.chunks: list = []
     self.locations: dict[bytes, list[int]] = {}
-    self.size = 0
+    self.size, self.write = 0, sink.write if sink else self.chunks.append
 
   def add(self, data) -> list[int]:
     if (key := hashlib.blake2b(data, digest_size=16).digest()) not in self.locations:
       start = self.size + -self.size % ALIGNMENT
-      self.chunks += [bytes(start - self.size), data]
+      self.write(bytes(start - self.size)), self.write(data)
       self.locations[key], self.size = [start, start + memoryview(data).nbytes], start + memoryview(data).nbytes
     return self.locations[key]
 
@@ -105,7 +105,8 @@ def load_model(path: str, device_map: dict | None = None, verify: bool = True, c
   parts, extras = read_parts(path)
   if cache and (cached := _read_cache(path, parts, device_map)) is not None:
     return extras | cached
-  jits = {key: PlainJit(header, blob, device_map, verify) for key, (header, blob) in parts.items()}
+  shared: dict = {}
+  jits = {key: PlainJit(header, blob, device_map, verify, shared) for key, (header, blob) in parts.items()}
   if cache:
     _write_cache(path, jits, device_map)
   return extras | jits
@@ -145,7 +146,8 @@ def _read_cache(path: str, parts: dict, device_map: dict | None) -> dict | None:
     with open(f"{path}.cache", "rb") as file:
       if not _cache_header_matches(file, path, device_map):
         return None
-      buffers = {repr(key): _allocate_buffers(header, blob, device_map) for key, (header, blob) in parts.items()}
+      shared: dict = {}
+      buffers = {repr(key): _allocate_buffers(header, blob, device_map, shared) for key, (header, blob) in parts.items()}
       return type("_Unpickler", (pickle.Unpickler,), {"persistent_load": lambda self, pid: buffers[pid[0]][pid[1]]})(file).load()
   except Exception:
     return None
@@ -187,12 +189,19 @@ def _device(recorded: str, device_map: dict | None) -> str:
   return Device.canonicalize(device_map.get(recorded, device_map.get(recorded.split(":", 1)[0], recorded)))
 
 
-def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None) -> list:
+def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, shared: dict) -> list:
+  import numpy as np
   from tinygrad.device import Buffer
+  written = {call["args"][i]["buffer"] for call in header["calls"] for i in (call["outs"] if call["kind"] == "program" else (0,))
+             if "buffer" in call["args"][i]}
   buffers = []
-  for entry in header["buffers"]:
-    dtype, initial = _dtype(entry["dtype"]), pickle.PickleBuffer(blob[slice(*entry["init"])]) if "init" in entry else None
-    buffers.append(Buffer(_device(entry["device"], device_map), entry["nbytes"] // dtype.itemsize, dtype, initial_value=initial).ensure_allocated())
+  for index, entry in enumerate(header["buffers"]):
+    dtype, device, data = _dtype(entry["dtype"]), _device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None
+    # read-only data the parts share in the file (weights common to every camera resolution) is uploaded once to the nut
+    key = (device, entry["dtype"], np.frombuffer(data, np.uint8).ctypes.data, len(data)) if data and index not in written else object()
+    if key not in shared:
+      shared[key] = Buffer(device, entry["nbytes"] // dtype.itemsize, dtype, initial_value=pickle.PickleBuffer(data) if data else None).ensure_allocated()
+    buffers.append(shared[key])
   return buffers
 
 
@@ -223,7 +232,7 @@ class _Jit:
 
 
 class PlainJit(_Jit):
-  def __init__(self, header: dict, blob: memoryview, device_map: dict | None = None, verify: bool = True):
+  def __init__(self, header: dict, blob: memoryview, device_map: dict | None = None, verify: bool = True, shared: dict | None = None):
     import numpy as np
     import tinygrad.engine.jit as jit
     from tinygrad import Tensor
@@ -232,7 +241,7 @@ class PlainJit(_Jit):
     from tinygrad.uop.ops import Ops, UOp
 
     inputs = {spec["slot"]: spec for spec in header["inputs"]}
-    buffers = _allocate_buffers(header, blob, device_map)
+    buffers = _allocate_buffers(header, blob, device_map, {} if shared is None else shared)
     bases = [UOp.from_buffer(buffer) for buffer in buffers]
 
     def argument(described: dict):
