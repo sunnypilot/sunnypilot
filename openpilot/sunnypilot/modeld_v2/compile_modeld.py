@@ -138,6 +138,10 @@ def get_policy_npy_shapes(input_shapes: dict, is_supercombo: bool = False) -> tu
   return shapes, sizes
 
 
+def host_view(tensor: Tensor) -> np.ndarray: # QCOM -> CPU round trip of tfm takes 5ms longer than host memory view
+  return np.frombuffer(tensor._buffer()._host_mv(), dtype=np.float32).reshape(tensor.shape)
+
+
 def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = Device.DEFAULT,
                             is_supercombo: bool = False) -> tuple[dict, dict]:
   road_key, _ = _detect_vision_keys(input_shapes)
@@ -173,7 +177,7 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
     'big_img_q': Tensor(np.zeros(img_buf_shape, dtype=np.uint8), device=device).contiguous().realize(),
     'desire_q': Tensor(np.zeros((frame_skip * desire_shape[1], desire_shape[0], desire_shape[2]),
                   dtype=np.float32), device=device).contiguous().realize(),
-    'packed_npy_inputs': Tensor(packed_npy_inputs, device=device if os.getenv('CHESTNUT') else 'NPY').realize(),
+    'packed_npy_inputs': Tensor(packed_npy_inputs, device=device).realize(),
   }
 
   if features_buffer:
@@ -185,9 +189,11 @@ def generate_queues_and_npy(input_shapes: dict, frame_skip: int, device: str = D
   for key in ('tfm', 'big_tfm'):
     if key not in npy_arrays:
       npy_arrays[key] = np.eye(3, dtype=np.float32)
-    queues[key] = Tensor(npy_arrays[key], device='NPY').realize()
+    queues[key] = Tensor(npy_arrays[key], device=device).realize()
 
-  return queues, npy_arrays
+  packed = host_view(queues['packed_npy_inputs'])
+  npy_arrays |= {k: v.reshape(s) for (k, s), v in zip(shapes.items(), np.split(packed, split_indices) if sizes else [], strict=True)}
+  return queues, npy_arrays | {k: host_view(queues[k]) for k in ('tfm', 'big_tfm')}
 
 
 def make_split_input_queues(vision_input_shapes: dict, policy_input_shapes: dict,
@@ -209,8 +215,8 @@ def make_warp_queues(device=Device.DEFAULT):
     'tfm': np.zeros((3, 3), dtype=np.float32),
     'big_tfm': np.zeros((3, 3), dtype=np.float32),
   }
-  queues = {k: Tensor(v, device='NPY').realize() for k, v in npy.items()}
-  return queues, npy
+  queues = {k: Tensor(v, device=device).realize() for k, v in npy.items()}
+  return queues, {k: host_view(v) for k, v in queues.items()}
 
 
 def make_run_policy(vision_runner, policy_runners: list, features_slice: slice, frame_skip: int, input_shapes: dict):
