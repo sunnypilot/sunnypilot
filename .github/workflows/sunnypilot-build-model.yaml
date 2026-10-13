@@ -318,7 +318,7 @@ jobs:
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*driving_tinygrad.pkl' \
+            --include='/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
