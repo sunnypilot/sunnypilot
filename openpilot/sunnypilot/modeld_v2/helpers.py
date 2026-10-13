@@ -48,16 +48,16 @@ class ArtifactMismatch(RuntimeError):
 
 class Blob:
   def __init__(self):
-    self.chunks: list[bytes] = []
+    self.chunks: list = []
     self.locations: dict[bytes, list[int]] = {}
     self.size = 0
 
-  def add(self, data: bytes) -> list[int]:
-    if data not in self.locations:
+  def add(self, data) -> list[int]:
+    if (key := hashlib.blake2b(data, digest_size=16).digest()) not in self.locations:
       start = self.size + -self.size % ALIGNMENT
       self.chunks += [bytes(start - self.size), data]
-      self.locations[data], self.size = [start, start + len(data)], start + len(data)
-    return self.locations[data]
+      self.locations[key], self.size = [start, start + memoryview(data).nbytes], start + memoryview(data).nbytes
+    return self.locations[key]
 
 
 class _MetadataUnpickler(pickle.Unpickler):
@@ -73,11 +73,18 @@ def flatten(value) -> list:
   return [] if value is None else [value]
 
 
+def _relocate(value, part_blob: memoryview, blob: Blob):
+  if isinstance(value, dict):
+    return {k: blob.add(part_blob[slice(*v)]) if k in ("lib", "init", "data") else _relocate(v, part_blob, blob) for k, v in value.items()}
+  return [_relocate(v, part_blob, blob) for v in value] if isinstance(value, list) else value
+
+
 def write_bundle(path: str, parts: dict, extras: dict | None = None):
   blob = Blob()
-  entries = [{"key": list(key) if isinstance(key, tuple) else key, "blob": blob.add(bytes(part_blob)), "header": part_header}
-             for key, (part_header, part_blob) in parts.items()]
-  header = json.dumps({"parts": entries, "extras": blob.add(pickle.dumps(extras or {}, protocol=4))}).encode()
+  headers = {key: _relocate(part_header, memoryview(part_blob), blob) for key, (part_header, part_blob) in parts.items()}
+  extras_location = blob.add(pickle.dumps(extras or {}, protocol=4))
+  entries = [{"key": list(key) if isinstance(key, tuple) else key, "blob": [0, blob.size], "header": header} for key, header in headers.items()]
+  header = json.dumps({"parts": entries, "extras": extras_location}).encode()
   with open(path, "wb") as file:
     file.write(MAGIC + struct.pack("<Q", len(header)) + header + bytes(-(len(MAGIC) + 8 + len(header)) % ALIGNMENT))
     file.writelines(blob.chunks)

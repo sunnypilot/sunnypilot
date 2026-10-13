@@ -36,7 +36,7 @@ def capture_frame(jit, kwargs: dict, output_container: str | None = None):
   return {"inputs": inputs, "outputs": [tensor.numpy().copy() for tensor in outputs], "output_container": output_container}, result
 
 
-def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, bytes]:
+def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, bytearray]:
   from tinygrad.helpers import JIT, JIT_BATCH_SIZE
   from tinygrad.uop.ops import Ops
 
@@ -77,7 +77,7 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
   ret = jit.captured.ret
   returns = {"kind": type(ret).__name__, "tensors": [describe(t.uop.base) | {"shape": [int(x) for x in t.shape]} for t in flatten(ret)]}
   buffers = [{"nbytes": base.nbytes, "device": base.device, "dtype": repr(base.dtype)}
-             | ({"init": blob.add(bytes(base.as_memoryview()))} if index in needs_init else {}) for index, base in bases.values()]
+             | ({"init": blob.add(base.as_memoryview())} if index in needs_init else {}) for index, base in bases.values()]
   names = list(jit.captured.expected_names)
   if check is not None:
     check = {"inputs": [[path, store(array), device] for path, array, device in check["inputs"]], "outputs": [store(array) for array in check["outputs"]],
@@ -85,4 +85,7 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
   header = {"input_names": names, "buffers": buffers, "calls": calls, "returns": returns, "check": check,
             "graph_batch_size": JIT_BATCH_SIZE.value if JIT < 2 else None,
             "inputs": [{"slot": slot, "name": names[slot] if slot < len(names) else None} | input_specs[slot] for slot in sorted(input_specs)]}
-  return header, b"".join(blob.chunks)
+  data, offset = bytearray(blob.size), 0
+  for i, chunk in enumerate(blob.chunks):  # copy out and release chunk by chunk, so a big model's weights are never in memory twice
+    data[offset:(offset := offset + memoryview(chunk).nbytes)], blob.chunks[i] = chunk, None
+  return header, data

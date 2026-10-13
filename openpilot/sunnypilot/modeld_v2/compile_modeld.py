@@ -436,8 +436,10 @@ if __name__ == "__main__":
                                   frame_copy_size=frame_copy_size)
       warp = stock.make_warp(nv12, model_w, model_h)
       run_model_jit = TinyJit(stock.make_run_model(warp, run_policy, model_metadata, frame_copy_size), prune=True)
-      compiled_jit = compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues, benchmark_runs=args.benchmark_runs)
-      output_data[(cam_w, cam_h)] = compiled_jit
+      write_bundle(part_path := f"{args.output}.{cam_w}x{cam_h}", {(cam_w, cam_h): compile_jit(run_model_jit, stock.MODELD_INPUTS, make_model_queues,
+                                                                                               benchmark_runs=args.benchmark_runs)})
+      output_data[(cam_w, cam_h)] = read_parts(part_path)[0][(cam_w, cam_h)]
+      os.remove(part_path)
       gc.collect()
     del model_runner, run_policy
     gc.collect()
