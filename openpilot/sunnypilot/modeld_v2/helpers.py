@@ -172,7 +172,7 @@ def _write_cache(path: str, jits: dict, device_map: dict | None) -> None:
 # Everything below this comment block calls tinygrad internals, so after a tinygrad bump this
 # is the only code to update, and models are not recompiled. How to do this when discountchubbs is not available:
 #   1. run modeld_v2/tests/test_plain_artifact.py on the new tinygrad and fix each failing call against the new API: Buffer,
-#      UOp.from_buffer/param (ParamArg), ProgramInfo, Target, KernelInfo, compile_linear, graph_split_rewrite, CapturedJit and
+#      UOp.from_buffer/param (ParamArg), ProgramInfo, Target, KernelInfo, compile_linear, CapturedJit and
 #      _prepare_jit_inputs in tinygrad/engine/jit.py
 #   2. load a real model with verify=True: ArtifactMismatch means the rebuilt graph still differs from the one that was compiled
 # The boot cache is keyed on the tinygrad source, so it rebuilds itself. Only a change in how the device runs kernel binaries needs a recompile.
@@ -196,11 +196,11 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
              if "buffer" in call["args"][i]}
   buffers = []
   for index, entry in enumerate(header["buffers"]):
-    dtype, device, data = _dtype(entry["dtype"]), _device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None
+    device, data = _device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None
     # read-only data the parts share in the file (weights common to every camera resolution) is uploaded once to the nut
     key = (device, entry["dtype"], np.frombuffer(data, np.uint8).ctypes.data, len(data)) if data and index not in written else object()
     if key not in shared:
-      shared[key] = Buffer(device, entry["nbytes"] // dtype.itemsize, dtype, initial_value=pickle.PickleBuffer(data) if data else None).ensure_allocated()
+      shared[key] = Buffer(device, entry["nbytes"], initial_value=pickle.PickleBuffer(data) if data else None).ensure_allocated()
     buffers.append(shared[key])
   return buffers
 
@@ -242,7 +242,7 @@ class PlainJit(_Jit):
 
     inputs = {spec["slot"]: spec for spec in header["inputs"]}
     buffers = _allocate_buffers(header, blob, device_map, {} if shared is None else shared)
-    bases = [UOp.from_buffer(buffer) for buffer in buffers]
+    bases = [UOp.from_buffer(buffer, _dtype(entry["dtype"])) for buffer, entry in zip(buffers, header["buffers"], strict=True)]
 
     def argument(described: dict):
       if "input" in described:
@@ -261,12 +261,10 @@ class PlainJit(_Jit):
       else:
         calls.append(arguments[1].copy_to_device(arguments[0].device).call(*arguments))
     # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
-    stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"], _dtype(spec["dtype"])).ensure_allocated())
-                 for slot, spec in inputs.items()}
+    stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
+                                       _dtype(spec["dtype"])) for slot, spec in inputs.items()}
     input_uops = tuple(stand_ins.get(slot, next(iter(stand_ins.values()), None)) for slot in range(max(stand_ins, default=-1) + 1))
     linear = jit.compile_linear(UOp(Ops.LINEAR, src=tuple(calls)), beam=0, input_uops=input_uops, cache=False)
-    if header["graph_batch_size"] is not None:
-      linear = jit.graph_split_rewrite(linear, max_batch_size=header["graph_batch_size"])
 
     returned = [Tensor(argument(t)).reshape(tuple(t["shape"])) for t in header["returns"]["tensors"]]
     ret = {"NoneType": None, "Tensor": returned[0] if returned else None, "tuple": tuple(returned), "list": returned}[header["returns"]["kind"]]

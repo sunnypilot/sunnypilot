@@ -39,7 +39,6 @@ def capture_frame(jit, kwargs: dict, output_container: str | None = None):
 
 
 def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, memoryview]:
-  from tinygrad.helpers import JIT, JIT_BATCH_SIZE
   from tinygrad.uop.ops import Ops
   sink = tempfile.TemporaryFile(dir=".")
   blob, bases, input_specs = Blob(sink), {}, {}
@@ -54,7 +53,7 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
       return {"input": uop.arg.slot}
     buffer = uop.buffer
     root = buffer._base if buffer._base is not None else buffer
-    base = bases.setdefault(id(root), (len(bases), root))
+    base = bases.setdefault(id(root), (len(bases), root, uop.base.dtype if buffer._base is None else uop.dtype))
     return {"buffer": base[0], "offset": buffer.offset if buffer._base is not None else 0, "nbytes": buffer.nbytes, "dtype": repr(uop.dtype)}
 
   calls, written, needs_init = [], set(), set()
@@ -78,14 +77,13 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
 
   ret = jit.captured.ret
   returns = {"kind": type(ret).__name__, "tensors": [describe(t.uop.base) | {"shape": [int(x) for x in t.shape]} for t in flatten(ret)]}
-  buffers = [{"nbytes": base.nbytes, "device": base.device, "dtype": repr(base.dtype)}
-             | ({"init": blob.add(base.as_memoryview())} if index in needs_init else {}) for index, base in bases.values()]
+  buffers = [{"nbytes": base.nbytes, "device": base.device, "dtype": repr(dtype)}
+             | ({"init": blob.add(base.as_memoryview())} if index in needs_init else {}) for index, base, dtype in bases.values()]
   names = list(jit.captured.expected_names)
   if check is not None:
     check = {"inputs": [[path, store(array), device] for path, array, device in check["inputs"]], "outputs": [store(array) for array in check["outputs"]],
              "output_container": check["output_container"]}
   header = {"input_names": names, "buffers": buffers, "calls": calls, "returns": returns, "check": check,
-            "graph_batch_size": JIT_BATCH_SIZE.value if JIT < 2 else None,
             "inputs": [{"slot": slot, "name": names[slot] if slot < len(names) else None} | input_specs[slot] for slot in sorted(input_specs)]}
   with sink:
     sink.flush()

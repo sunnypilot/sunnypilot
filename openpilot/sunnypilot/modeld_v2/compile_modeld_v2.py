@@ -17,8 +17,11 @@ def initialize_check_inputs(arrays: dict):
 
 if __name__ == "__main__":
   sys.path.insert(0, os.environ.get("TINYGRAD_PATH", "tinygrad_repo"))
-  from examples.openpilot.compile_onnx import compile_onnx
-  from examples.openpilot.helpers import allocate_inputs
+  from examples.openpilot.compile_onnx import onnx_metadata
+  from examples.openpilot.helpers import allocate_inputs, benchmark
+  from tinygrad import Device, Tensor, TinyJit
+  from tinygrad.dtype import _to_np_dtype
+  from tinygrad.nn.onnx import OnnxRunner
 
   parser = argparse.ArgumentParser(description="Compile a native-architecture ONNX model into a plain tinygrad artifact")
   parser.add_argument('onnx')
@@ -27,14 +30,30 @@ if __name__ == "__main__":
   parser.add_argument('--benchmark-runs', type=int, default=20)
   args = parser.parse_args()
 
+  runner, (properties, output_shapes) = OnnxRunner(args.onnx), onnx_metadata(args.onnx)
+  device_inputs = runner.graph_inputs.keys() if '*' in args.device_input else args.device_input
+  metadata = {'metadata': properties} | {f'{kind}_shapes': {name: tuple(d if isinstance(d, int) else 0 for d in shape) for name, shape in shapes.items()}
+                                         for kind, shapes in [('input', {name: spec.shape for name, spec in runner.graph_inputs.items()}),
+                                                              ('output', output_shapes)]}
+  input_specs = {name: (tuple(s if isinstance(s, int) else 1 for s in spec.shape), np.dtype(_to_np_dtype(spec.dtype)).str,
+                        Device.DEFAULT if name in device_inputs else 'NPY') for name, spec in runner.graph_inputs.items()}
+
+  def model(inputs):
+    return {name: value.contiguous() for name, value in runner({name: value.to(Device.DEFAULT) for name, value in inputs.items()}).items()}
+  output_specs = {name: (value.shape, np.dtype(_to_np_dtype(value.dtype)).name, Device.DEFAULT) for name, value in model(allocate_inputs(input_specs)).items()}
+
+  @TinyJit(prune=True)
+  def jit(output_buffers, **inputs):
+    Tensor.realize(*(output_buffers[name].assign(value) for name, value in model(inputs).items()))
+
+  check_inputs = allocate_inputs(input_specs, initialize_check_inputs) | {'output_buffers': allocate_inputs(output_specs)}
   with record_kernel_linear() as recorded:
-    artifact = compile_onnx(args.onnx, device_inputs=args.device_input, benchmark_runs=args.benchmark_runs)
+    for i in range(2 + args.benchmark_runs):
+      benchmark(jit, cb=lambda t, i=i: print(f"  [{i + 1}/{2 + args.benchmark_runs}] {t * 1e3:.2f} ms"), **check_inputs)
   assert len(recorded) == 1, f"expected one captured kernel list, got {len(recorded)}"
 
-  jit = artifact['run']
-  check_inputs = allocate_inputs(artifact['input_specs'], initialize_check_inputs) | {'output_buffers': allocate_inputs(artifact['output_specs'])}
   frame, _ = capture_frame(jit, check_inputs, 'output_buffers')
   part = serialize_jit(jit, recorded[0], frame)
   PlainJit(part[0], memoryview(part[1]))
-  write_bundle(args.output, {'run': part}, {key: artifact[key] for key in ('metadata', 'input_specs', 'output_specs')})
+  write_bundle(args.output, {'run': part}, {'metadata': metadata, 'input_specs': input_specs, 'output_specs': output_specs})
   print(f"Saved model to {args.output} ({os.path.getsize(args.output) / 1e6:.2f} MB, {len(part[0]['calls'])} kernels)")

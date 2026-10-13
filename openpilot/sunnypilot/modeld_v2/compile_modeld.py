@@ -60,6 +60,7 @@ POLICY_INPUTS = ['img_q', 'big_img_q', 'feat_q', 'desire_q', 'packed_npy_inputs'
 class MetadataOnnxPBParser(OnnxPBParser):
   def _parse_ModelProto(self) -> dict:
     obj: dict[str, Any] = {"graph": {"input": [], "output": []}, "metadata_props": []}
+    self.opset_imports = {}
     for fid, wire_type in self._parse_message(self.reader.len):
       match fid:
         case 7:
