@@ -138,10 +138,8 @@ def _read_cache(path: str, parts: dict, device_map: dict | None) -> dict | None:
     with open(f"{path}.cache", "rb") as file:
       if not _cache_header_matches(file, path, device_map):
         return None
-      unpickler = pickle.Unpickler(file)
       buffers = {repr(key): _allocate_buffers(header, blob, device_map) for key, (header, blob) in parts.items()}
-      unpickler.persistent_load = lambda reference: buffers[reference[0]][reference[1]]
-      return unpickler.load()
+      return type("_Unpickler", (pickle.Unpickler,), {"persistent_load": lambda self, pid: buffers[pid[0]][pid[1]]})(file).load()
   except Exception:
     return None
 
