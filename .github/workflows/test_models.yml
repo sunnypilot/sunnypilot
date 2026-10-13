@@ -52,6 +52,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           MODEL_URL: ${{ matrix.artifact.download_uri.url }}
           MODEL_FILE: ${{ matrix.artifact.file_name }}
+        shell: bash
         run: |
           mkdir -p /tmp/models
           AUTH=()
