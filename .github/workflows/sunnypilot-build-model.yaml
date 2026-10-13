@@ -149,7 +149,17 @@ jobs:
               git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
               rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
             else
-              git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/big_*.pkl" -X ""
+              sudo apt-get install -y -qq aria2 > /dev/null # Parallel ranges because gh is flaky
+              LFS_URL=$(git config -f "$(git rev-parse --show-toplevel)/.lfsconfig" lfs.url)
+              for f in selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl; do
+                grep -qs "^version https://git-lfs" "$f" || continue
+                OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
+                HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+                  -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
+                aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
+                  -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
+                echo "$OID  $f" | sha256sum -c -
+              done
               find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
             fi
           fi
