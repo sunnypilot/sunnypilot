@@ -6,12 +6,12 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import os
+import unittest
 
-from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.modeld_v2.helpers import PlainJit, load_model
 
 
-class TestRegistryModels(OpenpilotTestCase):
+class TestRegistryModels(unittest.TestCase):
   def test_model_loads(self):
     if not (base_name := os.environ.get("MODEL_BASE_NAME")):
       self.skipTest("MODEL_BASE_NAME env var not set, skipping integration test.")
