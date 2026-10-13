@@ -189,8 +189,7 @@ jobs:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
-          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
+          cp output/metadata.json "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
 
       - name: Upload to Hugging Face
         env:

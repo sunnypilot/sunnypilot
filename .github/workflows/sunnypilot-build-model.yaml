@@ -172,6 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
+          compression-level: 0
           path: |
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.pkl
@@ -350,6 +351,7 @@ jobs:
         with:
           name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+          compression-level: 0
 
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4
