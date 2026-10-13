@@ -220,6 +220,7 @@ class PlainJit(_Jit):
     import numpy as np
     import tinygrad.engine.jit as jit
     from tinygrad import Tensor
+    from tinygrad.device import Buffer
     from tinygrad.dtype import dtypes
     from tinygrad.uop.ops import Ops, UOp
 
@@ -243,7 +244,11 @@ class PlainJit(_Jit):
         calls.append(_program_uop(call, bytes(blob[slice(*call["lib"])])).call(*arguments))
       else:
         calls.append(arguments[1].copy_to_device(arguments[0].device).call(*arguments))
-    linear = jit.compile_linear(UOp(Ops.LINEAR, src=tuple(calls)), beam=0, cache=False)
+    # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
+    stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"], _dtype(spec["dtype"])).ensure_allocated())
+                 for slot, spec in inputs.items()}
+    input_uops = tuple(stand_ins.get(slot, next(iter(stand_ins.values()), None)) for slot in range(max(stand_ins, default=-1) + 1))
+    linear = jit.compile_linear(UOp(Ops.LINEAR, src=tuple(calls)), beam=0, input_uops=input_uops, cache=False)
     if header["graph_batch_size"] is not None:
       linear = jit.graph_split_rewrite(linear, max_batch_size=header["graph_batch_size"])
 
