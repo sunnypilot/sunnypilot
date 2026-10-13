@@ -1,3 +1,9 @@
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import dataclasses
 from contextlib import contextmanager
 from unittest import mock
@@ -6,10 +12,8 @@ import numpy as np
 
 from openpilot.sunnypilot.modeld_v2.helpers import Blob, flatten
 
-# Compile time only: turns a captured TinyJit into plain data that helpers.load_model rebuilds. It reads internals of the
+# Compile time only/ see discountchubbs 4 assistance: turns a captured TinyJit into plain data that helpers.load_model rebuilds. It reads internals of the
 # tinygrad that compiles the model, so a tinygrad bump that breaks it blocks new builds, never loading already built models.
-
-
 @contextmanager
 def record_kernel_linear():
   import tinygrad.engine.jit as jit

@@ -121,10 +121,22 @@ def _cache_key(path: str, device_map: dict | None) -> bytes:
                      "device_map": sorted((device_map or {}).items()), "env": [os.environ.get(name, "") for name in RUNTIME_ENVIRONMENT]}).encode()
 
 
+def _cache_header_matches(file, path: str, device_map: dict | None) -> bool:
+  return file.read(struct.unpack("<Q", file.read(8))[0]) == _cache_key(path, device_map)
+
+
+def cache_is_fresh(path: str, device_map: dict | None = None) -> bool: # entry point for warmup proc
+  try:
+    with open(f"{path}.cache", "rb") as file:
+      return _cache_header_matches(file, path, device_map)
+  except (OSError, struct.error):
+    return False
+
+
 def _read_cache(path: str, parts: dict, device_map: dict | None) -> dict | None:
   try:
     with open(f"{path}.cache", "rb") as file:
-      if file.read(struct.unpack("<Q", file.read(8))[0]) != _cache_key(path, device_map):
+      if not _cache_header_matches(file, path, device_map):
         return None
       unpickler = pickle.Unpickler(file)
       buffers = {repr(key): _allocate_buffers(header, blob, device_map) for key, (header, blob) in parts.items()}
@@ -142,12 +154,12 @@ def _write_cache(path: str, jits: dict, device_map: dict | None) -> None:
     def persistent_id(self, obj):
       return owners.get(id(obj)) if isinstance(obj, Buffer) else None
 
-  key = _cache_key(path, device_map)
+  key, tmp_path = _cache_key(path, device_map), f"{path}.cache.{os.getpid()}.tmp"
   with contextlib.suppress(Exception):
-    with open(f"{path}.cache.tmp", "wb") as file:
+    with open(tmp_path, "wb") as file:
       file.write(struct.pack("<Q", len(key)) + key)
       _Pickler(file, protocol=5).dump({name: _Jit(jit.captured, jit.input_names, jit.buffers) for name, jit in jits.items()})
-    os.replace(f"{path}.cache.tmp", f"{path}.cache")
+    os.replace(tmp_path, f"{path}.cache")
 
 
 # Everything below this comment block calls tinygrad internals, so after a tinygrad bump this
