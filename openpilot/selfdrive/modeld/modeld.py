@@ -6,6 +6,7 @@ from functools import cached_property
 import os
 os.environ['GMMU'] = '0' # for chestnut fast loading, noop for qcom
 from tinygrad.device import Buffer, Device
+from tinygrad.engine.realize import lower_and_compile
 from tinygrad.dtype import DType, dtypes
 from tinygrad.tensor import Tensor
 from tinygrad.helpers import round_up
@@ -34,7 +35,6 @@ from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper
 from openpilot.selfdrive.controls.lib.drive_helpers import get_accel_from_plan, should_stop, smooth_value, get_curvature_from_plan
 from openpilot.selfdrive.modeld.parse_model_outputs import Parser
 from openpilot.selfdrive.modeld.fill_model_msg import fill_model_msg, fill_driving_model_data, fill_pose_msg, PublishState
-from openpilot.common.file_chunker import open_file_chunked
 from openpilot.selfdrive.modeld.constants import ModelConstants, Plan
 from openpilot.selfdrive.modeld.helpers import MODELS_DIR, chestnut_present, chestnut_compiled, modeld_pkl_path, load_oob
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
@@ -143,7 +143,7 @@ class ModelState(ModelStateBase):
 
   def __init__(self, cam_w: int, cam_h: int, chestnut: bool):
     ModelStateBase.__init__(self)
-    jits = load_oob(open_file_chunked(modeld_pkl_path(chestnut)), chestnut)
+    jits = load_oob(modeld_pkl_path(chestnut), chestnut)
     self.model_device = jits['input_specs']['new_img'][2]
     self.input_shapes = {name: (shape, np.dtype(dtype)) for name, (shape, dtype, _) in jits['input_specs'].items()}
     self.state_pairs = {name: f'next_{name}' for name in self.input_shapes if f'next_{name}' in jits['metadata']['output_shapes']}
@@ -158,7 +158,9 @@ class ModelState(ModelStateBase):
     self.pack_inputs()
     with open(MODELS_DIR / f'{"big_" if chestnut else ""}driving_warp_{cam_w}x{cam_h}_tinygrad.pkl', 'rb') as f:
       self.run_warp = pickle.load(f)['run']
+    self.run_warp.captured._linear = lower_and_compile(self.run_warp.captured._linear)
     self.run_model = jits['run']
+    self.run_model.captured._linear = lower_and_compile(self.run_model.captured._linear)
     self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in jits['output_specs'].items()}
     for name, next_name in self.state_pairs.items():
       state = self.input_queues[name]

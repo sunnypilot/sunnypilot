@@ -118,15 +118,44 @@ def tinygrad_identity() -> str:
   root, digest = os.path.dirname(tinygrad.__file__), hashlib.sha256()
   for directory, _, files in sorted(os.walk(root)):
     for name in sorted(file for file in files if file.endswith(".py")):
-      stat = os.stat(path := os.path.join(directory, name))
-      digest.update(f"{os.path.relpath(path, root)}:{stat.st_size}:{stat.st_mtime_ns};".encode())
+      with open(path := os.path.join(directory, name), "rb") as file:
+        digest.update(f"{os.path.relpath(path, root)}:".encode() + file.read())
+  return digest.hexdigest()
+
+
+@functools.lru_cache(maxsize=8)
+def _artifact_digest(path: str, size: int, mtime_ns: int) -> str:
+  digest = hashlib.sha256(str(size).encode())
+  for _, (header, blob) in sorted(read_parts(path)[0].items(), key=lambda item: repr(item[0])):
+    digest.update(json.dumps(header, sort_keys=True).encode())
+    for call in header["calls"]:
+      if call["kind"] == "program":
+        digest.update(blob[slice(*call["lib"])])
   return digest.hexdigest()
 
 
 def _cache_key(path: str, device_map: dict | None) -> bytes:
   stat = os.stat(path)
-  return json.dumps({"format": MAGIC.decode(), "tinygrad": tinygrad_identity(), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns,
+  return json.dumps({"format": MAGIC.decode(), "tinygrad": tinygrad_identity(), "artifact": _artifact_digest(path, stat.st_size, stat.st_mtime_ns),
                      "device_map": sorted((device_map or {}).items()), "env": [os.environ.get(name, "") for name in RUNTIME_ENVIRONMENT]}).encode()
+
+
+CACHE_MANIFEST = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/caches/{}.json"
+
+
+def fetch_cache(path: str) -> bool:  # a cache the chestnut runner built for this tinygrad. its hash is pinned on github like the models' own
+  import requests
+  try:
+    entry = requests.get(CACHE_MANIFEST.format(tinygrad_identity()), timeout=10).json()[os.path.basename(path)]
+    data = requests.get(entry["url"], timeout=60).content
+    if hashlib.sha256(data).hexdigest() != entry["sha256"]:
+      return False
+    with open(tmp_path := f"{path}.cache.{os.getpid()}.tmp", "wb") as file:
+      file.write(data)
+    os.replace(tmp_path, f"{path}.cache")
+    return True
+  except Exception:
+    return False
 
 
 def _cache_header_matches(file, path: str, device_map: dict | None) -> bool:
@@ -194,11 +223,20 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
   from tinygrad.device import Buffer
   written = {call["args"][i]["buffer"] for call in header["calls"] for i in (call["outs"] if call["kind"] == "program" else (0,))
              if "buffer" in call["args"][i]}
+  entries = [(_device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None, entry) for entry in header["buffers"]]
+  # read-only data the parts share in the file (weights common to every camera resolution) is uploaded once to the nut
+  keys = [(device, entry["dtype"], np.frombuffer(data, np.uint8).ctypes.data, len(data)) if data and index not in written else object()
+          for index, (device, data, entry) in enumerate(entries)]
+  for device in {key[0] for key in keys if isinstance(key, tuple) and key not in shared}:
+    if shared.setdefault(("mapped", device), Buffer(device, 1).ensure_allocated().get_storage().host is not None):
+      continue
+    spans = [(entry["init"], entry["nbytes"], key) for (_, _, entry), key in zip(entries, keys, strict=True)
+             if isinstance(key, tuple) and key[0] == device and key not in shared]
+    start, end = min(span[0] for span, _, _ in spans), max(span[1] for span, _, _ in spans)
+    block = Buffer(device, end - start, initial_value=pickle.PickleBuffer(blob[start:end])).ensure_allocated()
+    shared |= {key: block.view(nbytes, span[0] - start).ensure_allocated() for span, nbytes, key in spans}
   buffers = []
-  for index, entry in enumerate(header["buffers"]):
-    device, data = _device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None
-    # read-only data the parts share in the file (weights common to every camera resolution) is uploaded once to the nut
-    key = (device, entry["dtype"], np.frombuffer(data, np.uint8).ctypes.data, len(data)) if data and index not in written else object()
+  for (device, data, entry), key in zip(entries, keys, strict=True):
     if key not in shared:
       shared[key] = Buffer(device, entry["nbytes"], initial_value=pickle.PickleBuffer(data) if data else None).ensure_allocated()
     buffers.append(shared[key])
@@ -259,7 +297,7 @@ class PlainJit(_Jit):
       if call["kind"] == "program":
         calls.append(_program_uop(call, bytes(blob[slice(*call["lib"])])).call(*arguments))
       else:
-        calls.append(arguments[1].copy_to_device(arguments[0].device).call(*arguments))
+        calls.append(arguments[0].store_call(arguments[1]))
     # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
     stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
                                        _dtype(spec["dtype"])) for slot, spec in inputs.items()}

@@ -248,3 +248,12 @@ jobs:
           done
           echo "All 10 push attempts failed"
           exit 1
+
+  build_caches:
+    if: ${{ !cancelled() && needs.publish_model.result == 'success' && inputs.target_hardware == 'chestnut' }}
+    needs: publish_model
+    uses: ./.github/workflows/build-chestnut-caches.yaml
+    with:
+      hf_repo: ${{ inputs.hf_repo }}
+      docs_repo: ${{ inputs.docs_repo }}
+    secrets: inherit

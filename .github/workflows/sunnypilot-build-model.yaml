@@ -114,24 +114,24 @@ jobs:
           if [ "$ONNX_COUNT" -eq 0 ]; then
             echo "Detected NEW stock architecture (no ONNX files tracked). Fetching from HF and skipping LFS pull."
             COMMIT_MSG=$(git log -1 --pretty=%B)
-            HF_HASH=$(echo "$COMMIT_MSG" | grep -oE '[a-f0-9]{8}' | head -n 1)
+            HF_HASH=$(echo "$COMMIT_MSG" | grep -oE '[a-f0-9]{8}' | tac | tr '\n' ' ') # newest first: squashed model PRs list every checkpoint they tried
 
             if [ -n "$HF_HASH" ]; then
-              echo "Downloading ONNX for hash $HF_HASH from HuggingFace."
+              echo "Looking for ONNX hashes $HF_HASH on HuggingFace."
               pip install huggingface_hub
               rm -f selfdrive/modeld/models/*.onnx
               python3 - <<EOF
           import sys, os, shutil
           from huggingface_hub import HfApi, hf_hub_download
-          short_hash = "$HF_HASH"
           target_dir = "selfdrive/modeld/models"
           repo = "commaai/openpilot_driving_models"
           api = HfApi()
           files = list(api.list_repo_tree(repo, repo_type="model", recursive=True))
-          matching_folder = next((f.path.split("/")[0] for f in files if f.path.startswith(short_hash)), None)
+          matching_folder = next((f.path.split("/")[0] for h in "$HF_HASH".split() for f in files if f.path.startswith(h)), None)
           if not matching_folder:
-            print(f"Could not find HF folder for hash {short_hash}")
+            print(f"Could not find HF folder for any of $HF_HASH")
             sys.exit(1)
+          print(f"Using {matching_folder}")
           os.makedirs(target_dir, exist_ok=True)
           for f in files:
             if f.path.startswith(matching_folder) and f.path.endswith(".onnx"):
