@@ -209,7 +209,6 @@ def _device(recorded: str, device_map: dict | None) -> str:
 
 
 def _upload(buffer, data: memoryview, chunk: int = 16 << 20) -> None:
-  # copies read the file's pages in place, in same-size chunks (the last ends at the buffer's end), so one copy program is compiled
   from tinygrad.device import Buffer
   source, chunk = Buffer("NPY", len(data), opaque=data), min(chunk, len(data))
   for offset in sorted({*range(0, len(data) - chunk, chunk), len(data) - chunk}):
@@ -222,7 +221,6 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
   written = {call["args"][i]["buffer"] for call in header["calls"] for i in (call["outs"] if call["kind"] == "program" else (0,))
              if "buffer" in call["args"][i]}
   entries = [(_device(entry["device"], device_map), blob[slice(*entry["init"])] if "init" in entry else None, entry) for entry in header["buffers"]]
-  # read-only data the parts share in the file (weights common to every camera resolution) is uploaded once to the nut
   keys = [(device, entry["dtype"], np.frombuffer(data, np.uint8).ctypes.data, len(data)) if data and index not in written else object()
           for index, (device, data, entry) in enumerate(entries)]
   for device in {key[0] for key in keys if isinstance(key, tuple) and key not in shared}:
