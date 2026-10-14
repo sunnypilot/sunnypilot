@@ -22,7 +22,6 @@ def load_oob(f, chestnut=False):
   with Context(DEV=device):
     opcodes = f.read(struct.unpack('<q', f.read(8))[0])
     buffers = Tensor(np.frombuffer(f.read(), np.uint8)).realize().uop.buffer
-    unpickler = pickle.Unpickler(io.BytesIO(opcodes))
     return type("_Unpickler", (pickle.Unpickler,), {"persistent_load": lambda self, pid: buffers.view(*pid)})(io.BytesIO(opcodes)).load()
 
 def chestnut_present() -> bool:
