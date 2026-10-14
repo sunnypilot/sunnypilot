@@ -19,7 +19,6 @@ from openpilot.cereal import messaging, custom
 from openpilot.sunnypilot.models.fetcher import ModelFetcher
 from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_bundle, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles, verify_file)
-from openpilot.sunnypilot.modeld_v2.helpers import fetch_cache
 
 # (connect, read) seconds. read is per-request inactivity, not a total cap
 DOWNLOAD_TIMEOUT = (30, 30)
@@ -201,8 +200,6 @@ class ModelManagerSP:
         else:
           seen_artifacts.add(artifact.fileName)
           await self._process_artifact(artifact, destination_path)
-          if source == "chestnut":
-            fetch_cache(os.path.join(destination_path, artifact.fileName))
 
       if self._download_interrupted():
         raise DownloadCancelled("Download cancelled")

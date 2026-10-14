@@ -20,7 +20,7 @@ from openpilot.sunnypilot.models.helpers import get_selected_bundle
 def main():
   """
   The main entry point for offroad cache creation.
-  Runs every 10 seconds and checks for a stale qcom model cache. Chestnut caches come prebuilt with the model download, else modeld builds one.
+  Runs every 10 seconds and checks for a stale qcom model cache.
   """
   params, failed, spawn = Params(), set(), multiprocessing.get_context("spawn")
   while True:

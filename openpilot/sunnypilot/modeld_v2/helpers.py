@@ -5,12 +5,14 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import bisect
 import builtins
 import contextlib
 import dataclasses
 import functools
 import hashlib
 import io
+import itertools
 import json
 import math
 import mmap
@@ -101,14 +103,20 @@ def read_parts(path: str) -> tuple[dict, dict]:
   return parts, _MetadataUnpickler(io.BytesIO(bytes(blob[slice(*header["extras"])]))).load()
 
 
-def load_model(path: str, device_map: dict | None = None, verify: bool = True, cache: bool = True) -> dict:
+def _extended(path: str, extend) -> tuple[dict, dict, str]:
   parts, extras = read_parts(path)
-  if cache and (cached := _read_cache(path, parts, device_map)) is not None:
+  added = extend(parts, extras) if extend else {}
+  return parts | added, extras, _parts_digest(added) if added else ""
+
+
+def load_model(path: str, device_map: dict | None = None, verify: bool = True, cache: bool = True, extend=None) -> dict:
+  parts, extras, extra = _extended(path, extend)
+  if cache and (cached := _read_cache(path, parts, device_map, extra)) is not None:
     return extras | cached
   shared: dict = {}
   jits = {key: PlainJit(header, blob, device_map, verify, shared) for key, (header, blob) in parts.items()}
   if cache:
-    _write_cache(path, jits, device_map)
+    _write_cache(path, jits, device_map, extra)
   return extras | jits
 
 
@@ -123,10 +131,9 @@ def tinygrad_identity() -> str:
   return digest.hexdigest()
 
 
-@functools.lru_cache(maxsize=8)
-def _artifact_digest(path: str, size: int, mtime_ns: int) -> str:
-  digest = hashlib.sha256(str(size).encode())
-  for _, (header, blob) in sorted(read_parts(path)[0].items(), key=lambda item: repr(item[0])):
+def _parts_digest(parts: dict) -> str:
+  digest = hashlib.sha256()
+  for _, (header, blob) in sorted(parts.items(), key=lambda item: repr(item[0])):
     digest.update(json.dumps(header, sort_keys=True).encode())
     for call in header["calls"]:
       if call["kind"] == "program":
@@ -134,32 +141,15 @@ def _artifact_digest(path: str, size: int, mtime_ns: int) -> str:
   return digest.hexdigest()
 
 
-def _cache_key(path: str, device_map: dict | None) -> bytes:
+def _cache_key(path: str, device_map: dict | None, extra: str = "") -> bytes:
   stat = os.stat(path)
-  return json.dumps({"format": MAGIC.decode(), "tinygrad": tinygrad_identity(), "artifact": _artifact_digest(path, stat.st_size, stat.st_mtime_ns),
-                     "device_map": sorted((device_map or {}).items()), "env": [os.environ.get(name, "") for name in RUNTIME_ENVIRONMENT]}).encode()
+  return json.dumps({"format": MAGIC.decode(), "tinygrad": tinygrad_identity(), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns,
+                     "extra": extra, "device_map": sorted((device_map or {}).items()),
+                     "env": [os.environ.get(name, "") for name in RUNTIME_ENVIRONMENT]}).encode()
 
 
-CACHE_MANIFEST = "https://raw.githubusercontent.com/sunnypilot/sunnypilot-models/refs/heads/gh-pages/docs/caches/{}.json"
-
-
-def fetch_cache(path: str) -> bool:  # a cache the chestnut runner built for this tinygrad. its hash is pinned on github like the models' own
-  import requests
-  try:
-    entry = requests.get(CACHE_MANIFEST.format(tinygrad_identity()), timeout=10).json()[os.path.basename(path)]
-    data = requests.get(entry["url"], timeout=60).content
-    if hashlib.sha256(data).hexdigest() != entry["sha256"]:
-      return False
-    with open(tmp_path := f"{path}.cache.{os.getpid()}.tmp", "wb") as file:
-      file.write(data)
-    os.replace(tmp_path, f"{path}.cache")
-    return True
-  except Exception:
-    return False
-
-
-def _cache_header_matches(file, path: str, device_map: dict | None) -> bool:
-  return file.read(struct.unpack("<Q", file.read(8))[0]) == _cache_key(path, device_map)
+def _cache_header_matches(file, path: str, device_map: dict | None, extra: str = "") -> bool:
+  return file.read(struct.unpack("<Q", file.read(8))[0]) == _cache_key(path, device_map, extra)
 
 
 def cache_is_fresh(path: str, device_map: dict | None = None) -> bool: # entry point for warmup proc
@@ -170,10 +160,10 @@ def cache_is_fresh(path: str, device_map: dict | None = None) -> bool: # entry p
     return False
 
 
-def _read_cache(path: str, parts: dict, device_map: dict | None) -> dict | None:
+def _read_cache(path: str, parts: dict, device_map: dict | None, extra: str = "") -> dict | None:
   try:
     with open(f"{path}.cache", "rb") as file:
-      if not _cache_header_matches(file, path, device_map):
+      if not _cache_header_matches(file, path, device_map, extra):
         return None
       shared: dict = {}
       buffers = {repr(key): _allocate_buffers(header, blob, device_map, shared) for key, (header, blob) in parts.items()}
@@ -182,7 +172,7 @@ def _read_cache(path: str, parts: dict, device_map: dict | None) -> dict | None:
     return None
 
 
-def _write_cache(path: str, jits: dict, device_map: dict | None) -> None:
+def _write_cache(path: str, jits: dict, device_map: dict | None, extra: str = "") -> None:
   from tinygrad.device import Buffer
   owners = {id(buffer): (repr(key), index) for key, jit in jits.items() for index, buffer in enumerate(jit.buffers)}
 
@@ -190,7 +180,7 @@ def _write_cache(path: str, jits: dict, device_map: dict | None) -> None:
     def persistent_id(self, obj):
       return owners.get(id(obj)) if isinstance(obj, Buffer) else None
 
-  key, tmp_path = _cache_key(path, device_map), f"{path}.cache.{os.getpid()}.tmp"
+  key, tmp_path = _cache_key(path, device_map, extra), f"{path}.cache.{os.getpid()}.tmp"
   with contextlib.suppress(Exception):
     with open(tmp_path, "wb") as file:
       file.write(struct.pack("<Q", len(key)) + key)
@@ -232,9 +222,12 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
       continue
     spans = [(entry["init"], entry["nbytes"], key) for (_, _, entry), key in zip(entries, keys, strict=True)
              if isinstance(key, tuple) and key[0] == device and key not in shared]
-    start, end = min(span[0] for span, _, _ in spans), max(span[1] for span, _, _ in spans)
-    block = Buffer(device, end - start, initial_value=pickle.PickleBuffer(blob[start:end])).ensure_allocated()
-    shared |= {key: block.view(nbytes, span[0] - start).ensure_allocated() for span, nbytes, key in spans}
+    files = getattr(blob, "starts", [0])  # a part read from several files (frame_fusion's) is uploaded a block per file
+    for _, group in itertools.groupby(sorted(spans, key=lambda span: span[0][0]), key=lambda span: bisect.bisect_right(files, span[0][0])):
+      group = list(group)
+      start, end = min(span[0] for span, _, _ in group), max(span[1] for span, _, _ in group)
+      block = Buffer(device, end - start, initial_value=pickle.PickleBuffer(blob[start:end])).ensure_allocated()
+      shared |= {key: block.view(nbytes, span[0] - start).ensure_allocated() for span, nbytes, key in group}
   buffers = []
   for (device, data, entry), key in zip(entries, keys, strict=True):
     if key not in shared:
