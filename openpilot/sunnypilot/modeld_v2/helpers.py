@@ -51,12 +51,12 @@ def patch_fetch_fw() -> None:
     from tinygrad import helpers
   except ImportError:
     return
-  original = helpers.fetch_fw
   def fetch_fw(path, name, sha256):
     if (file := pathlib.Path(f"/lib/firmware/{path}/{name}.zst")).is_file():
       if hashlib.sha256(blob := zstandard.ZstdDecompressor().stream_reader(file.read_bytes()).read()).hexdigest() == sha256:
         return blob
-    return original(path, name, sha256)
+    return helpers.fetch(f"https://gitlab.com/kernel-firmware/linux-firmware/-/raw/0a6871b19abf5d6e024b5d208b101ae53e7fa0de/{path}/{name}",
+                         subdir="fw", sha256=sha256).read_bytes()
   helpers.fetch_fw = fetch_fw
 
 
@@ -226,7 +226,7 @@ def _device(recorded: str, device_map: dict | None) -> str:
 
 def _upload(buffer, data: memoryview, chunk: int = 16 << 20) -> None:
   from tinygrad.device import Buffer
-  source, chunk = Buffer("NPY", len(data), opaque=data), min(chunk, len(data))
+  source, chunk = Buffer("NPY", len(data), opaque=memoryview(bytearray(data)) if data.readonly else data), min(chunk, len(data))
   for offset in sorted({*range(0, len(data) - chunk, chunk), len(data) - chunk}):
     buffer.view(chunk, offset).ensure_allocated().copy_from(source.view(chunk, offset).ensure_allocated())
 
