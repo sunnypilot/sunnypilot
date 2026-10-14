@@ -14,7 +14,7 @@ import struct
 import tempfile
 import numpy as np
 
-from openpilot.sunnypilot.modeld_v2.helpers import ALIGNMENT, Blob, PlainJit, flatten, write_bundle
+from openpilot.sunnypilot.modeld_v2.helpers import ALIGNMENT, Blob, PlainJit, flatten, patch_fetch_fw, write_bundle
 from openpilot.sunnypilot.modeld_v2.plain_artifact_compiler import capture_frame
 
 
@@ -185,6 +185,7 @@ def main():
   parser.add_argument("output")
   args = parser.parse_args()
 
+  patch_fetch_fw()
   from examples.openpilot.helpers import allocate_inputs, load_pickle
   from tinygrad import Device, Tensor
   from tinygrad.engine.realize import lower_and_compile

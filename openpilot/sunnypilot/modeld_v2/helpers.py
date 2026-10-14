@@ -17,6 +17,7 @@ import json
 import math
 import mmap
 import os
+import pathlib
 import pickle
 import struct
 
@@ -42,6 +43,21 @@ def _patch_system_flock_acquire():
   except (ImportError, AttributeError):
     pass
 _patch_system_flock_acquire()
+
+
+def patch_fetch_fw() -> None:
+  try:
+    import zstandard
+    from tinygrad import helpers
+  except ImportError:
+    return
+  original = helpers.fetch_fw
+  def fetch_fw(path, name, sha256):
+    if (file := pathlib.Path(f"/lib/firmware/{path}/{name}.zst")).is_file():
+      if hashlib.sha256(blob := zstandard.ZstdDecompressor().stream_reader(file.read_bytes()).read()).hexdigest() == sha256:
+        return blob
+    return original(path, name, sha256)
+  helpers.fetch_fw = fetch_fw
 
 
 class ArtifactMismatch(RuntimeError):
