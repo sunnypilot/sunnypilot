@@ -94,7 +94,7 @@ def write_bundle(path: str, parts: dict, extras: dict | None = None):
 
 def read_parts(path: str) -> tuple[dict, dict]:
   with open(path, "rb") as file:
-    data = memoryview(mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ))
+    data = memoryview(mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_COPY))
   if bytes(data[:len(MAGIC)]) != MAGIC:
     raise ValueError(f"{path} is not a plain tinygrad model, recompile it with compile_modeld.py")
   start = len(MAGIC) + 8 + struct.unpack_from("<Q", data, len(MAGIC))[0]
@@ -208,6 +208,14 @@ def _device(recorded: str, device_map: dict | None) -> str:
   return Device.canonicalize(device_map.get(recorded, device_map.get(recorded.split(":", 1)[0], recorded)))
 
 
+def _upload(buffer, data: memoryview, chunk: int = 16 << 20) -> None:
+  # copies read the file's pages in place, in same-size chunks (the last ends at the buffer's end), so one copy program is compiled
+  from tinygrad.device import Buffer
+  source, chunk = Buffer("NPY", len(data), opaque=data), min(chunk, len(data))
+  for offset in sorted({*range(0, len(data) - chunk, chunk), len(data) - chunk}):
+    buffer.view(chunk, offset).ensure_allocated().copy_from(source.view(chunk, offset).ensure_allocated())
+
+
 def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, shared: dict) -> list:
   import numpy as np
   from tinygrad.device import Buffer
@@ -226,7 +234,7 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
     for _, group in itertools.groupby(sorted(spans, key=lambda span: span[0][0]), key=lambda span: bisect.bisect_right(files, span[0][0])):
       group = list(group)
       start, end = min(span[0] for span, _, _ in group), max(span[1] for span, _, _ in group)
-      block = Buffer(device, end - start, initial_value=pickle.PickleBuffer(blob[start:end])).ensure_allocated()
+      _upload(block := Buffer(device, end - start).ensure_allocated(), blob[start:end])
       shared |= {key: block.view(nbytes, span[0] - start).ensure_allocated() for span, nbytes, key in group}
   buffers = []
   for (device, data, entry), key in zip(entries, keys, strict=True):
