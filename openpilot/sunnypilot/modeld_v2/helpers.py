@@ -17,7 +17,6 @@ import json
 import math
 import mmap
 import os
-import pathlib
 import pickle
 import struct
 
@@ -48,16 +47,9 @@ _patch_system_flock_acquire()
 def patch_fetch_fw() -> None:
   try:
     import zstandard
-    from tinygrad import helpers
   except ImportError:
     return
-  def fetch_fw(path, name, sha256):
-    if (file := pathlib.Path(f"/lib/firmware/{path}/{name}.zst")).is_file():
-      if hashlib.sha256(blob := zstandard.ZstdDecompressor().stream_reader(file.read_bytes()).read()).hexdigest() == sha256:
-        return blob
-    return helpers.fetch(f"https://gitlab.com/kernel-firmware/linux-firmware/-/raw/0a6871b19abf5d6e024b5d208b101ae53e7fa0de/{path}/{name}",
-                         subdir="fw", sha256=sha256).read_bytes()
-  helpers.fetch_fw = fetch_fw
+  zstandard.decompress = lambda data, *_: zstandard.ZstdDecompressor().stream_reader(data).read()  # ty: ignore[invalid-assignment]
 
 
 class ArtifactMismatch(RuntimeError):
