@@ -259,7 +259,7 @@ class PlainJit(_Jit):
       if call["kind"] == "program":
         calls.append(_program_uop(call, bytes(blob[slice(*call["lib"])])).call(*arguments))
       else:
-        calls.append(arguments[1].copy_to_device(arguments[0].device).call(*arguments))
+        calls.append(arguments[0].store_call(arguments[1]))
     # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
     stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
                                        _dtype(spec["dtype"])) for slot, spec in inputs.items()}
