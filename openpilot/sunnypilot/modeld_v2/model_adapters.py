@@ -173,12 +173,12 @@ class NativeTinygradAdapter(BaseModelAdapter):
 
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
                          for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
-    shapes = {name: shape for name, (shape, _) in self.input_shapes.items() if name not in self.state_pairs and name != 'new_img'}
-    offsets, packed = pack_layout(shapes, self.warp_frame_size)
+    specs = {name: spec for name, spec in self.input_shapes.items() if name not in self.state_pairs and name != 'new_img'}
+    offsets, packed = pack_layout(specs, self.warp_frame_size)
     self.packed_input = np.zeros(packed, dtype=np.uint8)
     self.host = Tensor(self.packed_input, device='NPY')
-    self.numpy_inputs = {name: np.ndarray(shape, dtype=np.float32, buffer=self.packed_input, offset=offsets[name])
-                         for name, shape in ({'tfm': (2, 3, 3)} | shapes).items()}
+    self.numpy_inputs = {name: np.ndarray(shape, dtype=dtype, buffer=self.packed_input, offset=offsets[name])
+                         for name, (shape, dtype) in ({'tfm': ((2, 3, 3), np.dtype(np.float32))} | specs).items()}
     self.frames = self.packed_input[offsets['frames']:].reshape(2, self.warp_frame_size)
 
     self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}

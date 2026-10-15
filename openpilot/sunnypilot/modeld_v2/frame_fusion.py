@@ -9,14 +9,16 @@ import itertools
 import math
 from functools import partial
 
+import numpy as np
+
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.helpers import _dtype, read_parts
 
 
-def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, int], int]:
+def pack_layout(specs: dict[str, tuple], frame_size: int) -> tuple[dict[str, int], int]:
   offsets, offset = {}, 0
-  for name, shape in ({"tfm": (2, 3, 3)} | shapes).items():
-    offsets[name], offset = offset, offset + -(-math.prod(shape) * 4 // 128) * 128
+  for name, (shape, dtype) in ({"tfm": ((2, 3, 3), np.float32)} | specs).items():
+    offsets[name], offset = offset, offset + -(-math.prod(shape) * np.dtype(dtype).itemsize // 128) * 128
   return offsets | {"frames": offset}, offset + 2 * frame_size
 
 
@@ -38,7 +40,7 @@ def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
     return {}
   (model, model_blob), (warp, warp_blob) = parts["run"], read_parts(warp_path)[0]["run"]
   states = sorted(name for name in extras["input_specs"] if f"next_{name}" in extras["metadata"]["output_shapes"])
-  host = {name: shape for name, (shape, _, _) in extras["input_specs"].items() if name not in states and name != "new_img"}
+  host = {name: (shape, dtype) for name, (shape, dtype, _) in extras["input_specs"].items() if name not in states and name != "new_img"}
   frame_size = next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2
   offsets, packed = pack_layout(host, frame_size)
   shift, upload, u8 = len(model_blob), len(model["buffers"]) + len(warp["buffers"]), repr(_dtype("dtypes.uint8"))
