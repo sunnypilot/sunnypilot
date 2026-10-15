@@ -171,7 +171,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-          lfs: true
 
       - name: Pull big PKL via LFS
         run: git lfs pull -I "${{ env.BIG_PKL }}"
