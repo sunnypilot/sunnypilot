@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 
 import pathlib
 import tempfile
+import codecs
+import pickle
 
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
@@ -161,6 +163,23 @@ ARCHETYPES = {
 
 
 def make_pkl_data(archetype):
+  if archetype.expected_model_type == 'supercombo':
+    slices_b64 = codecs.encode(pickle.dumps(archetype.metadata_structure['model']['output_slices']), 'base64').decode()
+    return {
+      'metadata': {
+        'metadata': {'output_slices': slices_b64},
+        'model': {
+          'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+          'output_slices': archetype.metadata_structure['model']['output_slices']
+        },
+        'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+        'output_slices': archetype.metadata_structure['model']['output_slices'],
+        'output_shapes': {}
+      },
+      'run_policy': _noop_jit,
+      (CAM_W, CAM_H): _noop_jit
+    }
+
   return {
     'metadata': archetype.metadata_structure,
     'run_policy': _noop_jit,
@@ -169,7 +188,7 @@ def make_pkl_data(archetype):
 
 
 def write_pkl(tmp_path, archetype):
-  from openpilot.selfdrive.modeld.helpers import dump_oob
+  from openpilot.sunnypilot.modeld_v2.helpers import dump_oob
   pkl_path = tmp_path / 'driving_test_tinygrad.pkl'
   with open(pkl_path, 'wb') as f:
     dump_oob(make_pkl_data(archetype), f)
