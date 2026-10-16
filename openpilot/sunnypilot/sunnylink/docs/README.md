@@ -367,8 +367,8 @@ enablement:
 enablement:
   - type: any
     conditions:
-      - {type: param, key: ExperimentalMode, equals: true}
-      - {type: param, key: DynamicExperimentalControl, equals: true}
+      - {type: param, key: SmartCruiseControlVision, equals: true}
+      - {type: param, key: SmartCruiseControlMap, equals: true}
 ```
 
 **Mixed: capability AND param** (only on longitudinal cars when ShowAdvancedControls is on):
