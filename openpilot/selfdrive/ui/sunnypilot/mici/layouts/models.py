@@ -251,11 +251,14 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.info_text.set_text(tr("download failed"))
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
-      self.cancel_download_btn.set_visible(True)
+      self.cancel_download_btn.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
       device.set_override_interactive_timeout(5)
       progress = 0.0
       count = 0
       verifying = False
+      canceling = False
+      resuming = False
+      speed = 0.0
       for model in manager.selectedBundle.models:
         count += 1
         p = model.artifact.downloadProgress
@@ -263,11 +266,15 @@ class ModelsLayoutMici(NavScroller):
                         custom.ModelManagerSP.DownloadStatus.verifying):
           progress += p.progress
           verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
+          canceling = canceling or p.canceling
+          resuming = resuming or p.resuming
+          speed = max(speed, p.speed)  # only one file downloads at a time, so the non-zero speed is the live one
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
+      header = tr("canceling...") if canceling else tr("verifying") if verifying else tr("resuming...") if resuming else tr("downloading")
+      self.current_model_info.current_model_header.set_text(header)
       self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
       name_text = manager.selectedBundle.internalName.lower()
@@ -276,7 +283,10 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.current_model_text.set_text(name_text)
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_header._shimmer = True
-      self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")
+      progress_text = f"{progress/count:.2f}%"
+      if not verifying and not canceling:
+        progress_text += f"  |  {speed / 1024 ** 2:.1f} MB/s" if speed > 0 else "  |  --.- MB/s"
+      self.current_model_info.info_text.set_text(progress_text)
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloaded:
       self.current_model_info.info_header.set_text(tr("downloaded"))

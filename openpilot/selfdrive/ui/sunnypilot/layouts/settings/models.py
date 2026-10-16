@@ -235,13 +235,22 @@ class ModelsLayout(Widget):
     progress = sum(p.progress for p in progresses) / len(progresses)
     ds = custom.ModelManagerSP.DownloadStatus
 
+    if any(p.canceling for p in progresses):
+      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("canceling...")}
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
       return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
     if ds.verifying in statuses:
       return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
     if ds.downloading in statuses:
-      return {"name": name, "downloading": True, "progress": progress}
+      # only one file downloads at a time, so the non-zero speed is the live one
+      speed = max((p.speed for p in progresses), default=0.0)
+      speed_text = f"{speed / 1024 ** 2:.1f} MB/s" if speed > 0 else "--.- MB/s"
+      if any(p.resuming for p in progresses):
+        status_text = tr("resuming...") + f"  {speed_text}"
+      else:
+        status_text = speed_text
+      return {"name": name, "downloading": True, "progress": progress, "status_text": status_text}
     if statuses <= {ds.downloaded, ds.cached}:
       return {"name": name, "text_color": ON_COLOR, "icon": "icons/checkmark.png"}
     # circled_slash is authored grey; tinting it again only darkens it

@@ -188,10 +188,8 @@ def make_pkl_data(archetype):
 
 
 def write_pkl(tmp_path, archetype):
-  from openpilot.sunnypilot.modeld_v2.helpers import dump_oob
   pkl_path = tmp_path / 'driving_test_tinygrad.pkl'
-  with open(pkl_path, 'wb') as f:
-    dump_oob(make_pkl_data(archetype), f)
+  pkl_path.write_bytes(pickle.dumps(make_pkl_data(archetype)))
   return pkl_path
 
 
@@ -211,6 +209,7 @@ def patch_modeld(monkeypatch):
   def _patch(bundle):
     monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
     monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
+    monkeypatch.setattr(modeld_module, 'load_model', lambda path: pickle.loads(pathlib.Path(path).read_bytes()))
 
   return _patch
 
