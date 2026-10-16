@@ -69,7 +69,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_default_behavior_when_disabled(self):
     """Test that default increments are used when custom ACC is disabled"""
     self.set_custom_increments(enabled=False, short_inc=5, long_inc=10)
-    self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False, False)
+    self.enable(V_CRUISE_INITIAL * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
 
@@ -81,7 +81,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_custom_short_press_increments(self, increment):
     """Test custom short press increments (1-10)"""
     self.set_custom_increments(enabled=True, short_inc=increment, long_inc=5)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
     self.press_button_short(ButtonType.accelCruise)
@@ -98,7 +98,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_custom_long_press_increments(self, increment):
     """Test custom long press increments (1, 5, 10)"""
     self.set_custom_increments(enabled=True, short_inc=1, long_inc=increment)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
     self.press_button_long(ButtonType.accelCruise)
@@ -115,7 +115,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_accel_decel_symmetry(self, button_type):
     """Test that acceleration and deceleration work symmetrically"""
     self.set_custom_increments(enabled=True, short_inc=3, long_inc=5)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
     self.press_button_short(button_type)
@@ -135,7 +135,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
     for initial, increment, expected in test_cases:
       self.set_custom_increments(enabled=True, short_inc=increment, long_inc=increment)
       self.reset_cruise_speed_state()
-      self.enable(initial * CV.KPH_TO_MS, False, False)
+      self.enable(initial * CV.KPH_TO_MS, False)
 
       self.press_button_short(ButtonType.accelCruise)
       assert self.v_cruise_helper.v_cruise_kph == expected
@@ -144,7 +144,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
     """Test that invalid values fallback to safe defaults"""
     # Test invalid short increment
     self.set_custom_increments(enabled=True, short_inc=-1, long_inc=5)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
     self.press_button_short(ButtonType.accelCruise)
@@ -153,7 +153,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
     # Test invalid long increment
     self.reset_cruise_speed_state()
     self.set_custom_increments(enabled=True, short_inc=1, long_inc=99)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS, False)
 
     initial_speed = self.v_cruise_helper.v_cruise_kph
     self.press_button_long(ButtonType.accelCruise)

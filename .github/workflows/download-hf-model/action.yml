@@ -1,5 +1,5 @@
-name: Download HF model chunks
-description: Resolve and download model chunks from HuggingFace in parallel
+name: Download HF model
+description: Resolve and download models from HuggingFace in parallel
 
 inputs:
   hf_repo:
@@ -19,7 +19,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Download model chunks
+    - name: Download models
       shell: bash
       env:
         HF_REPO: ${{ inputs.hf_repo }}
@@ -33,7 +33,7 @@ runs:
         resolve_chunks() {
           local HF_PATH="$1" ONNX_HASH="$2" CANONICAL="$3" DEST_DIR="$4"
           local JSON_URL="https://huggingface.co/datasets/${HF_REPO}/resolve/main/${HF_PATH}/default_models.json"
-          local DEFAULTS BUNDLE ARTIFACT BASE_URL NUM_CHUNKS
+          local DEFAULTS BUNDLE ARTIFACT FILE_URL BASE_URL
           DEFAULTS=$(curl -fsSL "$JSON_URL")
           if [ -n "$TINYGRAD_REF" ]; then
             BUNDLE=$(echo "$DEFAULTS" | jq --arg hash "$ONNX_HASH" --arg tg "$TINYGRAD_REF" '
@@ -51,23 +51,20 @@ runs:
           fi
 
           ARTIFACT=$(echo "$BUNDLE" | jq -r '.models[0].artifact')
-          BASE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url' | sed 's|/[^/]*$||')
-          NUM_CHUNKS=$(echo "$ARTIFACT" | jq -r '.chunks | length')
+          FILE_URL=$(echo "$ARTIFACT" | jq -r '.download_uri.url')
+          BASE_URL=$(echo "$FILE_URL" | sed 's|/[^/]*$||')
 
           mkdir -p "$DEST_DIR"
-          while IFS= read -r CHUNK_NAME; do
-            CHUNK_IDX=$(echo "$CHUNK_NAME" | grep -oP 'chunk\K[0-9]+of[0-9]+' || true)
-            if [ -z "$CHUNK_IDX" ]; then
-              echo "::error::Failed to parse chunk index from: $CHUNK_NAME"
-              return 1
-            fi
-            ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${CHUNK_NAME}', safe=':/'))")
-            printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${CANONICAL}.chunk${CHUNK_IDX}" >> "$DOWNLOAD_LIST"
-          done < <(echo "$ARTIFACT" | jq -r '.chunks[].file_name')
-          echo "$NUM_CHUNKS" > "${DEST_DIR}/${CANONICAL}.chunkmanifest"
+          ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${FILE_URL}', safe=':/'))")
+          printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${CANONICAL}" >> "$DOWNLOAD_LIST"
 
           if [ "$CANONICAL" = "dmonitoring_model_tinygrad.pkl" ]; then
             for warp in dm_warp_1928x1208_tinygrad.pkl dm_warp_1344x760_tinygrad.pkl; do
+              ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${warp}', safe=':/'))")
+              printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${warp}" >> "$DOWNLOAD_LIST"
+            done
+          elif [ "$CANONICAL" = "big_driving_tinygrad.pkl" ]; then
+            for warp in big_driving_warp_1928x1208_tinygrad.pkl big_driving_warp_1344x760_tinygrad.pkl; do
               ENCODED_URL=$(python3 -c "import urllib.parse; print(urllib.parse.quote('${BASE_URL}/${warp}', safe=':/'))")
               printf '%s\t%s\n' "$ENCODED_URL" "${DEST_DIR}/${warp}" >> "$DOWNLOAD_LIST"
             done
@@ -82,7 +79,7 @@ runs:
         done
 
         TOTAL=$(wc -l < "$DOWNLOAD_LIST")
-        echo "Downloading $TOTAL chunks with 8 parallel connections..."
+        echo "Downloading $TOTAL files with 8 parallel connections..."
         xargs -P8 -d'\n' -I{} bash -c '
           URL="${1%%	*}"
           DEST="${1#*	}"

@@ -196,7 +196,6 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 }
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
-  dec @0 :DynamicExperimentalControl;
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
   speedLimit @3 :SpeedLimit;
@@ -206,7 +205,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   e2eAlerts @7 :E2eAlerts;
   accelController @8 :AccelController;
 
-  struct DynamicExperimentalControl {
+  deprecated :group {
+    dec @0 :DynamicExperimentalControlDEPRECATED;
+  }
+
+  struct DynamicExperimentalControlDEPRECATED {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
     active @2 :Bool;

@@ -12,7 +12,6 @@ from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_controller.accel_controller import AccelController
-from openpilot.sunnypilot.selfdrive.controls.lib.dec.dec import DynamicExperimentalController
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
@@ -20,12 +19,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolve
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
-DecState = custom.LongitudinalPlanSP.DynamicExperimentalControl.DynamicExperimentalControlState
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
 MpcPlanSource = log.LongitudinalPlan.LongitudinalPlanSource
-
-E2E_BRAKE_HOLD_ACCEL = -0.2  # m/s^2
-
 
 class LongitudinalPlannerSP:
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP, mpc):
@@ -33,7 +28,6 @@ class LongitudinalPlannerSP:
     self.accel_controller_active = False
     self.lead_one = None
     self.events_sp = EventsSP()
-    self.dec = DynamicExperimentalController(CP, mpc)
     self.scc = SmartCruiseControl()
     self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP, CP_SP)
@@ -43,19 +37,6 @@ class LongitudinalPlannerSP:
 
     self.output_v_target = 0.
     self.output_a_target = 0.
-
-  def is_e2e(self, sm: messaging.SubMaster) -> bool:
-    experimental_mode = sm['selfdriveState'].experimentalMode
-    if not experimental_mode:
-      return False
-
-    if not self.dec.active() or self.dec.mode() == "blended":
-      return True
-
-    if self.mpc.source == MpcPlanSource.e2e and sm['modelV2'].action.desiredAcceleration < E2E_BRAKE_HOLD_ACCEL:
-      return True
-
-    return False
 
   def get_max_accel_override(self, v_ego: float, engine_off: bool = False, lead=None) -> float | None:
     if not self.accel_controller.is_enabled():
@@ -125,9 +106,6 @@ class LongitudinalPlannerSP:
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
 
-  def update_dec(self, sm: messaging.SubMaster) -> None:
-    self.dec.update(sm)
-
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
 
@@ -138,16 +116,6 @@ class LongitudinalPlannerSP:
     longitudinalPlanSP.vTarget = float(self.output_v_target)
     longitudinalPlanSP.aTarget = float(self.output_a_target)
     longitudinalPlanSP.events = self.events_sp.to_msg()
-
-    # Dynamic Experimental Control
-    dec = longitudinalPlanSP.dec
-    dec.state = DecState.blended if self.dec.mode() == 'blended' else DecState.acc
-    dec.enabled = self.dec.enabled()
-    dec.active = self.dec.active()
-    #dec.decelIntent = float(self.dec.signals.decel_intent)
-    #dec.curveDetected = bool(self.dec.signals.curve_detected)
-    #dec.wantBlended = bool(self.dec.want_blended)
-    #dec.leadVeto = bool(self.dec.lead_veto)
 
     accel_controller = longitudinalPlanSP.accelController
     accel_controller.enabled = bool(self.accel_controller.is_enabled())

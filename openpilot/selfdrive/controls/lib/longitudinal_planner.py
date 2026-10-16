@@ -122,7 +122,6 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.mpc.set_weights(prev_accel_constraint, personality=sm['selfdriveState'].personality)
     self.mpc.set_cur_state(self.v_desired_filter.x, self.output_a_target)
     self.mpc.update(sm['radarState'], personality=sm['selfdriveState'].personality)
-    self.update_dec(sm)
 
     self.v_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.v_solution)
     self.a_desired_trajectory = np.interp(CONTROL_N_T_IDX, T_IDXS_MPC, self.mpc.a_solution)
@@ -143,24 +142,23 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
-    is_e2e = self.is_e2e(sm)
-
+    experimental_mode = sm['selfdriveState'].experimentalMode
     max_accel_override = self.get_max_accel_override(v_ego, sm['carStateSP'].engineOff)
     v_cruise = self.get_cruise_target_override(v_ego, v_cruise, force_decel, accel_coast if accel_coast < 0.0 else None)
     a_cruise_prev = self.a_cruise
-    gated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
+    gated_cruise = get_cruise_accel(experimental_mode, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
                                     self.CP, self.dt, accel_coast, self.allow_throttle, max_accel_override)
-    ungated_cruise = get_cruise_accel(is_e2e, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
+    ungated_cruise = get_cruise_accel(experimental_mode, v_cruise, v_ego, a_cruise_prev, steer_angle_without_offset,
                                       self.CP, self.dt, accel_coast, True, max_accel_override)
     self.a_cruise = self.arbitrate_cruise_candidate(
       sm, gated_cruise, ungated_cruise, output_a_target_mpc, self.mpc.source,
-      allow_throttle=self.allow_throttle, e2e=is_e2e, force_decel=force_decel,
+      allow_throttle=self.allow_throttle, e2e=experimental_mode, force_decel=force_decel,
     )
     cruise_should_stop = should_stop(v_ego, self.a_cruise)
 
     candidates = [(output_a_target_mpc, self.mpc.source, output_should_stop_mpc),
                   (self.a_cruise, LongitudinalPlanSource.cruise, cruise_should_stop)]
-    if is_e2e:
+    if experimental_mode:
       candidates.append((output_a_target_e2e, LongitudinalPlanSource.e2e, output_should_stop_e2e))
 
     output_a_target, self.mpc.source, _ = min(candidates, key=lambda c: c[0])

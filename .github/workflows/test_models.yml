@@ -47,38 +47,22 @@ jobs:
         with:
           submodules: true
 
-      - name: Download Model Chunks in Parallel
+      - name: Download model
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODEL_URL: ${{ matrix.artifact.download_uri.url }}
+          MODEL_FILE: ${{ matrix.artifact.file_name }}
+        shell: bash
         run: |
-          mkdir -p /tmp/model_chunks
-          echo '${{ toJson(matrix.artifact.chunks) }}' > chunks.json
-
-          BASE_URL="${{ matrix.artifact.download_uri.url }}"
-          export BASE_DIR=$(dirname "$BASE_URL")
-
-          python3 -c '
-          import json, os
-          with open("chunks.json") as f:
-            chunks = json.load(f)
-          manifest_path = f"/tmp/model_chunks/${{ matrix.artifact.file_name }}.chunkmanifest"
-          with open(manifest_path, "w") as f:
-            f.write(str(len(chunks)))
-          base_dir = os.environ["BASE_DIR"]
-          hf_token = os.environ.get("HF_TOKEN", "")
-          with open("/tmp/curl_config.txt", "w") as f:
-            for c in chunks:
-              fn = c["file_name"]
-              f.write(f"url = \"{base_dir}/{fn}\"\noutput = \"/tmp/model_chunks/{fn}\"\n")
-              if hf_token:
-                f.write(f"header = \"Authorization: Bearer {hf_token}\"\n")
-          '
-          curl -Z --parallel-immediate --parallel-max 12 --retry 3 --retry-all-errors -s -S -f -L -K /tmp/curl_config.txt
+          mkdir -p /tmp/models
+          AUTH=()
+          if [ -n "$HF_TOKEN" ]; then AUTH=(-H "Authorization: Bearer $HF_TOKEN"); fi
+          curl --retry 3 --retry-all-errors -s -S -f -L "${AUTH[@]}" -o "/tmp/models/$MODEL_FILE" "$MODEL_URL"
 
       - name: Run Model Compatibility Test
         env:
           MODEL_BASE_NAME: ${{ matrix.artifact.file_name }}
-          MODEL_CHUNK_DIR: "/tmp/model_chunks"
+          MODEL_DIR: "/tmp/models"
         run: |
           export PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo:$GITHUB_WORKSPACE:$PYTHONPATH"
           python3 -m pip uninstall -y tinygrad || uv pip uninstall -y tinygrad --system || true
