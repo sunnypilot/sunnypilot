@@ -37,6 +37,7 @@ from openpilot.selfdrive.modeld.modeld import ChestnutGpuState
 
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
+from openpilot.sunnypilot.modeld_v2.laneful import Laneful
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
@@ -224,7 +225,8 @@ class ModelState(ModelStateBase):
     return outputs
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
-                            lat_action_t: float, long_action_t: float, v_ego: float) -> log.ModelDataV2.Action:
+                            lat_action_t: float, long_action_t: float, v_ego: float,
+                            laneful_curvature: float = 0.0) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
@@ -236,6 +238,7 @@ class ModelState(ModelStateBase):
     else:
       desired_accel = model_output['action'][0, 1]
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
+    desired_curvature += laneful_curvature
 
     stop = v_ego < 0.3 and desired_accel < 0.1
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
@@ -350,6 +353,8 @@ def main(demo=False):
   DH = DesireHelper()
   meta_constants = load_meta_constants()
   RELC = RoadEdgeLaneChangeController()
+  laneful = Laneful()
+  laneful_strength = 0.0
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -393,6 +398,7 @@ def main(demo=False):
       model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
       model.PLANPLUS_CONTROL = params.get("PlanplusControl", return_default=True)
       camera_offset_helper.set_offset(params.get("CameraOffset", return_default=True))
+      laneful_strength = params.get("LanefulStrength", return_default=True)
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -464,7 +470,9 @@ def main(demo=False):
       posenet_send = messaging.new_message('cameraOdometry')
       mdv2sp_send = messaging.new_message('modelDataV2SP')
 
-      action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego)
+      laneful_curvature = laneful.update(model_output, v_ego, laneful_strength,
+                                         desire != log.Desire.none or DH.lane_change_state != log.LaneChangeState.off)
+      action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego, laneful_curvature)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
