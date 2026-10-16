@@ -600,26 +600,6 @@
               ]
             },
             {
-              "key": "DynamicExperimentalControl",
-              "widget": "toggle",
-              "title": "Dynamic Experimental Control",
-              "description": "Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.",
-              "visibility": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ],
-              "enablement": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ]
-            },
-            {
               "key": "DisengageOnAccelerator",
               "widget": "toggle",
               "title": "Disengage Cruise on Accelerator Pedal",
