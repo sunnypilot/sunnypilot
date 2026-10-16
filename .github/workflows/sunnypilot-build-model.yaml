@@ -149,7 +149,17 @@ jobs:
               git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
               rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
             else
-              git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/big_*.pkl" -X ""
+              sudo apt-get install -y -qq aria2 > /dev/null # Parallel ranges because gh is flaky
+              LFS_URL=$(git config -f "$(git rev-parse --show-toplevel)/.lfsconfig" lfs.url)
+              for f in selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl; do
+                grep -qs "^version https://git-lfs" "$f" || continue
+                OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
+                HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+                  -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
+                aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
+                  -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
+                echo "$OID  $f" | sha256sum -c -
+              done
               find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
             fi
           fi
@@ -162,6 +172,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
+          compression-level: 0
           path: |
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.pkl
@@ -224,11 +235,11 @@ jobs:
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
-          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 OPENPILOT_HACKS=1"
           if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
             echo "CHESTNUT build"
             export CHESTNUT=1
-            TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32"
+            TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32"
             OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
           else
             echo "QCOM build"
@@ -240,14 +251,15 @@ jobs:
 
           if [ -f "${{ env.MODELS_DIR }}/new_arch.txt" ]; then
             echo "Detected new arch"
-            DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*driving*.onnx" -print -quit)
+            if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
+              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "big_*driving*.onnx" -print -quit)
+            else
+              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*driving*.onnx" ! -name "big_*" -print -quit)
+            fi
             if [ -n "$DOWNLOADED_ONNX" ]; then
               echo "Compiling ONNX: $DOWNLOADED_ONNX"
               env ${TG_FLAGS} taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/compile_modeld_v2.py \
-                "$DOWNLOADED_ONNX" "$OUTPUT_PKL" --device-input "*" --out-of-band --benchmark-runs 1
-
-              echo "Chunking pkl"
-              python3 -c "from openpilot.common.file_chunker import chunk_file, get_chunk_targets; import os; p='$OUTPUT_PKL'; chunk_file(p, get_chunk_targets(p, os.path.getsize(p)))"
+                "$DOWNLOADED_ONNX" "$OUTPUT_PKL" --device-input "*" --benchmark-runs 1
             else
               echo "Failed to find downloaded ONNX."
               exit 1
@@ -317,8 +329,7 @@ jobs:
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*.chunk*' \
-            --include='*.chunkmanifest' \
+            --include='/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
@@ -340,6 +351,7 @@ jobs:
         with:
           name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+          compression-level: 0
 
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4

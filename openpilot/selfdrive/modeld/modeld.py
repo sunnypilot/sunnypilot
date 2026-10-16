@@ -134,8 +134,8 @@ class FrameMeta:
 
 
 def input_view(buffer: Buffer, shape: tuple[int, ...], dtype: DType, offset: int) -> Tensor:
-  view = buffer.view(math.prod(shape), dtype, offset).ensure_allocated()
-  return Tensor(UOp.from_buffer(view)).reshape(shape)
+  view = buffer.view(math.prod(shape) * dtype.itemsize, offset).ensure_allocated()
+  return Tensor(UOp.from_buffer(view, dtype)).reshape(shape)
 
 
 class ModelState(ModelStateBase):
@@ -143,7 +143,7 @@ class ModelState(ModelStateBase):
 
   def __init__(self, cam_w: int, cam_h: int, chestnut: bool):
     ModelStateBase.__init__(self)
-    jits = load_oob(open_file_chunked(modeld_pkl_path(chestnut)))
+    jits = load_oob(open_file_chunked(modeld_pkl_path(chestnut)), chestnut)
     self.model_device = jits['input_specs']['new_img'][2]
     self.input_shapes = {name: (shape, np.dtype(dtype)) for name, (shape, dtype, _) in jits['input_specs'].items()}
     self.state_pairs = {name: f'next_{name}' for name in self.input_shapes if f'next_{name}' in jits['metadata']['output_shapes']}
@@ -230,7 +230,8 @@ def main(demo=False):
 
   CHESTNUT = chestnut_present() and chestnut_compiled()
   if CHESTNUT:
-    os.environ['HCQDEV_WAIT_TIMEOUT_MS'] = '3000'
+    from tinygrad.runtime.ops_amd import AMDDevice
+    AMDDevice.wait_timeout_ms = 3000
   params = Params()
   params.put_bool("ChestnutLoading", CHESTNUT)
   params.remove("ChestnutActive")
