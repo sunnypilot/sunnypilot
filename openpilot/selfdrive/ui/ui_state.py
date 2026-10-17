@@ -69,6 +69,7 @@ class UIState(UIStateSP):
         "selfdriveState",
         "longitudinalPlan",
         "gpsLocationExternal",
+        "navInstruction",
         "carOutput",
         "carControl",
         "vehicleParameters",
@@ -88,10 +89,13 @@ class UIState(UIStateSP):
 
     # Core state variables
     self.is_metric: bool = self.params.get_bool("IsMetric")
+    self.initial_cruise_speed: int = self.params.get("InitialCruiseSpeedKph", return_default=True)
     self.is_release = False  # self.params.get_bool("IsReleaseBranch")
     self.always_on_dm: bool = self.params.get_bool("AlwaysOnDM")
     self.experimental_mode: bool = self.params.get_bool("ExperimentalMode")
     self.experimental_mode_confirmed: bool = self.params.get_bool("ExperimentalModeConfirmed")
+    self.navigation_enabled: bool = self.params.get_bool("NavigationEnabled")
+    self.nav_destination_set: bool = self.params.get("NavDestination") is not None
     self.chestnut_present: bool = False
     self.chestnut_compiled: bool = chestnut_compiled()
     self.chestnut_active: bool | None = None
@@ -252,9 +256,12 @@ class UIState(UIStateSP):
 
     self.recording_audio = self.params.get_bool("RecordAudio") and self.started
     self.is_metric = self.params.get_bool("IsMetric")
+    self.initial_cruise_speed = self.params.get("InitialCruiseSpeedKph", return_default=True)
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
     self.experimental_mode = self.params.get_bool("ExperimentalMode")
     self.experimental_mode_confirmed = self.params.get_bool("ExperimentalModeConfirmed")
+    self.navigation_enabled = self.params.get_bool("NavigationEnabled")
+    self.nav_destination_set = self.params.get("NavDestination") is not None
     if not self.chestnut_compiled:
       self.chestnut_compiled = chestnut_compiled()
     self.chestnut_active = self.params.get("ChestnutActive")

@@ -121,7 +121,7 @@ class ModelRenderer(Widget, ModelRendererSP):
     )
 
     # Update state
-    self._experimental_mode = sm['selfdriveState'].experimentalMode
+    self._experimental_mode = sm['selfdriveState'].deprecated.experimentalMode
 
     extrinsics_calibration = sm['extrinsicsCalibration']
     self._path_offset_z = extrinsics_calibration.height[0] if extrinsics_calibration.height else HEIGHT_INIT[0]
