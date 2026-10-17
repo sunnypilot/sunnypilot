@@ -235,6 +235,8 @@ class ModelsLayout(Widget):
     progress = sum(p.progress for p in progresses) / len(progresses)
     ds = custom.ModelManagerSP.DownloadStatus
 
+    if any(p.canceling for p in progresses):
+      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("canceling...")}
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
       return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
