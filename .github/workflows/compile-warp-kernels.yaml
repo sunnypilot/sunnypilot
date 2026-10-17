@@ -60,6 +60,11 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: credential.https://huggingface.co.helper
+          GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=user && echo "password=$HF_TOKEN"; }; f'
         with:
           author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -71,3 +76,7 @@ jobs:
           labels: bot
           add-paths: |
             openpilot/sunnypilot/modeld_v2/models/*.pkl
+
+      - name: Reset lfs access
+        if: always()
+        run: git config --local --unset-all "lfs.$(git config -f .lfsconfig lfs.url).access" || true

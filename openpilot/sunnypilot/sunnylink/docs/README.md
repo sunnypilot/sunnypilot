@@ -156,7 +156,7 @@ The tables below describe the **compiled** `settings_ui.json` schema — what th
 
 **Enablement rules**: Grayed out (disabled) when rules fail. Frontend shows a contextual badge explaining why.
 
-**Capability fields** (referenced in rules): `has_longitudinal_control`, `has_icbm`, `icbm_available`, `torque_allowed`, `brand`, `pcm_cruise`, `alpha_long_available`, `steer_control_type`, `enable_bsm`, `is_release`, `is_sp_release`, `is_development`, `tesla_has_vehicle_bus`, `has_stop_and_go`, `stock_longitudinal`
+**Capability fields** (referenced in rules): `has_longitudinal_control`, `has_icbm`, `icbm_available`, `torque_allowed`, `brand`, `pcm_cruise`, `alpha_long_available`, `steer_control_type`, `has_bsm`, `is_release`, `is_sp_release`, `is_development`, `tesla_has_vehicle_bus`, `has_stop_and_go`, `stock_longitudinal`
 
 ---
 
@@ -581,5 +581,4 @@ Settings layouts should not duplicate these params.remove() calls. Instead, rely
 Example constraints in `_enforce_constraints()`:
 - Angle steering cars: remove `EnforceTorqueControl` and `NeuralNetworkLateralControl`
 - No CarParams: remove all car-dependent params
-- No longitudinal: remove `ExperimentalMode`
 - No ICBM: remove `IntelligentCruiseButtonManagement`
