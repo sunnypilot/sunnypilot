@@ -102,66 +102,39 @@ jobs:
           cat $GITHUB_OUTPUT
 
       - name: Fetch Models
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           cd ${{ github.workspace }}/openpilot/openpilot
+          fetch_lfs() {
+            sudo apt-get install -y -qq aria2 > /dev/null # Parallel ranges because gh is flaky
+            LFS_URL=$(git config -f "$(git rev-parse --show-toplevel)/.lfsconfig" lfs.url)
+            for f in "$@"; do
+              grep -qs "^version https://git-lfs" "$f" || continue
+              OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
+              HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+                -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
+              aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
+                -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
+              echo "$OID  $f" | sha256sum -c -
+            done
+          }
+          UPSTREAM_PKL=selfdrive/modeld/models/big_driving_tinygrad.pkl
           if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-            ONNX_COUNT=$(find selfdrive/modeld/models -maxdepth 1 -type f -name "*.onnx" ! -name "big_*.onnx" ! -name "dmonitoring_*.onnx" 2>/dev/null | wc -l)
+            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
+          elif compgen -G "selfdrive/modeld/models/big_*.onnx" > /dev/null; then
+            fetch_lfs selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl
+            find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
+          elif [ -f "$UPSTREAM_PKL" ]; then
+            echo "No big model ONNX tracked: converting commaai's precompiled $UPSTREAM_PKL, with the tinygrad it was built with"
+            fetch_lfs "$UPSTREAM_PKL"
+            find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -path "$UPSTREAM_PKL" -delete
+            GITMODULES="$(git rev-parse --show-toplevel)/.gitmodules"
+            TG_NAME=$(git config -f "$GITMODULES" --get-regexp '^submodule\..*\.path$' | awk '$2 == "tinygrad_repo" {sub(/^submodule\./, "", $1); sub(/\.path$/, "", $1); print $1}')
+            TG_URL=$(git config -f "$GITMODULES" "submodule.$TG_NAME.url" | sed 's|^\.\./\.\./|https://github.com/|')
+            echo "$TG_URL $(git rev-parse HEAD:tinygrad_repo) $(sha256sum "$UPSTREAM_PKL" | cut -d' ' -f1)" > selfdrive/modeld/models/upstream_pkl.txt
           else
-            ONNX_COUNT=$(find selfdrive/modeld/models -maxdepth 1 -type f -name "big_*.onnx" 2>/dev/null | wc -l)
-          fi
-          if [ "$ONNX_COUNT" -eq 0 ]; then
-            echo "Detected NEW stock architecture (no ONNX files tracked). Fetching from HF and skipping LFS pull."
-            COMMIT_MSG=$(git log -1 --pretty=%B)
-            HF_HASH=$(echo "$COMMIT_MSG" | grep -oE '[a-f0-9]{8}' | head -n 1)
-
-            if [ -n "$HF_HASH" ]; then
-              echo "Downloading ONNX for hash $HF_HASH from HuggingFace."
-              pip install huggingface_hub
-              rm -f selfdrive/modeld/models/*.onnx
-              python3 - <<EOF
-          import sys, os, shutil
-          from huggingface_hub import HfApi, hf_hub_download
-          short_hash = "$HF_HASH"
-          target_dir = "selfdrive/modeld/models"
-          repo = "commaai/openpilot_driving_models"
-          api = HfApi()
-          files = list(api.list_repo_tree(repo, repo_type="model", recursive=True))
-          matching_folder = next((f.path.split("/")[0] for f in files if f.path.startswith(short_hash)), None)
-          if not matching_folder:
-            print(f"Could not find HF folder for hash {short_hash}")
-            sys.exit(1)
-          os.makedirs(target_dir, exist_ok=True)
-          for f in files:
-            if f.path.startswith(matching_folder) and f.path.endswith(".onnx"):
-              p = hf_hub_download(repo_id=repo, repo_type="model", filename=f.path)
-              shutil.copy2(p, os.path.join(target_dir, os.path.basename(f.path)))
-          EOF
-              rm -f selfdrive/modeld/models/*.pkl
-              touch selfdrive/modeld/models/new_arch.txt
-            else
-              echo "Could not parse HuggingFace hash from commit message."
-              exit 1
-            fi
-          else
-            if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-              git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
-              rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
-            else
-              sudo apt-get install -y -qq aria2 > /dev/null # Parallel ranges because gh is flaky
-              LFS_URL=$(git config -f "$(git rev-parse --show-toplevel)/.lfsconfig" lfs.url)
-              for f in selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl; do
-                grep -qs "^version https://git-lfs" "$f" || continue
-                OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
-                HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
-                  -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
-                aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
-                  -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
-                echo "$OID  $f" | sha256sum -c -
-              done
-              find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
-            fi
+            echo "::error::no big model ONNX or precompiled big_driving_tinygrad.pkl at this ref"
+            exit 1
           fi
 
           if grep -lIF "version https://git-lfs.github.com/spec/v1" selfdrive/modeld/models/*.onnx selfdrive/modeld/models/*.pkl 2>/dev/null; then
@@ -176,7 +149,7 @@ jobs:
           path: |
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
             ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.pkl
-            ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/new_arch.txt
+            ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/upstream_pkl.txt
           if-no-files-found: error
 
   build_model:
@@ -249,21 +222,20 @@ jobs:
 
           NATIVE_PKL=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*.pkl" -print -quit)
 
-          if [ -f "${{ env.MODELS_DIR }}/new_arch.txt" ]; then
-            echo "Detected new arch"
-            if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
-              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "big_*driving*.onnx" -print -quit)
-            else
-              DOWNLOADED_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*driving*.onnx" ! -name "big_*" -print -quit)
-            fi
-            if [ -n "$DOWNLOADED_ONNX" ]; then
-              echo "Compiling ONNX: $DOWNLOADED_ONNX"
-              env ${TG_FLAGS} taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/compile_modeld_v2.py \
-                "$DOWNLOADED_ONNX" "$OUTPUT_PKL" --device-input "*" --benchmark-runs 1
-            else
-              echo "Failed to find downloaded ONNX."
-              exit 1
-            fi
+          if [ -f "${{ env.MODELS_DIR }}/upstream_pkl.txt" ]; then
+            read -r TG_URL TG_SHA _ < "${{ env.MODELS_DIR }}/upstream_pkl.txt"
+            echo "Converting commaai's precompiled model with tinygrad $TG_SHA"
+            UPSTREAM_TG="${{ runner.temp }}/upstream_tinygrad"
+            rm -rf "$UPSTREAM_TG" && git init -q "$UPSTREAM_TG" && git -C "$UPSTREAM_TG" fetch -q --depth 1 "$TG_URL" "$TG_SHA" && git -C "$UPSTREAM_TG" checkout -q FETCH_HEAD
+            CONVERTED="${{ runner.temp }}/big_driving_tinygrad_plain.pkl"
+            env DEV=USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
+              "${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl" "$CONVERTED"
+            mv "$CONVERTED" "$OUTPUT_PKL"
+          elif NEW_ARCH_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}*driving*.onnx" -print -quit) &&
+               [ -n "$NEW_ARCH_ONNX" ] && grep -qa new_img "$NEW_ARCH_ONNX"; then # the new architecture: one ONNX taking the warped frames as new_img
+            echo "Compiling new architecture ONNX: $NEW_ARCH_ONNX"
+            env ${TG_FLAGS} taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/compile_modeld_v2.py \
+              "$NEW_ARCH_ONNX" "$OUTPUT_PKL" --device-input "*" --benchmark-runs 1
           else
             echo "Detected onnx architecture. Routing to native compile_modeld.py."
             # Detect model type and build compile args
@@ -340,6 +312,7 @@ jobs:
             --output-dir "${{ env.OUTPUT_DIR }}" \
             --custom-name "${{ env.MODEL_NAME }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
+            $([ -f "${{ env.MODELS_DIR }}/upstream_pkl.txt" ] && echo "--onnx-sha256 $(cut -d' ' -f3 "${{ env.MODELS_DIR }}/upstream_pkl.txt")") \
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Write artifact name to file
