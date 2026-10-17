@@ -503,8 +503,8 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download model chunks from HF
-        uses: ./.github/workflows/download-hf-model-chunks
+      - name: Download models from HF
+        uses: ./.github/workflows/download-hf-model
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
@@ -573,8 +573,8 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download model chunks from HF
-        uses: ./.github/workflows/download-hf-model-chunks
+      - name: Download models from HF
+        uses: ./.github/workflows/download-hf-model
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models

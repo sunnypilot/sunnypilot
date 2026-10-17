@@ -54,18 +54,10 @@ def create_pkl_name(full_name: str) -> str:
 
 
 def _hash_pkl(pkl_path: Path) -> str:
-  manifest = Path(f"{pkl_path}.chunkmanifest")
-  if manifest.exists():
-    num_chunks = int(manifest.read_text().strip())
-    paths = [Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}") for i in range(num_chunks)]
-  else:
-    paths = [pkl_path]
-
   digest = hashlib.sha256()
-  for path in paths:
-    with path.open('rb') as f:
-      while block := f.read(1024 * 1024):
-        digest.update(block)
+  with pkl_path.open('rb') as f:
+    while block := f.read(1024 * 1024):
+      digest.update(block)
   return digest.hexdigest()
 
 
@@ -74,20 +66,7 @@ def _find_driving_pkl(output_path: Path) -> Path | None:
     matches = sorted(output_path.glob(pattern))
     if matches:
       return matches[0]
-  for pattern in ('*driving_tinygrad.pkl.chunkmanifest', '*driving_*_tinygrad.pkl.chunkmanifest'):
-    matches = sorted(output_path.glob(pattern))
-    if matches:
-      return Path(str(matches[0]).removesuffix('.chunkmanifest'))
   return None
-
-
-def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
-  manifest = Path(f"{old_pkl}.chunkmanifest")
-  if manifest.exists():
-    for f in sorted(old_pkl.parent.glob(f"{old_pkl.name}.chunk*")):
-      f.rename(old_pkl.parent / f.name.replace(old_pkl.name, new_pkl.name, 1))
-    return new_pkl
-  return old_pkl.rename(new_pkl)
 
 
 def _hash_onnx_files(model_dir: Path) -> str | None:
@@ -102,21 +81,8 @@ def _hash_onnx_files(model_dir: Path) -> str | None:
   return digest.hexdigest()
 
 
-def generate_chunked_model(driving_pkl: Path) -> dict:
+def generate_model(driving_pkl: Path) -> dict:
   tinygrad_hash = _hash_pkl(driving_pkl)
-
-  chunks_config = []
-  manifest_file = Path(f"{driving_pkl}.chunkmanifest")
-  if manifest_file.exists():
-    num_chunks = int(manifest_file.read_text().strip())
-    for i in range(num_chunks):
-      chunk_path = Path(f"{driving_pkl}.chunk{i + 1:02d}of{num_chunks:02d}")
-      if chunk_path.exists():
-        chunk_hash = hashlib.sha256(chunk_path.read_bytes()).hexdigest()
-        chunks_config.append({
-          "file_name": chunk_path.name,
-          "sha256": chunk_hash
-        })
 
   artifact_data = {
     "file_name": driving_pkl.name,
@@ -125,9 +91,6 @@ def generate_chunked_model(driving_pkl: Path) -> dict:
       "sha256": tinygrad_hash
     }
   }
-
-  if chunks_config:
-    artifact_data["chunks"] = chunks_config
 
   return {
     "type": "chunked",
@@ -193,11 +156,11 @@ if __name__ == "__main__":
   if _pkl:
     new_pkl = _output_dir / f"driving_{_pkl}_tinygrad.pkl"
     if not new_pkl.exists():
-      _driving_pkl = _rename_pkl_with_chunks(_driving_pkl, new_pkl)
+      _driving_pkl = _driving_pkl.rename(new_pkl)
     else:
       _driving_pkl = new_pkl
 
-  _model_metadata = generate_chunked_model(_driving_pkl)
+  _model_metadata = generate_model(_driving_pkl)
   _onnx_sha256 = args.onnx_sha256 or _hash_onnx_files(Path(args.model_dir))
   create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch,
                        onnx_sha256=_onnx_sha256, is_big=is_big)
