@@ -20,7 +20,7 @@ from typing import Any
 
 import numpy as np
 
-from openpilot.sunnypilot.modeld_v2.helpers import PlainJit, read_parts, write_bundle
+from openpilot.sunnypilot.modeld_v2.helpers import PlainJit, patch_fetch_fw, read_parts, write_bundle
 from openpilot.sunnypilot.modeld_v2.plain_artifact_compiler import capture_frame, record_kernel_linear, serialize_jit
 import openpilot.sunnypilot.modeld_v2.stock_dependencies as stock
 from openpilot.system.camerad.cameras.nv12_info import get_nv12_info
@@ -34,24 +34,7 @@ from tinygrad.tensor import Tensor
 
 os.environ['GMMU'] = '0'
 
-def _patch_tinygrad_fetch_fw():
-  try:
-    import hashlib
-    import pathlib
-    import zstandard
-    from tinygrad import helpers
-    _orig_fetch_fw = helpers.fetch_fw
-    def fetch_fw(path, name, sha256):
-      p = pathlib.Path(f"/lib/firmware/{path}/{name}.zst")
-      if p.is_file():
-        blob = zstandard.ZstdDecompressor().stream_reader(p.read_bytes()).read()
-        if hashlib.sha256(blob).hexdigest() == sha256:
-          return blob
-      return _orig_fetch_fw(path, name, sha256)
-    helpers.fetch_fw = fetch_fw
-  except ImportError:
-    pass
-_patch_tinygrad_fetch_fw()
+patch_fetch_fw()
 
 MODEL_TYPES = ('vision_policy', 'supercombo', 'vision_multi_policy')
 WARP_INPUTS = ['tfm', 'big_tfm']

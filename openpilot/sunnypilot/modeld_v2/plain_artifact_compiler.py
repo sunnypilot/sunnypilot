@@ -67,7 +67,7 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
                     "global_size": [int(x) for x in global_size], "local_size": [int(x) for x in local_size],
                     "globals": list(info.globals), "outs": list(info.outs), "ins": list(info.ins), "args": arguments})
       outs, ins = info.outs, info.ins
-    elif ast.op is Ops.COPY:
+    elif ast.op is Ops.STORE:  # a copy: STORE(PARAM dst, PARAM src)
       calls.append({"kind": "copy", "args": arguments})
       outs, ins = (0,), (1,)
     else:

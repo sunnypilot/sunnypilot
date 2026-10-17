@@ -209,7 +209,7 @@ def patch_modeld(monkeypatch):
   def _patch(bundle):
     monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
     monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
-    monkeypatch.setattr(modeld_module, 'load_model', lambda path: pickle.loads(pathlib.Path(path).read_bytes()))
+    monkeypatch.setattr(modeld_module, 'load_model', lambda path, **_: pickle.loads(pathlib.Path(path).read_bytes()))
 
   return _patch
 

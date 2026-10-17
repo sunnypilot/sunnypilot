@@ -42,7 +42,7 @@ class TestFallback(OpenpilotTestCase):
     small_bundle = ModelParser.parse_models(small_json)[-1]
 
     oob_bytes = pickle.dumps(tests_helpers.make_pkl_data(tests_helpers.ARCHETYPES['supercombo_non20hz']))
-    monkeypatch.setattr(modeld_module, 'load_model', lambda path: pickle.loads(open(path, 'rb').read()))
+    monkeypatch.setattr(modeld_module, 'load_model', lambda path, **_: pickle.loads(open(path, 'rb').read()))
 
     for bundle in (big_bundle, small_bundle):
       (tmp_path / bundle.models[0].artifact.fileName).write_bytes(oob_bytes)
