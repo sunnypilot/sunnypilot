@@ -11,11 +11,6 @@ sections:
   title: ''
   description: ''
   items:
-  - key: ExperimentalMode
-    widget: toggle
-    title: Experimental Mode
-    enablement:
-    - $ref: '#/macros/longitudinal'
   - key: DisengageOnAccelerator
     widget: toggle
     title: Disengage Cruise on Accelerator Pedal

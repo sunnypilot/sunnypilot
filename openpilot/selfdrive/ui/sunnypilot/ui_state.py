@@ -8,6 +8,7 @@ from enum import Enum
 
 from openpilot.cereal import messaging, log, custom
 from opendbc.car.structs import car
+from opendbc.sunnypilot.car.interfaces import has_bsm
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_active_source
@@ -35,7 +36,7 @@ class UIStateSP:
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-      "gpsLocation", "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay"
+      "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay"
     ]
 
     self.sunnylink_state = SunnylinkState()
@@ -212,7 +213,7 @@ class UIStateSP:
         self.params.remove("AlphaLongitudinalEnabled")
 
       # BSM not available: clear BSM-dependent settings
-      if not CP.enableBsm:
+      if not has_bsm(CP, self.CP_SP):
         self.params.remove("AutoLaneChangeBsmDelay")
     else:
       # No CarParams: clear all car-dependent params as safety default
@@ -220,10 +221,6 @@ class UIStateSP:
       self.params.remove("NeuralNetworkLateralControl")
       self.params.remove("LateralJerkTorqueController")
       self.params.remove("AlphaLongitudinalEnabled")
-
-    # No longitudinal control: no experimental mode
-    if not has_long:
-      self.params.remove("ExperimentalMode")
 
     # ICBM: clear if not available or if full longitudinal control is active
     if self.CP_SP is not None:
