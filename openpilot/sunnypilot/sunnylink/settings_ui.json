@@ -559,7 +559,7 @@
               "enablement": [
                 {
                   "type": "capability",
-                  "field": "enable_bsm",
+                  "field": "has_bsm",
                   "equals": true
                 },
                 {

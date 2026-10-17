@@ -8,6 +8,7 @@ from enum import Enum
 
 from openpilot.cereal import messaging, log, custom
 from opendbc.car.structs import car
+from opendbc.sunnypilot.car.interfaces import has_bsm
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_active_source
@@ -212,7 +213,7 @@ class UIStateSP:
         self.params.remove("AlphaLongitudinalEnabled")
 
       # BSM not available: clear BSM-dependent settings
-      if not CP.enableBsm:
+      if not has_bsm(CP, self.CP_SP):
         self.params.remove("AutoLaneChangeBsmDelay")
     else:
       # No CarParams: clear all car-dependent params as safety default
