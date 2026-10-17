@@ -1627,7 +1627,12 @@
             {
               "key": "OffroadMode",
               "widget": "toggle",
-              "title": "Force Offroad Mode"
+              "title": "Force Offroad Mode",
+              "enablement": [
+                {
+                  "type": "not_engaged"
+                }
+              ]
             },
             {
               "key": "DeviceBootMode",
