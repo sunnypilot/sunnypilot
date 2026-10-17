@@ -1,11 +1,12 @@
 import io
+import os
 import pickle
 import struct
 import sys
 import time
 from pathlib import Path
 
-from openpilot.common.file_chunker import get_manifest_path
+from openpilot.common.file_chunker import get_chunk_name, get_manifest_path, open_file_chunked
 from openpilot.common.hardware import AGNOS
 from openpilot.common.hardware.usb import CHESTNUT_USB_PRODUCT, USB_DEVICES_PATH, is_chestnut_usb_id
 
@@ -16,13 +17,18 @@ def modeld_pkl_path(chestnut: bool):
   prefix = 'big_' if chestnut else ''
   return MODELS_DIR / f'{prefix}driving_tinygrad.pkl'
 
-def load_oob(f, chestnut=False):
-  import numpy as np
-  from tinygrad import Context, Tensor
+def load_oob(path, chestnut=False):
+  from tinygrad import Context, Device
+  from tinygrad.device import Buffer
   device = 'USB+AMD:LLVM' if chestnut else 'QCOM' if AGNOS else 'METAL' if sys.platform == 'darwin' else 'CPU:LLVM'
-  with Context(DEV=device):
+  chunks = 0 if os.path.isfile(path) else int(Path(get_manifest_path(path)).read_text())
+  paths = [get_chunk_name(path, i, chunks) for i in range(chunks)] or [path]
+  with Context(DEV=device), open_file_chunked(path) as f:
     opcodes = f.read(struct.unpack('<q', f.read(8))[0])
-    buffers = Tensor(np.frombuffer(f.read(), np.uint8)).realize().uop.buffer
+    buffers, stage = Buffer(Device.DEFAULT, sum(map(os.path.getsize, paths)) - 8 - len(opcodes)).ensure_allocated(), bytearray(64 << 20)
+    for offset in range(0, buffers.nbytes, len(stage)):
+      n = f.readinto(piece := memoryview(stage)[:min(len(stage), buffers.nbytes - offset)])
+      buffers.view(n, offset).ensure_allocated().copy_from(Buffer("PYTHON", n, initial_value=piece[:n]))
     return type("_Unpickler", (pickle.Unpickler,), {"persistent_load": lambda self, pid: buffers.view(*pid)})(io.BytesIO(opcodes)).load()
 
 def chestnut_present() -> bool:
