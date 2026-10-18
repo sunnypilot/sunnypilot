@@ -115,7 +115,7 @@ jobs:
           env ${TG_FLAGS} python3 ${{ github.workspace }}/${{ env.COMPILER }}/compile_onnx.py \
             ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
             ${{ github.workspace }}/${{ env.SMALL_PKL }} \
-            --device-input "*" --out-of-band --benchmark-runs 1
+            --out-of-band --benchmark-runs 1
 
       - name: Prepare output
         env:
@@ -440,9 +440,10 @@ jobs:
           TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
 
           taskset -c 7 env ${TG_FLAGS} python3 \
-            ${{ github.workspace }}/tinygrad_repo/examples/openpilot/compile3.py \
+            ${{ github.workspace }}/tinygrad_repo/examples/openpilot/compile_onnx.py \
             ${{ github.workspace }}/${{ env.DM_ONNX }} \
-            ${{ github.workspace }}/${{ env.DM_PKL }}
+            ${{ github.workspace }}/${{ env.DM_PKL }} \
+            --out-of-band --benchmark-runs 1
 
       - name: Compile DM warp
         run: |
