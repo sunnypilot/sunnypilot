@@ -6,7 +6,7 @@
 
 #include "json11/json11.hpp"
 #include "common/hardware/hw.h"
-#include "tools/replay/py_downloader.h"
+#include "tools/replay/py_tools.h"
 #include "tools/replay/replay.h"
 #include "tools/replay/util.h"
 
@@ -27,8 +27,8 @@ RouteIdentifier Route::parseRoute(const std::string &str) {
     const auto range_str = match[6].str();
     if (!range_str.empty()) {
       if (separator == "/") {
-        int pos = range_str.find(':');
-        int begin_seg = std::stoi(range_str.substr(0, pos));
+        const auto pos = range_str.find(':');
+        int begin_seg = pos == 0 ? 0 : std::stoi(range_str.substr(0, pos));
         identifier.begin_segment = identifier.end_segment = begin_seg;
         if (pos != std::string::npos) {
           auto end_seg_str = range_str.substr(pos + 1);
@@ -104,7 +104,7 @@ bool Route::loadFromAutoSource() {
 }
 
 bool Route::loadFromServer() {
-  std::string result = PyDownloader::getRouteFiles(route_.str);
+  std::string result = PyTools::getRouteFiles(route_.str);
   if (result.empty()) {
     err_ = RouteLoadError::NetworkError;
     rWarning("Failed to fetch route files from server");

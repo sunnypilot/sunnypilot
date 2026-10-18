@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import json
 import math
 import platform
 
@@ -27,18 +26,6 @@ class OsmMapData(BaseMapData):
       self.last_bearing = math.degrees(location.calibratedOrientationNED.value[2])
       self.last_position = Coordinate(location.positionGeodetic.value[0], location.positionGeodetic.value[1])
 
-    if self.last_position is None:
-      return
-
-    params = {
-      "latitude": self.last_position.latitude,
-      "longitude": self.last_position.longitude,
-    }
-
-    if self.last_bearing is not None:
-      params['bearing'] = self.last_bearing
-
-    self.mem_params.put("LastGPSPosition", json.dumps(params), block=True)
 
   def get_current_speed_limit(self) -> float:
     return float(self.mem_params.get("MapSpeedLimit") or 0.0)
