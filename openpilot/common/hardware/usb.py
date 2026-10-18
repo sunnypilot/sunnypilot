@@ -95,3 +95,4 @@ def set_usb_state(device_state, devices: list[dict]) -> None:
       chestnut_present = True
 
   device_state.chestnutPresent = chestnut_present
+  device_state.usbState.connected = cable_connected()

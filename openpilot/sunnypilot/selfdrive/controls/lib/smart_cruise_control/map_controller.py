@@ -2,12 +2,15 @@ import json
 import math
 import platform
 
+import openpilot.cereal.messaging as messaging
 from openpilot.cereal import custom
+from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
-from openpilot.sunnypilot.navd.helpers import coordinate_from_param, Coordinate
+from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
+from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 
 MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
@@ -73,7 +76,7 @@ class SmartCruiseControlMap:
   def __init__(self):
     self.params = Params()
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
-    self.enabled = self.params.get_bool("SmartCruiseControlMap")
+    self.enabled = MAPD_AVAILABLE and self.params.get_bool("SmartCruiseControlMap")
     self.long_enabled = False
     self.long_override = False
     self.is_enabled = False
@@ -84,7 +87,8 @@ class SmartCruiseControlMap:
     self.target_lon = 0.0
     self.frame = -1
 
-    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params) or Coordinate(0.0, 0.0)
+    self.gps_location_service = get_gps_location_service(self.params)
+    self.last_position = Coordinate(0.0, 0.0)
     self.target_velocities = velocities_from_param("MapTargetVelocities", self.mem_params) or []
 
   def get_v_target_from_control(self) -> float:
@@ -98,10 +102,11 @@ class SmartCruiseControlMap:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = self.params.get_bool("SmartCruiseControlMap")
+      self.enabled = MAPD_AVAILABLE and self.params.get_bool("SmartCruiseControlMap")
 
-  def update_calculations(self) -> None:
-    self.last_position = coordinate_from_param("LastGPSPosition", self.mem_params) or Coordinate(0.0, 0.0)
+  def update_calculations(self, sm: messaging.SubMaster) -> None:
+    gps = sm[self.gps_location_service]
+    self.last_position = Coordinate(gps.latitude, gps.longitude)
     lat = self.last_position.latitude
     lon = self.last_position.longitude
 
@@ -243,7 +248,7 @@ class SmartCruiseControlMap:
 
     return enabled, active
 
-  def update(self, long_enabled: bool, long_override: bool, v_ego, a_ego, v_cruise) -> None:
+  def update(self, sm: messaging.SubMaster, long_enabled: bool, long_override: bool, v_ego, a_ego, v_cruise) -> None:
     self.long_enabled = long_enabled
     self.long_override = long_override
     self.v_ego = v_ego
@@ -251,7 +256,7 @@ class SmartCruiseControlMap:
     self.v_cruise = v_cruise
 
     self.update_params()
-    self.update_calculations()
+    self.update_calculations(sm)
 
     self.is_enabled, self.is_active = self._update_state_machine()
 
