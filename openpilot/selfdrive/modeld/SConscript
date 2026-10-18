@@ -48,8 +48,9 @@ def compile_model(onnx_path, pkl_path):
     Action(cmd, "  [ONNX] $TARGET"),
   )
 
-compile_model('models/dmonitoring_model.onnx', 'models/dmonitoring_model_tinygrad.pkl')
-compile_model('models/driving_supercombo.onnx', 'models/driving_tinygrad.pkl')
+if not os.getenv('SKIP_TINYGRAD_COMPILE'):
+  compile_model('models/dmonitoring_model.onnx', 'models/dmonitoring_model_tinygrad.pkl')
+  compile_model('models/driving_supercombo.onnx', 'models/driving_tinygrad.pkl')
 
 model_w, model_h = MEDMODEL_INPUT_SIZE
 for cam_w, cam_h in camera_configs:
