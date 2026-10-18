@@ -63,7 +63,7 @@ for cam_w, cam_h in camera_configs:
   lenv.Command(warp_pkl_path, tinygrad_files + warp_deps + [Value(cmd)], cmd)
 
 dm_w, dm_h = DM_INPUT_SIZE
-for cam_w, cam_h in camera_configs:
+for cam_w, cam_h in [] if os.getenv('SKIP_TINYGRAD_COMPILE') else camera_configs:
   dm_pkl_path = File(f"models/dm_warp_{cam_w}x{cam_h}_tinygrad.pkl").abspath
   stride, y_height, uv_height, frame_size = get_nv12_info(cam_w, cam_h)
   cmd = (f'{tg_flags} {mac_brew_string} python3 "{compiler}/compile_warp.py" '
