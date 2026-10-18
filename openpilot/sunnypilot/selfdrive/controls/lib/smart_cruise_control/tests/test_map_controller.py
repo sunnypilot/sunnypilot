@@ -8,7 +8,7 @@ import json
 import math
 import platform
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from openpilot.cereal import custom
 from openpilot.common.params import Params
@@ -23,12 +23,17 @@ MapState = VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.MapState
 class TestSmartCruiseControlMap(OpenpilotTestCase):
 
   def setup_method(self):
+    self.mapd_patch = patch("openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.map_controller.MAPD_AVAILABLE", True)
+    self.mapd_patch.start()
     self.params = Params()
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
     self.reset_params()
     self.scc_m = SmartCruiseControlMap()
     self.sm = MagicMock()
     self.sm.__getitem__.return_value = SimpleNamespace(latitude=0.0, longitude=0.0)
+
+  def teardown_method(self):
+    self.mapd_patch.stop()
 
   def reset_params(self):
     self.params.put_bool("SmartCruiseControlMap", True, block=True)
@@ -49,6 +54,14 @@ class TestSmartCruiseControlMap(OpenpilotTestCase):
       self.scc_m.update(self.sm, True, False, 0., 0., 0.)
     assert self.scc_m.state == VisionState.disabled
     assert not self.scc_m.is_active
+
+  def test_mapd_unavailable(self):
+    self.mapd_patch.stop()
+    self.scc_m = SmartCruiseControlMap()
+    for _ in range(int(10. / DT_MDL)):
+      self.scc_m.update(self.sm, True, False, 0., 0., 0.)
+    assert self.scc_m.state == VisionState.disabled
+    self.mapd_patch.start()
 
   def test_disabled(self):
     for _ in range(int(10. / DT_MDL)):
