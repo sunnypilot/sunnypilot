@@ -121,9 +121,6 @@ def update_osm_db() -> None:
   if not mem_params.get("OSMDownloadBounds"):
     mem_params.put("OSMDownloadBounds", "", block=True)
 
-  if not mem_params.get("LastGPSPosition"):
-    mem_params.put("LastGPSPosition", "{}", block=True)
-
 
 def main_thread():
   update_installed_version(VERSION, params)

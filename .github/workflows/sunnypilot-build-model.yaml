@@ -100,28 +100,60 @@ jobs:
           commit_date=$(git log -1 --format=%cd --date=format:'%B %d, %Y')
           echo "model_date=${commit_date}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-      - run: |
+
+      - name: Fetch Models
+        run: |
           cd ${{ github.workspace }}/openpilot/openpilot
+          fetch_lfs() {
+            sudo apt-get install -y -qq aria2 > /dev/null # Parallel ranges because gh is flaky
+            LFS_URL=$(git config -f "$(git rev-parse --show-toplevel)/.lfsconfig" lfs.url)
+            for f in "$@"; do
+              grep -qs "^version https://git-lfs" "$f" || continue
+              OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
+              HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+                -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
+              aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
+                -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
+              echo "$OID  $f" | sha256sum -c -
+            done
+          }
+          UPSTREAM_PKL=selfdrive/modeld/models/big_driving_tinygrad.pkl
           if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx"
-            rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx
+            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
+          elif compgen -G "selfdrive/modeld/models/big_*.onnx" > /dev/null; then
+            fetch_lfs selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl
+            find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
+          elif [ -f "$UPSTREAM_PKL" ]; then
+            echo "No big model ONNX tracked: converting commaai's precompiled $UPSTREAM_PKL, with the tinygrad it was built with"
+            fetch_lfs "$UPSTREAM_PKL"
+            find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -path "$UPSTREAM_PKL" -delete
+            GITMODULES="$(git rev-parse --show-toplevel)/.gitmodules"
+            TG_NAME=$(git config -f "$GITMODULES" --get-regexp '^submodule\..*\.path$' | awk '$2 == "tinygrad_repo" {sub(/^submodule\./, "", $1); sub(/\.path$/, "", $1); print $1}')
+            TG_URL=$(git config -f "$GITMODULES" "submodule.$TG_NAME.url" | sed 's|^\.\./\.\./|https://github.com/|')
+            echo "$TG_URL $(git rev-parse HEAD:tinygrad_repo) $(sha256sum "$UPSTREAM_PKL" | cut -d' ' -f1)" > selfdrive/modeld/models/upstream_pkl.txt
           else
-            git lfs pull -I "**/selfdrive/modeld/models/big_*.onnx" -X ""
-            find selfdrive/modeld/models -name "*.onnx" ! -name "big_*.onnx" -delete
+            echo "::error::no big model ONNX or precompiled big_driving_tinygrad.pkl at this ref"
+            exit 1
           fi
-          if grep -lIF "version https://git-lfs.github.com/spec/v1" selfdrive/modeld/models/*.onnx; then
-            echo "::error::the ONNX files above are still LFS pointers, not real models"
+
+          if grep -lIF "version https://git-lfs.github.com/spec/v1" selfdrive/modeld/models/*.onnx selfdrive/modeld/models/*.pkl 2>/dev/null; then
+            echo "::error::the ONNX or PKL files above are still LFS pointers, not real models"
             exit 1
           fi
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: models-${{ env.REF }}${{ inputs.artifact_suffix  }}
-          path: ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
+          compression-level: 0
+          path: |
+            ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.onnx
+            ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/*.pkl
+            ${{ github.workspace }}/openpilot/openpilot/selfdrive/modeld/models/upstream_pkl.txt
           if-no-files-found: error
 
   build_model:
-    runs-on: [self-hosted, chestnut]
+    runs-on: [self-hosted, "${{ inputs.target_hardware == 'chestnut' && 'chestnut' || 'tici' }}"]
     needs: get_model
     env:
       MODEL_NAME: ${{ inputs.custom_name || inputs.upstream_branch }} (${{ needs.get_model.outputs.model_date }})
@@ -131,7 +163,6 @@ jobs:
         with:
           fetch-depth: 1
           submodules: recursive
-
 
       - name: Set environment variables
         id: set-env
@@ -144,9 +175,6 @@ jobs:
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
           uv sync --frozen
           printenv >> $GITHUB_ENV
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            cat $GITHUB_OUTPUT
-          fi
 
       - name: Setup build environment
         run: |
@@ -158,10 +186,6 @@ jobs:
           echo "VERSION: ${{ steps.set-env.outputs.version }}"
           echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
           echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
-          echo "-------"
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            printenv
-          fi
           source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
           rm -rf ${{ env.MODELS_DIR }}/*.onnx*
@@ -184,11 +208,11 @@ jobs:
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
-          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS_QCOM="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 OPENPILOT_HACKS=1"
           if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
             echo "CHESTNUT build"
             export CHESTNUT=1
-            TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM WARP_DEV=QCOM FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2"
+            TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32"
             OUTPUT_PKL="${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl"
           else
             echo "QCOM build"
@@ -196,64 +220,77 @@ jobs:
             OUTPUT_PKL="${{ env.MODELS_DIR }}/driving_tinygrad.pkl"
           fi
 
-          # Generate metadata for all ONNX files
-          find "${{ env.MODELS_DIR }}" -maxdepth 1 -name '*.onnx' | while IFS= read -r onnx_file; do
-            echo "Generating metadata: $onnx_file"
-            env ${TG_FLAGS_QCOM} python3 "${{ env.MODELS_DIR }}/../get_model_metadata.py" "$onnx_file" || true
-          done
+          NATIVE_PKL=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "*.pkl" -print -quit)
 
-          # Detect model type and build compile args
-          VISION_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/driving_vision.onnx" "${{ env.MODELS_DIR }}/big_driving_vision.onnx"; do
-            [ -f "$f" ] && VISION_ONNX="$f" && break
-          done
+          if [ -f "${{ env.MODELS_DIR }}/upstream_pkl.txt" ]; then
+            read -r TG_URL TG_SHA _ < "${{ env.MODELS_DIR }}/upstream_pkl.txt"
+            echo "Converting commaai's precompiled model with tinygrad $TG_SHA"
+            UPSTREAM_TG="${{ runner.temp }}/upstream_tinygrad"
+            rm -rf "$UPSTREAM_TG" && git init -q "$UPSTREAM_TG" && git -C "$UPSTREAM_TG" fetch -q --depth 1 "$TG_URL" "$TG_SHA" && git -C "$UPSTREAM_TG" checkout -q FETCH_HEAD
+            CONVERTED="${{ runner.temp }}/big_driving_tinygrad_plain.pkl"
+            env DEV=USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
+              "${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl" "$CONVERTED"
+            mv "$CONVERTED" "$OUTPUT_PKL"
+          elif NEW_ARCH_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}*driving*.onnx" -print -quit) &&
+               [ -n "$NEW_ARCH_ONNX" ] && grep -qa new_img "$NEW_ARCH_ONNX"; then # the new architecture: one ONNX taking the warped frames as new_img
+            echo "Compiling new architecture ONNX: $NEW_ARCH_ONNX"
+            env ${TG_FLAGS} taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/compile_modeld_v2.py \
+              "$NEW_ARCH_ONNX" "$OUTPUT_PKL" --device-input "*" --benchmark-runs 1
+          else
+            echo "Detected onnx architecture. Routing to native compile_modeld.py."
+            # Detect model type and build compile args
+            VISION_ONNX=""
+            for f in "${{ env.MODELS_DIR }}/driving_vision.onnx" "${{ env.MODELS_DIR }}/big_driving_vision.onnx"; do
+              [ -f "$f" ] && VISION_ONNX="$f" && break
+            done
 
-          POLICY_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/driving_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_policy.onnx"; do
-            [ -f "$f" ] && POLICY_ONNX="$f" && break
-          done
+            POLICY_ONNX=""
+            for f in "${{ env.MODELS_DIR }}/driving_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_policy.onnx"; do
+              [ -f "$f" ] && POLICY_ONNX="$f" && break
+            done
 
-          OFF_POLICY_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/driving_off_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_off_policy.onnx"; do
-            [ -f "$f" ] && OFF_POLICY_ONNX="$f" && break
-          done
+            OFF_POLICY_ONNX=""
+            for f in "${{ env.MODELS_DIR }}/driving_off_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_off_policy.onnx"; do
+              [ -f "$f" ] && OFF_POLICY_ONNX="$f" && break
+            done
 
-          ON_POLICY_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/driving_on_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_on_policy.onnx"; do
-            [ -f "$f" ] && ON_POLICY_ONNX="$f" && break
-          done
+            ON_POLICY_ONNX=""
+            for f in "${{ env.MODELS_DIR }}/driving_on_policy.onnx" "${{ env.MODELS_DIR }}/big_driving_on_policy.onnx"; do
+              [ -f "$f" ] && ON_POLICY_ONNX="$f" && break
+            done
 
-          SUPERCOMBO_ONNX=""
-          for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx" "${{ env.MODELS_DIR }}/big_supercombo.onnx" "${{ env.MODELS_DIR }}/big_driving_supercombo.onnx"; do
-            [ -f "$f" ] && SUPERCOMBO_ONNX="$f" && break
-          done
+            SUPERCOMBO_ONNX=""
+            for f in "${{ env.MODELS_DIR }}/supercombo.onnx" "${{ env.MODELS_DIR }}/driving_supercombo.onnx" "${{ env.MODELS_DIR }}/big_supercombo.onnx" "${{ env.MODELS_DIR }}/big_driving_supercombo.onnx"; do
+              [ -f "$f" ] && SUPERCOMBO_ONNX="$f" && break
+            done
 
-          MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
-          if [ -f "$VISION_ONNX" ]; then
-            ONNX_ARGS="--vision-onnx $VISION_ONNX"
-            if [ -f "$ON_POLICY_ONNX" ] && [ -f "$OFF_POLICY_ONNX" ]; then
-              MODEL_TYPE=vision_multi_policy
-              ONNX_ARGS="$ONNX_ARGS --off-policy-onnx $OFF_POLICY_ONNX --on-policy-onnx $ON_POLICY_ONNX"
-            elif [ -f "$OFF_POLICY_ONNX" ] && [ -f "$POLICY_ONNX" ]; then
-              MODEL_TYPE=vision_multi_policy
-              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX --off-policy-onnx $OFF_POLICY_ONNX"
-            elif [ -f "$POLICY_ONNX" ]; then
-              MODEL_TYPE=vision_policy
-              ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
+            MODEL_TYPE="" ONNX_ARGS="" OUTPUT_NAME=""
+            if [ -f "$VISION_ONNX" ]; then
+              ONNX_ARGS="--vision-onnx $VISION_ONNX"
+              if [ -f "$ON_POLICY_ONNX" ] && [ -f "$OFF_POLICY_ONNX" ]; then
+                MODEL_TYPE=vision_multi_policy
+                ONNX_ARGS="$ONNX_ARGS --off-policy-onnx $OFF_POLICY_ONNX --on-policy-onnx $ON_POLICY_ONNX"
+              elif [ -f "$OFF_POLICY_ONNX" ] && [ -f "$POLICY_ONNX" ]; then
+                MODEL_TYPE=vision_multi_policy
+                ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX --off-policy-onnx $OFF_POLICY_ONNX"
+              elif [ -f "$POLICY_ONNX" ]; then
+                MODEL_TYPE=vision_policy
+                ONNX_ARGS="$ONNX_ARGS --policy-onnx $POLICY_ONNX"
+              fi
+            elif [ -f "$SUPERCOMBO_ONNX" ]; then
+              MODEL_TYPE=supercombo
+              ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
             fi
-          elif [ -f "$SUPERCOMBO_ONNX" ]; then
-            MODEL_TYPE=supercombo
-            ONNX_ARGS="--supercombo-onnx $SUPERCOMBO_ONNX"
-          fi
 
-          if [ -n "$MODEL_TYPE" ]; then
-            echo "Detected: $MODEL_TYPE -> $OUTPUT_PKL"
-            env ${TG_FLAGS} python3 "$COMPILE_MODELD" \
-              --model-type $MODEL_TYPE \
-              --model-size $MODEL_SIZE \
-              --camera-resolutions $CAMERA_RES \
-              $ONNX_ARGS \
-              --output "$OUTPUT_PKL"
+            if [ -n "$MODEL_TYPE" ]; then
+              echo "Detected: $MODEL_TYPE -> $OUTPUT_PKL"
+              env ${TG_FLAGS} taskset -c 7 python3 "$COMPILE_MODELD" \
+                --model-type $MODEL_TYPE \
+                --model-size $MODEL_SIZE \
+                --camera-resolutions $CAMERA_RES \
+                $ONNX_ARGS \
+                --output "$OUTPUT_PKL"
+            fi
           fi
 
       - name: Prepare Output
@@ -264,8 +301,7 @@ jobs:
           # Copy the model files
           rsync -avm \
             --include='*.dlc' \
-            --include='*.chunk*' \
-            --include='*.chunkmanifest' \
+            --include='/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl' \
             --exclude='*' \
             --delete-excluded \
             --chown=comma:comma \
@@ -276,6 +312,7 @@ jobs:
             --output-dir "${{ env.OUTPUT_DIR }}" \
             --custom-name "${{ env.MODEL_NAME }}" \
             --upstream-branch "${{ inputs.upstream_branch }}" \
+            $([ -f "${{ env.MODELS_DIR }}/upstream_pkl.txt" ] && echo "--onnx-sha256 $(cut -d' ' -f3 "${{ env.MODELS_DIR }}/upstream_pkl.txt")") \
             ${{ inputs.is_20hz && '--is-20hz' || '' }}
 
       - name: Write artifact name to file
@@ -287,6 +324,7 @@ jobs:
         with:
           name: model-${{ env.MODEL_NAME }}${{ inputs.artifact_suffix }}-${{ github.run_number }}
           path: ${{ env.OUTPUT_DIR }}
+          compression-level: 0
 
       - name: Upload artifact name file
         uses: actions/upload-artifact@v4

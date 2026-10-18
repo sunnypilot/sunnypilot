@@ -8,6 +8,8 @@ from collections.abc import Callable
 
 import pyray as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
+from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Policy
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp
 from openpilot.system.ui.widgets.network import NavButton
@@ -43,6 +45,8 @@ class SpeedLimitPolicyLayout(Widget):
       param="SpeedLimitPolicy",
       button_width=250,
     )
+    if not MAPD_AVAILABLE:
+      self._speed_limit_policy.action_item.set_enabled_buttons({Policy.car_state_only})
 
     items = [
       self._speed_limit_policy
@@ -51,6 +55,8 @@ class SpeedLimitPolicyLayout(Widget):
 
   @staticmethod
   def _get_policy_description():
+    if not MAPD_AVAILABLE:
+      return f"<b>{tr('Map data is temporarily unavailable. Using Speed Limit data only from Car.')}</b>"
     return get_highlighted_description(ui_state.params, "SpeedLimitPolicy", SPEED_LIMIT_POLICY_DESCRIPTIONS)
 
   def _render(self, rect):

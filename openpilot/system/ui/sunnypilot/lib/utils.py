@@ -8,7 +8,7 @@ from collections.abc import Callable
 
 import pyray as rl
 
-from openpilot.system.ui.lib.application import gui_app, FontWeight
+from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignmentVertical
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import ButtonActionSP
 from openpilot.system.ui.widgets.label import ScrollState, UnifiedLabel
@@ -40,7 +40,7 @@ class ScrollingButtonAction(ButtonActionSP):
     super().__init__(text=text, width=width, enabled=enabled)
     self._value_label = UnifiedLabelSP("", font_size=style.ITEM_TEXT_FONT_SIZE, font_weight=FontWeight.NORMAL,
                                        text_color=self._value_color, scroll=True,
-                                       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+                                       alignment_vertical=TextAlignmentVertical.MIDDLE)
 
   def set_value(self, value: str | Callable[[], str], color: rl.Color = style.ITEM_TEXT_VALUE_COLOR):
     if self.value != _resolve_value(value, ""):

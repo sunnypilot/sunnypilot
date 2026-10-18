@@ -113,10 +113,6 @@ msgstr "更改"
 msgid "CHECK"
 msgstr "检查"
 
-#: openpilot/selfdrive/ui/widgets/exp_mode_button.py
-msgid "CHILL MODE ON"
-msgstr "安稳模式已开启"
-
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 #: system/ui/widgets/network.py
 msgid "CONNECT"
@@ -238,7 +234,6 @@ msgid "Early Access: Become a sunnypilot Sponsor"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Enable"
 msgstr "启用"
 
@@ -331,6 +326,9 @@ msgid "Follow the prompts to complete the pairing process"
 msgstr ""
 
 #: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Following Distance"
+msgstr ""
 msgid "Forget"
 msgstr "忘记"
 
@@ -364,6 +362,8 @@ msgstr "IP 地址"
 
 #: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai"
+#: openpilot/selfdrive/ui/layouts/settings/toggles.py
+msgid "Initial Max Speed"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
@@ -765,6 +765,7 @@ msgstr "正在完成更新..."
 msgid "for \"{}\""
 msgstr "用于“{}”"
 
+#: openpilot/selfdrive/ui/layouts/settings/initial_cruise_speed.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "km/h"
 msgstr "km/h"
@@ -781,6 +782,7 @@ msgstr "左"
 msgid "metered"
 msgstr "计量"
 
+#: openpilot/selfdrive/ui/layouts/settings/initial_cruise_speed.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "mph"
 msgstr "mph"
@@ -792,6 +794,16 @@ msgstr "从不"
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "now"
 msgstr "现在"
+
+#: openpilot/selfdrive/ui/layouts/settings/developer.py
+msgid "openpilot Longitudinal Control (Alpha)"
+msgstr "openpilot 纵向控制（Alpha）"
+#: openpilot/selfdrive/ui/onroad/alert_renderer.py
+msgid "openpilot Unavailable"
+msgstr "openpilot 无法使用"
+#: openpilot/selfdrive/ui/layouts/settings/device.py
+msgid "openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
+msgstr "openpilot 要求设备安装在左右 4°、上 5° 或下 9° 以内。"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "right"
