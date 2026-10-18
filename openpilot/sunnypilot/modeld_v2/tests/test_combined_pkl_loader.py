@@ -90,7 +90,6 @@ class TestStockEquivalence(OpenpilotTestCase):
 
   def test_unified_run_model(self, tmp_path, monkeypatch, patch_modeld):
     from openpilot.common.hardware import hw
-    from openpilot.sunnypilot.modeld_v2.helpers import dump_oob
     shapes = {'img': (1, 12, 128, 256), 'big_img': (1, 12, 128, 256), 'features_buffer': (1, 24, 32, 512),
               'desire_pulse': (1, 25, 8), 'traffic_convention': (1, 2), 'action_t': (1, 2)}
     import codecs
@@ -102,8 +101,7 @@ class TestStockEquivalence(OpenpilotTestCase):
       (CAM_W, CAM_H): tests_helpers._noop_jit,
       'run_policy': tests_helpers._noop_jit,
     }
-    with open(tmp_path / 'driving_test_tinygrad.pkl', 'wb') as f:
-      dump_oob(pkl_data, f)
+    (tmp_path / 'driving_test_tinygrad.pkl').write_bytes(pickle.dumps(pkl_data))
     bundle = DummyBundle(models=[DummyModel('supercombo', 'driving_test_tinygrad.pkl')])
     patch_modeld(bundle)
     monkeypatch.setattr(hw.Paths, 'model_root', staticmethod(lambda: str(tmp_path)))

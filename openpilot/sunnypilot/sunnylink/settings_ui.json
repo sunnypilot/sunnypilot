@@ -559,7 +559,7 @@
               "enablement": [
                 {
                   "type": "capability",
-                  "field": "enable_bsm",
+                  "field": "has_bsm",
                   "equals": true
                 },
                 {
@@ -587,18 +587,6 @@
           "title": "",
           "description": "",
           "items": [
-            {
-              "key": "ExperimentalMode",
-              "widget": "toggle",
-              "title": "Experimental Mode",
-              "enablement": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ]
-            },
             {
               "key": "DisengageOnAccelerator",
               "widget": "toggle",
@@ -869,19 +857,47 @@
                     },
                     {
                       "value": 1,
-                      "label": "Map Data Only"
+                      "label": "Map Data Only",
+                      "enablement": [
+                        {
+                          "type": "capability",
+                          "field": "mapd_available",
+                          "equals": true
+                        }
+                      ]
                     },
                     {
                       "value": 2,
-                      "label": "Car State Priority"
+                      "label": "Car State Priority",
+                      "enablement": [
+                        {
+                          "type": "capability",
+                          "field": "mapd_available",
+                          "equals": true
+                        }
+                      ]
                     },
                     {
                       "value": 3,
-                      "label": "Map Data Priority"
+                      "label": "Map Data Priority",
+                      "enablement": [
+                        {
+                          "type": "capability",
+                          "field": "mapd_available",
+                          "equals": true
+                        }
+                      ]
                     },
                     {
                       "value": 4,
-                      "label": "Combined"
+                      "label": "Combined",
+                      "enablement": [
+                        {
+                          "type": "capability",
+                          "field": "mapd_available",
+                          "equals": true
+                        }
+                      ]
                     }
                   ]
                 },
@@ -1013,6 +1029,11 @@
                 }
               ],
               "enablement": [
+                {
+                  "type": "capability",
+                  "field": "mapd_available",
+                  "equals": true
+                },
                 {
                   "type": "any",
                   "conditions": [
@@ -1829,6 +1850,27 @@
               "enablement": [
                 {
                   "type": "not_engaged"
+                }
+              ]
+            },
+            {
+              "key": "NavigationEnabled",
+              "widget": "toggle",
+              "title": "Navigation (Alpha)",
+              "description": "Turn-by-turn navigation with a route map. Set a destination from comma connect.",
+              "visibility": [
+                {
+                  "type": "capability",
+                  "field": "device_type",
+                  "equals": "mici"
+                },
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "is_sp_release",
+                    "equals": true
+                  }
                 }
               ]
             },
