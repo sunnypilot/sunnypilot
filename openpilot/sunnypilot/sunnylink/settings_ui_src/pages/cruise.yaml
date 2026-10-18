@@ -167,12 +167,28 @@ sections:
         label: Car State Only
       - value: 1
         label: Map Data Only
+        enablement:
+        - type: capability
+          field: mapd_available
+          equals: true
       - value: 2
         label: Car State Priority
+        enablement:
+        - type: capability
+          field: mapd_available
+          equals: true
       - value: 3
         label: Map Data Priority
+        enablement:
+        - type: capability
+          field: mapd_available
+          equals: true
       - value: 4
         label: Combined
+        enablement:
+        - type: capability
+          field: mapd_available
+          equals: true
     - key: SpeedLimitOffsetType
       widget: multiple_button
       title: Speed Limit Offset Type
@@ -246,6 +262,9 @@ sections:
         field: has_icbm
         equals: true
     enablement:
+    - type: capability
+      field: mapd_available
+      equals: true
     - type: any
       conditions:
       - type: capability
