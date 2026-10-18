@@ -10,10 +10,12 @@ from openpilot.cereal import custom, messaging
 from opendbc.car.structs import car
 from opendbc.car.hyundai.values import CAR as HYUNDAI_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
+from opendbc.sunnypilot.car.interfaces import has_bsm
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware import HARDWARE
+from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
 
 
 # Wire-protocol version for the capabilities payload. Bump on breaking changes
@@ -32,7 +34,7 @@ CAPABILITY_FIELDS = (
   "pcm_cruise",
   "alpha_long_available",
   "steer_control_type",
-  "enable_bsm",
+  "has_bsm",
   "is_release",
   "is_sp_release",
   "is_development",
@@ -42,6 +44,7 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "mapd_available",
 )
 
 CAPABILITY_LABELS: dict[str, str] = {
@@ -54,7 +57,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "pcm_cruise": "PCM cruise",
   "alpha_long_available": "Alpha Longitudinal available",
   "steer_control_type": "Steer control type",
-  "enable_bsm": "BSM available",
+  "has_bsm": "BSM available",
   "is_release": "Release branch",
   "is_sp_release": "SP release branch",
   "is_development": "Development branch",
@@ -64,6 +67,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "mapd_available": "Map data available",
 }
 
 # Explicit defaults for non-boolean capability fields
@@ -131,6 +135,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
   caps["is_sp_release"] = params.get_bool("IsReleaseSpBranch")
   caps["is_development"] = params.get_bool("IsDevelopmentBranch")
   caps["stock_longitudinal"] = params.get_bool("ToyotaEnforceStockLongitudinal")
+  caps["mapd_available"] = MAPD_AVAILABLE
 
   bundle = params.get("CarPlatformBundle")
   bundle_brand = _bundle_field(bundle, "brand")
@@ -159,7 +164,6 @@ def generate_capabilities(params: Params | None = None) -> dict:
       if not caps["brand"] and CP.brand:
         caps["brand"] = str(CP.brand)
       caps["pcm_cruise"] = bool(CP.pcmCruise)
-      caps["enable_bsm"] = bool(CP.enableBsm)
       # Generic SnG fallback. Brand-specific opaque flags below override.
       caps["has_stop_and_go"] = bool(CP.openpilotLongitudinalControl)
     except Exception:
@@ -167,6 +171,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
       cloudlog.exception("capabilities: failed to deserialize CarParamsPersistent")
 
   # CarParamsSP-derived capabilities
+  CP_SP = None
   CP_SP_bytes = params.get("CarParamsSPPersistent")
   if CP_SP_bytes is not None:
     try:
@@ -176,6 +181,9 @@ def generate_capabilities(params: Params | None = None) -> dict:
       caps["tesla_has_vehicle_bus"] = bool(CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
     except Exception:
       cloudlog.exception("capabilities: failed to deserialize CarParamsSPPersistent")
+
+  if CP is not None:
+    caps["has_bsm"] = has_bsm(CP, CP_SP)
 
   _resolve_brand_capabilities(caps, bundle_platform, CP)
 
