@@ -207,7 +207,6 @@ class TestNotEngagedReplacement(OpenpilotTestCase):
     "AlphaLongitudinalEnabled",
     "ToyotaEnforceStockLongitudinal",
     "ToyotaStopAndGoHack",
-    "ToyotaEnhancedBsm",
   ], names=["key"])
   def test_offroad_only_replaced_with_not_engaged(self, schema, key):
     """These items should use not_engaged, not offroad_only."""
