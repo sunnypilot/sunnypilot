@@ -284,6 +284,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
       vTarget @3 :Float32;
       aTarget @4 :Float32;
       longitudinalIdle @5 :Bool;
+      leadCoastTimeGaps @6 :List(Float64);
     }
 
     enum Source {
@@ -392,6 +393,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
   longitudinalIdle @5 :Bool;
   leadCoastMinDistance @6 :Float32;
+  leadCoastTimeGaps @7 :List(Float64);
 
   struct Param {
     key @0 :Text;

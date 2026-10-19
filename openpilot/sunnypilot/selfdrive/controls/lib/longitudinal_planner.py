@@ -204,6 +204,7 @@ class LongitudinalPlannerSP:
     assist.vTarget = float(self.sla.output_v_target)
     assist.aTarget = float(self.sla.output_a_target)
     assist.longitudinalIdle = bool(getattr(self, "longitudinal_idle", False))
+    assist.leadCoastTimeGaps = self.coast_lead_gap.saved_time_gaps if assist.longitudinalIdle else []
 
     # E2E Alerts
     e2eAlerts = longitudinalPlanSP.e2eAlerts

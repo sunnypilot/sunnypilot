@@ -3,7 +3,7 @@ import numpy as np
 
 import openpilot.cereal.messaging as messaging
 from opendbc.car.structs import car
-from opendbc.sunnypilot.car.hyundai.lead_data_ext import lead_allows_coasting
+from opendbc.sunnypilot.car.hyundai.lead_data_ext import LeadCoastGap
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -53,8 +53,8 @@ LEAD_COAST_REENTRY_STABLE_S = 2.0
 # A brief, noisy lead reading must not restart the whole qualification period.
 # Only sustained unsafe readings reset it.
 LEAD_COAST_UNSAFE_GRACE_FRAMES = int(0.25 / DT_MDL)
-# Lead-planner braking blocks coasting. Hard braking does so immediately; a
-# smaller request must persist before it is trusted over idle.
+# Lead-planner braking blocks entry into coasting. Once N is active, the
+# saved lead headway controls release instead of MPC gap corrections.
 LEAD_COAST_HARD_BRAKE_ACCEL = -0.4
 LEAD_COAST_SOFT_BRAKE_ACCEL = -0.15
 LEAD_COAST_SOFT_BRAKE_FRAMES = int(0.2 / DT_MDL)
@@ -92,6 +92,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.coast_lead_present = (False, False)
     self.coast_lead_distances = (None, None)
     self.coast_lead_unsafe_frames = 0
+    self.coast_lead_gap = LeadCoastGap()
     self.coast_lead_brake_frames = 0
     self.longitudinal_idle_block_frames = 0
     self.no_lead_idle_target = 0.
@@ -159,16 +160,20 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
                         zip(lead_present, self.coast_lead_present, strict=True))
     self.coast_lead_present = lead_present
     lead_coast_min_gap = lead_coast_min_distance(v_ego, sm['selfdriveState'].personality)
-    lead_coast_safe = sm.all_checks(['radarState']) and all(
-      lead_allows_coasting(lead.present, lead.dRel, lead.vRel, lead.aLeadK, lead_coast_min_gap) and
-      (not lead.present or (previous is not None and lead.dRel >= previous - 0.5))
-      for lead, previous in zip(leads, self.coast_lead_distances, strict=True)
-    )
+    raw_leads = tuple((lead.present, lead.dRel, lead.vRel, lead.aLeadK) for lead in leads)
+    lead_coast_safe = sm.all_checks(['radarState']) and self.coast_lead_gap.allows(raw_leads, v_ego, lead_coast_min_gap)
+    if self.coast_lead_gap.time_gaps is None:
+      lead_coast_safe &= all(not lead.present or (previous is not None and lead.dRel >= previous - 0.5)
+                             for lead, previous in zip(leads, self.coast_lead_distances, strict=True))
+    # Once a saved gap is breached, require fresh qualification before another
+    # episode. A rebound must not immediately re-enter with a smaller baseline.
+    if self.longitudinal_idle and not lead_coast_safe:
+      self.coast_lead_stable_time = 0.
     self.coast_lead_distances = tuple(lead.dRel if lead.present else None for lead in leads)
     # Only a new lead or a reset restarts qualification up front. A lead that
-    # merely departs does not: the lead-planner brake gate below keeps idle
-    # blocked whenever the planner still needs to slow down. Sustained unsafe
-    # readings reset the timer, but brief noise is tolerated.
+    # merely departs does not. Entry requires steady raw readings; an active
+    # coast instead uses its saved headways. Sustained unsafe entry readings
+    # reset the timer, but brief noise is tolerated.
     if reset_state or lead_appeared:
       self.coast_lead_stable_time = 0.
       self.coast_lead_unsafe_frames = 0
@@ -181,10 +186,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       self.coast_lead_unsafe_frames = 0
       self.coast_lead_stable_time = min(self.coast_lead_stable_time + self.dt, LEAD_COAST_REENTRY_STABLE_S)
     lead_coast_qualified = self.coast_lead_stable_time >= LEAD_COAST_REENTRY_STABLE_S
-    # The current reading must always be safe to coast, so a lead that slows or
-    # closes instantly blocks idle and braking wins. The grace period only
-    # preserves the qualification timer, avoiding a full re-qualification once
-    # a brief noisy reading settles again.
+    # An unsafe reading always blocks entry. During N, a breached saved gap
+    # blocks immediately and restarts qualification. The grace period only
+    # preserves qualification for brief noise while waiting to enter.
     lead_coast_allowed = lead_coast_safe and lead_coast_qualified
     no_lead_decel_mode = get_longitudinal_no_lead_decel_mode()
     no_lead_idle_min_decel = get_longitudinal_no_lead_idle_min_decel()
@@ -293,7 +297,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     normal_decel_idle = (
       not idle_blocked and
       no_lead_normal_decel_idle_active(no_lead_decel_mode, intentional_no_lead_decel,
-                                       selected_source == LongitudinalPlanSource.cruise and
+                                       (selected_source == LongitudinalPlanSource.cruise or self.longitudinal_idle) and
                                        self.source in (SpeedLimitPlanSource.cruise, SpeedLimitPlanSource.speedLimitAssist),
                                        output_a_target, no_lead_idle_min_decel, has_lead, any_should_stop,
                                        lead_coast_allowed=lead_coast_allowed) and
@@ -302,22 +306,21 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       not sm['carState'].brakePressed and
       not sm['carState'].gasPressed
     )
-    # Lead-planner braking also restarts qualification, even if the raw lead
-    # passes the distance/speed checks. Hard braking blocks immediately; a
-    # smaller steady request must persist so a stable lead's tiny gap
-    # correction does not permanently suppress idle. Never delay braking.
-    if has_lead and output_a_target_mpc < LEAD_COAST_SOFT_BRAKE_ACCEL:
+    # MPC gap corrections do not cancel an active coast. Before entry, keep
+    # the existing brake gate so we do not enter N during a braking maneuver.
+    if not self.longitudinal_idle and has_lead and output_a_target_mpc < LEAD_COAST_SOFT_BRAKE_ACCEL:
       self.coast_lead_brake_frames = min(self.coast_lead_brake_frames + 1, LEAD_COAST_SOFT_BRAKE_FRAMES)
     else:
       self.coast_lead_brake_frames = 0
-    lead_braking = has_lead and (output_a_target_mpc <= LEAD_COAST_HARD_BRAKE_ACCEL or
-                                 self.coast_lead_brake_frames >= LEAD_COAST_SOFT_BRAKE_FRAMES)
+    lead_braking = not self.longitudinal_idle and has_lead and (
+      output_a_target_mpc <= LEAD_COAST_HARD_BRAKE_ACCEL or self.coast_lead_brake_frames >= LEAD_COAST_SOFT_BRAKE_FRAMES)
     if lead_braking:
       self.coast_lead_stable_time = 0.
       lead_coast_allowed = False
     idle_safe = (lead_coast_allowed and not reset_state and not sm['controlsState'].forceDecel and not self.fcw and not any_should_stop and
                  not is_e2e and sm.all_checks(['radarState', 'modelV2', 'carState']))
-    self.longitudinal_idle = idle_safe and (speed_limit_idle or normal_decel_idle)
+    self.longitudinal_idle = self.coast_lead_gap.update(idle_safe and (speed_limit_idle or normal_decel_idle),
+                                                       raw_leads, v_ego, lead_coast_min_gap)
     if self.longitudinal_idle:
       output_a_target = 0.
     cap_speed_limit_decel = (

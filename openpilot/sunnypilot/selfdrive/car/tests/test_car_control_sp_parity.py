@@ -19,3 +19,17 @@ def test_convert_car_control_sp_accepts_every_capnp_field():
   converted = convert_carControlSP(dat.carControlSP)
   assert converted.leadCoastMinDistance == 0.
   assert converted.longitudinalIdle is False
+
+
+def test_convert_car_control_sp_preserves_saved_coast_gaps():
+  from openpilot.cereal import messaging
+  from openpilot.selfdrive.car.helpers import convert_carControlSP
+
+  dat = messaging.new_message('carControlSP')
+  dat.carControlSP.longitudinalIdle = True
+  # Preserve the exact boundary through serialization and the card conversion.
+  gaps = [2.1234567890123, 0.]
+  dat.carControlSP.leadCoastTimeGaps = gaps
+  restored = messaging.log_from_bytes(dat.to_bytes())
+  converted = convert_carControlSP(restored.carControlSP)
+  assert converted.leadCoastTimeGaps == gaps

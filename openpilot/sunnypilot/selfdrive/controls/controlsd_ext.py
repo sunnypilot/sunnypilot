@@ -10,6 +10,7 @@ import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 
 from opendbc.car import structs
+from opendbc.sunnypilot.car.hyundai.lead_data_ext import LeadCoastGap
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
@@ -28,7 +29,8 @@ def longitudinal_plan_sp_idle_active(sm: messaging.SubMaster) -> bool:
     # SubMaster. Use the same inputs as the published forceDecel calculation.
     force_decel = (sm['driverMonitoringState'].noResponseForceDecel or
                    sm['selfdriveState'].state == log.SelfdriveState.OpenpilotState.softDisabling)
-    return bool(sm['longitudinalPlanSP'].speedLimit.assist.longitudinalIdle and
+    assist = sm['longitudinalPlanSP'].speedLimit.assist
+    return bool(assist.longitudinalIdle and LeadCoastGap.valid_saved_time_gaps(assist.leadCoastTimeGaps) and
                 not sm['longitudinalPlan'].shouldStop and not sm['longitudinalPlan'].fcw and
                 not force_decel and not sm['carState'].gasPressed and not sm['carState'].brakePressed)
   except (AttributeError, KeyError):
@@ -120,6 +122,7 @@ class ControlsExt(ModelStateBase):
     CC_SP.intelligentCruiseButtonManagement.sendButton = icbm_src.sendButton
     CC_SP.intelligentCruiseButtonManagement.vTarget = icbm_src.vTarget
     CC_SP.longitudinalIdle = longitudinal_plan_sp_idle_active(sm)
+    CC_SP.leadCoastTimeGaps = list(sm['longitudinalPlanSP'].speedLimit.assist.leadCoastTimeGaps) if CC_SP.longitudinalIdle else []
     CC_SP.leadCoastMinDistance = lead_coast_min_distance(sm['carState'].vEgo, sm['selfdriveState'].personality)
 
     return CC_SP
