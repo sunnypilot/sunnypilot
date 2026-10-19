@@ -372,7 +372,7 @@ def main(demo=False):
   meta_constants = load_meta_constants()
   RELC = RoadEdgeLaneChangeController()
   laneful = Laneful()
-  laneful_strength = 0.0
+  laneful_enabled = False
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -416,7 +416,7 @@ def main(demo=False):
       model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
       model.PLANPLUS_CONTROL = params.get("PlanplusControl", return_default=True)
       camera_offset_helper.set_offset(params.get("CameraOffset", return_default=True))
-      laneful_strength = params.get("LanefulStrength", return_default=True)
+      laneful_enabled = params.get_bool("Laneful")
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -490,9 +490,9 @@ def main(demo=False):
 
       if not sm['carControl'].latActive:
         prev_action.desiredCurvature = sm['controlsState'].curvature
-      desire_active = desire != log.Desire.none or DH.lane_change_state != log.LaneChangeState.off
+      laneful_active = laneful_enabled and desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
-                                           partial(laneful.update, model_output, v_ego, laneful_strength, desire_active))
+                                           partial(laneful.update, model_output, v_ego, laneful_active))
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,

@@ -26,24 +26,22 @@ class LanefulRenderer:
     self._center_points = np.empty((0, 2), dtype=np.float32)
     self._after_points = np.empty((0, 2), dtype=np.float32)
     self._trust = 0.0
-    self._strength = 0.0
-    self._frame = 0
     self._font = gui_app.font(FontWeight.BOLD)
     # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
+    self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL) # fades that hoe
     self._readout_rect: rl.Rectangle | None = None
     self._settings_page = None
 
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
-    if self._frame % 60 == 0:
-      self._strength = ui_state.params.get("LanefulStrength", return_default=True)
-    self._frame += 1
+    laneful_curvature = ui_state.sm['modelDataV2SP'].lanefulCurvature
+    self._alpha.update(float(laneful_curvature != 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
-    if self._strength <= 0.0 or len(left) == 0 or len(right) != len(left) or len(stds) < 3:
+    if self._alpha.x < 0.01 or len(left) == 0 or len(right) != len(left) or len(stds) < 3:
       self._center_points = np.empty((0, 2), dtype=np.float32)
       self._after_points = np.empty((0, 2), dtype=np.float32)
       return
@@ -60,7 +58,6 @@ class LanefulRenderer:
     # "after" path: model path bent by laneful's curvature, ending at the lookahead
     path = renderer._path.raw_points
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
-    laneful_curvature = ui_state.sm['modelDataV2SP'].lanefulCurvature
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
     after = path.copy()
@@ -68,13 +65,15 @@ class LanefulRenderer:
     self._after_points = renderer._map_line_to_polygon(after, 0.15, renderer._path_offset_z,
                                                        renderer._get_path_length_idx(path[:, 0], lookahead))
 
+  def _color(self, rgb, alpha: float) -> rl.Color:
+    return rl.Color(*rgb, int(alpha * self._alpha.x))
+
   def draw(self, rect: rl.Rectangle) -> None:
     if self._center_points.size and self._trust > 0.05:
-      draw_polygon(rect, self._center_points, rl.Color(*CENTER_COLOR, int(np.clip(self._trust, 0.2, 1.0) * 255)))
-    if self._after_points.size:
-      draw_polygon(rect, self._after_points, rl.Color(*AFTER_COLOR, 200))
+      draw_polygon(rect, self._center_points, self._color(CENTER_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
     self._readout_rect = None
-    if self._strength > 0.0:
+    if self._after_points.size:
+      draw_polygon(rect, self._after_points, self._color(AFTER_COLOR, 200))
       self._draw_readout(rect)
 
   def handle_tap(self, pos) -> bool:
@@ -96,23 +95,23 @@ class LanefulRenderer:
     x, y = rect.x + (rect.width - w) / 2, rect.y + 10
     cx, cy = x + w / 2, y + 30
     self._readout_rect = rl.Rectangle(x, y, w, h)
-    rl.draw_rectangle_rounded(self._readout_rect, 0.5, 12, rl.Color(0, 0, 0, 170))
+    rl.draw_rectangle_rounded(self._readout_rect, 0.5, 12, self._color((0, 0, 0), 170))
 
     text = f"{abs(pull) * 100:.0f}"
     text_w = measure_text_cached(self._font, text, 44, 0).x
-    rl.draw_text_ex(self._font, text, rl.Vector2(cx - text_w / 2, cy - 24), 44, 0, rl.WHITE)
+    rl.draw_text_ex(self._font, text, rl.Vector2(cx - text_w / 2, cy - 24), 44, 0, self._color((255, 255, 255), 255))
 
-    active = rl.Color(*CENTER_COLOR, int(np.clip(abs(pull) / 0.1, 0.0, 1.0) * 255))
-    idle = rl.Color(255, 255, 255, 40)
+    active = self._color(CENTER_COLOR, np.clip(abs(pull) / 0.1, 0.0, 1.0) * 255)
+    idle = self._color((255, 255, 255), 40)
     lx, rx = x + 18, x + w - 18
     rl.draw_triangle(rl.Vector2(lx, cy), rl.Vector2(lx + 16, cy + 12), rl.Vector2(lx + 16, cy - 12), active if pull < 0 else idle)
     rl.draw_triangle(rl.Vector2(rx - 16, cy - 12), rl.Vector2(rx - 16, cy + 12), rl.Vector2(rx, cy), active if pull > 0 else idle)
 
     bar = rl.Rectangle(x + 24, y + h - 16, w - 48, 6)
-    rl.draw_rectangle_rounded(bar, 1.0, 6, rl.Color(255, 255, 255, 40))
-    rl.draw_rectangle(int(cx - 1), int(bar.y - 2), 2, int(bar.height + 4), rl.Color(255, 255, 255, 120))
+    rl.draw_rectangle_rounded(bar, 1.0, 6, self._color((255, 255, 255), 40))
+    rl.draw_rectangle(int(cx - 1), int(bar.y - 2), 2, int(bar.height + 4), self._color((255, 255, 255), 120))
     fill = bar.width / 2 * float(np.clip(abs(pull) / MAX_ERROR, 0.0, 1.0))
     if fill > 1:
       fill_x = cx if pull > 0 else cx - fill
       rl.draw_rectangle_rounded(rl.Rectangle(fill_x, bar.y, fill, bar.height), 1.0, 6,
-                                rl.Color(*CENTER_COLOR, int(np.clip(0.3 + 0.7 * trust, 0.0, 1.0) * 255)))
+                                self._color(CENTER_COLOR, np.clip(0.3 + 0.7 * trust, 0.0, 1.0) * 255))
