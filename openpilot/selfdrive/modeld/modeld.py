@@ -9,6 +9,7 @@ os.environ['GMMU'] = '0' # for chestnut fast loading, noop for qcom
 os.environ.setdefault('AM_POWER_LIMIT', '100')
 os.environ.setdefault('AM_PERF_LEVEL', 'high')
 from tinygrad.device import Buffer, Device
+from tinygrad.engine.realize import lower_and_compile
 from tinygrad.dtype import DType, dtypes
 from tinygrad.engine.realize import lower_and_compile
 from tinygrad.tensor import Tensor
