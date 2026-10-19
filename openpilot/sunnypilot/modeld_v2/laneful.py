@@ -30,10 +30,9 @@ class Laneful:
     self.lane_width = FirstOrderFilter(LANE_WIDTH_DEFAULT, 10.0, DT_MDL)
     self.curvature = 0.0
 
-  def update(self, model_output: dict[str, np.ndarray], v_ego: float, strength: float, desire_active: bool,
-             model_curvature: float) -> float:
+  def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
     self.curvature = 0.0
-    if strength <= 0.0 or desire_active or v_ego < MIN_SPEED or 'lane_lines' not in model_output:
+    if not active or v_ego < MIN_SPEED or 'lane_lines' not in model_output:
       return 0.0
 
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
@@ -64,5 +63,5 @@ class Laneful:
     # when the car is drifting, worst on curves. Fit the curvature change that lays that arc onto the center: e ~ dk x^2 / 2
     error = np.clip(center - model_curvature * x ** 2 / 2, -MAX_ERROR, MAX_ERROR)
     dk = 2.0 * np.sum(weight * error * x ** 2) / np.sum(weight * x ** 4)
-    self.curvature = float(strength * lane_trust * dk)
+    self.curvature = float(lane_trust * dk)
     return self.curvature
