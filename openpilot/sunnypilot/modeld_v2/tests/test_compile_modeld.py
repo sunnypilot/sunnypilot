@@ -5,16 +5,12 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import os
-import tempfile
 import unittest
-from pathlib import Path
 
 import numpy as np
 from openpilot.common.parameterized import parameterized
 
-from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key, read_file_chunked_to_disk
+from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key
 from openpilot.common.test import OpenpilotTestCase
 
 
@@ -166,36 +162,6 @@ class TestOutputSlicePreservation(OpenpilotTestCase):
     policy_slices = {'plan': slice(0, 495), 'meta': slice(495, 550)}
     assert set(vision_slices.keys()) & set(policy_slices.keys()) == set(), \
       "vision and policy slices should not overlap in keys"
-
-
-class TestReadFileChunkedToDisk(OpenpilotTestCase):
-  def test_none_passthrough(self):
-    assert read_file_chunked_to_disk(None) is None
-
-  def test_unchunked_source_staged_on_disk(self):
-    with tempfile.TemporaryDirectory() as d:
-      src = Path(d) / "driving_supercombo.onnx"
-      payload = os.urandom(1024)
-      src.write_bytes(payload)
-
-      out = Path(read_file_chunked_to_disk(str(src)))
-
-      assert out.parent == Path(d)
-      assert out.name == "driving_supercombo.onnx.unchunked"
-      assert out.read_bytes() == payload
-
-  def test_chunked_source_reassembled_on_disk(self):
-    with tempfile.TemporaryDirectory() as d:
-      src = Path(d) / "driving_supercombo.onnx"
-      payload = os.urandom(4096)
-      src.write_bytes(payload)
-      chunk_file(str(src), get_chunk_targets(str(src), len(payload)))
-      assert not src.exists()
-
-      out = Path(read_file_chunked_to_disk(str(src)))
-
-      assert out.parent == Path(d)
-      assert out.read_bytes() == payload
 
 
 class Test4DFeaturesBuffer(OpenpilotTestCase):

@@ -137,6 +137,7 @@ jobs:
     needs: build_model
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       id-token: write
       contents: write
     steps:
@@ -179,18 +180,21 @@ jobs:
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Download and extract model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
-          path: output
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
+        run: |
+          id=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" -f name="$ARTIFACT_NAME" --jq '.artifacts[0].id')
+          url=$(curl -sf -o /dev/null -w '%{redirect_url}' -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip")
+          sudo apt-get install -y -qq aria2 > /dev/null
+          aria2c -q -x16 -s16 -k8M --max-tries=5 --file-allocation=none -o model.zip "$url" && unzip -q model.zip -d output && rm model.zip
 
       - name: Create models folder
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
-          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
+          cp output/metadata.json "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
 
       - name: Upload to Hugging Face
         env:
