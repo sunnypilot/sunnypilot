@@ -18,30 +18,21 @@ from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkC
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2_daemon import (
-  PAIRING_REQUEST_V2_KEY,
+from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
   clear_pairing_params,
   read_grant_meta,
   read_granted_apps,
   read_pairing_qr,
-  request_revoke_all_v2,
-  request_revoke_v2,
+  request_revoke,
+  request_revoke_all,
 )
 from openpilot.sunnypilot.sunnylink.athena.local_app_rows import (
   MAX_LOCAL_APP_ROWS,
-  V2_KIND,
   LocalAppRow,
   build_local_app_rows,
 )
 from openpilot.sunnypilot.sunnylink.athena.local_discovery import latest_discovered_app
-from openpilot.sunnypilot.sunnylink.athena.local_pairing import (
-  arm_pairing,
-  clear_pairing_request,
-  get_local_apps,
-  pairing_requested,
-  read_pairing_code,
-  remove_local_app,
-)
+from openpilot.sunnypilot.sunnylink.athena.local_state import PAIRING_REQUEST_KEY
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -180,7 +171,7 @@ class SunnylinkLayoutMici(NavScroller):
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
       if not state:
-        clear_pairing_request()
+        clear_pairing_params()
 
     ui_state.update_params()
 
@@ -307,10 +298,7 @@ class LocalAppsPanelMici(NavScroller):
     self._rows_cache: list[LocalAppRow] = []
 
     self._pair_app_btn = BigButton(tr("pair app"), "")
-    self._pair_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalPairingCodeDialogMici()))
-
-    self._pair_app_v2_btn = BigButton(tr("pair app (secure)"), "")
-    self._pair_app_v2_btn.set_click_callback(lambda: gui_app.push_widget(LocalQrPairingDialogMici()))
+    self._pair_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalPairingDialogMici()))
 
     self._revoke_all_btn = BigButton(tr("revoke all phones"), "")
     self._revoke_all_btn.set_click_callback(self._confirm_revoke_all)
@@ -321,29 +309,26 @@ class LocalAppsPanelMici(NavScroller):
       btn.set_click_callback(partial(self._confirm_unpair_row, i))
       self._local_app_btns.append(btn)
 
-    self._scroller.add_widgets([self._pair_app_v2_btn, self._pair_app_btn, self._revoke_all_btn,
-                                *self._local_app_btns])
+    self._scroller.add_widgets([self._pair_app_btn, self._revoke_all_btn, *self._local_app_btns])
 
   def _update_state(self):
     super()._update_state()
     grants = read_granted_apps()
-    self._rows_cache = build_local_app_rows(get_local_apps(), grants, read_grant_meta(), time.monotonic())
-    # The PIN path is refused once v2 holds any grant, so it must not be offered.
-    self._pair_app_btn.set_visible(not grants)
+    self._rows_cache = build_local_app_rows(grants, read_grant_meta(), time.monotonic())
     self._revoke_all_btn.set_visible(bool(grants))
     for i, btn in enumerate(self._local_app_btns):
       btn.set_visible(i < len(self._rows_cache))
       if i < len(self._rows_cache):
         row = self._rows_cache[i]
         btn.set_text(row.title)
-        btn.set_value(tr("re-pair required") if row.re_pair_required else row.subtitle)
+        btn.set_value(row.subtitle)
 
   def _confirm_revoke_all(self):
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
       tr("revoke all phones"),
       icon,
-      confirm_callback=request_revoke_all_v2,
+      confirm_callback=request_revoke_all,
       red=True,
     )
     gui_app.push_widget(dlg)
@@ -355,11 +340,8 @@ class LocalAppsPanelMici(NavScroller):
     row = rows[index]
 
     def unpair():
-      if row.kind == V2_KIND:
-        # A request only: sunnylinkd revokes through its live authority on its next tick.
-        request_revoke_v2(row.app_id)
-      else:
-        remove_local_app(row.app_id)
+      # A request only: sunnylinkd revokes through its live authority on its next tick.
+      request_revoke(row.app_id)
 
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
@@ -371,68 +353,9 @@ class LocalAppsPanelMici(NavScroller):
     gui_app.push_widget(dlg)
 
 
-class LocalPairingCodeDialogMici(BigDialogBase):
-
-  def __init__(self):
-    super().__init__()
-    self._apps_before = len(get_local_apps())
-    arm_pairing()
-    self.set_back_callback(clear_pairing_request)
-
-    header_color = rl.Color(255, 255, 255, int(255 * 0.9))
-    subheader_color = rl.Color(255, 255, 255, int(255 * 0.9 * 0.65))
-    self._title = UnifiedLabel(tr("pair with mobile app"), font_size=48, font_weight=FontWeight.BOLD,
-                               text_color=header_color, line_height=0.8)
-    self._code_label = UnifiedLabel("", font_size=110, font_weight=FontWeight.DISPLAY,
-                                    text_color=rl.Color(0, 255, 0, 255))
-    self._hint = UnifiedLabel(tr("enter this code in the sunnylink app"), font_size=32,
-                              text_color=subheader_color, line_height=0.9)
-    self._status = UnifiedLabel("", font_size=28,
-                                text_color=rl.Color(255, 255, 255, int(255 * 0.45)), line_height=0.9)
-
-  def _update_state(self):
-    super()._update_state()
-    if self.is_dismissing:
-      return
-    if len(get_local_apps()) > self._apps_before:
-      self.dismiss()  # paired — window already cleared
-    elif not pairing_requested():
-      self.dismiss()  # window expired
-
-  def _render(self, _):
-    self._code_label.set_text(read_pairing_code() or "—")
-
-    discovered = latest_discovered_app()
-    if discovered is not None:
-      endpoint, age = discovered
-      self._status.set_text(endpoint if age < 2 else f"{endpoint} ({age}s)")
-      self._status.set_text_color(rl.Color(0, 255, 0, 255))
-    else:
-      self._status.set_text(tr("waiting for the app…"))
-      self._status.set_text_color(rl.Color(255, 255, 255, int(255 * 0.45)))
-
-    x = self._rect.x + 20
-    width = int(self._rect.width - 40)
-    self._title.set_max_width(width)
-    self._title.set_position(x, self._rect.y + 40)
-    self._title.render()
-
-    self._code_label.set_max_width(width)
-    self._code_label.set_position(x, self._rect.y + 130)
-    self._code_label.render()
-
-    self._hint.set_max_width(width)
-    self._hint.set_position(x, self._rect.y + 290)
-    self._hint.render()
-
-    self._status.set_max_width(width)
-    self._status.set_position(x, self._rect.y + 360)
-    self._status.render()
-
-
-class LocalQrPairingDialogMici(BigDialogBase):
-  """Secure (v2) pairing for the small display. This dialog only requests the window the local
-  daemon publishes and renders it; the phone scans it, enrolls through the cloud, then dials."""
+class LocalPairingDialogMici(BigDialogBase):
+  """Pairing for the small display. This dialog only requests the window the local daemon
+  publishes and renders it; the phone scans it, enrolls through the cloud, then dials."""
 
   # sunnylinkd services the request about once a second; taking longer means it is not running.
   ARM_GRACE_S = 5.0
@@ -455,9 +378,9 @@ class LocalQrPairingDialogMici(BigDialogBase):
 
   def _request_window(self) -> None:
     try:
-      ui_state.params.put_bool(PAIRING_REQUEST_V2_KEY, True, block=True)
+      ui_state.params.put_bool(PAIRING_REQUEST_KEY, True, block=True)
     except Exception:
-      cloudlog.exception("sunnylink.local_pairing_v2.request_failed")
+      cloudlog.exception("sunnylink.local_pairing.request_failed")
 
   def _cancel(self) -> None:
     # Params only: this process does not own the window, the daemon cancels it on its next tick.
@@ -482,7 +405,7 @@ class LocalQrPairingDialogMici(BigDialogBase):
       # a camera to read them.
       rl.set_texture_filter(self._qr_texture, rl.TextureFilter.TEXTURE_FILTER_POINT)
     except Exception:
-      cloudlog.exception("sunnylink.local_pairing_v2.qr_texture_failed")
+      cloudlog.exception("sunnylink.local_pairing.qr_texture_failed")
 
   def _update_state(self):
     super()._update_state()

@@ -5,8 +5,8 @@ them, except the two commands an app pushes through the cloud settings-write for
 """
 from __future__ import annotations
 
-ENROLL = "SunnylinkLocalEnrollV2"
-REVOKE = "SunnylinkLocalCloudRevokeV2"
+ENROLL = "SunnylinkLocalEnroll"
+REVOKE = "SunnylinkLocalCloudRevoke"
 
 CLOUD_COMMANDS = frozenset({ENROLL, REVOKE})
 _PREFIXES = ("SunnylinkLocal", "_sec_")

@@ -2,7 +2,7 @@ import base64
 import gzip
 import json
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi, UNREGISTERED_SUNNYLINK_DONGLE_ID
-from openpilot.sunnypilot.sunnylink.athena.local_pairing import is_locally_paired
+from openpilot.sunnypilot.sunnylink.athena.local_state import is_locally_paired
 from openpilot.common.params import Params, ParamKeyType
 from openpilot.common.version import is_prebuilt
 

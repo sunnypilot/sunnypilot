@@ -22,8 +22,8 @@ from websocket import WebSocket
 from openpilot.common.params import Params
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.system.athena import rpc as rpc_module
-from openpilot.sunnypilot.sunnylink.athena import local_auth_v2_daemon, localsunnylinkd, sunnylinkd
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
+from openpilot.sunnypilot.sunnylink.athena import local_auth_daemon, localsunnylinkd, sunnylinkd
+from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   AUTHENTICATE_PURPOSE,
   AuthorizationError,
   AuthorizedSession,
@@ -33,7 +33,7 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
   key_id,
   statement,
 )
-from openpilot.sunnypilot.sunnylink.athena.local_discovery import LOCAL_BEACON_FRESH_S, LocalDiscovery
+from openpilot.sunnypilot.sunnylink.athena.local_discovery import LocalDiscovery
 from openpilot.sunnypilot.sunnylink.athena.local_params import ENROLL, REVOKE, cloud_may_write, is_local_param
 
 CHALLENGE = "A" * 43  # base64url of 32 zero bytes: the canonical challenge shape
@@ -136,14 +136,14 @@ class _FakeDiscovery:
 class _Daemon(localsunnylinkd.LocalSunnylinkd):
   """A local daemon with scripted trust state, so target selection is testable in isolation."""
 
-  def __init__(self, endpoints=(), v2=False, discovery=None, **params):
+  def __init__(self, endpoints=(), enrolled=True, discovery=None, **params):
     fake_discovery = discovery if discovery is not None else _FakeDiscovery(endpoints)
     super().__init__(params=cast(Params, _FakeParams(**params)),
                      discovery=cast(LocalDiscovery, fake_discovery))
-    self._v2 = v2
+    self._enrolled = enrolled
 
-  def v2_auth_active(self):
-    return self._v2
+  def enrolled(self):
+    return self._enrolled
 
 
 def _challenge(phone_key_id: str) -> str:
@@ -176,37 +176,37 @@ class TestLocalTargets(OpenpilotTestCase):
     self.assertIsNone(localsunnylinkd.pinned_endpoint("wss://10.0.0.7:8443"))
     self.assertIsNone(localsunnylinkd.pinned_endpoint("ws://10.0.0.7"))
 
-  def test_v2_owns_local_trust_so_only_pinned_dials_happen(self):
-    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
-    self.assertEqual(("wss://10.0.0.7:8443", localsunnylinkd.TARGET_V2), daemon.pick_target())
+  def test_an_enrolled_phone_is_dialed_over_pinned_tls(self):
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
+    self.assertEqual("wss://10.0.0.7:8443", daemon.pick_target())
 
     daemon.backoffs["wss://10.0.0.7:8443"] = time.monotonic() + 60
-    self.assertEqual((None, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertIsNone(daemon.pick_target())
 
-  def test_a_failed_v2_dial_backs_off_for_beacon_intervals_only(self):
+  def test_a_failed_dial_backs_off_for_a_tick_then_ramps(self):
     """A phone that keeps announcing while it refuses to serve ramps up, and no further."""
-    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
     endpoint = "wss://10.0.0.7:8443"
-    with mock.patch.object(daemon, "dial_v2", side_effect=AuthorizationError("refused")):
-      daemon.serve_v2(endpoint, None)
+    with mock.patch.object(daemon, "dial", side_effect=AuthorizationError("refused")):
+      daemon.serve(endpoint, None)
       first = daemon.backoffs[endpoint] - time.monotonic()
       for _ in range(8):
-        daemon.serve_v2(endpoint, None)
+        daemon.serve(endpoint, None)
       last = daemon.backoffs[endpoint] - time.monotonic()
 
     # The app is a foreground-only server: one missed dial is worth a beacon interval, not the
-    # five minutes a legacy endpoint gets.
+    # five-minute cloud reconnect ceiling.
     self.assertLess(first, localsunnylinkd.ENDPOINT_BACKOFF_S)
     self.assertGreater(first, 0)
-    self.assertLessEqual(last, localsunnylinkd.V2_ENDPOINT_BACKOFF_MAX_S)
-    self.assertEqual(9, daemon.v2_failures[endpoint])
+    self.assertLessEqual(last, localsunnylinkd.ENDPOINT_BACKOFF_MAX_S)
+    self.assertEqual(9, daemon.failures[endpoint])
 
   def test_the_first_failed_dial_waits_only_one_tick(self):
     """One missed dial is worth a tick, not a beacon interval: nothing else re-dials before then."""
-    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
     endpoint = "wss://10.0.0.7:8443"
-    with mock.patch.object(daemon, "dial_v2", side_effect=AuthorizationError("refused")):
-      daemon.serve_v2(endpoint, None)
+    with mock.patch.object(daemon, "dial", side_effect=AuthorizationError("refused")):
+      daemon.serve(endpoint, None)
       delay = daemon.backoffs[endpoint] - time.monotonic()
 
     self.assertGreater(delay, 0)
@@ -221,37 +221,37 @@ class TestLocalTargets(OpenpilotTestCase):
     the very next beacon is an immediate attempt rather than the rest of a penalty.
     """
     discovery = _FakeDiscovery(["ws://10.0.0.7:8443"], recent=[])
-    daemon = _Daemon(discovery=discovery, v2=True)
+    daemon = _Daemon(discovery=discovery)
     endpoint = "wss://10.0.0.7:8443"
     daemon.backoffs[endpoint] = time.monotonic() + 300
-    daemon.v2_failures[endpoint] = 5
+    daemon.failures[endpoint] = 5
 
-    self.assertEqual((endpoint, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertEqual(endpoint, daemon.pick_target())
     self.assertNotIn(endpoint, daemon.backoffs)
-    self.assertNotIn(endpoint, daemon.v2_failures)
+    self.assertNotIn(endpoint, daemon.failures)
 
   def test_a_phone_still_announcing_keeps_its_ramp(self):
     """The short window must not reset a ramp for a phone that is right there and refusing to serve."""
     discovery = _FakeDiscovery(["ws://10.0.0.7:8443"], recent=["ws://10.0.0.7:8443"])
-    daemon = _Daemon(discovery=discovery, v2=True)
+    daemon = _Daemon(discovery=discovery)
     endpoint = "wss://10.0.0.7:8443"
     daemon.backoffs[endpoint] = time.monotonic() + 300
 
-    self.assertEqual((None, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertIsNone(daemon.pick_target())
     self.assertIn(endpoint, daemon.backoffs)
 
   def test_a_served_session_clears_the_backoff_ramp(self):
-    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
     endpoint = "wss://10.0.0.7:8443"
     daemon.backoffs[endpoint] = time.monotonic() + 60
-    daemon.v2_failures[endpoint] = 3
+    daemon.failures[endpoint] = 3
 
-    with mock.patch.object(daemon, "dial_v2", lambda endpoint, exit_event: None), \
+    with mock.patch.object(daemon, "dial", lambda endpoint, exit_event: None), \
          mock.patch.object(localsunnylinkd, "TICK_INTERVAL_S", 0):
-      daemon.serve_v2(endpoint, None)
+      daemon.serve(endpoint, None)
 
     self.assertNotIn(endpoint, daemon.backoffs)
-    self.assertNotIn(endpoint, daemon.v2_failures)
+    self.assertNotIn(endpoint, daemon.failures)
 
   def test_a_phone_that_stopped_announcing_forgets_its_backoff(self):
     """Closing the app must not cost cloud-only service after it is reopened.
@@ -262,44 +262,25 @@ class TestLocalTargets(OpenpilotTestCase):
     cloud for the rest of the backoff.
     """
     discovery = _FakeDiscovery(["ws://10.0.0.7:8443"])
-    daemon = _Daemon(discovery=discovery, v2=True)
+    daemon = _Daemon(discovery=discovery)
     endpoint = "wss://10.0.0.7:8443"
     daemon.backoffs[endpoint] = time.monotonic() + 300
-    daemon.v2_failures[endpoint] = 1
+    daemon.failures[endpoint] = 1
 
     # The app was closed: it announces nothing, so the failure outlives its reason.
     discovery._endpoints = []
-    self.assertEqual((None, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertIsNone(daemon.pick_target())
     self.assertNotIn(endpoint, daemon.backoffs)
-    self.assertNotIn(endpoint, daemon.v2_failures)
+    self.assertNotIn(endpoint, daemon.failures)
 
     # The app is opened again: the device dials it now instead of waiting the record out.
     discovery._endpoints = ["ws://10.0.0.7:8443"]
-    self.assertEqual((endpoint, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertEqual(endpoint, daemon.pick_target())
 
   def test_a_pending_enrollment_is_dialed_even_before_any_grant(self):
     daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
-    with mock.patch.object(local_auth_v2_daemon, "pending_enrollment", lambda: {"app_id": "pending"}):
-      self.assertEqual(("wss://10.0.0.7:8443", localsunnylinkd.TARGET_V2), daemon.pick_target())
-
-  def test_the_legacy_pairing_window_targets_the_discovered_app(self):
-    discovery = _FakeDiscovery()
-    discovery.latest = "ws://10.0.0.7:8443"
-    discovery.seen = 0.5
-    daemon = _Daemon(discovery=discovery)
-    with mock.patch.object(localsunnylinkd, "pairing_requested", lambda: True), \
-         mock.patch.object(localsunnylinkd, "get_local_apps", list):
-      self.assertEqual(("ws://10.0.0.7:8443", localsunnylinkd.TARGET_PAIRING), daemon.pick_target())
-      discovery.seen = LOCAL_BEACON_FRESH_S + 1
-      self.assertEqual((None, localsunnylinkd.TARGET_PAIRING), daemon.pick_target())
-
-  def test_a_paired_legacy_app_is_dialed_when_nothing_else_is_available(self):
-    daemon = _Daemon()
-    app = SimpleNamespace(app_id="phone-1", endpoint="ws://10.0.0.7:8443")
-    with mock.patch.object(localsunnylinkd, "get_local_apps", lambda: [app]):
-      self.assertEqual(("ws://10.0.0.7:8443", localsunnylinkd.TARGET_LEGACY), daemon.pick_target())
-      daemon.backoffs["ws://10.0.0.7:8443"] = time.monotonic() + 60
-      self.assertEqual((None, localsunnylinkd.TARGET_LEGACY), daemon.pick_target())
+    with mock.patch.object(local_auth_daemon, "pending_enrollment", lambda: {"app_id": "pending"}):
+      self.assertEqual("wss://10.0.0.7:8443", daemon.pick_target())
 
   def test_the_local_switch_gates_the_process(self):
     running = _Daemon(SunnylinkEnabled=True, SunnylinkLocalEnabled=True)
@@ -311,17 +292,6 @@ class TestLocalTargets(OpenpilotTestCase):
     sunnylink_off = _Daemon(SunnylinkEnabled=False, SunnylinkLocalEnabled=True)
     self.assertFalse(sunnylink_off.serviceable())
 
-  def test_a_legacy_session_is_preempted_when_v2_takes_over(self):
-    daemon = _Daemon(v2=True)
-    self.assertTrue(daemon.preempted())
-
-    daemon = _Daemon(v2=False)
-    with mock.patch.object(localsunnylinkd, "pairing_requested", lambda: True):
-      self.assertTrue(daemon.preempted())
-    with mock.patch.object(localsunnylinkd, "pairing_requested", lambda: False):
-      self.assertFalse(daemon.preempted())
-
-
 class TestLocalSurface(OpenpilotTestCase):
   """What a local peer may reach, and what it may never touch."""
 
@@ -331,60 +301,28 @@ class TestLocalSurface(OpenpilotTestCase):
     saved: list[str] = []
     with mock.patch.object(sunnylinkd, "save_param_from_base64_encoded_string",
                            lambda key, value, compression=False: saved.append(key)):
-      daemon.saveParams({ENROLL: ENROLLMENT_TRANSPORT_VALUE, "SunnylinkLocalAppsV2": "{}", "SpeedLimitOffset": "5"})
+      daemon.saveParams({ENROLL: ENROLLMENT_TRANSPORT_VALUE, "SunnylinkLocalApps": "{}", "SpeedLimitOffset": "5"})
     self.assertEqual(["SpeedLimitOffset"], saved)
 
-  def test_pairLocalApp_is_refused_once_v2_owns_trust(self):
-    daemon = _Daemon(v2=True)
-    self.assertEqual({"success": False, "error": "legacy pairing disabled"}, daemon.pairLocalApp("123456"))
-
-  def test_pairLocalApp_requires_a_live_local_app_and_the_right_code(self):
-    daemon = _Daemon()
-    self.assertEqual({"success": False, "error": "not connected to a local app"}, daemon.pairLocalApp("123456"))
-
-    daemon.active_endpoint = "ws://10.0.0.7:8443"
-    with mock.patch.object(localsunnylinkd, "verify_pairing_code", lambda code: False):
-      self.assertEqual({"success": False, "error": "invalid code"}, daemon.pairLocalApp("123456"))
-
-  def test_pairLocalApp_adds_the_app_to_the_legacy_registry(self):
-    daemon = _Daemon()
-    daemon.active_endpoint = "ws://10.0.0.7:8443"
-    added = []
-    with mock.patch.object(localsunnylinkd, "verify_pairing_code", lambda code: code == "123456"), \
-         mock.patch.object(localsunnylinkd, "add_local_app", added.append), \
-         mock.patch.object(localsunnylinkd, "clear_pairing_request") as cleared:
-      self.assertEqual({"success": True}, daemon.pairLocalApp("123456", app_id="phone-1", app_name="Test phone"))
-    self.assertEqual(1, len(added))
-    self.assertEqual("ws://10.0.0.7:8443", added[0].endpoint)
-    cleared.assert_called_once()
-
-  def test_a_pairing_session_serves_nothing_without_an_armed_window(self):
-    daemon = _Daemon()
-    ws = _FakeWs([rpc_module.dumps_call("pairLocalApp", {"code": "000000"}, 1)])
-    with mock.patch.object(localsunnylinkd, "pairing_requested", lambda: False):
-      self.assertFalse(daemon.pairing_session(cast(WebSocket, ws)))
-    self.assertEqual([], ws.sent)
-
-  def test_v2_session_methods_are_local_only_and_gated(self):
+  def test_session_methods_are_local_only_and_gated(self):
     session = _FakeSession()
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
     methods = daemon.session_methods(cast(AuthorizedSession, session))
     self.assertTrue("getParams" in methods)
     self.assertTrue("saveParams" in methods)
     self.assertTrue("unpairLocalApp" in methods)
-    self.assertNotIn("pairLocalApp", methods)
     self.assertNotIn("startLocalProxy", methods)
     self.assertNotIn("echo", methods)
     self.assertEqual(methods["getParams"](params_keys=[]), {"ok": True})
     self.assertEqual(session.calls, ["getParams"])
 
-  def test_a_v2_session_serves_local_methods_and_refuses_the_rest(self):
+  def test_a_session_serves_local_methods_and_refuses_the_rest(self):
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
     session = _FakeSession()
     methods = daemon.session_methods(cast(AuthorizedSession, session))
     ws = _FakeWs([
       rpc_module.dumps_call("getParams", {"params_keys": []}, 1),
-      rpc_module.dumps_call("pairLocalApp", {"code": "000000"}, 2),
+      rpc_module.dumps_call("startLocalProxy", {"port": 8022}, 2),
     ])
     daemon.serve_rpc(cast(WebSocket, ws), methods)
     self.assertEqual(session.calls, ["getParams"])
@@ -393,13 +331,6 @@ class TestLocalSurface(OpenpilotTestCase):
     self.assertEqual({"ok": True}, first["result"])
     self.assertEqual(2, second["id"])
     self.assertEqual(rpc_module.METHOD_NOT_FOUND, second["error"]["code"])
-
-  def test_serving_stops_as_soon_as_the_session_is_preempted(self):
-    daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
-    ws = _FakeWs([rpc_module.dumps_call("getParams", {"params_keys": []}, 1)])
-    daemon.serve_rpc(cast(WebSocket, ws), {"getParams": lambda **_: {}}, should_stop=lambda: True)
-    self.assertEqual([], ws.sent)
-
 
 class TestLocalDial(OpenpilotTestCase):
   """The pinned TLS dial and the challenge the phone must answer."""
@@ -446,30 +377,29 @@ class TestLocalDial(OpenpilotTestCase):
 
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
     with mock.patch.object(authority, "session", lambda g, peer: session, create=True), \
-         mock.patch.object(local_auth_v2_daemon, "get_authority", lambda: authority), \
-         mock.patch.object(local_auth_v2_daemon, "confirm_enrollment_tls", confirm), \
+         mock.patch.object(local_auth_daemon, "get_authority", lambda: authority), \
+         mock.patch.object(local_auth_daemon, "confirm_enrollment_tls", confirm), \
          mock.patch.object(localsunnylinkd, "connect_pinned", lambda endpoint, key_id, timeout_s=10: ws):
-      daemon.dial_v2("wss://10.0.0.7:8443", None)
+      daemon.dial("wss://10.0.0.7:8443", None)
 
     self.assertEqual(["pending-key"], confirmed)
     self.assertTrue(session.closed)
     self.assertTrue(ws.closed)
-    self.assertIsNone(daemon.active_endpoint)
     self.assertEqual("pending-key", json.loads(ws.sent[0])["phone_key_id"])
 
   def test_a_dial_without_an_enrolled_peer_never_serves(self):
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
     authority = SimpleNamespace(lock=threading.RLock(), pending=None, grants={})
-    with mock.patch.object(local_auth_v2_daemon, "get_authority", lambda: authority), \
+    with mock.patch.object(local_auth_daemon, "get_authority", lambda: authority), \
          mock.patch.object(localsunnylinkd, "connect_pinned",
                            mock.Mock(side_effect=AuthorizationError("wrong TLS peer"))):
       with self.assertRaises(AuthorizationError):
-        daemon.dial_v2("wss://10.0.0.7:8443", None)
+        daemon.dial("wss://10.0.0.7:8443", None)
 
   def test_a_rename_only_ever_renames_the_sessions_own_grant(self):
     calls: list[tuple[str, str]] = []
     session = _CallingSession("grant-key")
-    with mock.patch.object(local_auth_v2_daemon, "set_grant_alias",
+    with mock.patch.object(local_auth_daemon, "set_grant_alias",
                            lambda key_id, alias: calls.append((key_id, alias)) or True):
       daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
       methods = daemon.session_methods(cast(AuthorizedSession, session))
@@ -482,7 +412,7 @@ class TestLocalDial(OpenpilotTestCase):
       raise AuthorizationError("invalid alias")
 
     session = _CallingSession("grant-key")
-    with mock.patch.object(local_auth_v2_daemon, "set_grant_alias", refuse):
+    with mock.patch.object(local_auth_daemon, "set_grant_alias", refuse):
       daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
       methods = daemon.session_methods(cast(AuthorizedSession, session))
       result = methods["updateLocalAppAlias"](app_id="grant-key", alias="bad\u0000alias")
@@ -491,7 +421,7 @@ class TestLocalDial(OpenpilotTestCase):
   def test_unpair_revokes_the_sessions_own_grant(self):
     revoked: list[str] = []
     session = _CallingSession("grant-key")
-    with mock.patch.object(local_auth_v2_daemon, "revoke_local_app_v2",
+    with mock.patch.object(local_auth_daemon, "revoke_local_app",
                            lambda key_id: revoked.append(key_id) or True):
       daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
       methods = daemon.session_methods(cast(AuthorizedSession, session))
@@ -509,13 +439,13 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.persisted: list[dict] = []
     self.authority = LocalAuthority("cloud-device", "comma-device", self.device_key, persist=self.persisted.append)
     self.authority.arm()
-    patcher = mock.patch.object(local_auth_v2_daemon, "get_authority", lambda: self.authority)
+    patcher = mock.patch.object(local_auth_daemon, "get_authority", lambda: self.authority)
     patcher.start()
     self.addCleanup(patcher.stop)
 
   def test_a_valid_enrollment_is_staged_and_the_command_is_claimed_once(self):
     params = _FakeParams({ENROLL: _enrollment_json(self.authority, self.app_key)})
-    local_auth_v2_daemon.claim_cloud_commands(cast(Params, params))
+    local_auth_daemon.claim_cloud_commands(cast(Params, params))
 
     self.assertIsNotNone(self.authority.pending)
     self.assertEqual("Test phone", self.authority.pending.app_name)
@@ -526,7 +456,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
 
   def test_a_bad_payload_is_refused_and_still_cleared(self):
     params = _FakeParams({ENROLL: "not an enrollment"})
-    local_auth_v2_daemon.claim_cloud_commands(cast(Params, params))
+    local_auth_daemon.claim_cloud_commands(cast(Params, params))
 
     self.assertIsNone(self.authority.pending)
     self.assertNotIn(ENROLL, params)
@@ -540,14 +470,14 @@ class TestCloudCommandClaim(OpenpilotTestCase):
                              "comma_device_id": self.authority.comma_device_id, "key_id": committed.key_id,
                              "signature": encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))})
     params = _FakeParams({REVOKE: revocation})
-    local_auth_v2_daemon.claim_cloud_commands(cast(Params, params))
+    local_auth_daemon.claim_cloud_commands(cast(Params, params))
 
     self.assertEqual({}, self.authority.grants)
     self.assertNotIn(REVOKE, params)
 
   def test_no_command_means_no_work(self):
     params = _FakeParams()
-    local_auth_v2_daemon.claim_cloud_commands(cast(Params, params))
+    local_auth_daemon.claim_cloud_commands(cast(Params, params))
     self.assertIsNone(self.authority.pending)
 
   def test_the_command_round_trips_through_the_real_library(self):
@@ -561,13 +491,13 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     if isinstance(payload, bytes):
       payload = payload.decode()
 
-    local_auth_v2_daemon.claim_cloud_commands(params)
+    local_auth_daemon.claim_cloud_commands(params)
 
     self.assertIsNotNone(self.authority.pending)
     self.assertEqual(b"", params.get(ENROLL) or b"")
 
   def test_local_param_policy(self):
-    for key in ("SunnylinkLocalAppsV2", "SunnylinkLocalPairingCode", "SunnylinkLocalNewTrustKey", "_sec_anything"):
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalPairingQr", "SunnylinkLocalNewTrustKey", "_sec_anything"):
       self.assertTrue(is_local_param(key))
     self.assertFalse(is_local_param("SpeedLimitOffset"))
 
@@ -575,30 +505,30 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.assertTrue(cloud_may_write(ENROLL))
     self.assertTrue(cloud_may_write(REVOKE))
     self.assertTrue(cloud_may_write("SpeedLimitOffset"))
-    for key in ("SunnylinkLocalAppsV2", "SunnylinkLocalPairingRequestV2", "SunnylinkLocalRevokeV2", "_sec_x"):
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalPairingRequest", "SunnylinkLocalRevoke", "_sec_x"):
       self.assertFalse(cloud_may_write(key))
 
 
 class TestLocalDiscovery(OpenpilotTestCase):
   """Beacon handling: the status line the settings screen shows while pairing."""
 
-  def test_fresh_beacons_are_recorded_for_v2(self):
+  def test_fresh_beacons_are_recorded(self):
     discovery = LocalDiscovery(write_interval_s=0)
     discovery._handle(b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}', "10.0.0.7")
     discovery._handle(b'not a beacon', "10.0.0.8")
     self.assertEqual(["ws://10.0.0.7:8443"], discovery.fresh_endpoints())
     self.assertEqual([], discovery.fresh_endpoints(max_age_s=-1))
 
-  def test_a_v2_window_counts_as_a_live_pairing_window(self):
+  def test_an_open_window_counts_as_a_live_pairing_window(self):
     from openpilot.sunnypilot.sunnylink.athena.local_discovery import latest_discovered_app
-    v2_window = [False]
-    discovery = LocalDiscovery(write_interval_s=0, pairing_window_cb=lambda: v2_window[0])
+    window = [False]
+    discovery = LocalDiscovery(write_interval_s=0, pairing_window_cb=lambda: window[0])
     beacon = b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}'
 
     discovery._handle(beacon, "10.0.0.7")
     self.assertIsNone(latest_discovered_app(discovery.params))
 
-    v2_window[0] = True
+    window[0] = True
     discovery._handle(beacon, "10.0.0.7")
     discovered = latest_discovered_app(discovery.params)
     self.assertIsNotNone(discovered)

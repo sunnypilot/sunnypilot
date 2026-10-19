@@ -13,7 +13,7 @@ from typing import Any
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.api.base import BaseApi
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
+from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   VERSION,
   AuthorizationError,
   LocalAuthority,
@@ -21,16 +21,16 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
   text_field,
 )
 from openpilot.sunnypilot.sunnylink.athena.local_params import ENROLL as CLOUD_ENROLL_KEY, REVOKE as CLOUD_REVOKE_KEY
+from openpilot.sunnypilot.sunnylink.athena.local_state import (
+  LOCAL_APPS_KEY,
+  LOCAL_APPS_META_KEY,
+  PAIRING_QR_KEY,
+  PAIRING_REQUEST_KEY,
+  REVOKE_ALL_KEY,
+  REVOKE_KEY,
+)
 
-V2_REGISTRY_KEY = "SunnylinkLocalAppsV2"
-V2_META_KEY = "SunnylinkLocalAppsV2Meta"
 MAX_ALIAS_BYTES = 80
-
-PAIRING_REQUEST_V2_KEY = "SunnylinkLocalPairingRequestV2"
-PAIRING_QR_V2_KEY = "SunnylinkLocalPairingQrV2"
-
-REVOKE_V2_KEY = "SunnylinkLocalRevokeV2"
-REVOKE_ALL_V2_KEY = "SunnylinkLocalRevokeAllV2"
 
 _params = Params()
 _authority: LocalAuthority | None = None
@@ -40,11 +40,11 @@ _meta_lock = threading.Lock()
 
 def _persist_registry(registry: dict[str, Any]) -> None:
   """Durable write before callers publish the change in memory (fail-closed ordering)."""
-  _params.put(V2_REGISTRY_KEY, registry, block=True)
+  _params.put(LOCAL_APPS_KEY, registry, block=True)
 
 
 def _read_registry() -> dict[str, Any] | None:
-  raw = _params.get(V2_REGISTRY_KEY)
+  raw = _params.get(LOCAL_APPS_KEY)
   return raw if isinstance(raw, dict) else None
 
 
@@ -52,7 +52,7 @@ def _build_authority() -> LocalAuthority | None:
   try:
     algorithm, private_pem, _public_pem = BaseApi.get_key_pair()
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.identity_unavailable")
+    cloudlog.exception("sunnylinkd.local_auth.identity_unavailable")
     return None
   if algorithm is None or private_pem is None:
     return None
@@ -64,10 +64,10 @@ def _build_authority() -> LocalAuthority | None:
     pem = private_pem if isinstance(private_pem, bytes) else str(private_pem).encode()
     device_key = serialization.load_pem_private_key(pem, password=None)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.identity_load_failed")
+    cloudlog.exception("sunnylinkd.local_auth.identity_load_failed")
     return None
   if not isinstance(device_key, (ec.EllipticCurvePrivateKey, rsa.RSAPrivateKey)):
-    cloudlog.error("sunnylinkd.local_auth_v2.identity_unsupported")
+    cloudlog.error("sunnylinkd.local_auth.identity_unsupported")
     return None
 
   cloud_device_id = _params.get("SunnylinkDongleId")
@@ -96,7 +96,7 @@ def get_authority() -> LocalAuthority | None:
     try:
       _authority = _build_authority()
     except Exception:
-      cloudlog.exception("sunnylinkd.local_auth_v2.authority_unavailable")
+      cloudlog.exception("sunnylinkd.local_auth.authority_unavailable")
       return None
     return _authority
 
@@ -107,18 +107,18 @@ def reset_authority() -> None:
     _authority = None
 
 
-def arm_local_pairing_v2() -> str | None:
+def arm_local_pairing() -> str | None:
   authority = get_authority()
   if authority is None:
     return None
   try:
     return authority.arm()
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.arm_failed")
+    cloudlog.exception("sunnylinkd.local_auth.arm_failed")
     return None
 
 
-def cancel_local_pairing_v2() -> None:
+def cancel_local_pairing() -> None:
   authority = get_authority()
   if authority is not None:
     authority.cancel()
@@ -127,18 +127,18 @@ def cancel_local_pairing_v2() -> None:
 def _publish_qr(qr: str | None, params: Params) -> None:
   try:
     if qr:
-      params.put(PAIRING_QR_V2_KEY, qr, block=True)
+      params.put(PAIRING_QR_KEY, qr, block=True)
     else:
-      params.remove(PAIRING_QR_V2_KEY)
+      params.remove(PAIRING_QR_KEY)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.qr_publish_failed")
+    cloudlog.exception("sunnylinkd.local_auth.qr_publish_failed")
 
 
 def _clear_request(params: Params) -> None:
   try:
-    params.remove(PAIRING_REQUEST_V2_KEY)
+    params.remove(PAIRING_REQUEST_KEY)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.pairing_request_clear_failed")
+    cloudlog.exception("sunnylinkd.local_auth.pairing_request_clear_failed")
 
 
 def _armed_qr(authority: LocalAuthority) -> str | None:
@@ -153,9 +153,9 @@ def read_pairing_qr(params: Params | None = None) -> str | None:
   """The QR currently published for the UI, which is also the window's visible state."""
   params = params or _params
   try:
-    value = params.get(PAIRING_QR_V2_KEY)
+    value = params.get(PAIRING_QR_KEY)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.qr_read_failed")
+    cloudlog.exception("sunnylinkd.local_auth.qr_read_failed")
     return None
   if isinstance(value, bytes):
     value = value.decode("utf-8", errors="replace")
@@ -164,16 +164,16 @@ def read_pairing_qr(params: Params | None = None) -> str | None:
 
 def _read_meta() -> dict[str, Any]:
   try:
-    raw = _params.get(V2_META_KEY)
+    raw = _params.get(LOCAL_APPS_META_KEY)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.meta_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.meta_unreadable")
     return {}
   apps = raw.get("apps") if isinstance(raw, dict) else None
   return dict(apps) if isinstance(apps, dict) else {}
 
 
 def _write_meta(apps: dict[str, Any]) -> None:
-  _params.put(V2_META_KEY, {"v": VERSION, "apps": apps}, block=True)
+  _params.put(LOCAL_APPS_META_KEY, {"v": VERSION, "apps": apps}, block=True)
 
 
 def read_grant_meta() -> dict[str, dict[str, Any]]:
@@ -181,7 +181,7 @@ def read_grant_meta() -> dict[str, dict[str, Any]]:
   try:
     entries = _read_meta()
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.meta_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.meta_unreadable")
     return {}
   return {key_id: dict(entry) for key_id, entry in entries.items() if isinstance(entry, dict)}
 
@@ -210,7 +210,7 @@ def note_grant_seen(app_key_id: str) -> None:
       apps[app_key_id] = entry
       _write_meta(apps)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.meta_seen_failed")
+    cloudlog.exception("sunnylinkd.local_auth.meta_seen_failed")
 
 
 def clear_grant_meta(app_key_id: str) -> None:
@@ -220,7 +220,7 @@ def clear_grant_meta(app_key_id: str) -> None:
       if apps.pop(app_key_id, None) is not None:
         _write_meta(apps)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.meta_clear_failed")
+    cloudlog.exception("sunnylinkd.local_auth.meta_clear_failed")
 
 
 def clear_all_grant_meta() -> None:
@@ -229,7 +229,7 @@ def clear_all_grant_meta() -> None:
       if _read_meta():
         _write_meta({})
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.meta_clear_failed")
+    cloudlog.exception("sunnylinkd.local_auth.meta_clear_failed")
 
 
 def clear_pairing_params(params: Params | None = None) -> None:
@@ -242,24 +242,24 @@ def clear_pairing_params(params: Params | None = None) -> None:
 def clear_pairing_window(params: Params | None = None) -> None:
   """The daemon's own teardown: cancel the window this process holds and clear both params."""
   clear_pairing_params(params)
-  cancel_local_pairing_v2()
+  cancel_local_pairing()
 
 
 def service_pairing_window(params: Params | None = None) -> str | None:
-  """Arm, publish or close the v2 window from the UI's request flag. Never raises."""
+  """Arm, publish or close the pairing window from the UI's request flag. Never raises."""
   params = params or _params
   try:
     return _service_pairing_window(params)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.pairing_window_failed")
+    cloudlog.exception("sunnylinkd.local_auth.pairing_window_failed")
     return read_pairing_qr(params)
 
 
 def _service_pairing_window(params: Params) -> str | None:
   try:
-    requested = bool(params.get_bool(PAIRING_REQUEST_V2_KEY))
+    requested = bool(params.get_bool(PAIRING_REQUEST_KEY))
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.pairing_request_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.pairing_request_unreadable")
     requested = False
 
   authority = get_authority()
@@ -275,8 +275,8 @@ def _service_pairing_window(params: Params) -> str | None:
   if armed is not None:
     if published is None:
       # A live window the UI no longer shows is a window the user cancelled.
-      cancel_local_pairing_v2()
-      cloudlog.event("sunnylinkd.local_auth_v2.window_cancelled")
+      cancel_local_pairing()
+      cloudlog.event("sunnylinkd.local_auth.window_cancelled")
       return None
     if published != armed:
       # Only a stale QR is replaced: an armed, displayed window is never rotated, the app may
@@ -292,7 +292,7 @@ def _service_pairing_window(params: Params) -> str | None:
     # device said nothing). A cancel is different: it clears every session the user could have
     # scanned from.
     authority.expire()
-    cloudlog.event("sunnylinkd.local_auth_v2.window_expired")
+    cloudlog.event("sunnylinkd.local_auth.window_expired")
 
   authority.prune_sessions()
 
@@ -301,12 +301,12 @@ def _service_pairing_window(params: Params) -> str | None:
       _publish_qr(None, params)
     return None
 
-  qr = arm_local_pairing_v2()
+  qr = arm_local_pairing()
   _clear_request(params)
   _publish_qr(qr, params)
   if qr is None:
     return None
-  cloudlog.event("sunnylinkd.local_auth_v2.window_armed")
+  cloudlog.event("sunnylinkd.local_auth.window_armed")
   return qr
 
 
@@ -345,15 +345,15 @@ def claim_cloud_commands(params: Params | None = None) -> None:
     try:
       summary = apply(value)
     except AuthorizationError as e:
-      cloudlog.warning(f"sunnylinkd.local_auth_v2.{key}_rejected: {e}")
+      cloudlog.warning(f"sunnylinkd.local_auth.{key}_rejected: {e}")
     except Exception:
-      cloudlog.exception(f"sunnylinkd.local_auth_v2.{key}_failed")
+      cloudlog.exception(f"sunnylinkd.local_auth.{key}_failed")
     else:
       # An enrollment is staged here and only becomes durable when the phone's pinned TLS dial
       # proves its key, but the event still records that the command landed. Without it a
       # successful arrival is invisible and a rejected one looks like nothing happened at all.
       app_name = summary.get("app_name") if isinstance(summary, dict) else None
-      cloudlog.event(f"sunnylinkd.local_auth_v2.{key}_accepted", app_name=app_name)
+      cloudlog.event(f"sunnylinkd.local_auth.{key}_accepted", app_name=app_name)
 
 
 def _take(params: Params, key: str) -> str | None:
@@ -361,7 +361,7 @@ def _take(params: Params, key: str) -> str | None:
     value = params.get(key)
     params.remove(key)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.command_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.command_unreadable")
     return None
   if isinstance(value, bytes):
     value = value.decode("utf-8", errors="replace")
@@ -380,7 +380,7 @@ def confirm_enrollment_tls(grant_key_id: str) -> dict[str, Any]:
   return {"app_id": committed.app_id, "app_name": committed.app_name, "revision": committed.revision}
 
 
-def revoke_local_app_v2(app_key_id: str) -> bool:
+def revoke_local_app(app_key_id: str) -> bool:
   authority = get_authority()
   if authority is None:
     return False
@@ -390,7 +390,7 @@ def revoke_local_app_v2(app_key_id: str) -> bool:
   return revoked
 
 
-def revoke_all_v2() -> int:
+def revoke_all() -> int:
   authority = get_authority()
   if authority is None:
     return 0
@@ -400,23 +400,23 @@ def revoke_all_v2() -> int:
   return removed
 
 
-def request_revoke_v2(app_key_id: str, params: Params | None = None) -> None:
+def request_revoke(app_key_id: str, params: Params | None = None) -> None:
   """The UI asks the daemon to drop one phone; the daemon applies it through its live authority."""
   params = params or _params
   if not isinstance(app_key_id, str) or not app_key_id:
     return
   try:
-    params.put(REVOKE_V2_KEY, app_key_id, block=True)
+    params.put(REVOKE_KEY, app_key_id, block=True)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.revoke_request_failed")
+    cloudlog.exception("sunnylinkd.local_auth.revoke_request_failed")
 
 
-def request_revoke_all_v2(params: Params | None = None) -> None:
+def request_revoke_all(params: Params | None = None) -> None:
   params = params or _params
   try:
-    params.put_bool(REVOKE_ALL_V2_KEY, True, block=True)
+    params.put_bool(REVOKE_ALL_KEY, True, block=True)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.revoke_all_request_failed")
+    cloudlog.exception("sunnylinkd.local_auth.revoke_all_request_failed")
 
 
 def service_revoke_requests(params: Params | None = None) -> bool:
@@ -425,30 +425,30 @@ def service_revoke_requests(params: Params | None = None) -> bool:
 
   revoke_all_requested = False
   try:
-    revoke_all_requested = bool(params.get_bool(REVOKE_ALL_V2_KEY))
+    revoke_all_requested = bool(params.get_bool(REVOKE_ALL_KEY))
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.revoke_all_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.revoke_all_unreadable")
 
   if revoke_all_requested:
     removed = 0
     try:
-      removed = revoke_all_v2()
+      removed = revoke_all()
     except Exception:
-      cloudlog.exception("sunnylinkd.local_auth_v2.revoke_all_failed")
+      cloudlog.exception("sunnylinkd.local_auth.revoke_all_failed")
     finally:
       try:
-        params.remove(REVOKE_ALL_V2_KEY)
-        params.remove(REVOKE_V2_KEY)  # every grant is gone, so a single request has nothing left
+        params.remove(REVOKE_ALL_KEY)
+        params.remove(REVOKE_KEY)  # every grant is gone, so a single request has nothing left
       except Exception:
-        cloudlog.exception("sunnylinkd.local_auth_v2.revoke_all_clear_failed")
+        cloudlog.exception("sunnylinkd.local_auth.revoke_all_clear_failed")
     if removed:
-      cloudlog.event("sunnylinkd.local_auth_v2.grants_revoked", count=removed)
+      cloudlog.event("sunnylinkd.local_auth.grants_revoked", count=removed)
     return bool(removed)
 
   try:
-    requested = params.get(REVOKE_V2_KEY)
+    requested = params.get(REVOKE_KEY)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.revoke_request_unreadable")
+    cloudlog.exception("sunnylinkd.local_auth.revoke_request_unreadable")
     return False
   if isinstance(requested, bytes):
     requested = requested.decode("utf-8", errors="replace")
@@ -458,20 +458,20 @@ def service_revoke_requests(params: Params | None = None) -> bool:
 
   revoked = False
   try:
-    revoked = revoke_local_app_v2(app_key_id)
+    revoked = revoke_local_app(app_key_id)
   except Exception:
-    cloudlog.exception("sunnylinkd.local_auth_v2.revoke_failed")
+    cloudlog.exception("sunnylinkd.local_auth.revoke_failed")
   finally:
     try:
-      params.remove(REVOKE_V2_KEY)
+      params.remove(REVOKE_KEY)
     except Exception:
-      cloudlog.exception("sunnylinkd.local_auth_v2.revoke_clear_failed")
+      cloudlog.exception("sunnylinkd.local_auth.revoke_clear_failed")
   if revoked:
-    cloudlog.event("sunnylinkd.local_auth_v2.grant_revoked", app_id=app_key_id)
+    cloudlog.event("sunnylinkd.local_auth.grant_revoked", app_id=app_key_id)
   return revoked
 
 
-def v2_grants() -> list[dict[str, str]]:
+def grants() -> list[dict[str, str]]:
   authority = get_authority()
   if authority is None:
     return []

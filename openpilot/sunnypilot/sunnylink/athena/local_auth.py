@@ -1,7 +1,7 @@
-"""Sunnylink local v2 security core: keys, grants, the pending window and the pinned TLS dial.
+"""Sunnylink local security core: keys, grants, the pending window and the pinned TLS dial.
 
 Nothing here is registered with the RPC dispatcher: an enrollment may only be staged from a
-cloud-origin payload, never from a local RPC. See sunnylink-mobile/docs/LOCAL_AUTH_V2.md.
+cloud-origin payload, never from a local RPC. See sunnylink-mobile/docs/LOCAL_AUTH.md.
 """
 from __future__ import annotations
 
@@ -172,7 +172,7 @@ def text_field(value: Any, maximum: int = 128) -> str:
 
 def statement(purpose: str, *fields: str) -> bytes:
   """Length-bounded UTF-8 fields; LF is forbidden, avoiding JSON canonicalization."""
-  return ("sunnylink-local-v2\n" + purpose + "\n" + "\n".join(text_field(f, 1024) for f in fields) + "\n").encode("utf-8")
+  return ("sunnylink-local\n" + purpose + "\n" + "\n".join(text_field(f, 1024) for f in fields) + "\n").encode("utf-8")
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -262,7 +262,7 @@ class LocalAuthority:
           if len(decoded) == len(entries) and len({g.key_id for g in decoded}) == len(decoded):
             self.grants = {g.key_id: g for g in decoded}
         except AuthorizationError:
-          pass  # Corrupt/legacy storage is not authorization.
+          pass  # Corrupt storage is not authorization.
 
   def arm(self) -> str:
     """Open one window and publish the code for it (see the frame note at the top of the module:
@@ -504,7 +504,7 @@ def connect_pinned(endpoint: str, expected_key_id: str, timeout_s: float = 10) -
       raise AuthorizationError("missing peer certificate")
     verify_tls_peer(certificate, expected_key_id)
     return create_connection(endpoint, socket=tls, enable_multithread=True, timeout=timeout_s,
-                             subprotocols=["sunnylink-local-v2"])
+                             subprotocols=["sunnylink-local"])
   except Exception:
     (tls or connection).close()
     raise

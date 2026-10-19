@@ -1,25 +1,20 @@
 """One row model for the "Local Connections" screen, shared by both UI panels.
 
-Cloud-enrolled v2 phones and the apps left in the retired PIN registry render through this, so a
-row's text and its action cannot drift apart between the two layouts. It reads no Params and no
-identity key: the panels pass in what they read. Aliases and last-seen stamps are display
-metadata only — the authority decides every connection from the grant itself.
+Every row is an enrolled phone, so a row's text and its action cannot drift apart between the two
+layouts. It reads no Params and no identity key: the panels pass in what they read. Aliases and
+last-seen stamps are display metadata only — the authority decides every connection from the grant
+itself.
 """
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
 
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import MAX_GRANTS
-from openpilot.sunnypilot.sunnylink.athena.local_pairing import LocalApp, local_app_display_name
+from openpilot.sunnypilot.sunnylink.athena.local_auth import MAX_GRANTS
 
-V2_KIND = "v2"
-LEGACY_KIND = "legacy"
-
-# Every grant the authority accepts, plus the legacy slots: a phone the screen hides could never
-# be revoked from the device.
-MAX_LEGACY_APP_ROWS = 4
-MAX_LOCAL_APP_ROWS = MAX_GRANTS + MAX_LEGACY_APP_ROWS
+# Every grant the authority accepts: a phone the screen hides could never be revoked from the
+# device.
+MAX_LOCAL_APP_ROWS = MAX_GRANTS
 
 DEFAULT_APP_NAME = "sunnylink mobile"
 
@@ -28,13 +23,10 @@ NEVER_CONNECTED = "not connected yet"
 
 @dataclass(frozen=True)
 class LocalAppRow:
-  """One phone/app row in the local-connections list."""
-  kind: str
+  """One enrolled phone in the local-connections list."""
   app_id: str
   title: str
   subtitle: str
-  #: A legacy row that v2 has retired: it can no longer connect and needs re-pairing.
-  re_pair_required: bool = False
 
 
 def short_key(app_id: str, length: int = 10) -> str:
@@ -64,15 +56,11 @@ def last_seen_text(entry: Mapping[str, object] | None, now: float) -> str:
   return format_age(age)
 
 
-def build_local_app_rows(legacy: list[LocalApp], grants: list[dict[str, str]],
+def build_local_app_rows(grants: list[dict[str, str]],
                          meta: Mapping[str, Mapping[str, object]] | None = None,
                          now: float = 0.0,
                          max_rows: int = MAX_LOCAL_APP_ROWS) -> list[LocalAppRow]:
-  """Enrolled phones first (the trust that works), then retired legacy apps.
-
-  Legacy rows are marked `re_pair_required` as soon as any v2 grant exists: from that point the
-  daemon refuses every legacy path, so such a row is something to remove, not to use.
-  """
+  """One row per enrolled phone, in the order the authority holds them."""
   entries = meta or {}
   rows = []
   for grant in grants:
@@ -90,10 +78,6 @@ def build_local_app_rows(legacy: list[LocalApp], grants: list[dict[str, str]],
       title = app_name
     else:
       title = DEFAULT_APP_NAME
-    rows.append(LocalAppRow(V2_KIND, app_id, title,
+    rows.append(LocalAppRow(app_id, title,
                             f"secure · {short_key(app_id)} · {last_seen_text(entry, now)}"))
-  v2_active = len(rows) > 0
-  rows += [LocalAppRow(LEGACY_KIND, app.app_id, local_app_display_name(app), app.endpoint,
-                       re_pair_required=v2_active)
-           for app in legacy]
   return rows[:max_rows]

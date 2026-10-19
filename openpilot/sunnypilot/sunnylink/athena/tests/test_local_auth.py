@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.x509.oid import NameOID
 
 from openpilot.common.test import OpenpilotTestCase
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
+from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   PAIRING_DELIVERY_GRACE_S, PAIRING_TTL_S, QR_SESSION_BYTES, AuthorizationError, Grant, LocalAuthority, Origin,
   connect_pinned, decode64, decode_qr, encode64, key_id, parse_object, qr_frame, statement, verify_tls_peer,
 )
@@ -33,7 +33,7 @@ ABORTED_CONNECTION_ERRORS = (BrokenPipeError, ConnectionResetError, ConnectionAb
                              ssl.SSLEOFError, ssl.SSLError)
 
 
-class TestLocalAuthV2(OpenpilotTestCase):
+class TestLocalAuth(OpenpilotTestCase):
   def setup_method(self):
     self.now = 10.0
     self.device_key = ec.generate_private_key(ec.SECP256R1())
@@ -217,12 +217,12 @@ class TestLocalAuthV2(OpenpilotTestCase):
     with self.assertRaises(AuthorizationError):
       self.authority.session(grant, grant.key_id)
 
-  def test_grants_reload_but_legacy_corrupt_and_duplicate_registry_fail_closed(self):
+  def test_grants_reload_but_corrupt_and_duplicate_registry_fail_closed(self):
     grant = self.committed()
     restarted = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, self.writes[-1])
     self.assertEqual(restarted.grants, {grant.key_id: grant})
     corrupt = grant.to_dict() | {"key_id": "wrong"}
-    for storage in ([{"app_id": "legacy", "endpoint": "ws://127.0.0.1"}], {"v": 1, "grants": [grant.to_dict()]},
+    for storage in ([{"app_id": "unknown", "endpoint": "ws://127.0.0.1"}], {"v": 1, "grants": [grant.to_dict()]},
                     {"v": 2, "grants": [corrupt]}, {"v": 2, "grants": [grant.to_dict(), grant.to_dict()]}):
       self.assertEqual(LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, storage).grants, {})
 
@@ -273,7 +273,7 @@ class TestLocalAuthV2(OpenpilotTestCase):
       Grant.from_dict({})
 
   def test_pinned_connector_rejects_downgrade_and_invalid_endpoints_before_dial(self):
-    with mock.patch("openpilot.sunnypilot.sunnylink.athena.local_auth_v2.socket.create_connection") as dial:
+    with mock.patch("openpilot.sunnypilot.sunnylink.athena.local_auth.socket.create_connection") as dial:
       for endpoint in ("ws://192.168.1.2:8443", "wss://host.example:8443", "wss://user:pass@192.168.1.2:8443",
                        "wss://0.0.0.0:8443", "wss://224.0.0.1:8443", "wss://192.168.1.2:8443/path",
                        "wss://192.168.1.2:8443?token=secret", "wss://192.168.1.2:99999"):
@@ -282,7 +282,7 @@ class TestLocalAuthV2(OpenpilotTestCase):
       dial.assert_not_called()
 
   def test_wrong_tls_pin_closes_socket_before_websocket_upgrade(self):
-    base = "openpilot.sunnypilot.sunnylink.athena.local_auth_v2."
+    base = "openpilot.sunnypilot.sunnylink.athena.local_auth."
     with mock.patch(base + "socket.create_connection"), mock.patch(base + "ssl.SSLContext") as context, \
          mock.patch(base + "verify_tls_peer", side_effect=AuthorizationError("wrong key")), mock.patch(base + "create_connection") as upgrade:
       transport = context.return_value.wrap_socket.return_value
@@ -336,7 +336,7 @@ class TestLocalAuthV2(OpenpilotTestCase):
                 accept = base64.b64encode(hashlib.sha1((headers["Sec-WebSocket-Key"] +
                                                        "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
                 tls.sendall(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
-                             f"Sec-WebSocket-Accept: {accept}\r\nSec-WebSocket-Protocol: sunnylink-local-v2\r\n\r\n").encode())
+                             f"Sec-WebSocket-Accept: {accept}\r\nSec-WebSocket-Protocol: sunnylink-local\r\n\r\n").encode())
                 tls.recv(4096)  # Client close frame.
             except ABORTED_CONNECTION_ERRORS as e:
               # Expected only when the client is the one that refuses: an error here in the

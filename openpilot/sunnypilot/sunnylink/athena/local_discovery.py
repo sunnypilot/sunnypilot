@@ -3,6 +3,13 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
+
+Passive discovery of the sunnylink app on this network.
+
+The app broadcasts a beacon every few seconds; this listener records every endpoint it hears and
+keeps the freshest one visible to the settings UI while a pairing window is open. A beacon carries
+no key material and no capability — it is a locator, and identity is decided by the pinned TLS dial
+that follows (`local_auth.py`), so a forged or replayed beacon changes nothing.
 """
 from __future__ import annotations
 
@@ -10,23 +17,22 @@ import json
 import socket
 import threading
 import time
-from collections.abc import Callable
 from dataclasses import dataclass
+from collections.abc import Callable
 
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 
-from openpilot.sunnypilot.sunnylink.athena.local_pairing import (
+from openpilot.sunnypilot.sunnylink.athena.local_state import (
   BEACON_PREFIX,
   DISCOVERED_APP_KEY,
+  PAIRING_REQUEST_KEY,
   SUNNYLINK_LOCAL_UDP_PORT,
   format_endpoint,
-  get_local_apps,
-  pairing_requested,
-  update_local_app_endpoint,
 )
 
 LOCAL_BEACON_FRESH_S = 30
+
 
 @dataclass
 class AppBeacon:
@@ -70,36 +76,32 @@ def parse_beacon(raw: str | bytes, source_ip: str = "") -> AppBeacon | None:
 
 
 class LocalDiscovery(threading.Thread):
-  """
-  Passive UDP listener
+  """Passive UDP listener.
 
-  - While a pairing window is armed (legacy PIN or the v2 QR window): track the
-    freshest app beacon so the daemon can offer pairing to a NEW app, and mirror
-    it into a status param for the settings UI.
-  - Independently of any window: a beacon from an app ALREADY in the paired
-    registry refreshes its cached endpoint — IPs are not identity, the app can
-    move between networks.
+  - Every beacon heard recently is kept as an endpoint a pinned dial may target, keyed by address
+    because the dial's job is exactly "can I reach the phone at this address?".
+  - While a pairing window is open, the freshest one is mirrored into a status param so the
+    settings UI can show that the phone is there.
+
+  IPs are not identity: the app moves between networks, so a new address is simply a new endpoint,
+  and the key it proves over TLS is what decides whether the session is allowed.
   """
 
   def __init__(self, params: Params | None = None, port: int = SUNNYLINK_LOCAL_UDP_PORT,
                sock: socket.socket | None = None, write_interval_s: float = 5.0,
-               paired_refresh_cb: Callable[[AppBeacon], None] | None = None,
                pairing_window_cb: Callable[[], bool] | None = None):
     super().__init__(name="local_discovery_listener", daemon=True)
     self.params = params or Params()
     self.port = port
     self._sock = sock
-    self.paired_refresh_cb = paired_refresh_cb
-    # A v2 window is not the legacy request flag, so the status line needs to see both.
+    # A window the daemon holds is not visible as a param read the UI can do, so the status line
+    # needs to see both.
     self.pairing_window_cb = pairing_window_cb
     self._latest_endpoint: str | None = None
     self._latest_app_id: str | None = None
     self._last_seen_monotonic: float = 0.0
-    self._latest_paired_endpoint: str | None = None
-    self._latest_paired_app_id: str | None = None
-    self._last_paired_seen_monotonic: float = 0.0
-    # Every beacon heard recently, keyed by endpoint: a v2 dial finds its phone by TLS key, not
-    # by app_id, so it cannot rely on the pairing-window trackers above.
+    # Every beacon heard recently, keyed by endpoint: a dial finds its phone by TLS key, not by
+    # app_id, so it cannot rely on the pairing-window trackers above.
     self._recent_beacons: dict[str, tuple[str, float]] = {}
     self._recent_lock = threading.Lock()
     self._lock = threading.Lock()
@@ -135,30 +137,8 @@ class LocalDiscovery(threading.Thread):
         return None
       return time.monotonic() - self._last_seen_monotonic
 
-  def latest_paired_endpoint(self) -> str | None:
-    """The freshest beacon endpoint announced by an ALREADY-PAIRED."""
-    with self._lock:
-      return self._latest_paired_endpoint
-
-  def latest_paired_app_id(self) -> str | None:
-    """The app_id of the freshest paired-app beacon (None until one is heard)."""
-    with self._lock:
-      return self._latest_paired_app_id
-
-  def latest_paired_seen_ago(self) -> float | None:
-    """Seconds since the freshest paired-app beacon was heard (None when none)."""
-    with self._lock:
-      if self._last_paired_seen_monotonic == 0.0:
-        return None
-      return time.monotonic() - self._last_paired_seen_monotonic
-
   def fresh_endpoints(self, max_age_s: float = LOCAL_BEACON_FRESH_S) -> list[str]:
-    """Endpoints of every beacon heard within max_age_s, freshest first.
-
-    Unlike the pairing-window/paired trackers, this is not gated on legacy registry
-    state: the v2 dial path needs to reach apps whose identity is a TLS key, not an
-    app_id it already knows.
-    """
+    """Endpoints of every beacon heard within max_age_s, freshest first."""
     now = time.monotonic()
     with self._recent_lock:
       self._recent_beacons = {endpoint: entry for endpoint, entry in self._recent_beacons.items()
@@ -171,8 +151,8 @@ class LocalDiscovery(threading.Thread):
       self._recent_beacons[beacon.endpoint] = (beacon.app_id, time.monotonic())
 
   def _pairing_window_open(self) -> bool:
-    """True while ANY pairing window is open: the legacy request flag, or a published v2 QR."""
-    if pairing_requested(self.params):
+    """True while the settings UI asked for a window, or the daemon is displaying one."""
+    if self.params.get_bool(PAIRING_REQUEST_KEY):
       return True
     callback = self.pairing_window_cb
     if callback is None:
@@ -201,24 +181,6 @@ class LocalDiscovery(threading.Thread):
         self._latest_app_id = None
         self._last_seen_monotonic = 0.0
       self._clear_discovered_param()
-    self._maybe_refresh_paired_app(beacon)
-
-  def _maybe_refresh_paired_app(self, beacon: AppBeacon) -> None:
-    """Refresh a paired app's registry endpoint from its beacon."""
-
-    if not any(app.app_id == beacon.app_id for app in get_local_apps(self.params)):
-      return
-    with self._lock:
-      self._latest_paired_endpoint = beacon.endpoint
-      self._latest_paired_app_id = beacon.app_id
-      self._last_paired_seen_monotonic = time.monotonic()
-    if update_local_app_endpoint(beacon.app_id, beacon.endpoint, self.params):
-      cloudlog.debug(f"local_discovery.paired_refresh {beacon.app_id} -> {beacon.endpoint}")
-    if self.paired_refresh_cb is not None:
-      try:
-        self.paired_refresh_cb(beacon)
-      except Exception:
-        cloudlog.exception("local_discovery.paired_refresh_cb.exception")
 
   def _clear_discovered_param(self) -> None:
     if self._discovered_cleared:

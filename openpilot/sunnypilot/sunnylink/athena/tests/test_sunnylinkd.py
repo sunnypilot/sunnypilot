@@ -75,24 +75,23 @@ class TestCloudRpcSurface(OpenpilotTestCase):
   def test_saveParams_cannot_modify_local_trust(self):
     self.daemon.saveParams({
       "SunnylinkLocalApps": "attacker registry",
-      "SunnylinkLocalAppsV2": "attacker registry",
-      "SunnylinkLocalPairingCode": "attacker code",
+      "SunnylinkLocalAppsMeta": "attacker metadata",
       "SunnylinkLocalPairingRequest": "1",
-      "SunnylinkLocalPairingQrV2": "attacker qr",
-      "SunnylinkLocalRevokeV2": "attacker revoke request",
+      "SunnylinkLocalPairingQr": "attacker qr",
+      "SunnylinkLocalRevoke": "attacker revoke request",
       "SunnylinkLocalFutureKey": "attacker key",
       "_sec_SunnylinkLocalFuture": "attacker secret",
     })
     self.assertEqual(self.saved_params, [])
 
   def test_saveParams_delivers_only_the_two_local_commands(self):
-    self.daemon.saveParams({ENROLL: "ZW5yb2xs", REVOKE: "cmV2b2tl", "SunnylinkLocalAppsV2": "attacker"})
+    self.daemon.saveParams({ENROLL: "ZW5yb2xs", REVOKE: "cmV2b2tl", "SunnylinkLocalApps": "attacker"})
     self.assertEqual(self.saved_params, [(ENROLL, "ZW5yb2xs", False), (REVOKE, "cmV2b2tl", False)])
 
   def test_getParams_never_exposes_local_parameters(self):
-    response = self.daemon.getParams(["SunnylinkLocalApps", "SunnylinkLocalAppsV2", "SunnylinkLocalPairingCode",
-                                      "SunnylinkLocalPairingRequest", "SunnylinkLocalPairingQrV2",
-                                      "SunnylinkLocalRevokeV2", ENROLL, REVOKE])
+    response = self.daemon.getParams(["SunnylinkLocalApps", "SunnylinkLocalAppsMeta",
+                                      "SunnylinkLocalPairingRequest", "SunnylinkLocalPairingQr",
+                                      "SunnylinkLocalRevoke", ENROLL, REVOKE])
     self.assertEqual(response, {"params": "[]"})
 
   def test_getParams_serves_ordinary_settings(self):
@@ -101,7 +100,7 @@ class TestCloudRpcSurface(OpenpilotTestCase):
 
   def test_getParamsAllKeys_excludes_local_params(self):
     keys = self.daemon.getParamsAllKeys()
-    for key in ("SunnylinkLocalApps", "SunnylinkLocalAppsV2", "SunnylinkLocalPairingCode",
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalAppsMeta", "SunnylinkLocalPairingQr",
                 "SunnylinkLocalEnabled", ENROLL, REVOKE):
       self.assertNotIn(key, keys)
     self.assertTrue("SpeedLimitValueOffset" in keys)
@@ -139,5 +138,5 @@ class TestCloudCommandTransport(OpenpilotTestCase):
 
   def test_the_cloud_may_not_write_any_other_local_param(self):
     with mock.patch.object(sunnylinkd, "save_param_from_base64_encoded_string") as save:
-      self.daemon.saveParams({"SunnylinkLocalAppsV2": base64.b64encode(b"{}").decode("ascii")})
+      self.daemon.saveParams({"SunnylinkLocalApps": base64.b64encode(b"{}").decode("ascii")})
     save.assert_not_called()

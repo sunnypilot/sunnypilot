@@ -8,22 +8,20 @@ See the LICENSE.md file in the root directory for more details.
 from __future__ import annotations
 
 import json
-import ssl
 import threading
 import time
 
 from collections.abc import Callable
 from urllib.parse import urlsplit
 
-from websocket import WebSocket, WebSocketTimeoutException, create_connection
+from websocket import WebSocket, WebSocketTimeoutException
 
 from openpilot.system.athena.rpc import dispatcher
 from openpilot.system.athena import rpc as rpc_module
 from openpilot.common.realtime import set_core_affinity
 from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
-from openpilot.sunnypilot.sunnylink.athena import local_auth_v2_daemon
-from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
+from openpilot.sunnypilot.sunnylink.athena import local_auth_daemon
+from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   AUTHENTICATE_PURPOSE,
   LOCAL_METHODS,
   VERSION,
@@ -33,36 +31,20 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth_v2 import (
   connect_pinned,
   parse_object,
 )
-from openpilot.sunnypilot.sunnylink.athena.local_discovery import LOCAL_BEACON_FRESH_S, LocalDiscovery
+from openpilot.sunnypilot.sunnylink.athena.local_discovery import LocalDiscovery
 from openpilot.sunnypilot.sunnylink.athena.local_params import is_local_param
-from openpilot.sunnypilot.sunnylink.athena.local_pairing import (
-  PAIRING_WINDOW_S,
-  LocalApp,
-  PairingCodeRotator,
-  add_local_app,
-  clear_pairing_request,
-  get_local_apps,
-  is_locally_paired,
-  local_identity,
-  pairing_requested,
-  remove_local_app,
-  set_local_app_alias,
-  verify_pairing_code,
-)
 from openpilot.sunnypilot.sunnylink.athena.sunnylinkd import SUNNYLINK_RECONNECT_TIMEOUT_S, Sunnylinkd, log_connection_error
 
 LOCAL_ENABLED_PARAM = "SunnylinkLocalEnabled"
 SESSION_READ_TIMEOUT_S = 5
 TICK_INTERVAL_S = 1.0
-ENDPOINT_BACKOFF_S = 300
-# A v2 endpoint is THE phone, and the app is a foreground-only server the user opens and closes, so
-# a dial that failed because the app was closed must not outlive it: the first failure costs a
-# single tick and doubles from there, and the ramp is capped well below the legacy five minutes
-# because every step of it is a few seconds of the user's device sitting on the cloud instead of
-# the LAN. A phone whose beacons have lapsed clears its own record entirely (see
-# `LocalSunnylinkd.forget_absent_endpoints`).
-V2_ENDPOINT_BACKOFF_S = float(TICK_INTERVAL_S)
-V2_ENDPOINT_BACKOFF_MAX_S = 60.0
+# A local endpoint is THE phone, and the app is a foreground-only server the user opens and closes,
+# so a dial that failed because the app was closed must not outlive it: the first failure costs a
+# single tick and doubles from there. The ramp is capped at a minute, because every step of it is a
+# few seconds of the user's device sitting on the cloud instead of the LAN. A
+# phone whose beacons have lapsed clears its own record entirely (see `forget_absent_endpoints`).
+ENDPOINT_BACKOFF_S = float(TICK_INTERVAL_S)
+ENDPOINT_BACKOFF_MAX_S = 60.0
 # How long a phone may stay silent before its backoff record is dropped. Deliberately shorter than
 # the beacon freshness window: a Wi-Fi roam or a switch to another network (home -> the car's
 # hotspot) silences the app for a few beacon intervals while it reassociates, and the ramp it had
@@ -70,42 +52,33 @@ V2_ENDPOINT_BACKOFF_MAX_S = 60.0
 # the endpoint stays dialable, so the next beacon gets an immediate attempt rather than a penalty.
 BACKOFF_FORGET_S = 12.0
 
-TARGET_V2 = "v2"
-TARGET_PAIRING = "pairing"
-TARGET_LEGACY = "legacy"
-
 
 class LocalSunnylinkd(Sunnylinkd):
   """The LAN half of sunnylink, in its own process.
 
-  It inherits the settings RPCs and adds what is local: discovery, pinned-TLS v2 sessions with the
-  cloud-enrolled phones, the legacy PIN path for apps that predate v2, and the UI's trust requests.
-  It never dials the cloud, so the cloud link keeps running while a phone is connected here.
+  It inherits the settings RPCs and adds what is local: discovery, pinned-TLS sessions with the
+  cloud-enrolled phones, and the UI's trust requests. It never dials the cloud, so the cloud link
+  keeps running while a phone is connected here.
   """
-
-  RPC_METHODS = Sunnylinkd.RPC_METHODS + ("pairLocalApp", "updateLocalAppAlias", "unpairLocalApp")
 
   def __init__(self, params=None, discovery: LocalDiscovery | None = None):
     super().__init__(params)
     self.discovery = discovery if discovery is not None else LocalDiscovery(pairing_window_cb=self.pairing_window_open)
-    self.code_rotator = PairingCodeRotator()
-    self.active_endpoint: str | None = None
-    self.active_ws: WebSocket | None = None
     self.backoffs: dict[str, float] = {}
-    # Consecutive failed v2 dials per endpoint, which is what turns the backoff into a ramp.
-    self.v2_failures: dict[str, int] = {}
+    # Consecutive failed dials per endpoint, which is what turns the backoff into a ramp.
+    self.failures: dict[str, int] = {}
     self.stop_event = threading.Event()
 
   # --- local trust --------------------------------------------------------
 
-  def v2_auth_active(self) -> bool:
-    """True once any cloud-enrolled grant exists: the legacy PIN path is then never offered."""
-    return bool(local_auth_v2_daemon.v2_grants())
+  def enrolled(self) -> bool:
+    """True once any phone is enrolled, or an enrollment is waiting to be confirmed."""
+    return bool(local_auth_daemon.grants()) or local_auth_daemon.pending_enrollment() is not None
 
   def pairing_window_open(self) -> bool:
-    """A live v2 window counts as a pairing window for the settings screen's status line."""
+    """A live pairing window counts as a beacon-display window for the settings screen."""
     try:
-      return local_auth_v2_daemon.read_pairing_qr() is not None
+      return local_auth_daemon.read_pairing_qr() is not None
     except Exception:
       return False
 
@@ -117,31 +90,6 @@ class LocalSunnylinkd(Sunnylinkd):
       cloudlog.warning("sunnylinkd.local.saveParams.refused_local_params")
     if allowed:
       super().saveParams(allowed, compression)
-
-  def pairLocalApp(self, code: str, app_id: str = "", app_name: str = "", alias: str = "") -> dict[str, bool | str]:
-    """Complete PIN pairing with the app on the CURRENT local connection."""
-    if self.v2_auth_active():
-      cloudlog.warning("sunnylinkd.pairLocalApp.refused_v2_active")
-      return {"success": False, "error": "legacy pairing disabled"}
-    if self.active_endpoint is None:
-      return {"success": False, "error": "not connected to a local app"}
-    if not verify_pairing_code(code):
-      cloudlog.warning("sunnylinkd.pairLocalApp.invalid_code")
-      return {"success": False, "error": "invalid code"}
-    add_local_app(LocalApp(app_id=app_id or f"app@{self.active_endpoint}",
-                           endpoint=self.active_endpoint, app_name=app_name, alias=alias))
-    clear_pairing_request()
-    return {"success": True}
-
-  def updateLocalAppAlias(self, app_id: str, alias: str) -> dict[str, bool | str]:
-    if self.active_endpoint is None:
-      return {"success": False, "error": "not connected to a local app"}
-    return {"success": True, "updated": set_local_app_alias(app_id, alias)}
-
-  def unpairLocalApp(self, app_id: str) -> dict[str, bool | str]:
-    if self.active_endpoint is None:
-      return {"success": False, "error": "not connected to a local app"}
-    return {"success": True, "removed": remove_local_app(app_id)}
 
   # --- loop ---------------------------------------------------------------
 
@@ -156,65 +104,52 @@ class LocalSunnylinkd(Sunnylinkd):
 
   def run(self, exit_event: threading.Event | None = None) -> None:
     self.discovery.start()
-    self.code_rotator.start()
     threading.Thread(target=self._tick_loop, name="localsunnylinkd_tick", daemon=True).start()
 
     try:
       while (exit_event is None or not exit_event.is_set()) and self.serviceable():
-        endpoint, kind = self.pick_target()
+        endpoint = self.pick_target()
         if endpoint is None:
           time.sleep(TICK_INTERVAL_S)
-        elif kind == TARGET_V2:
-          self.serve_v2(endpoint, exit_event)
         else:
-          self.serve_legacy(endpoint, pairing=kind == TARGET_PAIRING, exit_event=exit_event)
+          self.serve(endpoint, exit_event)
     finally:
       self.stop_event.set()
       self.discovery.stop()
-      self.code_rotator.stop_event.set()
-      local_auth_v2_daemon.clear_pairing_window()
+      local_auth_daemon.clear_pairing_window()
 
   def _tick_loop(self) -> None:
     """The UI's trust requests and the cloud's local commands, ~once a second, in their own
     thread: the serving loop above blocks for as long as a session lasts."""
     while not self.stop_event.wait(TICK_INTERVAL_S) and self.serviceable():
       try:
-        local_auth_v2_daemon.service_pairing_window()
-        local_auth_v2_daemon.service_revoke_requests()
-        local_auth_v2_daemon.claim_cloud_commands()
+        local_auth_daemon.service_pairing_window()
+        local_auth_daemon.service_revoke_requests()
+        local_auth_daemon.claim_cloud_commands()
       except Exception:
         cloudlog.exception("sunnylinkd.local.tick_failed")
 
-  def pick_target(self) -> tuple[str | None, str]:
-    """Where to dial next: an enrolled phone over pinned TLS, a pairing window, or a legacy app."""
+  def pick_target(self) -> str | None:
+    """Where to dial next: the freshest phone beacon that is not backing off.
+
+    Dialing finds the phone by its pinned TLS key, so any fresh endpoint is worth one attempt: the
+    key is the authorization, and a peer without it cannot complete the handshake.
+    """
+    if not self.enrolled():
+      return None
+
     now = time.monotonic()
-
-    if self.v2_auth_active() or local_auth_v2_daemon.pending_enrollment() is not None:
-      pinned_targets = [pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints())
-                        if pinned is not None]
-      # Backoff bookkeeping reads a shorter window than dialing does: a phone that went quiet for a
-      # few beacon intervals (a roam, a network switch) keeps its endpoint but loses its ramp.
-      recent = {pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints(max_age_s=BACKOFF_FORGET_S))
-                if pinned is not None}
-      self.forget_absent_endpoints(recent)
-      for pinned in pinned_targets:
-        if self.backoffs.get(pinned, 0.0) <= now:
-          return pinned, TARGET_V2
-      return None, TARGET_V2
-
-    if pairing_requested():
-      endpoint = self.discovery.latest_endpoint()
-      seen = self.discovery.last_seen_ago()
-      if endpoint is not None and seen is not None and seen <= LOCAL_BEACON_FRESH_S \
-         and self.discovery.latest_app_id() not in {app.app_id for app in get_local_apps()} \
-         and self.backoffs.get(endpoint, 0.0) <= now:
-        return endpoint, TARGET_PAIRING
-      return None, TARGET_PAIRING
-
-    for app in reversed(get_local_apps()):
-      if self.backoffs.get(app.endpoint, 0.0) <= now:
-        return app.endpoint, TARGET_LEGACY
-    return None, TARGET_LEGACY
+    pinned_targets = [pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints())
+                      if pinned is not None]
+    # Backoff bookkeeping reads a shorter window than dialing does: a phone that went quiet for a
+    # few beacon intervals (a roam, a network switch) keeps its endpoint but loses its ramp.
+    recent = {pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints(max_age_s=BACKOFF_FORGET_S))
+              if pinned is not None}
+    self.forget_absent_endpoints(recent)
+    for pinned in pinned_targets:
+      if self.backoffs.get(pinned, 0.0) <= now:
+        return pinned
+    return None
 
   def forget_absent_endpoints(self, present: set[str]) -> None:
     """Drop the backoff of a phone that stopped announcing.
@@ -227,100 +162,30 @@ class LocalSunnylinkd(Sunnylinkd):
     """
     for endpoint in [key for key in self.backoffs if key.startswith("wss://") and key not in present]:
       self.backoffs.pop(endpoint, None)
-      self.v2_failures.pop(endpoint, None)
+      self.failures.pop(endpoint, None)
 
-  def serve_v2(self, endpoint: str, exit_event: threading.Event | None) -> None:
+  def serve(self, endpoint: str, exit_event: threading.Event | None) -> None:
     try:
-      self.dial_v2(endpoint, exit_event)
+      self.dial(endpoint, exit_event)
     except Exception as e:
-      failures = self.v2_failures.get(endpoint, 0) + 1
-      self.v2_failures[endpoint] = failures
-      self.backoffs[endpoint] = time.monotonic() + min(V2_ENDPOINT_BACKOFF_S * (2 ** (failures - 1)),
-                                                                V2_ENDPOINT_BACKOFF_MAX_S)
+      failures = self.failures.get(endpoint, 0) + 1
+      self.failures[endpoint] = failures
+      self.backoffs[endpoint] = time.monotonic() + min(ENDPOINT_BACKOFF_S * (2 ** (failures - 1)),
+                                                       ENDPOINT_BACKOFF_MAX_S)
       self.params.remove("LastSunnylinkPingTime")
       log_connection_error(e)
       return
 
     self.backoffs.pop(endpoint, None)
-    self.v2_failures.pop(endpoint, None)
+    self.failures.pop(endpoint, None)
     # A finished session is not an error, but never redial in a tight loop.
     time.sleep(TICK_INTERVAL_S)
 
-  def serve_legacy(self, endpoint: str, pairing: bool, exit_event: threading.Event | None) -> None:
-    try:
-      ws = create_connection(
-        endpoint,
-        header=self.dial_header(),
-        enable_multithread=True,
-        sslopt={"cert_reqs": ssl.CERT_NONE if "localhost" in endpoint else ssl.CERT_REQUIRED},
-        timeout=SUNNYLINK_RECONNECT_TIMEOUT_S,
-      )
-    except Exception as e:
-      self.backoffs[endpoint] = time.monotonic() + ENDPOINT_BACKOFF_S
-      self.params.remove("LastSunnylinkPingTime")
-      log_connection_error(e)
-      return
-
-    cloudlog.event("sunnylinkd.local.connected", endpoint=endpoint, pairing=pairing)
-    self.active_endpoint = endpoint
-    self.active_ws = ws
-    try:
-      if pairing and not self.pairing_session(ws):
-        self.backoffs[endpoint] = time.monotonic() + ENDPOINT_BACKOFF_S
-        return
-      # A legacy session serves the shared dispatcher, exactly as before. It is preempted when
-      # a v2 grant or a new pairing window takes over.
-      self.serve_rpc(ws, dispatcher, exit_event, should_stop=self.preempted)
-    except (KeyboardInterrupt, SystemExit):
-      raise
-    except Exception as e:
-      log_connection_error(e)
-    finally:
-      self.active_endpoint = None
-      self.active_ws = None
-      close_quietly(ws)
-
-  def preempted(self) -> bool:
-    return pairing_requested() or self.v2_auth_active()
-
-  def pairing_session(self, ws: WebSocket, timeout_s: float = PAIRING_WINDOW_S) -> bool:
-    """Serve ONLY the pairing RPCs to an app that is not in the registry yet, and report whether
-    pairing completed, so the connection may then serve normally."""
-    cloudlog.info("sunnylinkd.pairing_session.started")
-    ws.settimeout(10)
-    deadline = time.monotonic() + timeout_s
-    try:
-      while time.monotonic() < deadline and pairing_requested():
-        try:
-          raw = ws.recv()  # auto-pongs pings; blocks up to the socket timeout
-        except WebSocketTimeoutException:
-          continue
-        except Exception as e:
-          cloudlog.warning(f"sunnylinkd.pairing_session.{type(e).__name__}")
-          return is_locally_paired()
-        try:
-          msg = rpc_module.loads(raw)
-        except Exception:
-          continue
-        if not rpc_module.is_call(msg) or msg.get("method") not in ("pairLocalApp", "unpairLocalApp"):
-          continue
-        try:
-          ws.send(rpc_module.handle(msg, dispatcher))
-        except Exception as e:
-          cloudlog.warning(f"sunnylinkd.pairing_session.{type(e).__name__}")
-          return is_locally_paired()
-      return is_locally_paired()
-    finally:
-      ws.settimeout(SUNNYLINK_RECONNECT_TIMEOUT_S)
-
   def serve_rpc(self, ws: WebSocket, methods: dict[str, Callable[..., object]],
-                exit_event: threading.Event | None = None,
-                should_stop: Callable[[], bool] | None = None) -> None:
+                exit_event: threading.Event | None = None) -> None:
     """Answer JSON-RPC calls on one socket until the peer goes away or the session ends."""
     ws.settimeout(SESSION_READ_TIMEOUT_S)
     while exit_event is None or not exit_event.is_set():
-      if should_stop is not None and should_stop():
-        return
       try:
         raw = ws.recv()
       except WebSocketTimeoutException:
@@ -344,18 +209,13 @@ class LocalSunnylinkd(Sunnylinkd):
         cloudlog.warning(f"sunnylinkd.send.{type(e).__name__}")
         return
 
-  def dial_header(self) -> dict[str, str]:
-    """Bearer header for the legacy local dial: the app checks the device's local identity."""
-    api = SunnylinkApi(self.params.get("SunnylinkDongleId"))
-    return {"Authorization": f"Bearer {api.get_token(payload_extra={'identity': local_identity()})}"}
-
-  def dial_v2(self, endpoint: str, exit_event: threading.Event | None) -> None:
+  def dial(self, endpoint: str, exit_event: threading.Event | None) -> None:
     """Dial an enrolled (or enrolling) phone over pinned TLS and serve it.
 
     The pinned key IS the authorization, so trying each known key is safe: a peer without the
     matching private key cannot complete the handshake.
     """
-    authority = local_auth_v2_daemon.get_authority()
+    authority = local_auth_daemon.get_authority()
     if authority is None:
       raise AuthorizationError("enrollment unavailable")
 
@@ -382,11 +242,11 @@ class LocalSunnylinkd(Sunnylinkd):
 
       if pending_key_id is not None and matched == pending_key_id:
         try:
-          local_auth_v2_daemon.confirm_enrollment_tls(matched)
+          local_auth_daemon.confirm_enrollment_tls(matched)
         except Exception:
           # The window closed or failed: drop the stale pending rather than redial forever.
-          cloudlog.exception("sunnylinkd.v2.confirm_failed")
-          local_auth_v2_daemon.cancel_local_pairing_v2()
+          cloudlog.exception("sunnylinkd.local.confirm_failed")
+          local_auth_daemon.cancel_local_pairing()
           raise
 
       with authority.lock:
@@ -395,18 +255,12 @@ class LocalSunnylinkd(Sunnylinkd):
         raise AuthorizationError("peer is not enrolled")
 
       session = authority.session(grant, matched)
-      local_auth_v2_daemon.note_grant_seen(grant.key_id)
-      cloudlog.event("sunnylinkd.v2_session.opened", endpoint=endpoint, app_id=grant.app_id)
-      self.active_endpoint = endpoint
-      self.active_ws = ws
+      local_auth_daemon.note_grant_seen(grant.key_id)
+      cloudlog.event("sunnylinkd.local.session_opened", endpoint=endpoint, app_id=grant.app_id)
       self.serve_rpc(ws, self.session_methods(session), exit_event)
     finally:
       if session is not None:
         session.close()
-      if self.active_endpoint == endpoint:
-        self.active_endpoint = None
-      if self.active_ws is ws:
-        self.active_ws = None
       close_quietly(ws)
 
   def authenticate_phone(self, ws: WebSocket, authority: LocalAuthority, phone_key_id: str) -> None:
@@ -434,13 +288,13 @@ class LocalSunnylinkd(Sunnylinkd):
       return call
 
     def unpair_local_app(app_id: str = "") -> dict[str, bool]:
-      removed = local_auth_v2_daemon.revoke_local_app_v2(session.grant.key_id)
+      removed = local_auth_daemon.revoke_local_app(session.grant.key_id)
       return {"success": bool(removed), "removed": bool(removed)}
 
     def update_local_app_alias(app_id: str = "", alias: str = "") -> dict[str, bool | str]:
       # The principal is the session's grant, so a phone can only rename itself.
       try:
-        local_auth_v2_daemon.set_grant_alias(session.grant.key_id, alias)
+        local_auth_daemon.set_grant_alias(session.grant.key_id, alias)
       except AuthorizationError:
         return {"success": False, "error": "invalid alias"}
       return {"success": True, "updated": True}
@@ -461,7 +315,7 @@ class LocalSunnylinkd(Sunnylinkd):
 
 
 def pinned_endpoint(beacon_endpoint: str) -> str | None:
-  """Beacons announce `ws://ip:port`; a v2 dial uses the same host and port over pinned TLS."""
+  """Beacons announce `ws://ip:port`; a dial uses the same host and port over pinned TLS."""
   parsed = urlsplit(beacon_endpoint)
   if parsed.scheme != "ws" or parsed.hostname is None or parsed.port is None:
     return None
