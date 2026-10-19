@@ -2,8 +2,6 @@ name: Compile warp for sunnypilot modeld
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 0 * * 0'
 
 jobs:
   compile_warps:
@@ -43,13 +41,13 @@ jobs:
 
             WARP_PKL="openpilot/sunnypilot/modeld_v2/models/driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $WARP_PKL on QCOM"
-            taskset -c 7 env DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
-              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${WARP_PKL}"
+            taskset -c 7 env DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1 python3 openpilot/sunnypilot/modeld_v2/compile_warp.py \
+              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --output "${WARP_PKL}"
 
             BIG_WARP_PKL="openpilot/sunnypilot/modeld_v2/models/big_driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $BIG_WARP_PKL on AMD"
-            taskset -c 7 env DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32 python3 tinygrad_repo/examples/openpilot/compile_warp.py \
-              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --layout yuv420 --frames 2 --output "${BIG_WARP_PKL}"
+            taskset -c 7 env DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32 python3 openpilot/sunnypilot/modeld_v2/compile_warp.py \
+              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --output "${BIG_WARP_PKL}"
           done
 
       - name: Re-enable powersave
@@ -60,6 +58,11 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: credential.https://huggingface.co.helper
+          GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=user && echo "password=$HF_TOKEN"; }; f'
         with:
           author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -71,3 +74,7 @@ jobs:
           labels: bot
           add-paths: |
             openpilot/sunnypilot/modeld_v2/models/*.pkl
+
+      - name: Reset lfs access
+        if: always()
+        run: git config --local --unset-all "lfs.$(git config -f .lfsconfig lfs.url).access" || true
