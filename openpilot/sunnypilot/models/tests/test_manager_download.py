@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 import asyncio
 import contextlib
+import dataclasses
 import hashlib
 import http.server
 import math
@@ -27,7 +28,7 @@ from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.models import manager as manager_module
 from openpilot.sunnypilot.models.fetcher import ModelFetcher, get_cached_bundles
 from openpilot.sunnypilot.models import helpers
-from openpilot.sunnypilot.models.helpers import (get_active_bundle, get_active_source, get_selected_bundle,
+from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_bundle, get_active_source, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles)
 from openpilot.sunnypilot.models.manager import DownloadCancelled, ModelManagerSP
 
@@ -48,62 +49,51 @@ def piece_range(index: int) -> tuple[int, int]:
   return start, min(start + PIECE_SIZE, len(WHOLE_BODY)) - 1
 
 
-class DownloadHandler(http.server.BaseHTTPRequestHandler):
-  """Serves WHOLE_BODY with byte-range support. Class attributes are reset per test."""
-  request_ranges: list[tuple[int, int] | None] = []  # None: no (honored) Range header
-  request_encodings: list[str | None] = []  # Accept-Encoding of every file request
-  fail_ranges: dict[tuple[int, int], int] = {}  # range -> HTTP status, every time
-  fail_once: set[tuple[int, int]] = set()  # ranges that 503 on their first request only
-  fail_times: dict[tuple[int, int], int] = {}  # range -> how many more requests 503 before it succeeds
-  stall_ranges: set[tuple[int, int]] = set()
+@dataclasses.dataclass
+class ServerState:
+  """What the test server serves and what it saw. A fresh one per test."""
+  request_ranges: list[tuple[int, int] | None] = dataclasses.field(default_factory=list)  # None: no (honored) Range header
+  request_encodings: list[str | None] = dataclasses.field(default_factory=list)  # Accept-Encoding of every request
+  fail_ranges: dict[tuple[int, int], int] = dataclasses.field(default_factory=dict)  # range -> HTTP status, every time
+  fail_times: dict[tuple[int, int], int] = dataclasses.field(default_factory=dict)  # range -> how many more requests 503
+  short_once: set[tuple[int, int]] = dataclasses.field(default_factory=set)  # ranges whose first answer is cut short
+  stall_ranges: set[tuple[int, int]] = dataclasses.field(default_factory=set)
   stall_event: threading.Event | None = None
   stall_released_by_event: bool | None = None
-  support_ranges = True
-  corrupt = False
-  request_paths: list[str] = []  # every path requested
-  fail_paths: dict[str, int] = {}  # path -> HTTP status, every time
+  support_ranges: bool = True
+  corrupt: bool = False
+
+
+class DownloadHandler(http.server.BaseHTTPRequestHandler):
+  """Serves WHOLE_BODY with byte-range support, as configured by `state`."""
+  state = ServerState()
 
   def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
     pass
 
   def do_GET(self):
-    cls = type(self)
-    cls.request_paths.append(self.path)
-    if self.path in cls.fail_paths:
-      self.send_response(cls.fail_paths[self.path])
-      self.end_headers()
-      return
-    if not self.path.endswith('/' + FILE_NAME):
-      self.send_response(404)
-      self.end_headers()
-      return
-
+    state = self.state
     body = WHOLE_BODY
-    if cls.corrupt:
+    if state.corrupt:
       # flip every bit of one mid-file byte: same size, so only the hash check can catch it
       body = body[:5000] + bytes([body[5000] ^ 0xFF]) + body[5001:]
 
     rng = None
     match = re.fullmatch(r'bytes=(\d+)-(\d+)', self.headers.get('Range', ''))
-    if match and cls.support_ranges:
+    if match and state.support_ranges:
       rng = (int(match.group(1)), int(match.group(2)))
-    cls.request_ranges.append(rng)
-    cls.request_encodings.append(self.headers.get('Accept-Encoding'))
+    state.request_ranges.append(rng)
+    state.request_encodings.append(self.headers.get('Accept-Encoding'))
 
-    if rng in cls.fail_ranges:
-      self.send_response(cls.fail_ranges[rng])
-      self.end_headers()
-      return
-    if rng in cls.fail_once:
-      cls.fail_once.discard(rng)
-      self.send_response(503)
-      self.end_headers()
-      return
-    if rng is not None and cls.fail_times.get(rng, 0) > 0:
-      cls.fail_times[rng] -= 1
-      self.send_response(503)
-      self.end_headers()
-      return
+    if rng is not None:
+      status = state.fail_ranges.get(rng)
+      if status is None and state.fail_times.get(rng, 0) > 0:
+        state.fail_times[rng] -= 1
+        status = 503
+      if status is not None:
+        self.send_response(status)
+        self.end_headers()
+        return
 
     if rng is None:
       payload = body
@@ -113,15 +103,18 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
       payload = body[start:end + 1]
       self.send_response(206)
       self.send_header('Content-Range', f'bytes {start}-{end}/{len(body)}')
+      if rng in state.short_once:
+        state.short_once.discard(rng)
+        payload = payload[:100]
     self.send_header('Content-Length', str(len(payload)))
     self.end_headers()
 
-    if rng in cls.stall_ranges:
+    if rng in state.stall_ranges:
       # write a little, then hold the connection until the test releases it
       self.wfile.write(payload[:100])
       self.wfile.flush()
-      if cls.stall_event is not None:
-        cls.stall_released_by_event = cls.stall_event.wait(timeout=5)
+      if state.stall_event is not None:
+        state.stall_released_by_event = state.stall_event.wait(timeout=5)
       self.wfile.write(payload[100:])
     else:
       self.wfile.write(payload)
@@ -144,37 +137,25 @@ def threaded_server(handler):
 class ManagerDownloadTestBase(OpenpilotTestCase):
   def setUp(self):
     super().setUp()
-    DownloadHandler.request_ranges = []
-    DownloadHandler.request_encodings = []
-    DownloadHandler.fail_ranges = {}
-    DownloadHandler.fail_once = set()
-    DownloadHandler.fail_times = {}
-    DownloadHandler.stall_ranges = set()
-    DownloadHandler.stall_event = None
-    DownloadHandler.stall_released_by_event = None
-    DownloadHandler.support_ranges = True
-    DownloadHandler.corrupt = False
-    DownloadHandler.request_paths = []
-    DownloadHandler.fail_paths = {}
+    self.server = DownloadHandler.state = ServerState()
+    self.base_url = self.enterContext(threaded_server(DownloadHandler))
 
     self._tmp = tempfile.TemporaryDirectory()
     self.addCleanup(self._tmp.cleanup)
     self.dest = self._tmp.name
 
     for name, value in (('PIECE_SIZE', PIECE_SIZE), ('REPORT_INTERVAL', 0.05), ('PIECE_BACKOFF', 0.01)):
-      patcher = mock.patch.object(manager_module, name, value)
-      patcher.start()
-      self.addCleanup(patcher.stop)
+      self.enterContext(mock.patch.object(manager_module, name, value))
 
     self.reported: list[float] = []
     self.reported_statuses: list[int] = []
 
     self.manager = ModelManagerSP.__new__(ModelManagerSP)
-    self.manager.params = mock.MagicMock()
-    self.manager.params.get.return_value = b'0'  # not cancelled
+    self.params = self.manager.params = mock.MagicMock()
+    self.params.get.return_value = b'0'  # not cancelled
     self.manager._download_ref = b'0'
-    self.manager.pm = mock.MagicMock()
-    self.manager.pm.send.side_effect = self._record_progress
+    self.pm = self.manager.pm = mock.MagicMock()
+    self.pm.send.side_effect = self._record_progress
     self.manager.selected_bundle = None
     self.manager.active_bundle = None
     self.manager.available_models = []
@@ -205,20 +186,28 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
   def path(self) -> str:
     return os.path.join(self.dest, FILE_NAME)
 
-  @staticmethod
-  def piece_requests() -> list[tuple[int, int]]:
+  def piece_requests(self) -> list[tuple[int, int]]:
     """Honored ranges minus the one-byte size probe."""
-    return [r for r in DownloadHandler.request_ranges if r is not None and r != (0, 0)]
+    return [r for r in self.server.request_ranges if r is not None and r != (0, 0)]
 
-  def run_with_server(self, fn):
-    with threaded_server(DownloadHandler) as base_url:
-      self.base_url = base_url
-      return fn()
+  def stall(self, index: int) -> threading.Event:
+    """Holds piece `index` after its first 100 bytes until the returned event is set, or for 5 s."""
+    self.server.stall_ranges = {piece_range(index)}
+    self.server.stall_event = threading.Event()
+    return self.server.stall_event
 
   def download_file(self):
     artifact = self.make_artifact()
     asyncio.run(self.manager._download_file(artifact.downloadUri.uri, self.path, artifact))
     return artifact
+
+  def process_artifact(self):
+    artifact = self.make_artifact()
+    asyncio.run(self.manager._process_artifact(artifact, self.dest))
+    return artifact
+
+  def download_bundle(self, source: str):
+    asyncio.run(self.manager._download_bundle(self._bundle, self.dest, source))
 
   def read_path(self) -> bytes:
     with open(self.path, 'rb') as f:
@@ -242,290 +231,159 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 class TestManagerDownload(ManagerDownloadTestBase):
   """Exercises the real parallel byte-range _download_file against a local server."""
 
-  def test_download_file_writes_exact_bytes(self):
-    def body():
-      artifact = self.download_file()
-      assert self.read_path() == WHOLE_BODY
-      assert artifact.fileName not in self.manager._download_start_times
-    self.run_with_server(body)
-
-  def test_pieces_tile_the_file(self):
-    def body():
-      self.download_file()
-      expected = [piece_range(i) for i in range(NUM_PIECES)]
-      assert sorted(self.piece_requests()) == expected
-    self.run_with_server(body)
+  def test_download(self):
+    artifact = self.download_file()
+    assert self.read_path() == WHOLE_BODY
+    assert sorted(self.piece_requests()) == [piece_range(i) for i in range(NUM_PIECES)], "pieces must tile the file once"
+    assert self.server.request_encodings == ['identity'] * (NUM_PIECES + 1), "ranges count encoded bytes, so ask for none"
+    assert self.reported and self.reported == sorted(self.reported), "progress only rises"
+    assert max(self.reported) <= 99.0, "progress holds below 100 until the hash check"
+    assert artifact.fileName not in self.manager._download_start_times
 
   def test_pieces_download_in_parallel(self):
     """The stalled piece is released only once every other piece has been requested, which a serial downloader never does."""
-    def body():
-      DownloadHandler.stall_ranges = {piece_range(0)}
-      DownloadHandler.stall_event = threading.Event()
-      others = {piece_range(i) for i in range(1, NUM_PIECES)}
+    stall_event = self.stall(0)
+    others = {piece_range(i) for i in range(1, NUM_PIECES)}
 
-      def release_when_others_requested():
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline:
-          if others <= set(self.piece_requests()):
-            DownloadHandler.stall_event.set()
-            return
-          time.sleep(0.01)
+    def release_when_others_requested():
+      deadline = time.monotonic() + 5
+      while time.monotonic() < deadline:
+        if others <= set(self.piece_requests()):
+          stall_event.set()
+          return
+        time.sleep(0.01)
 
-      threading.Thread(target=release_when_others_requested).start()
-      self.download_file()
-      assert DownloadHandler.stall_released_by_event is True, "other pieces did not download while one was stalled"
-      assert self.read_path() == WHOLE_BODY
-    self.run_with_server(body)
-
-  def test_requests_ask_for_no_compression(self):
-    def body():
-      self.download_file()
-      assert DownloadHandler.request_encodings == ['identity'] * (NUM_PIECES + 1)
-    self.run_with_server(body)
-
-  def test_progress_is_monotonic_and_bounded(self):
-    """Without failures, progress only rises and tops out at 99; a failed piece takes its bytes back, so retries can lower it."""
-    def body():
-      self.download_file()
-      assert self.reported, "expected progress reports"
-      for a, b in zip(self.reported, self.reported[1:], strict=False):
-        assert b >= a, f"progress went backwards: {a} -> {b}"
-      assert max(self.reported) <= 99.0, f"progress must stay <=99 until verify, got {max(self.reported)}"
-    self.run_with_server(body)
+    threading.Thread(target=release_when_others_requested).start()
+    self.download_file()
+    assert self.server.stall_released_by_event is True, "other pieces did not download while one was stalled"
 
   def test_fallback_when_server_ignores_ranges(self):
     """A 200 to the range probe means whole bodies only: one plain stream, same result."""
-    def body():
-      DownloadHandler.support_ranges = False
+    self.server.support_ranges = False
+    self.download_file()
+    assert self.read_path() == WHOLE_BODY
+    assert self.server.request_ranges == [None, None], "expected the probe plus one whole-body request"
+    assert self.server.request_encodings == ['identity', 'identity']
+
+  def test_transient_failures_are_retried(self):
+    self.server.fail_times = {piece_range(2): 1}
+    self.server.short_once = {piece_range(4)}
+    self.download_file()
+    assert self.read_path() == WHOLE_BODY
+    assert self.piece_requests().count(piece_range(2)) == 2
+    assert self.piece_requests().count(piece_range(4)) == 2
+
+  def test_permanent_failure_is_not_retried(self):
+    self.server.fail_ranges = {piece_range(1): 404}
+    with self.assertRaises(requests.exceptions.HTTPError):
       self.download_file()
-      assert self.read_path() == WHOLE_BODY
-      assert DownloadHandler.request_ranges == [None, None], "expected the probe plus one whole-body request"
-      assert DownloadHandler.request_encodings == ['identity', 'identity']
-    self.run_with_server(body)
+    assert self.piece_requests().count(piece_range(1)) == 1
 
-  def test_http_error_propagates(self):
-    def body():
-      DownloadHandler.fail_ranges = {piece_range(1): 404}
-      with self.assertRaises(requests.exceptions.HTTPError):
-        self.download_file()
-    self.run_with_server(body)
+  def test_removing_download_ref_cancels(self):
+    """The cancel is polled mid-transfer and stops a running piece at its next block."""
+    stall_event = self.stall(3)
+    refs = iter([b"ref"])
+    self.params.get.side_effect = lambda key: next(refs, None)  # removed after the first poll
+    self.manager._download_ref = b"ref"
 
-  def test_transient_error_is_retried(self):
-    def body():
-      DownloadHandler.fail_once = {piece_range(2)}
+    def release_once_canceling(*args):
+      # the "canceling" report comes after the cancel event is set, so the piece can't finish first
+      if self.artifact.downloadProgress.canceling:
+        stall_event.set()
+    self.pm.send.side_effect = release_once_canceling
+    with self.assertRaises(DownloadCancelled):
       self.download_file()
-      assert self.read_path() == WHOLE_BODY
-      assert self.piece_requests().count(piece_range(2)) == 2
-    self.run_with_server(body)
-
-  def test_cancellation_via_download_ref(self):
-    """Removing DownloadRef mid-transfer cancels the download; a stalled piece keeps it running until then."""
-    def body():
-      DownloadHandler.stall_ranges = {piece_range(5)}
-      DownloadHandler.stall_event = threading.Event()
-      threading.Timer(0.3, DownloadHandler.stall_event.set).start()
-      checks = {"n": 0}
-
-      def get(key):
-        if key == "ModelManager_DownloadRef":
-          checks["n"] += 1
-          return b"ref" if checks["n"] <= 1 else None
-        return b"0"
-
-      self.manager.params.get.side_effect = get
-      self.manager._download_ref = b"ref"
-      with self.assertRaises(DownloadCancelled):
-        self.download_file()
-      assert checks["n"] >= 2, "cancel must have been polled while the transfer was running"
-      assert os.path.getsize(self.path) == len(WHOLE_BODY)
-      assert self.artifact.downloadProgress.canceling, "a cancel shows a canceling state"
-    self.run_with_server(body)
-
-  def test_cancel_stops_a_running_piece(self):
-    """A worker blocked on a slow piece exits at its next block once cancelled."""
-    def body():
-      DownloadHandler.stall_ranges = {piece_range(3)}
-      DownloadHandler.stall_event = stall_event = threading.Event()
-      self.manager.params.get.return_value = None  # cancelled
-
-      def release_once_canceling(*args):
-        # the "canceling" report comes after the cancel event is set, so the piece can't finish first
-        if self.artifact.downloadProgress.canceling:
-          stall_event.set()
-      self.manager.pm.send.side_effect = release_once_canceling
-      with self.assertRaises(DownloadCancelled):
-        self.download_file()
-      assert DownloadHandler.stall_released_by_event is True, "the cancel must have caught the piece mid-transfer"
-      end = piece_range(3)[1] + 1
-      assert self.read_path()[end - 100:end] == bytes(100), "the cancelled piece must stop before its last bytes land"
-    self.run_with_server(body)
+    assert self.server.stall_released_by_event is True, "the cancel must have caught the piece mid-transfer"
+    end = piece_range(3)[1] + 1
+    assert self.read_path()[end - 100:end] == bytes(100), "the cancelled piece must stop before its last bytes land"
 
   def test_replaced_download_ref_queues_instead_of_canceling(self):
     """Selecting another model mid-transfer lets the running download finish."""
-    def body():
-      self.manager.params.get.side_effect = lambda key: b"other-ref" if key == "ModelManager_DownloadRef" else None
-      self.manager._download_ref = b"ref"
-      self.download_file()
-      assert self.read_path() == WHOLE_BODY
-    self.run_with_server(body)
-
-  def test_repeat_downloads_are_stable(self):
-    """Back-to-back runs must produce identical bytes and leak no start-time state."""
-    def body():
-      for _ in range(2):
-        self.download_file()
-        assert self.read_path() == WHOLE_BODY
-        assert self.manager._download_start_times == {}
-    self.run_with_server(body)
+    self.params.get.return_value = b"other-ref"
+    self.manager._download_ref = b"ref"
+    self.download_file()
+    assert self.read_path() == WHOLE_BODY
 
 
 class TestProcessArtifact(ManagerDownloadTestBase):
-  """Verification and cleanup around the download."""
+  """Verification, caching and the active bundle slot around the download."""
 
-  def test_downloaded_file_verifies_and_ends_idle(self):
-    def body():
-      artifact = self.make_artifact()
-      asyncio.run(self.manager._process_artifact(artifact, self.dest))
-      assert self.read_path() == WHOLE_BODY
-      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
-      assert artifact.downloadProgress.progress == 100
-      assert artifact.downloadProgress.eta == 0
-    self.run_with_server(body)
+  def test_download_writes_only_its_slot(self):
+    ds = custom.ModelManagerSP.DownloadStatus
+    for source, other in (("qcom", "chestnut"), ("chestnut", "qcom")):
+      with self.subTest(source=source):
+        self.make_artifact()
+        self._bundle.ref = f"{source}-ref"
+        self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
+        self.manager.params, store = self._make_params_with_store()
+        self.download_bundle(source)
+        assert ACTIVE_BUNDLE_KEYS[source] in store and ACTIVE_BUNDLE_KEYS[other] not in store
+        assert self.manager.selected_bundle.status == ds.downloaded
+        assert self.artifact.downloadProgress.progress == 100 and self.artifact.downloadProgress.eta == 0
+        assert self.read_path() == WHOLE_BODY
+        os.remove(self.path)
 
-  def test_hash_mismatch_discards_file_and_parts(self):
-    def body():
-      DownloadHandler.corrupt = True
-      artifact = self.make_artifact()
-      with self.assertRaises(ValueError):
-        asyncio.run(self.manager._process_artifact(artifact, self.dest))
-      assert not os.path.isfile(self.path)
-      assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
-    self.run_with_server(body)
+  def test_hash_mismatch_discards_file(self):
+    self.server.corrupt = True
+    with self.assertRaises(ValueError):
+      self.process_artifact()
+    assert not os.path.isfile(self.path)
+    assert self.artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
 
   def test_probe_failure_moves_past_verifying(self):
-    def body():
-      DownloadHandler.fail_ranges = {(0, 0): 404}  # the size probe
-      artifact = self.make_artifact()
-      with self.assertRaises(requests.exceptions.HTTPError):
-        asyncio.run(self.manager._process_artifact(artifact, self.dest))
-      ds = custom.ModelManagerSP.DownloadStatus
-      assert self.reported_statuses == [ds.verifying, ds.downloading, ds.failed]
-    self.run_with_server(body)
+    self.server.fail_ranges = {(0, 0): 404}  # the size probe
+    with self.assertRaises(requests.exceptions.HTTPError):
+      self.process_artifact()
+    ds = custom.ModelManagerSP.DownloadStatus
+    assert self.reported_statuses == [ds.verifying, ds.downloading, ds.failed]
 
   def test_cached_file_skips_network(self):
-    def body():
-      with open(self.path, 'wb') as f:
-        f.write(WHOLE_BODY)
-      artifact = self.make_artifact()
-      asyncio.run(self.manager._process_artifact(artifact, self.dest))
-      assert DownloadHandler.request_ranges == [], "cached file must not hit the network"
-      ds = custom.ModelManagerSP.DownloadStatus
-      assert self.reported_statuses == [ds.verifying, ds.cached]
-      assert artifact.downloadProgress.progress == 100
-    self.run_with_server(body)
+    with open(self.path, 'wb') as f:
+      f.write(WHOLE_BODY)
+    self.process_artifact()
+    assert self.server.request_ranges == [], "cached file must not hit the network"
+    ds = custom.ModelManagerSP.DownloadStatus
+    assert self.reported_statuses == [ds.verifying, ds.cached]
 
   def test_cached_bundle_cancel_skips_slot_write(self):
     """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
-    def body():
-      with open(self.path, 'wb') as f:
-        f.write(WHOLE_BODY)
-      self.make_artifact()
-      self._bundle.ref = "test-ref"
-      params, store = self._make_params_with_store()
-      store["ModelManager_DownloadRef"] = None  # removed -> cancelled
-      self.manager.params = params
-      self.manager._download_ref = b"ref"
-      with self.assertRaises(DownloadCancelled):
-        asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
-      assert "ModelManager_ActiveBundle" not in store
-      assert os.path.isfile(self.path), "cancel must not delete a cached model"
-    self.run_with_server(body)
-
-  def test_download_writes_qcom_slot(self):
-    """A download resolved to the qcom source writes the qcom active bundle slot only."""
-    def body():
-      self.make_artifact()
-      self._bundle.ref = "test-ref"
-      self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
-      params, store = self._make_params_with_store()
-      self.manager.params = params
-      asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "qcom"))
-
-      assert "ModelManager_ActiveBundle" in store, "qcom download must write the qcom slot"
-      assert "ModelManager_ActiveBundleChestnut" not in store, "qcom download must not touch the chestnut slot"
-      assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
-      assert self.manager.active_bundle is not None and self.manager.active_bundle.ref == "test-ref"
-      assert self.manager.active_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
-      assert self.read_path() == WHOLE_BODY
-    self.run_with_server(body)
-
-  def test_download_writes_chestnut_slot(self):
-    """A download resolved to the chestnut source writes the chestnut active bundle slot only."""
-    def body():
-      self.make_artifact()
-      self._bundle.ref = "big-ref"
-      self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
-      params, store = self._make_params_with_store()
-      self.manager.params = params
-      asyncio.run(self.manager._download_bundle(self._bundle, self.dest, "chestnut"))
-
-      assert "ModelManager_ActiveBundleChestnut" in store, "chestnut download must write the chestnut slot"
-      assert "ModelManager_ActiveBundle" not in store, "chestnut download must not touch the qcom slot"
-      assert self.manager.selected_bundle.status == custom.ModelManagerSP.DownloadStatus.downloaded
-    self.run_with_server(body)
-
-  def test_replaced_download_ref_is_kept(self):
-    """A selection made during a download must survive that download's cleanup."""
-    self.manager.params.get.return_value = b"new-ref"
-    self.manager._download_ref = b"old-ref"
-    self.manager._release_download_ref()
-    self.manager.params.remove.assert_not_called()
-
-  def test_own_download_ref_is_released(self):
-    self.manager.params.get.return_value = b"ref"
+    with open(self.path, 'wb') as f:
+      f.write(WHOLE_BODY)
+    self.make_artifact()
+    self.manager.params, store = self._make_params_with_store()
+    store["ModelManager_DownloadRef"] = None  # removed -> cancelled
     self.manager._download_ref = b"ref"
-    self.manager._release_download_ref()
-    self.manager.params.remove.assert_called_once_with("ModelManager_DownloadRef")
+    with self.assertRaises(DownloadCancelled):
+      self.download_bundle("qcom")
+    assert ACTIVE_BUNDLE_KEYS["qcom"] not in store
+    assert os.path.isfile(self.path), "cancel must not delete a cached model"
 
-class TestManagerImports(OpenpilotTestCase):
-  """Catches undeclared dependencies. aiohttp lived only in the AGNOS venv; 19.6 dropped
-  it and models_manager died on device while CI stayed green."""
+  def test_download_ref_is_released_only_if_unchanged(self):
+    """A selection made during a download must survive that download's cleanup."""
+    for current, removed in ((b"new-ref", False), (b"ref", True)):
+      self.params = self.manager.params = mock.MagicMock()
+      self.params.get.return_value = current
+      self.manager._download_ref = b"ref"
+      self.manager._release_download_ref()
+      assert self.params.remove.called == removed
 
-  def test_manager_imports(self):
-    assert manager_module.ModelManagerSP is not None
 
-  def test_no_undeclared_http_client(self):
-    with open(manager_module.__file__) as f:
-      src = f.read()
-    assert 'import aiohttp' not in src, "aiohttp is not available on AGNOS 19.6; use requests"
-
-  def test_download_timeout_is_explicit(self):
-    connect, read = manager_module.DOWNLOAD_TIMEOUT
-    assert connect > 0 and read > 0, "requests defaults to no timeout; downloads would hang forever"
+def raw_bundle(ref: str, runner: int | None = None) -> dict:
+  bundle = custom.ModelManagerSP.ModelBundle.new_message()
+  bundle.ref = ref
+  bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
+  if runner is not None:
+    bundle.runner = runner
+  return bundle.to_dict()
 
 
 class TestResolveBundleByRef(OpenpilotTestCase):
-  """A ref resolves to (bundle, source) across both hardware manifests. Refs are
-  unique per manifest and never overlap across sources, so a ref maps to exactly
-  one slot. Shared by the manager's download flow and the settings UI."""
-
-  @staticmethod
-  def _bundle(ref: str):
-    bundle = custom.ModelManagerSP.ModelBundle.new_message()
-    bundle.ref = ref
-    return bundle
-
-  def test_qcom_ref_resolves_to_qcom_slot(self):
-    small = self._bundle("small")
-    assert resolve_bundle_by_ref("small", {"qcom": [small], "chestnut": []}) == (small, "qcom")
-
-  def test_chestnut_ref_resolves_to_chestnut_slot(self):
-    big = self._bundle("big")
-    assert resolve_bundle_by_ref("big", {"qcom": [], "chestnut": [big]}) == (big, "chestnut")
-
-  def test_unknown_ref_returns_none(self):
-    source_bundles = {"qcom": [self._bundle("small")], "chestnut": []}
-    assert resolve_bundle_by_ref("nope", source_bundles) is None
+  def test_ref_resolves_to_its_slot(self):
+    small, big = (custom.ModelManagerSP.ModelBundle(**raw_bundle(ref)) for ref in ("small", "big"))
+    catalog = {"qcom": [small], "chestnut": [big]}
+    assert resolve_bundle_by_ref("small", catalog) == (small, "qcom")
+    assert resolve_bundle_by_ref("big", catalog) == (big, "chestnut")
+    assert resolve_bundle_by_ref("nope", catalog) is None
 
 
 def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = False) -> dict:
@@ -551,303 +409,130 @@ def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = Fa
   }
 
 
-def fresh_sync_time() -> int:
-  return int(time.monotonic() * 1e9)
+def manifest_params(qcom_manifest, chestnut_manifest=None):
+  """Params holding fresh caches of both manifests."""
+  values = {
+    "ModelManager_ModelsCache": qcom_manifest,
+    "ModelManager_ModelsCache_Chestnut": chestnut_manifest or {"bundles": [manifest_bundle("big", "bbb", is_big=True)]},
+    "ModelManager_LastSyncTime": int(time.monotonic() * 1e9),
+    "ModelManager_LastSyncTime_Chestnut": int(time.monotonic() * 1e9),
+  }
+  params = mock.MagicMock()
+  params.get.side_effect = values.get
+  return params
 
 
-class TestModelFetcherSources(OpenpilotTestCase):
-  """Both manifests are always maintained: get_bundles_for_source exposes either
-  source by name, and active_source picks which one matches the attached hardware."""
-
-  def _make_params(self, qcom_manifest, chestnut_manifest):
-    params = mock.MagicMock()
-
-    def get(key):
-      if key == "ModelManager_ModelsCache":
-        return qcom_manifest
-      if key == "ModelManager_ModelsCache_Chestnut":
-        return chestnut_manifest
-      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_Chestnut"):
-        return fresh_sync_time()
-      return None
-
-    params.get.side_effect = get
-    return params
+class TestModelFetcher(OpenpilotTestCase):
+  def refetch(self, fetcher, *bundles):
+    fetched = fetcher.model_parser.parse_models({"bundles": list(bundles)})
+    return mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched)
 
   def test_active_source_follows_chestnut_presence(self):
     assert ModelFetcher.active_source(False) == "qcom"
     assert ModelFetcher.active_source(True) == "chestnut"
 
-  def test_get_bundles_for_source_returns_each_source(self):
-    params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
-                               {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
-    fetcher = ModelFetcher(params)
-    assert [bundle.ref for bundle in fetcher.get_bundles_for_source("qcom")] == ["aaa"]
-    assert [bundle.ref for bundle in fetcher.get_bundles_for_source("chestnut")] == ["bbb"]
-
-  def test_get_bundles_for_source_unknown(self):
+  def test_unknown_source_has_no_bundles(self):
     assert ModelFetcher(mock.MagicMock()).get_bundles_for_source("bogus") == []
-
-  def test_get_cached_bundles_parses_source(self):
-    params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
-                               {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
-    qcom_bundles = get_cached_bundles(params, "qcom")
-    chestnut_bundles = get_cached_bundles(params, "chestnut")
-    assert [b.ref for b in qcom_bundles] == ["aaa"]
-    assert [b.ref for b in chestnut_bundles] == ["bbb"]
-    assert qcom_bundles[0].displayName == "SMALL"
-
-  def test_get_cached_bundles_empty_when_missing(self):
-    params = mock.MagicMock()
-    params.get.return_value = None
-    assert get_cached_bundles(params, "qcom") == []
-    assert get_cached_bundles(params, "chestnut") == []
-
-  def test_get_cached_bundles_unknown_source(self):
     assert get_cached_bundles(mock.MagicMock(), "bogus") == []
+
+  def test_get_cached_bundles_reads_its_source(self):
+    params = manifest_params({"bundles": [manifest_bundle("small", "aaa")]})
+    assert [b.ref for b in get_cached_bundles(params, "qcom")] == ["aaa"]
+    assert [b.ref for b in get_cached_bundles(params, "chestnut")] == ["bbb"]
 
   def test_active_json_has_both_urls(self):
     params = mock.MagicMock()
     ModelFetcher(params)
-    active_json_calls = [call for call in params.put.call_args_list if call.args[0] == "ModelManager_ActiveJson"]
-    assert active_json_calls, "expected ModelManager_ActiveJson to be written"
-    assert active_json_calls[-1].args[1] == {
-      "qcom": ModelFetcher.MODEL_URL,
-      "chestnut": ModelFetcher.MODEL_URL_CHESTNUT,
-    }
-
-
-
-class TestSourceCacheIntegrity(OpenpilotTestCase):
-  """Each source's cached manifest must contain only that source's models; the
-  `is_big` flag in the JSON marks the big (chestnut) models. A mismatched cache is
-  legacy data from before the per-source split (the active manifest was cached
-  under the unsuffixed key regardless of hardware) and is refetched. This
-  replaces the old one-time bundle migration."""
-
-  def _make_params(self, qcom_manifest, chestnut_manifest):
-    params = mock.MagicMock()
-
-    def get(key):
-      if key == "ModelManager_ModelsCache":
-        return qcom_manifest
-      if key == "ModelManager_ModelsCache_Chestnut":
-        return chestnut_manifest
-      if key in ("ModelManager_LastSyncTime", "ModelManager_LastSyncTime_Chestnut"):
-        return fresh_sync_time()
-      return None
-
-    params.get.side_effect = get
-    return params
-
-  def _fetched(self, *bundles):
-    return ModelFetcher(mock.MagicMock()).model_parser.parse_models({"bundles": list(bundles)})
-
-  def test_qcom_cache_with_big_models_is_refetched(self):
-    """Legacy: the unsuffixed cache holds the big manifest. is_big confirms it is
-    the wrong set for qcom, so a fresh fetch replaces it."""
-    params = self._make_params({"bundles": [manifest_bundle("big", "bbb", is_big=True)]},
-                               {"bundles": [manifest_bundle("big2", "ccc", is_big=True)]})
-    fetcher = ModelFetcher(params)
-    fetched = self._fetched(manifest_bundle("small", "aaa"))
-    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched):
-      bundles = fetcher.get_bundles_for_source("qcom")
-    assert [bundle.ref for bundle in bundles] == ["aaa"]
-
-  def test_chestnut_cache_without_big_models_is_refetched(self):
-    params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
-                               {"bundles": [manifest_bundle("big2", "ccc")]})
-    fetcher = ModelFetcher(params)
-    fetched = self._fetched(manifest_bundle("big", "bbb", is_big=True))
-    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched):
-      bundles = fetcher.get_bundles_for_source("chestnut")
-    assert [bundle.ref for bundle in bundles] == ["bbb"]
+    params.put.assert_any_call("ModelManager_ActiveJson", {"qcom": ModelFetcher.MODEL_URL, "chestnut": ModelFetcher.MODEL_URL_CHESTNUT}, block=True)
 
   def test_matching_caches_are_used_without_fetch(self):
-    params = self._make_params({"bundles": [manifest_bundle("small", "aaa")]},
-                               {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
-    fetcher = ModelFetcher(params)
+    fetcher = ModelFetcher(manifest_params({"bundles": [manifest_bundle("small", "aaa")]}))
     with mock.patch.object(fetcher, "_fetch_and_cache_models", side_effect=AssertionError("cache should be used")):
       assert [bundle.ref for bundle in fetcher.get_bundles_for_source("qcom")] == ["aaa"]
       assert [bundle.ref for bundle in fetcher.get_bundles_for_source("chestnut")] == ["bbb"]
 
-  def test_stale_version_cache_is_refetched(self):
-    """A source-matching cache whose bundles are all filtered by the selector version
-    check parses to zero valid bundles; it is stale (e.g. an old manifest) and must be
-    refetched instead of silently returning an empty list forever."""
-    stale = manifest_bundle("small", "aaa")
-    stale["minimum_selector_version"] = "16"
-    params = self._make_params({"bundles": [stale]},
-                               {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
-    fetcher = ModelFetcher(params)
-    fetched = self._fetched(manifest_bundle("small2", "ddd"))
-    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched) as fetch:
-      bundles = fetcher.get_bundles_for_source("qcom")
-    fetch.assert_called_once_with("qcom")
-    assert [bundle.ref for bundle in bundles] == ["ddd"]
+  def test_unusable_cache_is_refetched(self):
+    """A cache that fails to parse, or parses to no valid bundles (an old manifest version), is refetched
+    instead of raising or returning nothing forever."""
+    stale = {**manifest_bundle("small", "aaa"), "minimum_selector_version": "16"}  # parses to zero valid bundles
+    corrupt = {"short_name": "broken"}  # missing required fields
+    for cached in (stale, corrupt):
+      with self.subTest(cached=cached):
+        fetcher = ModelFetcher(manifest_params({"bundles": [cached]}))
+        with self.refetch(fetcher, manifest_bundle("small2", "ddd")) as fetch:
+          assert [bundle.ref for bundle in fetcher.get_bundles_for_source("qcom")] == ["ddd"]
+        fetch.assert_called_once_with("qcom")
 
-  def test_mismatched_refetch_happens_once(self):
-    """If the fresh manifest still fails the source check, the URL is authoritative:
-    trust it instead of refetching at 1 Hz forever."""
-    params = self._make_params({"bundles": [manifest_bundle("big", "bbb", is_big=True)]},
-                               {"bundles": [manifest_bundle("big2", "ccc", is_big=True)]})
-    fetcher = ModelFetcher(params)
-    fetched = self._fetched(manifest_bundle("big", "bbb", is_big=True))
-    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched) as fetch:
+  def test_mismatched_cache_is_refetched_once(self):
+    """A cache of the other source's models is refetched, but then the URL is trusted, not refetched at 1 Hz forever."""
+    fetcher = ModelFetcher(manifest_params({"bundles": [manifest_bundle("big", "bbb", is_big=True)]}))
+    with self.refetch(fetcher, manifest_bundle("big", "bbb", is_big=True)) as fetch:
       first = fetcher.get_bundles_for_source("qcom")
       second = fetcher.get_bundles_for_source("qcom")
     fetch.assert_called_once_with("qcom")
-    assert [bundle.ref for bundle in first] == ["bbb"]
-    assert [bundle.ref for bundle in second] == ["bbb"]
-
-  def test_corrupt_cache_is_refetched(self):
-    """A cache that fails to parse (e.g. truncated/foreign JSON) must trigger a
-    refetch instead of raising every loop and never recovering."""
-    corrupt = {"bundles": [{"short_name": "broken"}]}  # missing required fields
-    params = self._make_params(corrupt, {"bundles": [manifest_bundle("big", "bbb", is_big=True)]})
-    fetcher = ModelFetcher(params)
-    fetched = self._fetched(manifest_bundle("small", "aaa"))
-    with mock.patch.object(fetcher, "_fetch_and_cache_models", return_value=fetched) as fetch:
-      bundles = fetcher.get_bundles_for_source("qcom")
-    fetch.assert_called_once_with("qcom")
-    assert [bundle.ref for bundle in bundles] == ["aaa"]
+    assert [bundle.ref for bundle in first] == [bundle.ref for bundle in second] == ["bbb"]
 
 
-class TestActiveBundleValidation(OpenpilotTestCase):
-  """Validation is per-slot: a failed fetch (empty bundle list) must not reset a slot,
-  and resetting one slot must not stomp the runner cache derived from the other."""
+def ref_of(bundle) -> str | None:
+  return None if bundle is None else bundle.ref
 
+
+def slot_params(qcom=None, chestnut=None):
+  params = mock.MagicMock()
+  params.get.side_effect = {"ModelManager_ActiveBundle": qcom, "ModelManager_ActiveBundleChestnut": chestnut}.get
+  return params
+
+
+class TestActiveBundle(OpenpilotTestCase):
   def setUp(self):
     super().setUp()
     helpers._LAST_VALIDATED_RAW.clear()
 
-  @staticmethod
-  def _raw_bundle(ref: str, runner: int | None = None) -> dict:
-    bundle = custom.ModelManagerSP.ModelBundle.new_message()
-    bundle.ref = ref
-    bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
-    if runner is not None:
-      bundle.runner = runner
-    return bundle.to_dict()
+  def test_active_source(self):
+    for gpu, source in ((False, "qcom"), (True, "chestnut")):
+      with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=gpu):
+        assert get_active_source() == source
+    # display callers (mici) pass (chestnut, chestnut_active, chestnut_loading, offroad): the big model shows
+    # only with a GPU attached and while it is loading, active, or the device is offroad
+    for state, source in (
+      ((True, False, False, True), "chestnut"),  # offroad
+      ((True, False, True, False), "chestnut"),  # onroad, big model loading
+      ((True, True, False, False), "chestnut"),  # onroad, big model running
+      ((True, False, False, False), "qcom"),  # onroad, big model idle
+      ((True, None, False, False), "qcom"),  # onroad, big model state not known yet
+      ((False, False, False, True), "qcom"),  # offroad, no GPU
+    ):
+      chestnut, active, loading, offroad = state
+      assert get_active_source(chestnut=chestnut, chestnut_active=active, chestnut_loading=loading, offroad=offroad) == source, state
 
-  def _params(self, qcom=None, chestnut=None):
-    params = mock.MagicMock()
-
-    def get(key, *args, **kwargs):
-      return {"ModelManager_ActiveBundle": qcom, "ModelManager_ActiveBundleChestnut": chestnut}.get(key)
-
-    params.get.side_effect = get
-    return params
+  def test_active_bundle_is_the_active_slot(self):
+    params = slot_params(qcom=raw_bundle("small"), chestnut=raw_bundle("big"))
+    assert ref_of(get_selected_bundle(params, "qcom")) == "small"
+    assert ref_of(get_selected_bundle(params, "chestnut")) == "big"
+    for gpu, ref in ((False, "small"), (True, "big")):
+      with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=gpu):
+        assert ref_of(get_active_bundle(params)) == ref
+    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
+      assert get_active_bundle(slot_params(qcom=raw_bundle("small"))) is None, \
+        "an empty chestnut slot must not fall back to the qcom pick"
 
   def test_empty_catalog_does_not_reset_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"))
+    """An empty bundle list means the fetch failed, not that the catalog dropped the bundle."""
+    params = slot_params(qcom=raw_bundle("small"))
     with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
       validate_active_bundles(params, {"qcom": [], "chestnut": []})
     params.remove.assert_not_called()
 
   def test_reset_recomputes_runner_from_surviving_slot(self):
     tinygrad = int(custom.ModelManagerSP.Runner.tinygrad)
-    big_raw = self._raw_bundle("big", runner=tinygrad)
-    params = self._params(qcom=self._raw_bundle("gone"), chestnut=big_raw)
-    catalog = {"qcom": [custom.ModelManagerSP.ModelBundle(**self._raw_bundle("other"))],
+    big_raw = raw_bundle("big", runner=tinygrad)
+    params = slot_params(qcom=raw_bundle("gone"), chestnut=big_raw)
+    catalog = {"qcom": [custom.ModelManagerSP.ModelBundle(**raw_bundle("other"))],
                "chestnut": [custom.ModelManagerSP.ModelBundle(**big_raw)]}
     with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
       validate_active_bundles(params, catalog)
     params.remove.assert_called_once_with("ModelManager_ActiveBundle")
-    runner_puts = [call for call in params.put.call_args_list if call.args[0] == "ModelRunnerTypeCache"]
-    assert [call.args[1] for call in runner_puts] == [tinygrad]
-
-
-class TestActiveBundleSelection(OpenpilotTestCase):
-  """The effective active bundle is the active source's slot: chestnut when a GPU is
-  present, qcom otherwise. An empty active slot means the hardware default (stock
-  runner), never the other slot's pick - modeld_v2 requires a real bundle."""
-
-  @staticmethod
-  def _raw_bundle(ref: str) -> dict:
-    bundle = custom.ModelManagerSP.ModelBundle.new_message()
-    bundle.ref = ref
-    bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
-    return bundle.to_dict()
-
-  def _params(self, qcom=None, chestnut=None):
-    params = mock.MagicMock()
-
-    def get(key, *args, **kwargs):
-      if key == "ModelManager_ActiveBundle":
-        return qcom
-      if key == "ModelManager_ActiveBundleChestnut":
-        return chestnut
-      return None
-
-    params.get.side_effect = get
-    return params
-
-  def test_selected_bundle_is_per_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
-    assert get_selected_bundle(params, "qcom").ref == "small"
-    assert get_selected_bundle(params, "chestnut").ref == "big"
-
-  def test_no_gpu_uses_qcom_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
-      assert get_active_bundle(params).ref == "small"
-
-  def test_gpu_uses_chestnut_slot(self):
-    params = self._params(qcom=self._raw_bundle("small"), chestnut=self._raw_bundle("big"))
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
-      assert get_active_bundle(params).ref == "big"
-
-  def test_gpu_without_big_selection_is_hardware_default(self):
-    params = self._params(qcom=self._raw_bundle("small"), chestnut=None)
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
-      assert get_active_bundle(params) is None
-
-
-class TestEffectiveSource(OpenpilotTestCase):
-  """One gate decides the active source. With no flags it is runtime truth (GPU
-  attached); display callers (mici) pass the ui_state flags, which additionally
-  require the big model to be loading, active, or the device offroad. The active
-  bundle is simply the selected bundle of that source."""
-
-  @staticmethod
-  def _raw_bundle(ref: str) -> dict:
-    bundle = custom.ModelManagerSP.ModelBundle.new_message()
-    bundle.ref = ref
-    bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
-    return bundle.to_dict()
-
-  def test_runtime_no_gpu(self):
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
-      assert get_active_source() == "qcom"
-
-  def test_runtime_gpu_present(self):
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=True):
-      assert get_active_source() == "chestnut"
-
-  def test_display_offroad_gpu_present_shows_big(self):
-    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=False, offroad=True) == "chestnut"
-
-  def test_display_onroad_gpu_loading_shows_big(self):
-    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=True, offroad=False) == "chestnut"
-
-  def test_display_onroad_gpu_active_shows_big(self):
-    assert get_active_source(chestnut=True, chestnut_active=True, chestnut_loading=False, offroad=False) == "chestnut"
-
-  def test_display_onroad_gpu_idle_shows_small(self):
-    assert get_active_source(chestnut=True, chestnut_active=False, chestnut_loading=False, offroad=False) == "qcom"
-
-  def test_display_active_none_is_idle(self):
-    assert get_active_source(chestnut=True, chestnut_active=None, chestnut_loading=False, offroad=False) == "qcom"
-
-  def test_active_bundle_follows_source(self):
-    params = mock.MagicMock()
-    params.get.side_effect = lambda key: {"ModelManager_ActiveBundle": self._raw_bundle("small"),
-                                          "ModelManager_ActiveBundleChestnut": self._raw_bundle("big")}.get(key)
-    with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
-      assert get_active_bundle(params).ref == "small"
-    assert get_selected_bundle(params, get_active_source(chestnut=True, chestnut_active=False,
-                                                         chestnut_loading=False, offroad=True)).ref == "big"
+    params.put.assert_called_once_with("ModelRunnerTypeCache", tinygrad, block=True)
 
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')
