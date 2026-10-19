@@ -56,14 +56,19 @@ SESSION_READ_TIMEOUT_S = 5
 TICK_INTERVAL_S = 1.0
 ENDPOINT_BACKOFF_S = 300
 # A v2 endpoint is THE phone, and the app is a foreground-only server the user opens and closes, so
-# a dial that failed because the app was closed must not outlive it: the first failure costs one
-# beacon interval and doubles from there, and only a phone that keeps announcing while it keeps
-# refusing to serve backs off as far as a legacy endpoint does. A phone whose beacons have lapsed
-# clears its own record entirely (see `LocalSunnylinkd.forget_absent_endpoints`) — without that,
-# one dial against a closed app served the phone through the cloud for five minutes after the user
-# reopened it.
-V2_ENDPOINT_BACKOFF_S = 5.0
-V2_ENDPOINT_BACKOFF_MAX_S = float(ENDPOINT_BACKOFF_S)
+# a dial that failed because the app was closed must not outlive it: the first failure costs a
+# single tick and doubles from there, and the ramp is capped well below the legacy five minutes
+# because every step of it is a few seconds of the user's device sitting on the cloud instead of
+# the LAN. A phone whose beacons have lapsed clears its own record entirely (see
+# `LocalSunnylinkd.forget_absent_endpoints`).
+V2_ENDPOINT_BACKOFF_S = float(TICK_INTERVAL_S)
+V2_ENDPOINT_BACKOFF_MAX_S = 60.0
+# How long a phone may stay silent before its backoff record is dropped. Deliberately shorter than
+# the beacon freshness window: a Wi-Fi roam or a switch to another network (home -> the car's
+# hotspot) silences the app for a few beacon intervals while it reassociates, and the ramp it had
+# accumulated on the old link has nothing to do with the new one. While it is inside that window
+# the endpoint stays dialable, so the next beacon gets an immediate attempt rather than a penalty.
+BACKOFF_FORGET_S = 12.0
 
 TARGET_V2 = "v2"
 TARGET_PAIRING = "pairing"
@@ -187,7 +192,11 @@ class LocalSunnylinkd(Sunnylinkd):
     if self.v2_auth_active() or local_auth_v2_daemon.pending_enrollment() is not None:
       pinned_targets = [pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints())
                         if pinned is not None]
-      self.forget_absent_endpoints(set(pinned_targets))
+      # Backoff bookkeeping reads a shorter window than dialing does: a phone that went quiet for a
+      # few beacon intervals (a roam, a network switch) keeps its endpoint but loses its ramp.
+      recent = {pinned for pinned in (pinned_endpoint(beacon) for beacon in self.discovery.fresh_endpoints(max_age_s=BACKOFF_FORGET_S))
+                if pinned is not None}
+      self.forget_absent_endpoints(recent)
       for pinned in pinned_targets:
         if self.backoffs.get(pinned, 0.0) <= now:
           return pinned, TARGET_V2
@@ -211,9 +220,10 @@ class LocalSunnylinkd(Sunnylinkd):
     """Drop the backoff of a phone that stopped announcing.
 
     While the app is closed there is no beacon and nothing to dial, so a failure recorded then says
-    nothing about the phone the user opens next: the beacon freshness window is what tells "the app
-    is gone" apart from "the app cannot be served". Only a phone that keeps announcing keeps
-    backing off.
+    nothing about the phone the user opens next: the silence window is what tells "the app is gone"
+    apart from "the app cannot be served". Only a phone that keeps announcing keeps backing off.
+    The caller passes the short `BACKOFF_FORGET_S` window, so a phone that went quiet across a
+    network change also loses the ramp it earned on the link it is no longer on.
     """
     for endpoint in [key for key in self.backoffs if key.startswith("wss://") and key not in present]:
       self.backoffs.pop(endpoint, None)

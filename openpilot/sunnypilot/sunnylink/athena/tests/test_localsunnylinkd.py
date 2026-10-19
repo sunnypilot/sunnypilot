@@ -111,12 +111,16 @@ class _CallingSession(_FakeSession):
 
 
 class _FakeDiscovery:
-  def __init__(self, endpoints: Iterable[str] = ()):
+  def __init__(self, endpoints: Iterable[str] = (), recent: Iterable[str] | None = None):
     self._endpoints: list[str] = list(endpoints)
+    # What the shorter backoff window returns; None means "same as the dial window".
+    self._recent: list[str] | None = None if recent is None else list(recent)
     self.latest = None
     self.seen: float | None = None
 
   def fresh_endpoints(self, max_age_s=None):
+    if max_age_s is not None and self._recent is not None:
+      return list(self._recent)
     return list(self._endpoints)
 
   def latest_endpoint(self):
@@ -196,6 +200,45 @@ class TestLocalTargets(OpenpilotTestCase):
     self.assertGreater(first, 0)
     self.assertLessEqual(last, localsunnylinkd.V2_ENDPOINT_BACKOFF_MAX_S)
     self.assertEqual(9, daemon.v2_failures[endpoint])
+
+  def test_the_first_failed_dial_waits_only_one_tick(self):
+    """One missed dial is worth a tick, not a beacon interval: nothing else re-dials before then."""
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
+    endpoint = "wss://10.0.0.7:8443"
+    with mock.patch.object(daemon, "dial_v2", side_effect=AuthorizationError("refused")):
+      daemon.serve_v2(endpoint, None)
+      delay = daemon.backoffs[endpoint] - time.monotonic()
+
+    self.assertGreater(delay, 0)
+    self.assertLessEqual(delay, localsunnylinkd.TICK_INTERVAL_S + 0.05)
+
+  def test_a_phone_that_went_quiet_past_the_forget_window_clears_its_ramp(self):
+    """A network change silences the app for a moment without moving it out of the dial window.
+
+    Moving from home Wi-Fi to the car's hotspot (or roaming between mesh nodes) reassociates the
+    phone: a few beacon intervals pass with no announcement, and the ramp it earned on the old link
+    must not follow it onto the new one. The endpoint stays dialable for the full beacon window, so
+    the very next beacon is an immediate attempt rather than the rest of a penalty.
+    """
+    discovery = _FakeDiscovery(["ws://10.0.0.7:8443"], recent=[])
+    daemon = _Daemon(discovery=discovery, v2=True)
+    endpoint = "wss://10.0.0.7:8443"
+    daemon.backoffs[endpoint] = time.monotonic() + 300
+    daemon.v2_failures[endpoint] = 5
+
+    self.assertEqual((endpoint, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertNotIn(endpoint, daemon.backoffs)
+    self.assertNotIn(endpoint, daemon.v2_failures)
+
+  def test_a_phone_still_announcing_keeps_its_ramp(self):
+    """The short window must not reset a ramp for a phone that is right there and refusing to serve."""
+    discovery = _FakeDiscovery(["ws://10.0.0.7:8443"], recent=["ws://10.0.0.7:8443"])
+    daemon = _Daemon(discovery=discovery, v2=True)
+    endpoint = "wss://10.0.0.7:8443"
+    daemon.backoffs[endpoint] = time.monotonic() + 300
+
+    self.assertEqual((None, localsunnylinkd.TARGET_V2), daemon.pick_target())
+    self.assertIn(endpoint, daemon.backoffs)
 
   def test_a_served_session_clears_the_backoff_ramp(self):
     daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], v2=True)
