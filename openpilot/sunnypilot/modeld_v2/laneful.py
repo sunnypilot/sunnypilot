@@ -59,7 +59,8 @@ class Laneful:
     weight = 1.0 / (l_var * r_var / (l_var + r_var) + POINT_STD ** 2)
 
     # Fit curvature to place the plant in center: e ~ dk x^2 / 2
-    error = np.clip(center - model_curvature * x ** 2 / 2, -MAX_ERROR, MAX_ERROR)
+    plan_x = np.interp(x, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
+    error = np.clip(center - (0.7 * model_curvature * x ** 2 / 2 + 0.3 * plan_x), -MAX_ERROR, MAX_ERROR)
     dk = 2.0 * np.sum(weight * error * x ** 2) / np.sum(weight * x ** 4)
 
     # A model planning to end up further off center than the plant is now is likely going around something
