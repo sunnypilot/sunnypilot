@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 from collections.abc import Callable
+from functools import partial
 import gc
 import os
 os.environ['GMMU'] = '0'
@@ -230,7 +231,7 @@ class ModelState(ModelStateBase):
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
-                            laneful_curvature: float = 0.0) -> log.ModelDataV2.Action:
+                            laneful: Callable[[float], float] | None = None) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
@@ -242,7 +243,8 @@ class ModelState(ModelStateBase):
     else:
       desired_accel = model_output['action'][0, 1]
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
-    desired_curvature += laneful_curvature
+    if laneful is not None:
+      desired_curvature += laneful(desired_curvature)
 
     stop = v_ego < 0.3 and desired_accel < 0.1
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
@@ -488,9 +490,9 @@ def main(demo=False):
 
       if not sm['carControl'].latActive:
         prev_action.desiredCurvature = sm['controlsState'].curvature
-      laneful_curvature = laneful.update(model_output, v_ego, laneful_strength,
-                                         desire != log.Desire.none or DH.lane_change_state != log.LaneChangeState.off)
-      action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego, laneful_curvature)
+      desire_active = desire != log.Desire.none or DH.lane_change_state != log.LaneChangeState.off
+      action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
+                                           partial(laneful.update, model_output, v_ego, laneful_strength, desire_active))
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
@@ -507,6 +509,7 @@ def main(demo=False):
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       mdv2sp_send.valid = modelv2_send.valid
       mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
+      mdv2sp_send.modelDataV2SP.lanefulCurvature = laneful.curvature
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
