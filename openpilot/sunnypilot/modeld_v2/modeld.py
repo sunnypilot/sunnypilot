@@ -10,7 +10,6 @@ from collections.abc import Callable
 import gc
 import os
 os.environ['GMMU'] = '0'
-os.environ.setdefault('AM_POWER_LIMIT', '0')  # make this a toggle or something. this makes model 5ms faster per execution step 
 from tinygrad.device import Device
 import numpy as np
 import threading
