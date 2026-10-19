@@ -857,47 +857,19 @@
                     },
                     {
                       "value": 1,
-                      "label": "Map Data Only",
-                      "enablement": [
-                        {
-                          "type": "capability",
-                          "field": "mapd_available",
-                          "equals": true
-                        }
-                      ]
+                      "label": "Map Data Only"
                     },
                     {
                       "value": 2,
-                      "label": "Car State Priority",
-                      "enablement": [
-                        {
-                          "type": "capability",
-                          "field": "mapd_available",
-                          "equals": true
-                        }
-                      ]
+                      "label": "Car State Priority"
                     },
                     {
                       "value": 3,
-                      "label": "Map Data Priority",
-                      "enablement": [
-                        {
-                          "type": "capability",
-                          "field": "mapd_available",
-                          "equals": true
-                        }
-                      ]
+                      "label": "Map Data Priority"
                     },
                     {
                       "value": 4,
-                      "label": "Combined",
-                      "enablement": [
-                        {
-                          "type": "capability",
-                          "field": "mapd_available",
-                          "equals": true
-                        }
-                      ]
+                      "label": "Combined"
                     }
                   ]
                 },
@@ -1029,11 +1001,6 @@
                 }
               ],
               "enablement": [
-                {
-                  "type": "capability",
-                  "field": "mapd_available",
-                  "equals": true
-                },
                 {
                   "type": "any",
                   "conditions": [

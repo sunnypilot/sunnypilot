@@ -9,7 +9,6 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
-from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
 from openpilot.sunnypilot.navd.helpers import Coordinate
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 
@@ -76,7 +75,7 @@ class SmartCruiseControlMap:
   def __init__(self):
     self.params = Params()
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else self.params
-    self.enabled = MAPD_AVAILABLE and self.params.get_bool("SmartCruiseControlMap")
+    self.enabled = self.params.get_bool("SmartCruiseControlMap")
     self.long_enabled = False
     self.long_override = False
     self.is_enabled = False
@@ -102,7 +101,7 @@ class SmartCruiseControlMap:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.enabled = MAPD_AVAILABLE and self.params.get_bool("SmartCruiseControlMap")
+      self.enabled = self.params.get_bool("SmartCruiseControlMap")
 
   def update_calculations(self, sm: messaging.SubMaster) -> None:
     gps = sm[self.gps_location_service]
