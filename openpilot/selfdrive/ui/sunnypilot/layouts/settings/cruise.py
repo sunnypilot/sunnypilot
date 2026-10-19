@@ -8,7 +8,6 @@ from enum import IntEnum
 
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.cruise_sub_layouts.speed_limit_settings import SpeedLimitSettingsLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, simple_button_item_sp
 from openpilot.system.ui.widgets import Widget
@@ -30,7 +29,6 @@ ACC_ENABLED_DESCRIPTION = tr_noop("Enable custom Short & Long press increments f
 ACC_NOLONG_DESCRIPTION = tr_noop("This feature can only be used with sunnypilot longitudinal control enabled.")
 ACC_PCMCRUISE_DISABLED_DESCRIPTION = tr_noop("This feature is not supported on this platform due to vehicle limitations.")
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
-MAP_UNAVAILABLE_DESCRIPTION = tr_noop("Map data is temporarily unavailable.")
 
 
 class CruiseLayout(Widget):
@@ -56,8 +54,7 @@ class CruiseLayout(Widget):
 
     self.scc_m_toggle = toggle_item_sp(
       title=tr("Smart Cruise Control - Map"),
-      description=(f"<b>{tr(MAP_UNAVAILABLE_DESCRIPTION)}</b>\n\n" if not MAPD_AVAILABLE else "") +
-                  tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
+      description=tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
       param="SmartCruiseControlMap")
 
     self.custom_acc_toggle = toggle_item_sp(
@@ -142,7 +139,7 @@ class CruiseLayout(Widget):
       if has_long or has_icbm:
         self.custom_acc_toggle.action_item.set_enabled(((has_long and not ui_state.CP.pcmCruise) or has_icbm) and ui_state.is_offroad())
         self.scc_v_toggle.action_item.set_enabled(True)
-        self.scc_m_toggle.action_item.set_enabled(MAPD_AVAILABLE)
+        self.scc_m_toggle.action_item.set_enabled(True)
       else:
         ui_state.params.remove("CustomAccIncrementsEnabled")
         ui_state.params.remove("SmartCruiseControlVision")

@@ -13,7 +13,6 @@ from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD, get_sanitize_int_param
-from openpilot.sunnypilot.mapd import MAPD_AVAILABLE
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit import LIMIT_MAX_MAP_DATA_AGE, LIMIT_ADAPT_ACC
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Policy, OffsetType
 
@@ -49,8 +48,6 @@ class SpeedLimitResolver:
       Policy.max().value,
       self.params
     )
-    if not MAPD_AVAILABLE:
-      self.policy = Policy.car_state_only
     self._policy_to_sources_map = {
       Policy.car_state_only: [SpeedLimitSource.car],
       Policy.map_data_only: [SpeedLimitSource.map],
@@ -94,7 +91,7 @@ class SpeedLimitResolver:
 
   def update_params(self):
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
-      self.policy = self.params.get("SpeedLimitPolicy", return_default=True) if MAPD_AVAILABLE else Policy.car_state_only
+      self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
       self.is_metric = self.params.get_bool("IsMetric")
       self.offset_type = self.params.get("SpeedLimitOffsetType", return_default=True)
       self.offset_value = self.params.get("SpeedLimitValueOffset", return_default=True)
