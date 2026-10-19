@@ -109,19 +109,19 @@ jobs:
           p = subprocess.Popen(["git", "-C", repo, "cat-file", "--batch=%(objectsize)"],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE)
           def feed():
-              for sha in small:
-                  p.stdin.write(sha.encode() + b"\n")
-              p.stdin.close()
+            for sha in small:
+              p.stdin.write(sha.encode() + b"\n")
+            p.stdin.close()
           threading.Thread(target=feed, daemon=True).start()
           rx = re.compile(rb"^version https://git-lfs\.github\.com/spec/v1\noid sha256:([0-9a-f]{64})\nsize ([0-9]+)\n")
           seen = {}
           for _ in small:
-              n = int(p.stdout.readline()); body = p.stdout.read(n); p.stdout.read(1)
-              m = rx.match(body)
-              if m:
-                  seen.setdefault(m.group(1).decode(), m.group(2).decode())
+            n = int(p.stdout.readline()); body = p.stdout.read(n); p.stdout.read(1)
+            m = rx.match(body)
+            if m:
+              seen.setdefault(m.group(1).decode(), m.group(2).decode())
           for oid, size in sorted(seen.items()):
-              print(oid, size)
+            print(oid, size)
           EOF
           for repo in . sunnypilot; do
             python3 scan_pointers.py "$repo"
