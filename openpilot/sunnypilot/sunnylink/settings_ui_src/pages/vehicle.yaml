@@ -101,3 +101,18 @@ sections:
     - type: param
       key: ToyotaEnforceStockLongitudinal
       equals: false
+  - key: ToyotaEnhancedBsm
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Enhanced Blind Spot Monitoring (Alpha)
+    description: sunnypilot will poll the blind spot monitor diagnostics directly from the radar. Use this on vehicles whose
+      blind spot monitors do not report blind spot status over the standard CAN signals. This is an alpha feature. Use at
+      your own risk.
+    enablement:
+    - $ref: '#/macros/not_engaged'
+    - type: capability
+      field: toyota_enhanced_bsm_available
+      equals: true
+    - type: capability
+      field: stock_longitudinal
+      equals: false
