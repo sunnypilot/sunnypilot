@@ -33,7 +33,7 @@ jobs:
 
       - name: LFS Fetch
         run: |
-          git lfs fetch
+          git lfs fetch || echo "::warning::some objects are missing on commaai/openpilot-lfs; mirroring the rest"
 
       - name: Set up Git
         run: |
@@ -68,6 +68,7 @@ jobs:
           git config lfs.activitytimeout 300
           git config lfs.transfer.maxretries 5
           git config lfs.concurrenttransfers 4
+          git config lfs.allowincompletepush true
 
       - name: Push LFS
         id: sync-and-commit
