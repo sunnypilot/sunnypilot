@@ -1,12 +1,8 @@
 """
-Copyright (c) 2021-, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
-
-Laneful: nudge the model's curvature toward the lane center seen by the lane lines.
-The model stays in charge; this only adds a pure-pursuit correction weighted by lane line confidence,
-and fades to zero (plain laneless) when the lines are weak.
 """
 import numpy as np
 
@@ -20,6 +16,7 @@ LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
 MAX_ERROR = 1.0  # m, cap on how far laneful can pull
 MIN_SPEED = 9.0  # m/s
+SMOOTH_TAU = 0.3  # s
 LINE_STD = (0.15, 0.4)
 POINT_STD = 0.1
 X_IDXS = np.array(ModelConstants.X_IDXS)
@@ -28,11 +25,12 @@ X_IDXS = np.array(ModelConstants.X_IDXS)
 class Laneful:
   def __init__(self):
     self.lane_width = FirstOrderFilter(LANE_WIDTH_DEFAULT, 10.0, DT_MDL)
+    self.correction = FirstOrderFilter(0.0, SMOOTH_TAU, DT_MDL) # correcting over .3s reduces jerk
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
-    self.curvature = 0.0
     if not active or v_ego < MIN_SPEED or 'lane_lines' not in model_output:
+      self.curvature = self.correction.x = 0.0
       return 0.0
 
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
@@ -44,6 +42,7 @@ class Laneful:
     r_prob = float(probs[2] * np.interp(np.interp(lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
     lane_trust = l_prob + r_prob - l_prob * r_prob
     if lane_trust <= 0.0:
+      self.curvature = self.correction.x = 0.0
       return 0.0
 
     if l_prob * r_prob > 0.5:
@@ -63,5 +62,5 @@ class Laneful:
     # when the car is drifting, worst on curves. Fit the curvature change that lays that arc onto the center: e ~ dk x^2 / 2
     error = np.clip(center - model_curvature * x ** 2 / 2, -MAX_ERROR, MAX_ERROR)
     dk = 2.0 * np.sum(weight * error * x ** 2) / np.sum(weight * x ** 4)
-    self.curvature = float(lane_trust * dk)
+    self.curvature = float(self.correction.update(lane_trust * dk))
     return self.curvature
