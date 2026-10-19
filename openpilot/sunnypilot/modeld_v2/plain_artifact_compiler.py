@@ -39,6 +39,7 @@ def capture_frame(jit, kwargs: dict, output_container: str | None = None):
 
 
 def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, memoryview]:
+  from tinygrad.dtype import AddrSpace
   from tinygrad.uop.ops import Ops
   sink = tempfile.TemporaryFile(dir=".")
   blob, bases, input_specs = Blob(sink), {}, {}
@@ -60,10 +61,12 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
   for call in kernel_linear.src:
     ast, arguments = call.src[0], [describe(argument) for argument in call.src[1:]]
     if ast.op is Ops.PROGRAM:
-      elf, info = ast.to_elf(), ast.arg
+      elf, info, compact = ast.to_elf(), ast.arg, {slot: i for i, slot in enumerate(ast.arg.globals)}
+      if any(p.addrspace is AddrSpace.ALU for p in ast.kernel_params):
+        raise ValueError(f"{elf.name} takes a variable, which plain artifacts don't support")
       global_size, local_size = info.launch_dims({})
       calls.append({"kind": "program", "name": elf.name, "lib": blob.add(bytes(elf.lib)), "target": dataclasses.asdict(elf.target),
-                    "signature": [[name, slot, repr(dtype), [int(x) for x in shape]] for name, slot, dtype, shape in elf.signature],
+                    "signature": [[p.arg.name, compact[p.arg.slot], repr(p.dtype), [int(x) for x in p._shape]] for p in ast.kernel_params],
                     "global_size": [int(x) for x in global_size], "local_size": [int(x) for x in local_size],
                     "globals": list(info.globals), "outs": list(info.outs), "ins": list(info.ins), "args": arguments})
       outs, ins = info.outs, info.ins
