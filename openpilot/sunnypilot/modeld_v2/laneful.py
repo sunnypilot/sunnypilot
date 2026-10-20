@@ -28,8 +28,12 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     self.line_probs_slow = FirstOrderFilter(np.zeros(2), 3.0, DT_MDL)
     self.line_probs = FirstOrderFilter(np.zeros(2), 0.5, DT_MDL)
     self.curvature = 0.0
+    self.trust = 0.0
+    self.l_prob = 0.0
+    self.r_prob = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
+    self.trust = self.l_prob = self.r_prob = 0.0
     if not active:
       self.curvature = 0.0
       return 0.0
@@ -61,6 +65,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
       lane_trust = min(l_prob, r_prob)
     else:
       lane_trust = l_prob + r_prob - l_prob * r_prob
+    self.l_prob, self.r_prob = l_prob, r_prob
     if lane_trust <= 0.0:
       return 0.0
 
@@ -87,4 +92,5 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     plan_y = np.interp(lookahead, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
     away = abs(plan_y - np.interp(lookahead, x, center)) - abs(center_now) - 0.25 * abs(model_curvature) * lookahead ** 2 / 2
     lane_trust *= np.interp(away, (0.5, 1.0), [1.0, 0.0])
+    self.trust = float(lane_trust)
     return float(lane_trust * dk)

@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
 Laneful visuals: cyan lane-center target, thin white "after" path (model path bent by laneful's nudge),
-and a top-center readout of the pull, from the curvature modeld publishes in modelDataV2SP.lanefulCurvature.
+and a top-center readout of the pull, from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
 """
 import numpy as np
 import pyray as rl
@@ -36,7 +36,8 @@ class LanefulRenderer:
 
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
-    laneful_curvature = ui_state.sm['modelDataV2SP'].lanefulCurvature
+    laneful = ui_state.sm['modelDataV2SP']
+    laneful_curvature = laneful.lanefulCurvature
     self._alpha.update(float(laneful_curvature != 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
@@ -46,13 +47,12 @@ class LanefulRenderer:
       self._after_points = np.empty((0, 2), dtype=np.float32)
       return
 
-    probs = renderer._lane_line_probs
-    l_prob = float(probs[1] * np.interp(stds[1], [0.15, 0.3], [1.0, 0.0]))
-    r_prob = float(probs[2] * np.interp(stds[2], [0.15, 0.3], [1.0, 0.0]))
-    width = np.clip(right[:, 1] - left[:, 1], 2.8, 4.5) if l_prob * r_prob > 0.5 else 3.7
+    l_var = stds[1] ** 2 / max(laneful.lanefulLeftProb, 1e-4)
+    r_var = stds[2] ** 2 / max(laneful.lanefulRightProb, 1e-4)
+    half_width = laneful.lanefulLaneWidth / 2
     center = left.copy()
-    center[:, 1] = (l_prob * (left[:, 1] + width / 2) + r_prob * (right[:, 1] - width / 2)) / (l_prob + r_prob + 1e-4)
-    self._trust = l_prob + r_prob - l_prob * r_prob
+    center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
+    self._trust = laneful.lanefulTrust
     self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
 
     # "after" path: model path bent by laneful's curvature, ending at the lookahead

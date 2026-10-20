@@ -510,6 +510,10 @@ def main(demo=False):
       mdv2sp_send.valid = modelv2_send.valid
       mdv2sp_send.modelDataV2SP.laneTurnDirection = DH.lane_turn_direction
       mdv2sp_send.modelDataV2SP.lanefulCurvature = laneful.curvature
+      mdv2sp_send.modelDataV2SP.lanefulTrust = laneful.trust
+      mdv2sp_send.modelDataV2SP.lanefulLaneWidth = float(laneful.lane_width.x)
+      mdv2sp_send.modelDataV2SP.lanefulLeftProb = laneful.l_prob
+      mdv2sp_send.modelDataV2SP.lanefulRightProb = laneful.r_prob
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
