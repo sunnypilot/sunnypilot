@@ -4,7 +4,7 @@ Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-Laneful visuals: cyan lane-center target, thin white "after" path (model path bent by laneful's nudge),
+Laneful visuals: cyan lane-center target, thin white line down the middle of the model path,
 and a top-center readout of the pull, from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
 """
 import numpy as np
@@ -18,13 +18,13 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 CENTER_COLOR = (0, 200, 255)
-AFTER_COLOR = (255, 255, 255)
+PATH_COLOR = (255, 255, 255)
 
 
 class LanefulRenderer:
   def __init__(self):
     self._center_points = np.empty((0, 2), dtype=np.float32)
-    self._after_points = np.empty((0, 2), dtype=np.float32)
+    self._path_points = np.empty((0, 2), dtype=np.float32)
     self._trust = 0.0
     self._font = gui_app.font(FontWeight.BOLD)
     # smoothed copies for the readout so the numbers don't flicker
@@ -44,7 +44,7 @@ class LanefulRenderer:
     stds = list(ui_state.sm['modelV2'].laneLineStds)
     if self._alpha.x < 0.01 or len(left) == 0 or len(right) != len(left) or len(stds) < 3:
       self._center_points = np.empty((0, 2), dtype=np.float32)
-      self._after_points = np.empty((0, 2), dtype=np.float32)
+      self._path_points = np.empty((0, 2), dtype=np.float32)
       return
 
     l_var = stds[1] ** 2 / max(laneful.lanefulLeftProb, 1e-4)
@@ -55,15 +55,13 @@ class LanefulRenderer:
     self._trust = laneful.lanefulTrust
     self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
 
-    # "after" path: model path bent by laneful's curvature, ending at the lookahead
+    # middle of the model path, ending at the lookahead
     path = renderer._path.raw_points
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
-    after = path.copy()
-    after[:, 1] += laneful_curvature * path[:, 0] ** 2 / 2
-    self._after_points = renderer._map_line_to_polygon(after, 0.15, renderer._path_offset_z,
-                                                       renderer._get_path_length_idx(path[:, 0], lookahead))
+    self._path_points = renderer._map_line_to_polygon(path, 0.15, renderer._path_offset_z,
+                                                      renderer._get_path_length_idx(path[:, 0], lookahead))
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
@@ -72,8 +70,8 @@ class LanefulRenderer:
     if self._center_points.size and self._trust > 0.05:
       draw_polygon(rect, self._center_points, self._color(CENTER_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
     self._readout_rect = None
-    if self._after_points.size:
-      draw_polygon(rect, self._after_points, self._color(AFTER_COLOR, 200))
+    if self._path_points.size:
+      draw_polygon(rect, self._path_points, self._color(PATH_COLOR, 200))
       self._draw_readout(rect)
 
   def handle_tap(self, pos) -> bool:
