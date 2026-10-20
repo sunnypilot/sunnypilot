@@ -30,7 +30,7 @@ class LanefulRenderer:
     # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
-    self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL) # fades that hoe
+    self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL)
     self._readout_rect: rl.Rectangle | None = None
     self._settings_page = None
 
@@ -68,11 +68,12 @@ class LanefulRenderer:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
 
   def draw(self, rect: rl.Rectangle) -> None:
-    if self._center_points.size and self._trust > 0.05:
-      draw_polygon(rect, self._center_points, self._color(CENTER_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
-    self._readout_rect = None
     if self._path_points.size:
       draw_polygon(rect, self._path_points, self._color(PATH_COLOR, 200))
+    if self._center_points.size and self._trust > 0.05:
+      draw_polygon(rect, self._center_points, self._color(CENTER_COLOR, np.clip(self._trust, 0.2, 1.0) * 180))
+    self._readout_rect = None
+    if self._path_points.size:
       self._draw_readout(rect)
 
   def handle_tap(self, pos) -> bool:
