@@ -49,7 +49,7 @@ class Laneful:
     probs = self.line_probs.update(model_output['lane_lines_prob'][0, 1::2][1:3])
     l_prob = float(probs[0] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
     r_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
-    lane_trust = l_prob + r_prob - l_prob * r_prob
+    lane_trust = (l_prob + r_prob) / 2
     if lane_trust <= 0.0:
       return 0.0
 
