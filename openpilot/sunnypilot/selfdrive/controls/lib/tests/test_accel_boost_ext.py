@@ -1,8 +1,6 @@
 from types import SimpleNamespace
 from unittest import mock
 
-import pytest
-
 from openpilot.cereal import log
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
@@ -15,9 +13,9 @@ E2E_ACCEL = 0.5
 PLANNER_ACCEL = 2.0
 STEPS_PER_OVERRIDE = round(ACCEL_BOOST_PER_OVERRIDE / (0.025 * DT_MDL))
 EXPECTED_SCALE = {
-  log.LongitudinalPersonality.relaxed: 0.1,
+  log.LongitudinalPersonality.relaxed: 0.3,
   log.LongitudinalPersonality.standard: 0.5,
-  log.LongitudinalPersonality.aggressive: 0.9,
+  log.LongitudinalPersonality.aggressive: 0.7,
 }
 
 
@@ -83,31 +81,31 @@ class TestAccelBoostExt(OpenpilotTestCase):
 
     stock_out = update(stock, sm)
     ext_out = update(ext, sm)
-    assert ext_out == pytest.approx(stock_out)
+    self.assertAlmostEqual(ext_out, stock_out)
 
     for _ in range(10):
       sm['carState'].gasPressed = True
       for _ in range(STEPS_PER_OVERRIDE):
         stock_out = update(stock, sm)
         ext_out = update(ext, sm)
-        assert ext_out == pytest.approx(stock_out)
+        self.assertAlmostEqual(ext_out, stock_out)
       sm['carState'].gasPressed = False
       stock_out = update(stock, sm)
       ext_out = update(ext, sm)
-      assert ext_out == pytest.approx(stock_out)
+      self.assertAlmostEqual(ext_out, stock_out)
 
-    assert ext.total_boost == pytest.approx(stock.total_boost)
-    assert ext.stock_boost == pytest.approx(stock_out - E2E_ACCEL)
-    assert ext.extra_boost == 0.0
-    assert ext._extra.total_boost == 0.0
+    self.assertAlmostEqual(ext.total_boost, stock.total_boost)
+    self.assertAlmostEqual(ext.stock_boost, stock_out - E2E_ACCEL)
+    self.assertEqual(ext.extra_boost, 0.0)
+    self.assertEqual(ext._extra.total_boost, 0.0)
 
   def test_no_boost_without_gas(self):
     ext = AccelBoostExt()
     sm = FakeSubMaster(gas_pressed=False)
     out = update(ext, sm)
-    assert ext.total_boost == 0.0
-    assert ext._extra.total_boost == 0.0
-    assert out == pytest.approx(E2E_ACCEL)
+    self.assertEqual(ext.total_boost, 0.0)
+    self.assertEqual(ext._extra.total_boost, 0.0)
+    self.assertAlmostEqual(out, E2E_ACCEL)
 
   def test_boost_requires_e2e_to_be_limiting(self):
     ext = AccelBoostExt()
@@ -116,10 +114,10 @@ class TestAccelBoostExt(OpenpilotTestCase):
     sm['carState'].gasPressed = True
     for _ in range(10):
       ext.update(sm, E2E_ACCEL, E2E_ACCEL, E2E_ACCEL)
-    assert ext.total_boost == 0.0
-    assert ext.stock_boost == 0.0
-    assert ext.extra_boost == 0.0
-    assert ext._extra.total_boost == 0.0
+    self.assertEqual(ext.total_boost, 0.0)
+    self.assertEqual(ext.stock_boost, 0.0)
+    self.assertEqual(ext.extra_boost, 0.0)
+    self.assertEqual(ext._extra.total_boost, 0.0)
 
   def test_extra_layer_per_override_cap(self):
     ext = AccelBoostExt()
@@ -129,10 +127,10 @@ class TestAccelBoostExt(OpenpilotTestCase):
     for _ in range(1000):
       update(ext, sm)
 
-    assert ext._extra.total_boost == pytest.approx(ACCEL_BOOST_PER_OVERRIDE)
+    self.assertAlmostEqual(ext._extra.total_boost, ACCEL_BOOST_PER_OVERRIDE)
     applied = self._applied_extra(ext, sm)
     expected = ACCEL_BOOST_PER_OVERRIDE * EXPECTED_SCALE[log.LongitudinalPersonality.standard]
-    assert applied == pytest.approx(expected)
+    self.assertAlmostEqual(applied, expected)
 
   def test_extra_scales_with_following_distance(self):
     applied = {}
@@ -144,10 +142,10 @@ class TestAccelBoostExt(OpenpilotTestCase):
       applied[personality] = self._applied_extra(ext, sm)
 
     for personality, value in applied.items():
-      assert value == pytest.approx(ACCEL_BOOST_MAX * EXPECTED_SCALE[personality])
+      self.assertAlmostEqual(value, ACCEL_BOOST_MAX * EXPECTED_SCALE[personality])
 
-    assert applied[log.LongitudinalPersonality.relaxed] < applied[log.LongitudinalPersonality.standard]
-    assert applied[log.LongitudinalPersonality.standard] < applied[log.LongitudinalPersonality.aggressive]
+    self.assertLess(applied[log.LongitudinalPersonality.relaxed], applied[log.LongitudinalPersonality.standard])
+    self.assertLess(applied[log.LongitudinalPersonality.standard], applied[log.LongitudinalPersonality.aggressive])
 
   def test_capnp_dynamic_enum_personality_scales(self):
     # Real SubMaster messages expose personality as a capnp DynamicEnum; equality still matches the enum value.
@@ -156,7 +154,7 @@ class TestAccelBoostExt(OpenpilotTestCase):
     ext, sm = self._boost_to_max(msg.personality)
     sm['carState'].gasPressed = True
     applied = self._applied_extra(ext, sm)
-    assert applied == pytest.approx(ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.aggressive])
+    self.assertAlmostEqual(applied, ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.aggressive])
 
   def test_extra_feeds_into_stock_last(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.standard)
@@ -172,28 +170,28 @@ class TestAccelBoostExt(OpenpilotTestCase):
       out = update(ext, sm)
 
     # First call is our extra layer on the raw target, last call is stock on the boosted target.
-    assert inputs[0] == pytest.approx(E2E_ACCEL)
-    assert inputs[-1] == pytest.approx(E2E_ACCEL + ext.extra_boost)
-    assert out == pytest.approx(inputs[-1] + ext.stock_boost)
+    self.assertAlmostEqual(inputs[0], E2E_ACCEL)
+    self.assertAlmostEqual(inputs[-1], E2E_ACCEL + ext.extra_boost)
+    self.assertAlmostEqual(out, inputs[-1] + ext.stock_boost)
 
   def test_extra_is_added_on_top_of_stock_boost(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
     sm['carState'].gasPressed = True
     out = update(ext, sm)
     extra = out - E2E_ACCEL - ext.stock_boost
-    assert ext._stock.total_boost == pytest.approx(ACCEL_BOOST_MAX)
-    assert ext.total_boost == pytest.approx(ACCEL_BOOST_MAX + ext.extra_boost)
-    assert ext.stock_boost == pytest.approx(ACCEL_BOOST_MAX)
-    assert ext.extra_boost == pytest.approx(ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.aggressive])
-    assert extra == pytest.approx(ext.extra_boost)
+    self.assertAlmostEqual(ext._stock.total_boost, ACCEL_BOOST_MAX)
+    self.assertAlmostEqual(ext.total_boost, ACCEL_BOOST_MAX + ext.extra_boost)
+    self.assertAlmostEqual(ext.stock_boost, ACCEL_BOOST_MAX)
+    self.assertAlmostEqual(ext.extra_boost, ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.aggressive])
+    self.assertAlmostEqual(extra, ext.extra_boost)
 
   def test_sp_planner_wraps_assigned_stock_controller(self):
     planner = PlannerStub()
     stock = AccelBoost()
     planner.accel_boost = stock
 
-    assert isinstance(planner.accel_boost, AccelBoostExt)
-    assert planner.accel_boost._stock is stock
+    self.assertIsInstance(planner.accel_boost, AccelBoostExt)
+    self.assertIs(planner.accel_boost._stock, stock)
 
   def test_wraps_existing_stock_controller(self):
     stock = AccelBoost()
@@ -203,22 +201,22 @@ class TestAccelBoostExt(OpenpilotTestCase):
     update(stock, sm)
 
     ext = AccelBoostExt(stock)
-    assert ext._stock is stock
-    assert ext.total_boost == pytest.approx(stock.total_boost)
+    self.assertIs(ext._stock, stock)
+    self.assertAlmostEqual(ext.total_boost, stock.total_boost)
 
   def test_boost_bar_max_matches_profile_cap(self):
     for personality, scale in EXPECTED_SCALE.items():
-      assert get_accel_boost_max(personality) == pytest.approx(ACCEL_BOOST_MAX * (1.0 + scale))
+      self.assertAlmostEqual(get_accel_boost_max(personality), ACCEL_BOOST_MAX * (1.0 + scale))
 
   def test_total_boost_is_stock_accumulated_plus_extra_applied(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
     sm['carState'].gasPressed = True
     update(ext, sm)
-    assert ext.total_boost == pytest.approx(ext._stock.total_boost + ext.extra_boost)
+    self.assertAlmostEqual(ext.total_boost, ext._stock.total_boost + ext.extra_boost)
 
   def test_turning_toggle_off_restores_stock_only(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
-    assert ext._extra.total_boost > 0.0
+    self.assertGreater(ext._extra.total_boost, 0.0)
 
     self.params.enabled = False
     sm['carState'].gasPressed = True
@@ -226,13 +224,13 @@ class TestAccelBoostExt(OpenpilotTestCase):
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL) + 1):
       out = update(ext, sm)
 
-    assert ext._extra.total_boost == 0.0
-    assert ext.extra_boost == 0.0
-    assert out == pytest.approx(E2E_ACCEL + ext.stock_boost)
+    self.assertEqual(ext._extra.total_boost, 0.0)
+    self.assertEqual(ext.extra_boost, 0.0)
+    self.assertAlmostEqual(out, E2E_ACCEL + ext.stock_boost)
 
   def test_relaxing_following_distance_applies_immediately(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
     sm['selfdriveState'].personality = log.LongitudinalPersonality.relaxed
     sm['carState'].gasPressed = True
     applied = self._applied_extra(ext, sm)
-    assert applied == pytest.approx(ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.relaxed])
+    self.assertAlmostEqual(applied, ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.relaxed])

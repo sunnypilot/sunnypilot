@@ -1,7 +1,5 @@
 from types import SimpleNamespace
 
-import pytest
-
 from openpilot.cereal import log
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
@@ -51,8 +49,8 @@ class TestAccelBoost(OpenpilotTestCase):
     boost = AccelBoost()
     sm = FakeSubMaster(gas_pressed=False)
     out = run_boost(boost, sm)
-    assert boost.total_boost == 0.0
-    assert out == pytest.approx(E2E_ACCEL)
+    self.assertEqual(boost.total_boost, 0.0)
+    self.assertAlmostEqual(out, E2E_ACCEL)
 
   def test_boost_requires_e2e_to_be_limiting(self):
     boost = AccelBoost()
@@ -62,7 +60,7 @@ class TestAccelBoost(OpenpilotTestCase):
     sm['carState'].gasPressed = True
     for _ in range(10):
       boost.update(sm, E2E_ACCEL, E2E_ACCEL, E2E_ACCEL)
-    assert boost.total_boost == 0.0
+    self.assertEqual(boost.total_boost, 0.0)
 
   def test_per_override_cap(self):
     boost = AccelBoost()
@@ -70,17 +68,17 @@ class TestAccelBoost(OpenpilotTestCase):
     run_boost(boost, sm)
     sm['carState'].gasPressed = True
     run_boost(boost, sm, 1000)
-    assert boost.total_boost == pytest.approx(ACCEL_BOOST_PER_OVERRIDE)
+    self.assertAlmostEqual(boost.total_boost, ACCEL_BOOST_PER_OVERRIDE)
 
   def test_max_boost(self):
     boost = self._boost_to_max()
-    assert boost.total_boost == pytest.approx(ACCEL_BOOST_MAX)
+    self.assertAlmostEqual(boost.total_boost, ACCEL_BOOST_MAX)
 
   def test_boost_is_applied_to_e2e_accel(self):
     boost = self._boost_to_max()
     sm = FakeSubMaster(gas_pressed=True)
     out = run_boost(boost, sm)
-    assert out == pytest.approx(E2E_ACCEL + boost.total_boost)
+    self.assertAlmostEqual(out, E2E_ACCEL + boost.total_boost)
 
   def test_boost_does_not_depend_on_following_distance(self):
     totals = []
@@ -98,4 +96,6 @@ class TestAccelBoost(OpenpilotTestCase):
         run_boost(boost, sm)
       totals.append(boost.total_boost)
 
-    assert totals == [pytest.approx(ACCEL_BOOST_MAX)] * 3
+    self.assertEqual(len(totals), 3)
+    for total in totals:
+      self.assertAlmostEqual(total, ACCEL_BOOST_MAX)
