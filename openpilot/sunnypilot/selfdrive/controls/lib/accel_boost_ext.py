@@ -10,9 +10,9 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost, ACCEL_BOOST_MAX
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
-SCALE_RELAXED = 0.1
+SCALE_RELAXED = 0.3
 SCALE_STANDARD = 0.5
-SCALE_AGGRESSIVE = 0.9
+SCALE_AGGRESSIVE = 0.7
 
 
 def get_accel_boost_scale(personality) -> float:
