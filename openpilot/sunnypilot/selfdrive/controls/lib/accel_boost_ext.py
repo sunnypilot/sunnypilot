@@ -7,12 +7,12 @@ See the LICENSE.md file in the root directory for more details.
 from openpilot.cereal import log
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
-from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
+from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost, ACCEL_BOOST_MAX
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 
-SCALE_RELAXED = 0.3
+SCALE_RELAXED = 0.1
 SCALE_STANDARD = 0.5
-SCALE_AGGRESSIVE = 0.7
+SCALE_AGGRESSIVE = 0.9
 
 
 def get_accel_boost_scale(personality) -> float:
@@ -21,6 +21,11 @@ def get_accel_boost_scale(personality) -> float:
   if personality == log.LongitudinalPersonality.relaxed:
     return SCALE_RELAXED
   return SCALE_STANDARD
+
+
+def get_accel_boost_max(personality) -> float:
+  """Maximum reported boost: the stock cap plus the profile-scaled extra cap."""
+  return ACCEL_BOOST_MAX * (1.0 + get_accel_boost_scale(personality))
 
 
 class AccelBoostExt:

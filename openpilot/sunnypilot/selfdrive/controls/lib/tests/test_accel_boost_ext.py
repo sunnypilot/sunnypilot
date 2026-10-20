@@ -8,16 +8,16 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost, ACCEL_BOOST_MAX, ACCEL_BOOST_PER_OVERRIDE
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
-from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import AccelBoostExt
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import AccelBoostExt, get_accel_boost_max
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
 
 E2E_ACCEL = 0.5
 PLANNER_ACCEL = 2.0
 STEPS_PER_OVERRIDE = round(ACCEL_BOOST_PER_OVERRIDE / (0.025 * DT_MDL))
 EXPECTED_SCALE = {
-  log.LongitudinalPersonality.relaxed: 0.3,
+  log.LongitudinalPersonality.relaxed: 0.1,
   log.LongitudinalPersonality.standard: 0.5,
-  log.LongitudinalPersonality.aggressive: 0.7,
+  log.LongitudinalPersonality.aggressive: 0.9,
 }
 
 
@@ -205,6 +205,10 @@ class TestAccelBoostExt(OpenpilotTestCase):
     ext = AccelBoostExt(stock)
     assert ext._stock is stock
     assert ext.total_boost == pytest.approx(stock.total_boost)
+
+  def test_boost_bar_max_matches_profile_cap(self):
+    for personality, scale in EXPECTED_SCALE.items():
+      assert get_accel_boost_max(personality) == pytest.approx(ACCEL_BOOST_MAX * (1.0 + scale))
 
   def test_total_boost_is_stock_accumulated_plus_extra_applied(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)

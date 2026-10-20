@@ -6,8 +6,8 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import get_accel_boost_max
 
-BOOST_SCALE_MAX = 0.35
 BAR_WIDTH = 10
 VALUE_FONT_SIZE = 17
 LABEL_FONT_SIZE = 10
@@ -31,6 +31,7 @@ class AccelBoostIndicator(Widget):
     self._label_font = gui_app.font(FontWeight.MEDIUM)
     self._profile_label = "STD"
     self._profile_color = PROFILE_STYLES[1][1]
+    self._max_boost = 0.0
 
   def _update_state(self):
     sm = ui_state.sm
@@ -40,7 +41,9 @@ class AccelBoostIndicator(Widget):
     self._boost_filter.update(float(sm['longitudinalPlan'].accelBoost) if visible else 0.0)
 
     if sm.alive['selfdriveState']:
-      self._profile_label, self._profile_color = PROFILE_STYLES.get(sm['selfdriveState'].personality.raw, PROFILE_STYLES[1])
+      personality = sm['selfdriveState'].personality
+      self._profile_label, self._profile_color = PROFILE_STYLES.get(personality.raw, PROFILE_STYLES[1])
+      self._max_boost = get_accel_boost_max(personality)
 
   def _render(self, _):
     alpha = self._alpha_filter.x
@@ -59,8 +62,12 @@ class AccelBoostIndicator(Widget):
     rl.draw_rectangle_rounded(rl.Rectangle(bar_x, track_top, BAR_WIDTH, track_h), 0.5, 12,
                               rl.Color(COLOR_TRACK.r, COLOR_TRACK.g, COLOR_TRACK.b, int(COLOR_TRACK.a * alpha)))
 
-    boost = min(max(self._boost_filter.x, 0.0), BOOST_SCALE_MAX)
-    fill_h = boost / BOOST_SCALE_MAX * track_h
+    if self._max_boost <= 0.0:
+      return
+
+    # Scale to the current profile's cap, so a maxed boost fills the bar.
+    boost = min(max(self._boost_filter.x, 0.0), self._max_boost)
+    fill_h = boost / self._max_boost * track_h
     if fill_h > 0.0:
       fill = rl.Color(self._profile_color.r, self._profile_color.g, self._profile_color.b, int(255 * alpha))
       if fill_h < BAR_WIDTH:
