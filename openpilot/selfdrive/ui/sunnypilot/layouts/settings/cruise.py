@@ -30,6 +30,11 @@ ACC_NOLONG_DESCRIPTION = tr_noop("This feature can only be used with sunnypilot 
 ACC_PCMCRUISE_DISABLED_DESCRIPTION = tr_noop("This feature is not supported on this platform due to vehicle limitations.")
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
 
+ACCEL_BOOST_EXT_DESCRIPTION = tr_noop("Adds extra acceleration on top of the stock gas-override boost when you hold the gas pedal " +
+                                       "while sunnypilot longitudinal control is active. The extra boost follows the Following Distance setting: " +
+                                       "strongest when Aggressive, weakest when Relaxed. The stock boost remains active when this is off.")
+ACCEL_BOOST_EXT_NOLONG_DESCRIPTION = tr_noop("This feature requires sunnypilot longitudinal control to be available.")
+
 
 class CruiseLayout(Widget):
   def __init__(self):
@@ -76,6 +81,11 @@ class CruiseLayout(Widget):
       min_value=1, max_value=3, value_change_step=1,
       inline=True)
 
+    self.accel_boost_toggle = toggle_item_sp(
+      title=tr("Extra Acceleration Boost by Following Distance"),
+      description="",
+      param="FollowDistanceAccelBoost")
+
     self.sla_settings_button = simple_button_item_sp(
       button_text=lambda: tr("Speed Limit"),
       button_width=800,
@@ -89,6 +99,7 @@ class CruiseLayout(Widget):
       self.custom_acc_toggle,
       self.custom_acc_short_increment,
       self.custom_acc_long_increment,
+      self.accel_boost_toggle,
       self.sla_settings_button,
     ]
     return items
@@ -104,6 +115,7 @@ class CruiseLayout(Widget):
     self._scroller.show_event()
     self.icbm_toggle.show_description(True)
     self.custom_acc_toggle.show_description(True)
+    self.accel_boost_toggle.show_description(True)
 
   def _set_current_panel(self, panel: PanelType):
     self._current_panel = panel
@@ -148,10 +160,17 @@ class CruiseLayout(Widget):
         self.scc_v_toggle.action_item.set_enabled(False)
         self.scc_m_toggle.action_item.set_enabled(False)
 
+      self.accel_boost_toggle.action_item.set_enabled(has_long and ui_state.is_offroad())
+      boost_desc = tr(ACCEL_BOOST_EXT_DESCRIPTION) if has_long else tr(ACCEL_BOOST_EXT_NOLONG_DESCRIPTION)
+      if self.accel_boost_toggle.description != boost_desc:
+        self.accel_boost_toggle.set_description(boost_desc)
+        self.accel_boost_toggle.show_description(True)
+
     else:
       has_icbm = has_long = False
       self.icbm_toggle.action_item.set_enabled(False)
       self.icbm_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
+      self.accel_boost_toggle.action_item.set_enabled(False)
 
     show_custom_acc_desc = False
 
