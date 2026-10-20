@@ -34,6 +34,7 @@ class LanefulRenderer:
     # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
+    self._offset_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL)
     self._readout_rect: rl.Rectangle | None = None
     self._settings_page = None
@@ -69,8 +70,8 @@ class LanefulRenderer:
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
     if laneful.lanefulTrust > 0.0:
-      bar.offset = float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / max(half_width, 0.1), -1.0, 1.0))
-      bar.trust = self._trust
+      bar.offset = self._offset_display.update(float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / max(half_width, 0.1), -1.0, 1.0)))
+      bar.trust = self._trust_display.x
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
