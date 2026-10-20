@@ -16,7 +16,7 @@ LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
 MAX_ERROR = 1.0  # m, cap on how far laneful can pull
 MIN_SPEED = 9.0  # m/s
-SMOOTH_TAU = 0.15  # s
+JERK_LIMIT = 0.5  # m/s^3
 YIELD = (0.5, 1.0)  # m
 LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
@@ -26,24 +26,31 @@ X_IDXS = np.array(ModelConstants.X_IDXS)
 class Laneful:
   def __init__(self):
     self.lane_width = FirstOrderFilter(LANE_WIDTH_DEFAULT, 10.0, DT_MDL)
-    self.correction = FirstOrderFilter(0.0, SMOOTH_TAU, DT_MDL) # correcting over .3s reduces jerk
+    self.line_probs = FirstOrderFilter(np.zeros(2), 0.5, DT_MDL)
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
-    if not active or v_ego < MIN_SPEED or 'lane_lines' not in model_output:
-      self.curvature = self.correction.x = 0.0
+    if not active:
+      self.curvature = 0.0
+      return 0.0
+    target = self._target(model_output, v_ego, model_curvature)
+    step = JERK_LIMIT / max(v_ego, 1.0) ** 2 * DT_MDL
+    self.curvature = float(np.clip(target, self.curvature - step, self.curvature + step))
+    return self.curvature
+
+  def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
+    if v_ego < MIN_SPEED or 'lane_lines' not in model_output:
       return 0.0
 
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     lines = model_output['lane_lines'][0, :, :, 0]
     stds = model_output['lane_lines_stds'][0, :, :, 0]
 
-    probs = model_output['lane_lines_prob'][0, 1::2]
-    l_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
-    r_prob = float(probs[2] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
+    probs = self.line_probs.update(model_output['lane_lines_prob'][0, 1::2][1:3])
+    l_prob = float(probs[0] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
+    r_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
     lane_trust = l_prob + r_prob - l_prob * r_prob
     if lane_trust <= 0.0:
-      self.curvature = self.correction.x = 0.0
       return 0.0
 
     if l_prob * r_prob > 0.5:
@@ -69,5 +76,4 @@ class Laneful:
     plan_y = np.interp(lookahead, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
     away = abs(plan_y - np.interp(lookahead, x, center)) - abs(center_now) - 0.25 * abs(model_curvature) * lookahead ** 2 / 2
     lane_trust *= np.interp(away, YIELD, [1.0, 0.0])
-    self.curvature = float(self.correction.update(lane_trust * dk))
-    return self.curvature
+    return float(lane_trust * dk)
