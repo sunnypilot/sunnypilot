@@ -17,6 +17,7 @@ MIN_LOOKAHEAD = 10.0  # m
 MIN_SPEED = 5.0  # m/s
 LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
+MAX_ERROR = 1.0  # m, cap on how far laneful can pull
 X_IDXS = np.array(ModelConstants.X_IDXS)
 
 
@@ -78,7 +79,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     # Fit curvature to place the plant in center: e ~ dk x^2 / 2
     plan_x = np.interp(x, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
     plan_share = np.interp(abs(model_curvature) * lookahead ** 2 / 2, [0.5, 2.0], [0.3, 0.5]) # blending up to 50% plan with action during sharp curvature
-    error = np.clip(center - ((1 - plan_share) * model_curvature * x ** 2 / 2 + plan_share * plan_x), -1.0, 1.0)
+    error = np.clip(center - ((1 - plan_share) * model_curvature * x ** 2 / 2 + plan_share * plan_x), -MAX_ERROR, MAX_ERROR)
     dk = 2.0 * np.sum(weight * error * x ** 2) / np.sum(weight * x ** 4)
 
     # A model planning to end up further off center than the plant is now is likely going around something
