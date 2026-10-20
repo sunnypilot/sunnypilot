@@ -33,10 +33,11 @@ class LongitudinalPlannerSP:
 
     self.output_v_target = 0.
     self.output_a_target = 0.
-    self._accel_boost = None
+    self._accel_boost: AccelBoostExt | None = None
 
   @property
   def accel_boost(self) -> AccelBoostExt:
+    assert self._accel_boost is not None
     return self._accel_boost
 
   @accel_boost.setter
