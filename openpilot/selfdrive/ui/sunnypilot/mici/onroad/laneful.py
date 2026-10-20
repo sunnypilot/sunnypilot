@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 Laneful visuals: cyan lane-center target, thin white line down the middle of the model path,
 and a top-center readout of the pull, from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
 """
+from types import SimpleNamespace
+
 import numpy as np
 import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -19,6 +21,8 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 CENTER_COLOR = (0, 200, 255)
 PATH_COLOR = (255, 255, 255)
+
+bar = SimpleNamespace(offset=0.0, trust=0.0, alpha=0.0)
 
 
 class LanefulRenderer:
@@ -39,6 +43,7 @@ class LanefulRenderer:
     laneful = ui_state.sm['modelDataV2SP']
     laneful_curvature = laneful.lanefulCurvature
     self._alpha.update(float(laneful_curvature != 0.0))
+    bar.alpha = self._alpha.x
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
@@ -63,6 +68,9 @@ class LanefulRenderer:
     self._path_points = renderer._map_line_to_polygon(path, 0.1, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
+    if laneful_curvature != 0.0:
+      bar.offset = float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / max(half_width, 0.1), -1.0, 1.0))
+      bar.trust = self._trust
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
@@ -115,3 +123,13 @@ class LanefulRenderer:
       fill_x = cx if pull > 0 else cx - fill
       rl.draw_rectangle_rounded(rl.Rectangle(fill_x, bar.y, fill, bar.height), 1.0, 6,
                                 self._color(CENTER_COLOR, np.clip(0.3 + 0.7 * trust, 0.0, 1.0) * 255))
+
+
+def draw_laneful_bar(rect: rl.Rectangle, torque_r: float, torque_h: float, span: float, center: np.ndarray, alpha: float, scale: float) -> None:
+  from openpilot.selfdrive.ui.mici.onroad.torque_bar import arc_bar_pts
+  h = 10 * scale * bar.alpha
+  if h < 1:
+    return
+  a1 = -90 + span * 0.35 * bar.offset
+  pts = arc_bar_pts(torque_r + (torque_h + h) / 2, h, min(-90, a1), max(-90, a1), cap_radius=h / 2) + center
+  draw_polygon(rect, pts, color=rl.Color(*CENTER_COLOR, int(230 * alpha * bar.alpha * max(bar.trust, 0.3))))
