@@ -31,6 +31,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     self.usual_offset = FirstOrderFilter(0.0, 10.0, DT_MDL, initialized=False)
     self.going_around = False
     self.trust = 0.0
+    self.model_curvature = 0.0
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
@@ -40,6 +41,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
       self.usual_offset.initialized = False
       self.lane_width.initialized = False
       self.going_around = False
+    self.model_curvature = model_curvature
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
     releasing = not fading and (abs(target) < abs(self.curvature) or target * self.curvature < 0)
     step = (2.0 if releasing else 0.5) / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
