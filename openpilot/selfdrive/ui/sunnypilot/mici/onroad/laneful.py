@@ -42,7 +42,7 @@ class LanefulRenderer:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
     laneful = ui_state.sm['modelDataV2SP']
     laneful_curvature = laneful.lanefulCurvature
-    self._alpha.update(float(laneful_curvature != 0.0))
+    self._alpha.update(float(laneful.lanefulTrust > 0.0))
     bar.alpha = self._alpha.x
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
@@ -68,7 +68,7 @@ class LanefulRenderer:
     self._path_points = renderer._map_line_to_polygon(path, 0.1, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
-    if laneful_curvature != 0.0:
+    if laneful.lanefulTrust > 0.0:
       bar.offset = float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / max(half_width, 0.1), -1.0, 1.0))
       bar.trust = self._trust
 
