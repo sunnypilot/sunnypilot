@@ -47,21 +47,22 @@ class LanefulRenderer:
       self._path_points = np.empty((0, 2), dtype=np.float32)
       return
 
+    lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     l_var = stds[1] ** 2 / max(laneful.lanefulLeftProb, 1e-4)
     r_var = stds[2] ** 2 / max(laneful.lanefulRightProb, 1e-4)
     half_width = laneful.lanefulLaneWidth / 2
-    center = left.copy()
-    center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
+    center_y = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
     self._trust = laneful.lanefulTrust
-    self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
 
-    # middle of the model path, ending at the lookahead
+    # target and middle of the model path share the path's points, so both end at the same distance
     path = renderer._path.raw_points
-    lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
+    center = path.copy()
+    center[:, 1] = np.interp(path[:, 0], left[:, 0], center_y)
+    end_idx = renderer._get_path_length_idx(path[:, 0], min(1.5 * lookahead, left[max_idx, 0]))
+    self._center_points = renderer._map_line_to_polygon(center, 0.1, renderer._path_offset_z, end_idx)
+    self._path_points = renderer._map_line_to_polygon(path, 0.1, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     self._trust_display.update(self._trust)
-    self._path_points = renderer._map_line_to_polygon(path, 0.15, renderer._path_offset_z,
-                                                      renderer._get_path_length_idx(path[:, 0], lookahead))
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
