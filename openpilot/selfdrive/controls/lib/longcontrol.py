@@ -9,6 +9,11 @@ CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
+# Stopping is shaped as a constant-jerk taper so the brake is released as the car comes to rest.
+# The old behavior ramped towards CP.stopAccel while still rolling, making the last meter the hardest.
+STOPPING_JERK = 2.0  # m/s^3, rate the stopping decel is released at (higher eases off faster)
+STOPPING_HOLD_SPEED = 0.02  # m/s, below this command CP.stopAccel to hold the car
+
 
 def long_control_state_trans(CP_SP, active, long_control_state,
                              should_stop, brake_pressed, cruise_standstill):
@@ -51,6 +56,18 @@ class LongControl:
   def reset(self):
     self.pid.reset()
 
+  def _stopping_accel(self, v_ego: float) -> float:
+    v_ego = max(float(v_ego), 0.0)
+    if v_ego < STOPPING_HOLD_SPEED:
+      return float(self.CP.stopAccel)
+
+    # Decel that reaches zero at standstill with constant jerk, never stronger than what we already have
+    taper = -np.sqrt(2.0 * STOPPING_JERK * v_ego)
+    goal = min(0.0, max(self.last_output_accel, taper))
+    output_accel = np.clip(goal, self.last_output_accel - STOPPING_JERK * DT_CTRL,
+                           self.last_output_accel + STOPPING_JERK * DT_CTRL)
+    return float(min(output_accel, 0.0))
+
   def update(self, active, CS, a_target, should_stop, accel_limits):
     """Update longitudinal control. This updates the state machine and runs a PID loop"""
     self.pid.neg_limit = accel_limits[0]
@@ -64,11 +81,7 @@ class LongControl:
       output_accel = 0.
 
     elif self.long_control_state == LongCtrlState.stopping:
-      output_accel = self.last_output_accel
-      if output_accel > self.CP.stopAccel:
-        output_accel = min(output_accel, 0.0)
-        # TODO: can we just go straight to stopAccel?
-        output_accel -= 1.0 * DT_CTRL  # m/s^2/s while trying to stop
+      output_accel = self._stopping_accel(CS.vEgo)
       self.reset()
 
     else:  # LongCtrlState.pid
