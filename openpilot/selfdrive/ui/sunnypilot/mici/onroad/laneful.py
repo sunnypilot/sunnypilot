@@ -4,8 +4,8 @@ Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-Laneful visuals: faint cyan lane-center target, thin white line down the middle of the model path,
-and a top-center readout of the pull, from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
+Laneful visuals: a top-center readout of laneful's pull and lane-center target,
+from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
 """
 import numpy as np
 import pyray as rl
@@ -14,18 +14,14 @@ from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.modeld_v2.laneful import LOOKAHEAD_TIME, MIN_LOOKAHEAD, MAX_ERROR
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 CENTER_COLOR = (0, 200, 255)
-PATH_COLOR = (255, 255, 255)
-
 
 
 class LanefulRenderer:
   def __init__(self):
-    self._center_points = np.empty((0, 2), dtype=np.float32)
-    self._path_points = np.empty((0, 2), dtype=np.float32)
+    self._visible = False
     self._font = gui_app.font(FontWeight.BOLD)
     # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
@@ -42,41 +38,28 @@ class LanefulRenderer:
     self._alpha.update(float(laneful.lanefulTrust > 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
+    path = renderer._path.raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
-    if self._alpha.x < 0.01 or len(left) == 0 or len(right) != len(left) or len(stds) < 3:
-      self._center_points = np.empty((0, 2), dtype=np.float32)
-      self._path_points = np.empty((0, 2), dtype=np.float32)
+    self._visible = not (self._alpha.x < 0.01 or len(left) == 0 or len(right) != len(left) or len(path) == 0 or len(stds) < 3)
+    if not self._visible:
       return
 
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
-    l_var = stds[1] ** 2 / max(laneful.lanefulLeftProb, 1e-4)
-    r_var = stds[2] ** 2 / max(laneful.lanefulRightProb, 1e-4)
-    half_width = laneful.lanefulLaneWidth / 2
-    center_y = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
-
-    # target and middle of the model path share the path's points, so both end at the same distance
-    path = renderer._path.raw_points
-    center = path.copy()
-    center[:, 1] = np.interp(path[:, 0], left[:, 0], center_y)
-    end_idx = renderer._get_path_length_idx(path[:, 0], left[max_idx, 0])
-    self._center_points = renderer._map_line_to_polygon(center, 0.15, renderer._path_offset_z, end_idx)
-    self._path_points = renderer._map_line_to_polygon(path, 0.15, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     if laneful.lanefulTrust > 0.0:
-      self._target_frac = self._offset_display.update(float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / MAX_ERROR, -1.0, 1.0)))
+      l_var = stds[1] ** 2 / max(laneful.lanefulLeftProb, 1e-4)
+      r_var = stds[2] ** 2 / max(laneful.lanefulRightProb, 1e-4)
+      half_width = laneful.lanefulLaneWidth / 2
+      center_y = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
+      target = np.interp(lookahead, left[:, 0], center_y) - np.interp(lookahead, path[:, 0], path[:, 1])
+      self._target_frac = self._offset_display.update(float(np.clip(target / MAX_ERROR, -1.0, 1.0)))
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
 
-  def _fade(self, rgb, alpha: float) -> Gradient:
-    return Gradient(start=(0.0, 1.0), end=(0.0, 0.0), colors=[self._color(rgb, alpha), self._color(rgb, alpha), self._color(rgb, 0)], stops=[0.0, 0.6, 1.0])
-
   def draw(self, rect: rl.Rectangle) -> None:
-    if self._path_points.size:
-      draw_polygon(rect, self._center_points, gradient=self._fade(CENTER_COLOR, 255))
-      draw_polygon(rect, self._path_points, gradient=self._fade(PATH_COLOR, 255))
     self._readout_rect = None
-    if self._path_points.size:
+    if self._visible:
       self._draw_readout(rect)
 
   def handle_tap(self, pos) -> bool:
