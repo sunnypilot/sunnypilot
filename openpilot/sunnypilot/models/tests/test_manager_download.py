@@ -243,7 +243,6 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     asyncio.run(self.manager._download_bundle(self._bundle, self.dest, source))
 
   def request_download(self) -> dict:
-    """Asks for the test bundle the way the UI does, then runs one tick of the request loop."""
     self.make_artifact()
     self._bundle.ref = "ref"
     self._bundle.minimumSelectorVersion = helpers.REQUIRED_JSON_VERSION
@@ -351,7 +350,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.resume_state()["done"] == [i for i in range(NUM_PIECES) if i != 1]
 
   def test_failed_transfer_resumes_on_retry(self):
-    """When a piece runs out of tries the whole transfer is retried, skipping the pieces already saved."""
     self.server.fail_times = {piece_range(1): manager_module.PIECE_ATTEMPTS}  # the first transfer gives up on piece 1
     self.server.fail_after_others = True  # by then every other piece is saved
     self.process_artifact()
@@ -367,7 +365,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.piece_requests().count(piece_range(1)) == manager_module.PIECE_ATTEMPTS * manager_module.DOWNLOAD_ATTEMPTS
 
   def test_cancel_ends_retry_backoff(self):
-    """A cancel during the wait before a retry ends the wait at once, and is not a failure."""
     self.enterContext(mock.patch.object(manager_module, 'RETRY_BACKOFF', 30.0))
     self.manager._download_ref = b"ref"
 
