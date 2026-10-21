@@ -14,14 +14,13 @@ import math
 import os
 import random
 import re
+import requests
 import tempfile
 import threading
 import time
 import unittest
 from typing import Any
 from unittest import mock
-
-import requests
 
 from openpilot.cereal import custom
 from openpilot.common.test import OpenpilotTestCase
@@ -44,14 +43,12 @@ def sha256(data: bytes) -> str:
 
 
 def piece_range(index: int) -> tuple[int, int]:
-  """Inclusive byte range the client is expected to request for piece `index`."""
   start = index * PIECE_SIZE
   return start, min(start + PIECE_SIZE, len(WHOLE_BODY)) - 1
 
 
 @dataclasses.dataclass
 class ServerState:
-  """What the test server serves and what it saw. A fresh one per test."""
   request_ranges: list[tuple[int, int] | None] = dataclasses.field(default_factory=list)  # None: no (honored) Range header
   request_encodings: list[str | None] = dataclasses.field(default_factory=list)  # Accept-Encoding of every request
   fail_ranges: dict[tuple[int, int], int] = dataclasses.field(default_factory=dict)  # range -> HTTP status, every time
@@ -65,7 +62,6 @@ class ServerState:
 
 
 class DownloadHandler(http.server.BaseHTTPRequestHandler):
-  """Serves WHOLE_BODY with byte-range support, as configured by `state`."""
   state = ServerState()
 
   def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
@@ -122,7 +118,6 @@ class DownloadHandler(http.server.BaseHTTPRequestHandler):
 
 @contextlib.contextmanager
 def threaded_server(handler):
-  """One thread per request, so parallel range requests are served concurrently."""
   server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler)
   thread = threading.Thread(target=server.serve_forever)
   thread.start()
@@ -164,7 +159,6 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     self.manager._download_start_times = {}
 
   def _record_progress(self, *args) -> None:
-    """Runs on every real _report_status send."""
     artifact = getattr(self, 'artifact', None)
     if artifact is not None:
       self.reported.append(float(artifact.downloadProgress.progress))
@@ -187,11 +181,9 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
     return os.path.join(self.dest, FILE_NAME)
 
   def piece_requests(self) -> list[tuple[int, int]]:
-    """Honored ranges minus the one-byte size probe."""
     return [r for r in self.server.request_ranges if r is not None and r != (0, 0)]
 
   def stall(self, index: int) -> threading.Event:
-    """Holds piece `index` after its first 100 bytes until the returned event is set, or for 5 s."""
     self.server.stall_ranges = {piece_range(index)}
     self.server.stall_event = threading.Event()
     return self.server.stall_event
@@ -229,8 +221,6 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 
 
 class TestManagerDownload(ManagerDownloadTestBase):
-  """Exercises the real parallel byte-range _download_file against a local server."""
-
   def test_download(self):
     artifact = self.download_file()
     assert self.read_path() == WHOLE_BODY
@@ -241,7 +231,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert artifact.fileName not in self.manager._download_start_times
 
   def test_pieces_download_in_parallel(self):
-    """The stalled piece is released only once every other piece has been requested, which a serial downloader never does."""
     stall_event = self.stall(0)
     others = {piece_range(i) for i in range(1, NUM_PIECES)}
 
@@ -258,7 +247,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.server.stall_released_by_event is True, "other pieces did not download while one was stalled"
 
   def test_fallback_when_server_ignores_ranges(self):
-    """A 200 to the range probe means whole bodies only: one plain stream, same result."""
     self.server.support_ranges = False
     self.download_file()
     assert self.read_path() == WHOLE_BODY
@@ -280,7 +268,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.piece_requests().count(piece_range(1)) == 1
 
   def test_removing_download_ref_cancels(self):
-    """The cancel is polled mid-transfer and stops a running piece at its next block."""
     stall_event = self.stall(3)
     refs = iter([b"ref"])
     self.params.get.side_effect = lambda key: next(refs, None)  # removed after the first poll
@@ -298,7 +285,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.read_path()[end - 100:end] == bytes(100), "the cancelled piece must stop before its last bytes land"
 
   def test_replaced_download_ref_queues_instead_of_canceling(self):
-    """Selecting another model mid-transfer lets the running download finish."""
     self.params.get.return_value = b"other-ref"
     self.manager._download_ref = b"ref"
     self.download_file()
@@ -306,11 +292,9 @@ class TestManagerDownload(ManagerDownloadTestBase):
 
 
 class TestProcessArtifact(ManagerDownloadTestBase):
-  """Verification, caching and the active bundle slot around the download."""
-
   def test_download_writes_only_its_slot(self):
     ds = custom.ModelManagerSP.DownloadStatus
-    for source, other in (("qcom", "chestnut"), ("chestnut", "qcom")):
+    for source, other in (("qcom", "chestnut"), ("chestnut", "qcom")): # bernoulli
       with self.subTest(source=source):
         self.make_artifact()
         self._bundle.ref = f"{source}-ref"
@@ -346,7 +330,6 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     assert self.reported_statuses == [ds.verifying, ds.cached]
 
   def test_cached_bundle_cancel_skips_slot_write(self):
-    """A cancel must stop an already-on-disk bundle before it is applied to the slot."""
     with open(self.path, 'wb') as f:
       f.write(WHOLE_BODY)
     self.make_artifact()
@@ -359,7 +342,6 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     assert os.path.isfile(self.path), "cancel must not delete a cached model"
 
   def test_download_ref_is_released_only_if_unchanged(self):
-    """A selection made during a download must survive that download's cleanup."""
     for current, removed in ((b"new-ref", False), (b"ref", True)):
       self.params = self.manager.params = mock.MagicMock()
       self.params.get.return_value = current
@@ -387,8 +369,6 @@ class TestResolveBundleByRef(OpenpilotTestCase):
 
 
 def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = False) -> dict:
-  """Minimal manifest bundle dict, version-compatible.
-  Big (chestnut) bundles carry `is_big: true` in the manifest JSON."""
   return {
     "index": index,
     "short_name": short_name,
@@ -410,7 +390,6 @@ def manifest_bundle(short_name: str, ref: str, index: int = 0, is_big: bool = Fa
 
 
 def manifest_params(qcom_manifest, chestnut_manifest=None):
-  """Params holding fresh caches of both manifests."""
   values = {
     "ModelManager_ModelsCache": qcom_manifest,
     "ModelManager_ModelsCache_Chestnut": chestnut_manifest or {"bundles": [manifest_bundle("big", "bbb", is_big=True)]},
@@ -452,8 +431,6 @@ class TestModelFetcher(OpenpilotTestCase):
       assert [bundle.ref for bundle in fetcher.get_bundles_for_source("chestnut")] == ["bbb"]
 
   def test_unusable_cache_is_refetched(self):
-    """A cache that fails to parse, or parses to no valid bundles (an old manifest version), is refetched
-    instead of raising or returning nothing forever."""
     stale = {**manifest_bundle("small", "aaa"), "minimum_selector_version": "16"}  # parses to zero valid bundles
     corrupt = {"short_name": "broken"}  # missing required fields
     for cached in (stale, corrupt):
@@ -464,7 +441,6 @@ class TestModelFetcher(OpenpilotTestCase):
         fetch.assert_called_once_with("qcom")
 
   def test_mismatched_cache_is_refetched_once(self):
-    """A cache of the other source's models is refetched, but then the URL is trusted, not refetched at 1 Hz forever."""
     fetcher = ModelFetcher(manifest_params({"bundles": [manifest_bundle("big", "bbb", is_big=True)]}))
     with self.refetch(fetcher, manifest_bundle("big", "bbb", is_big=True)) as fetch:
       first = fetcher.get_bundles_for_source("qcom")
@@ -492,8 +468,6 @@ class TestActiveBundle(OpenpilotTestCase):
     for gpu, source in ((False, "qcom"), (True, "chestnut")):
       with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=gpu):
         assert get_active_source() == source
-    # display callers (mici) pass (chestnut, chestnut_active, chestnut_loading, offroad): the big model shows
-    # only with a GPU attached and while it is loading, active, or the device is offroad
     for state, source in (
       ((True, False, False, True), "chestnut"),  # offroad
       ((True, False, True, False), "chestnut"),  # onroad, big model loading
@@ -517,7 +491,6 @@ class TestActiveBundle(OpenpilotTestCase):
         "an empty chestnut slot must not fall back to the qcom pick"
 
   def test_empty_catalog_does_not_reset_slot(self):
-    """An empty bundle list means the fetch failed, not that the catalog dropped the bundle."""
     params = slot_params(qcom=raw_bundle("small"))
     with mock.patch("openpilot.sunnypilot.models.helpers.chestnut_present", return_value=False):
       validate_active_bundles(params, {"qcom": [], "chestnut": []})
@@ -537,8 +510,6 @@ class TestActiveBundle(OpenpilotTestCase):
 
 @unittest.skipUnless(os.environ.get('RUN_INTEGRATION_TESTS'), 'requires external network')
 class TestLiveModelManifest(OpenpilotTestCase):
-  """Every artifact URL in the published manifest must resolve."""
-
   def test_all_manifest_urls_available(self):
     from openpilot.sunnypilot.models.fetcher import ModelFetcher
 
@@ -556,7 +527,6 @@ class TestLiveModelManifest(OpenpilotTestCase):
             dead.append(f"{bundle.get('short_name')}: HTTP {r.status_code} {url}")
         except requests.RequestException as e:
           dead.append(f"{bundle.get('short_name')}: {type(e).__name__} {url}")
-
     assert not dead, "unreachable model URLs:\n" + "\n".join(dead)
 
 
