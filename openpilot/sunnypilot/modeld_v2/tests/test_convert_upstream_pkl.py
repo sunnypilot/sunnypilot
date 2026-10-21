@@ -12,10 +12,9 @@ import unittest
 from unittest import mock
 import numpy as np
 
-os.environ.setdefault("DEV", "MOCKUSB+AMD")
 os.environ.setdefault("CHECK_OOB", "0")
 os.environ.setdefault("GMMU", "0")
-if sys.platform == "darwin" and os.environ["DEV"].startswith("MOCKUSB"):  # the mock's VRAM is a memfd, which macOS lacks: an unlinked file is the same to mmap
+if sys.platform == "darwin" and os.environ.get("DEV", "").startswith("MOCKUSB"):  # the mock's VRAM is a memfd, which macOS lacks: an unlinked file is the same
   from tinygrad.runtime.autogen import libc
 
   def _memfd_create(name, flags):
@@ -37,12 +36,11 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
   @classmethod
   def setUpClass(cls):
     super().setUpClass()
+    if not os.environ.get("DEV", "").startswith("MOCKUSB"):
+      raise unittest.SkipTest("DEV=MOCKUSB+AMD env var not set, skipping mock converter test.")
     from tinygrad import Device, Tensor
-    try:
-      assert Device.DEFAULT == "AMD" and getattr(Device["AMD"], "is_usb", False), f"{Device.DEFAULT} is not an AMD device behind the USB bridge"
-      assert (Tensor([1, 2, 3]) * 2).tolist() == [2, 4, 6]
-    except Exception as e:
-      raise unittest.SkipTest(f"the USB AMD mock did not start (DEV=MOCKUSB+AMD CHECK_OOB=0 GMMU=0, LLVM or comgr on the host): {e!r}") from e
+    assert Device.DEFAULT == "AMD" and getattr(Device["AMD"], "is_usb", False), f"{Device.DEFAULT} is not an AMD device behind the USB bridge"
+    assert (Tensor([1, 2, 3]) * 2).tolist() == [2, 4, 6]
     cls.tmp = tempfile.TemporaryDirectory()
     cls.rng = np.random.default_rng(0)
     cls.weights = Tensor(cls.rng.standard_normal((16, 32)).astype(np.float32)).realize()

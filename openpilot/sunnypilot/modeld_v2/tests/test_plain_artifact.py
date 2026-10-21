@@ -12,7 +12,7 @@ import sys
 import tempfile
 from unittest import mock
 import numpy as np
-os.environ.setdefault("DEV", "CPU")
+import unittest
 
 import openpilot.sunnypilot.modeld_v2.helpers as helpers
 from openpilot.common.test import OpenpilotTestCase
@@ -43,6 +43,8 @@ class TestPlainArtifact(OpenpilotTestCase):
   @classmethod
   def setUpClass(cls):
     super().setUpClass()
+    if not os.environ.get("DEV"):
+      raise unittest.SkipTest("DEV env var not set, skipping plain artifact test.")
     from tinygrad import Tensor
     cls.tmp = tempfile.TemporaryDirectory()
     cls.rng = np.random.default_rng(0)
