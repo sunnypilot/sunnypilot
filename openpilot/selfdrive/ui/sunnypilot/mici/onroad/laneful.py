@@ -73,8 +73,8 @@ class LanefulRenderer:
 
   def draw(self, rect: rl.Rectangle) -> None:
     if self._path_points.size:
-      draw_polygon(rect, self._path_points, gradient=self._fade(PATH_COLOR, 255))
       draw_polygon(rect, self._center_points, gradient=self._fade(CENTER_COLOR, 255))
+      draw_polygon(rect, self._path_points, gradient=self._fade(PATH_COLOR, 255))
     self._readout_rect = None
     if self._path_points.size:
       self._draw_readout(rect)
