@@ -187,10 +187,11 @@ class ModelManagerSP:
       eta = self._calculate_eta(artifact.fileName, progress)
     self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta, speed)
 
-  async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int) -> None:
+  async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int,
+                               started: tuple[int, float]) -> None:
     pending = set(tasks)
-    last_bytes = progress.snapshot()
-    last_time, speed = time.monotonic(), 0.0
+    last_bytes, last_time = started
+    speed = 0.0
     while pending:
       done, pending = await asyncio.wait(pending, timeout=REPORT_INTERVAL)
       for task in done:
@@ -216,12 +217,13 @@ class ModelManagerSP:
     await loop.run_in_executor(None, _prepare_target, path, total)
     progress = _Progress()
     cancel = threading.Event()
+    started = progress.snapshot(), time.monotonic()  # before any worker can land bytes
 
     with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_PIECES) as pool:
       tasks = [loop.run_in_executor(pool, _fetch_piece, url, path, i, start, end, progress, cancel, self._block_size)
                for i, (start, end) in enumerate(pieces)]
       try:
-        await self._report_until_done(tasks, artifact, progress, total)
+        await self._report_until_done(tasks, artifact, progress, total, started)
       except BaseException as e:
         cancel.set()
         if isinstance(e, DownloadCancelled):

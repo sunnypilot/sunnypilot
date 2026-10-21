@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import asyncio
+import concurrent.futures
 import contextlib
 import dataclasses
 import hashlib
@@ -129,6 +130,13 @@ def threaded_server(handler):
     thread.join()
 
 
+class InlineExecutor(concurrent.futures.Executor):
+  def submit(self, fn, /, *args, **kwargs):
+    future: concurrent.futures.Future = concurrent.futures.Future()
+    future.set_result(fn(*args, **kwargs))  # the piece lands before the reporter starts
+    return future
+
+
 class ManagerDownloadTestBase(OpenpilotTestCase):
   def setUp(self):
     super().setUp()
@@ -230,6 +238,11 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert max(self.reported) <= 99.0, "progress holds below 100 until the hash check"
     assert artifact.fileName not in self.manager._download_start_times
     assert artifact.downloadProgress.speed > 0, "a running download shows its speed"
+
+  def test_speed_counts_bytes_landed_before_the_first_report(self):
+    self.enterContext(mock.patch.object(manager_module, 'ThreadPoolExecutor', lambda max_workers: InlineExecutor()))
+    artifact = self.download_file()
+    assert artifact.downloadProgress.speed > 0
 
   def test_eta_comes_from_speed(self):
     artifact = self.make_artifact()
