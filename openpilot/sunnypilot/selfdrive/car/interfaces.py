@@ -8,6 +8,7 @@ from typing import Any
 
 from opendbc.car import structs
 from opendbc.car.interfaces import CarInterfaceBase
+from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
@@ -102,11 +103,22 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params | None = None) -> None
   # STATSLOGSP.raw('sunnypilot_params.car_params_sp', CP_SP.to_dict()) # https://github.com/sunnypilot/opendbc/pull/361
 
 
+def update_live_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params) -> None:
+  # settings the car controller picks up while driving, no onroad cycle needed
+  if CP.brand == 'hyundai':
+    show_faults = HyundaiFlagsSP.CCNC_SHOW_FAULTS.value
+    if params.get("HyundaiCcncHideFaults", return_default=True):
+      CP_SP.flags &= ~show_faults
+    else:
+      CP_SP.flags |= show_faults
+
+
 def initialize_params(params) -> list[dict[str, Any]]:
   keys: list = []
 
   # hyundai
   keys.extend([
+    "HyundaiCcncHideFaults",
     "HyundaiLongitudinalTuning",
   ])
 

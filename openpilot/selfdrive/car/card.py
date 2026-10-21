@@ -300,6 +300,7 @@ class Car:
 
       # sunnypilot
       self.v_cruise_helper.read_custom_set_speed_params()
+      sunnypilot_interfaces.update_live_params(self.CP, self.CP_SP, self.params)
 
       time.sleep(0.1)
 
