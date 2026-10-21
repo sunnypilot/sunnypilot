@@ -465,6 +465,7 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
   leftLaneChangeEdgeBlock @1 :Bool;
   rightLaneChangeEdgeBlock @2 :Bool;
+  lanefulCurvature @3 :Float32;
 
   enum TurnDirection {
     none @0;
