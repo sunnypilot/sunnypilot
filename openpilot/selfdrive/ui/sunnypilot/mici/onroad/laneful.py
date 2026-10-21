@@ -7,8 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 Laneful visuals: faint cyan lane-center target, thin white line down the middle of the model path,
 and a top-center readout of the pull, from the curvature, trust, line probs and lane width modeld publishes in modelDataV2SP.
 """
-from types import SimpleNamespace
-
 import numpy as np
 import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -22,7 +20,6 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 CENTER_COLOR = (0, 200, 255)
 PATH_COLOR = (255, 255, 255)
 
-bar = SimpleNamespace(offset=0.0, pull=0.0, alpha=0.0)
 
 
 class LanefulRenderer:
@@ -33,6 +30,8 @@ class LanefulRenderer:
     # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._offset_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
+    self._target_frac = 0.0
+    self._pull_frac = 0.0
     self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL)
     self._readout_rect: rl.Rectangle | None = None
     self._settings_page = None
@@ -42,7 +41,6 @@ class LanefulRenderer:
     laneful = ui_state.sm['modelDataV2SP']
     laneful_curvature = laneful.lanefulCurvature
     self._alpha.update(float(laneful.lanefulTrust > 0.0))
-    bar.alpha = self._alpha.x
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
@@ -66,8 +64,8 @@ class LanefulRenderer:
     self._path_points = renderer._map_line_to_polygon(path, 0.1, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     if laneful.lanefulTrust > 0.0:
-      bar.offset = self._offset_display.update(float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / MAX_ERROR, -1.0, 1.0)))
-      bar.pull = float(np.clip(self._pull_display.x / MAX_ERROR, -1.0, 1.0))
+      self._target_frac = self._offset_display.update(float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / MAX_ERROR, -1.0, 1.0)))
+      self._pull_frac = float(np.clip(self._pull_display.x / MAX_ERROR, -1.0, 1.0))
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
@@ -117,20 +115,10 @@ class LanefulRenderer:
     track = rl.Rectangle(x + 24, y + h - 16, w - 48, 6)
     rl.draw_rectangle_rounded(track, 1.0, 6, self._color((255, 255, 255), 40))
     rl.draw_rectangle(int(cx - 1), int(track.y - 2), 2, int(track.height + 4), self._color((255, 255, 255), 120))
-    for frac, strength in ((bar.offset, 0.4), (bar.pull, 1.0)):
+    for frac, strength in ((self._target_frac, 0.4), (self._pull_frac, 1.0)):
       fill = track.width / 2 * abs(frac)
       if fill > 1:
         fill_x = cx if frac > 0 else cx - fill
         rl.draw_rectangle_rounded(rl.Rectangle(fill_x, track.y, fill, track.height), 1.0, 6,
                                   self._color(CENTER_COLOR, strength * 255))
 
-
-def draw_laneful_bar(rect: rl.Rectangle, torque_r: float, torque_h: float, span: float, center: np.ndarray, alpha: float, scale: float) -> None:
-  from openpilot.selfdrive.ui.mici.onroad.torque_bar import arc_bar_pts
-  h = 10 * scale * bar.alpha
-  if h < 1:
-    return
-  for frac, strength in ((bar.offset, 0.4), (bar.pull, 1.0)):
-    a1 = -90 + span * 0.35 * frac
-    pts = arc_bar_pts(torque_r + (torque_h + h) / 2, h, min(-90, a1), max(-90, a1), cap_radius=h / 2) + center
-    draw_polygon(rect, pts, color=rl.Color(*CENTER_COLOR, int(255 * strength * alpha * bar.alpha)))

@@ -8,7 +8,6 @@ import pyray as rl
 from opendbc.car import ACCELERATION_DUE_TO_GRAVITY
 from openpilot.selfdrive.ui.mici.onroad import blend_colors
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
-from openpilot.selfdrive.ui.sunnypilot.mici.onroad.laneful import draw_laneful_bar
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
@@ -222,7 +221,6 @@ class TorqueBar(Widget):
     # draw bg torque indicator line
     bg_pts = arc_bar_pts(mid_r, torque_line_height, torque_start_angle, torque_end_angle, cap_radius=7 * self._scale) + offset
     draw_polygon(rect, bg_pts, color=torque_line_bg_color)
-    draw_laneful_bar(rect, mid_r, torque_line_height, torque_bg_angle_span, offset, self._torque_line_alpha_filter.x, self._scale)
 
     # draw torque indicator line
     a0s = top_angle
