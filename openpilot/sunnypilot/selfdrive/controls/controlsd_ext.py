@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 import time
 
-import numpy as np
 
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
@@ -107,14 +106,6 @@ class ControlsExt(ModelStateBase):
             self._lane_shown[i], self._lane_count[i] = not self._lane_shown[i], 0
       CC_SP.laneLeftDistance = float(-lines[1].y[0]) if self._lane_shown[0] else 0.
       CC_SP.laneRightDistance = float(lines[2].y[0]) if self._lane_shown[1] else 0.
-
-    # curvature of the model's path 5-40 m ahead (y = c * x^2 -> 1/R = 2c), not the steering angle.
-    # 0 when the path is unsure (lateral std at 20 m over 0.3 m), faded in from 3 to 8 m/s since the path wanders when slow
-    pos, v_ego = sm['modelV2'].position, sm['carState'].vEgo
-    x, y, y_std = np.array(pos.x), np.array(pos.y), np.array(pos.yStd)
-    near = (x > 5.) & (x < 40.)
-    if near.sum() > 3 and len(y_std) == len(x) and np.interp(20., x, y_std) < 0.3:
-      CC_SP.roadCurvature = float(2. * np.polyfit(x[near], y[near], 2)[0] * np.interp(v_ego, [3., 8.], [0., 1.]))
 
     # MADS state
     mads_src = sm['selfdriveStateSP'].mads

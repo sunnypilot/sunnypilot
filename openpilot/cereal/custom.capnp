@@ -388,7 +388,6 @@ struct CarControlSP @0xa5cd762cd951a455 {
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
   laneLeftDistance @5 :Float32;  # model distance to the left lane line (m), 0 when not seen
   laneRightDistance @6 :Float32;  # model distance to the right lane line (m), 0 when not seen
-  roadCurvature @7 :Float32;  # curvature of the model's path ahead (1/m, positive right), 0 when slow or unsure
 
   struct Param {
     key @0 :Text;
