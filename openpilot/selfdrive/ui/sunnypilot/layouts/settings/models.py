@@ -243,7 +243,9 @@ class ModelsLayout(Widget):
     if ds.verifying in statuses:
       return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
     if ds.downloading in statuses:
-      return {"name": name, "downloading": True, "progress": progress}
+      speed = max((p.speed for p in progresses), default=0.0)
+      status_text = f"{speed / 1024 ** 2:.1f} MB/s" if speed > 0 else "--.- MB/s"
+      return {"name": name, "downloading": True, "progress": progress, "status_text": status_text}
     if statuses <= {ds.downloaded, ds.cached}:
       return {"name": name, "text_color": ON_COLOR, "icon": "icons/checkmark.png"}
     # circled_slash is authored grey; tinting it again only darkens it
