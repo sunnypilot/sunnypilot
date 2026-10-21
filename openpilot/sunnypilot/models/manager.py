@@ -302,7 +302,6 @@ class ModelManagerSP:
     del self._download_start_times[artifact.fileName]
 
   async def _download_with_retries(self, url: str, path: str, artifact) -> None:
-    """Retries a transient failure after a cancellable backoff, resuming from the sidecar; permanent errors raise at once."""
     for attempt in range(DOWNLOAD_ATTEMPTS):
       try:
         await self._download_file(url, path, artifact)
@@ -354,8 +353,7 @@ class ModelManagerSP:
 
       self._set_progress(artifact, status.downloaded, 100)
 
-    except DownloadCancelled:
-      # not a failure: the request handler clears the row
+    except DownloadCancelled:  # not a failure: the request handler clears the row
       self._download_start_times.pop(artifact.fileName, None)
       artifact.downloadProgress.eta = 0
       artifact.downloadProgress.speed = 0

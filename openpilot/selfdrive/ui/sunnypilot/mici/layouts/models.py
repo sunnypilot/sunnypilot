@@ -247,7 +247,6 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.info_text.set_text(info_text)
 
     if manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed:
-      # stays until the next request, so it names the model rather than animating
       self.current_model_info.info_header.set_text(tr("error"))
       self.current_model_info.info_text.set_text(f"{manager.selectedBundle.internalName.lower()}  |  {tr('download failed')}")
 
