@@ -121,6 +121,10 @@ def update_osm_db() -> None:
   if not mem_params.get("OSMDownloadBounds"):
     mem_params.put("OSMDownloadBounds", "", block=True)
 
+  # mapd reads LastGPSPosition from the memory params as JSON, and it is registered as BYTES upstream
+  if not mem_params.get("LastGPSPosition"):
+    mem_params.put("LastGPSPosition", b"{}", block=True)
+
 
 def main_thread():
   update_installed_version(VERSION, params)
