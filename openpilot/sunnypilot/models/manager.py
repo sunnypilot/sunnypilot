@@ -27,11 +27,9 @@ from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_
 DOWNLOAD_TIMEOUT = (30, 30)
 # HuggingFace throttles each connection to ~1-2 MB/s but not the connection count; 12 saturates the device link
 MAX_CONCURRENT_PIECES = 12
-# each piece opens its own connection; 8 MiB keeps that overhead small while a big model spans 100+ pieces
 PIECE_SIZE = 8 * 1024 * 1024
 PIECE_ATTEMPTS = 3
 PIECE_BACKOFF = 1.0  # seconds, growing linearly: waits 1 s then 2 s between a piece's three attempts
-# HTTP statuses a server sends while overloaded or throttling; any other 4xx/5xx is permanent
 TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
 # byte ranges count encoded bytes but iter_content yields decoded ones, so ask for an unencoded body
@@ -49,8 +47,6 @@ def _is_transient(e: BaseException) -> bool:
 
 
 class _Progress:
-  """Bytes landed on disk, shared between worker threads and the reporter on the event loop."""
-
   def __init__(self):
     self._bytes = 0
     self._lock = threading.Lock()
@@ -65,12 +61,10 @@ class _Progress:
 
 
 def _piece_ranges(total: int, piece_size: int) -> list[tuple[int, int]]:
-  """Half-open [start, end) byte ranges tiling a file of `total` bytes; the last one may be short."""
   return [(start, min(start + piece_size, total)) for start in range(0, total, piece_size)]
 
 
 def _prepare_target(path: str, total: int) -> None:
-  """A sparse file of the full size; every piece lands at its own offset."""
   with open(path, "wb") as f:
     f.truncate(total)
 
@@ -83,7 +77,6 @@ def _content_range_total(response: requests.Response) -> int | None:
 
 
 def _probe_size(url: str) -> tuple[int, bool]:
-  """(total bytes, server honors byte ranges), from a one-byte Range request."""
   with requests.get(url, headers={**NO_COMPRESSION, "Range": "bytes=0-0"}, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
     response.raise_for_status()
     total = _content_range_total(response)
@@ -94,7 +87,6 @@ def _probe_size(url: str) -> tuple[int, bool]:
 
 def _fetch_piece(url: str, path: str, index: int, start: int, end: int | None, progress: _Progress,
                  cancel: threading.Event, block_size: int) -> None:
-  """Worker thread: streams one byte range into `path` at its offset (`end is None` = whole body, no range support)."""
   headers = {**NO_COMPRESSION, "Range": f"bytes={start}-{end - 1}"} if end is not None else NO_COMPRESSION
   label = f"{os.path.basename(path)} piece {index}"
   for attempt in range(PIECE_ATTEMPTS):
@@ -154,7 +146,6 @@ class ModelManagerSP:
     self._download_ref = None
 
   def _sync_artifact_progress(self, source_artifact) -> None:
-    """Mirror download progress to all artifacts sharing the same filename in the selected bundle."""
     if not self.selected_bundle:
       return
     for model in self.selected_bundle.models:
@@ -165,7 +156,6 @@ class ModelManagerSP:
         artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
-    """Calculate ETA based on elapsed time and current progress"""
     if filename not in self._download_start_times or progress <= 0:
       return 60  # Default ETA for new downloads
 
@@ -173,10 +163,8 @@ class ModelManagerSP:
     if elapsed_time <= 0:
       return 60
 
-    # If we're at X% after Y seconds, we can estimate total time as (Y / X) * 100
     total_estimated_time = (elapsed_time / progress) * 100
     eta = total_estimated_time - elapsed_time
-
     return max(1, int(eta))  # Return at least 1 second if download is ongoing
 
   def _set_progress(self, artifact, status, progress: float, eta: int = 0) -> None:
@@ -193,7 +181,6 @@ class ModelManagerSP:
     self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta)
 
   async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int) -> None:
-    """Publishes progress every REPORT_INTERVAL until the pieces land. Runs on the event loop: workers never touch messaging."""
     pending = set(tasks)
     while pending:
       done, pending = await asyncio.wait(pending, timeout=REPORT_INTERVAL)
@@ -204,7 +191,6 @@ class ModelManagerSP:
       self._publish_progress(artifact, progress.snapshot(), total)
 
   async def _download_file(self, url: str, path: str, artifact) -> None:
-    """Downloads `url` to `path` as parallel byte-range pieces, each written in place at its offset."""
     self._download_start_times[artifact.fileName] = time.monotonic()
     loop = asyncio.get_running_loop()
 
@@ -215,7 +201,6 @@ class ModelManagerSP:
     cancel = threading.Event()
 
     with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_PIECES) as pool:
-      # every worker owns its request: a shared requests.Session is not thread-safe
       tasks = [loop.run_in_executor(pool, _fetch_piece, url, path, i, start, end, progress, cancel, self._block_size)
                for i, (start, end) in enumerate(pieces)]
       try:
@@ -223,14 +208,12 @@ class ModelManagerSP:
       except BaseException as e:
         cancel.set()
         if isinstance(e, DownloadCancelled):
-          # show "canceling..." at once: the pool waits for running pieces to reach their next block
           artifact.downloadProgress.canceling = True
           self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, artifact.downloadProgress.progress)
         for task in tasks:
           task.cancel()  # drops queued pieces; running ones see the event at their next block
         await asyncio.gather(*tasks, return_exceptions=True)
         raise
-
     del self._download_start_times[artifact.fileName]
 
   async def _process_artifact(self, artifact, destination_path: str) -> None:
@@ -393,12 +376,7 @@ class ModelManagerSP:
         rk.keep_time()
 
   def clear_model_cache(self) -> None:
-    """
-    Clears the model cache directory of all files except those in the active model bundle.
-    """
-
-    # Get list of files used by both slots' selected bundles (either may become
-    # the truly active bundle depending on hardware availability)
+    """ Clears the model cache directory of all files except those in the active model bundle."""
     active_files = []
     for source in ACTIVE_BUNDLE_KEYS:
       if selected_bundle := get_selected_bundle(self.params, source):
@@ -406,7 +384,6 @@ class ModelManagerSP:
           if model.artifact.fileName:
             active_files.append(model.artifact.fileName)
 
-    # Remove all files except active ones
     model_dir = Paths.model_root()
     try:
       for filename in os.listdir(model_dir):
