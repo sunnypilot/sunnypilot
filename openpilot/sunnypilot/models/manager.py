@@ -50,8 +50,6 @@ def _is_transient(e: BaseException) -> bool:
 
 
 class _Progress:
-  """Bytes landed on disk and finished pieces, shared by the worker threads and the reporter."""
-
   def __init__(self, done: set[int], done_bytes: int):
     self._bytes = done_bytes
     self._done = set(done)
@@ -75,7 +73,6 @@ def _piece_ranges(total: int, piece_size: int) -> list[tuple[int, int]]:
 
 
 def _sidecar_path(path: str) -> str:
-  """Resume state of an in-progress download; its presence marks `path` as incomplete."""
   return f"{path}.download"
 
 
@@ -84,13 +81,12 @@ def _download_in_progress(path: str) -> bool:
 
 
 def _save_resume_state(path: str, layout: dict, done: set[int]) -> None:
-  # synced before the rename: a power loss leaves the old sidecar or the new one, never a torn file
   tmp = _sidecar_path(path) + ".tmp"
   with open(tmp, "w") as f:
     json.dump({**layout, "done": sorted(done)}, f)
     f.flush()
     os.fsync(f.fileno())
-  os.replace(tmp, _sidecar_path(path))
+  os.replace(tmp, _sidecar_path(path))  # a power loss leaves the old sidecar or the new one, never a torn file
   dir_fd = os.open(os.path.dirname(path) or ".", os.O_RDONLY)
   try:
     os.fsync(dir_fd)
@@ -105,7 +101,6 @@ def _remove_download_state(path: str) -> None:
 
 
 def _prepare_target(path: str, layout: dict) -> set[int]:
-  """The pieces already on disk if `path` is an interrupted download of the same file, else a fresh sparse file."""
   total = layout["total"]
   try:
     with open(_sidecar_path(path)) as f:
@@ -159,9 +154,8 @@ def _fetch_piece(url: str, path: str, index: int, start: int, end: int | None, p
             f.truncate()  # unknown length: the body defines the file size
           if end is not None and written != end - start:
             raise requests.exceptions.ConnectionError(f"short read: {written} of {end - start} bytes")
-          # synced before it is recorded: a power loss (engine crank, battery pull) must not leave the sidecar naming unsynced bytes
           f.flush()
-          os.fsync(f.fileno())
+          os.fsync(f.fileno())  # before it is recorded, so a power loss never leaves the sidecar naming unsynced bytes
       progress.mark_done(index)
       return
     except requests.RequestException as e:
@@ -248,7 +242,6 @@ class ModelManagerSP:
 
   async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, path: str, layout: dict,
                                started: tuple[int, set[int], float]) -> None:
-    """Publishes progress every REPORT_INTERVAL and records finished pieces for resume. Runs on the event loop: workers never touch messaging."""
     pending = set(tasks)
     last_bytes, saved, last_time = started
     speed = 0.0
@@ -272,13 +265,11 @@ class ModelManagerSP:
       self._publish_progress(artifact, done_bytes, layout["total"], speed)
 
   async def _download_file(self, url: str, path: str, artifact) -> None:
-    """Downloads `url` to `path` as parallel byte-range pieces written in place, resuming from its `.download` sidecar."""
     self._download_start_times[artifact.fileName] = time.monotonic()
     loop = asyncio.get_running_loop()
 
     total, ranged = await loop.run_in_executor(None, _probe_size, url)
     pieces: list[tuple[int, int | None]] = list(_piece_ranges(total, PIECE_SIZE)) if ranged else [(0, None)]
-    # sha256 keeps a republished model of the same name and size from resuming over the old bytes
     layout = {"total": total, "piece_size": PIECE_SIZE, "ranged": ranged, "sha256": artifact.downloadUri.sha256}
     done = await loop.run_in_executor(None, _prepare_target, path, layout)
     resumed_bytes = sum(end - start for i, (start, end) in enumerate(pieces) if i in done and end is not None)
@@ -299,8 +290,7 @@ class ModelManagerSP:
         for task in tasks:
           task.cancel()  # drops queued pieces; running ones see the event at their next block
         await asyncio.gather(*tasks, return_exceptions=True)
-        # cancelled futures resolve at once; let running pieces stop so none lands after the save
-        await loop.run_in_executor(None, pool.shutdown)
+        await loop.run_in_executor(None, pool.shutdown)  # let running pieces stop so none lands after the save
         _save_resume_state(path, layout, progress.snapshot()[1])
         raise
 
@@ -335,7 +325,6 @@ class ModelManagerSP:
       await self._download_file(url, full_path, artifact)
       self._set_progress(artifact, status.verifying, 99)
       if not await verify_file(full_path, expected_hash):
-        # nothing in a bad file is worth resuming from
         _remove_file(full_path)
         _remove_download_state(full_path)
         raise ValueError(f"Hash validation failed for {filename}")
@@ -355,7 +344,6 @@ class ModelManagerSP:
 
     except Exception as e:
       cloudlog.error(f"Error downloading {filename}: {str(e)}")
-      # nothing to delete: a bad file went at the hash check, an interrupted one is resume state
       artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
       artifact.downloadProgress.speed = 0

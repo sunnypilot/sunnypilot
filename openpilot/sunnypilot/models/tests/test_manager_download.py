@@ -202,7 +202,6 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 
   def write_resume_state(self, done: list[int], total: int = len(WHOLE_BODY), file_size: int | None = None,
                          file_sha256: str = sha256(WHOLE_BODY)) -> None:
-    """An interrupted download: a full-size file holding the `done` pieces plus its sidecar."""
     with open(self.path, 'wb') as f:
       f.truncate(len(WHOLE_BODY) if file_size is None else file_size)
       for i in done:
@@ -319,7 +318,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.piece_requests().count(piece_range(4)) == 2
 
   def test_permanent_failure_is_not_retried(self):
-    """It is not retried, and the file and its resume state stay for the next request."""
     self.server.fail_ranges = {piece_range(1): 404}
     with self.assertRaises(requests.exceptions.HTTPError):
       self.process_artifact()
@@ -347,7 +345,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert done and 3 not in done, "a cancel records the finished pieces, and only those, for resume"
 
   def test_resume_skips_complete_pieces(self):
-    """Recorded pieces are kept and not re-requested; progress starts above their share."""
     self.write_resume_state(done=[0, 4])
     self.download_file()
     assert piece_range(0) not in self.piece_requests() and piece_range(4) not in self.piece_requests()
@@ -355,7 +352,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert min(self.reported) >= 2 * PIECE_SIZE / len(WHOLE_BODY) * 100 - 1, "progress must not restart below the resumed share"
 
   def test_unusable_resume_state_starts_over(self):
-    """Resume state for another file (republished: other size or bytes), over a truncated file, or malformed, is ignored."""
     def malformed(content: bytes):
       self.write_resume_state(done=[0])
       with open(self.sidecar, 'wb') as f:
@@ -380,7 +376,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
         assert self.read_path() == WHOLE_BODY
 
   def test_pieces_and_resume_state_are_synced_to_disk(self):
-    """Every piece is fsync'd before it is recorded, and so are the sidecar and its directory."""
     real_fsync, synced = os.fsync, []
 
     def record_sync(fd):
@@ -424,7 +419,6 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     assert self.artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
 
   def test_interrupted_download_resumes_without_reverifying(self):
-    """A file with resume state is known incomplete: skip hashing it and pick up where it stopped."""
     self.write_resume_state(done=[0, 1, 2])
     artifact = self.process_artifact()
     ds = custom.ModelManagerSP.DownloadStatus
