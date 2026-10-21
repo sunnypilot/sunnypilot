@@ -26,7 +26,7 @@ jobs:
       - name: Compile, load, cache and fuse a model with the pinned tinygrad
         env:
           DEV: CPU
-        run: .venv/bin/python -m pytest openpilot/sunnypilot/modeld_v2/tests/test_plain_artifact.py
+        run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_plain_artifact.py
       - name: Install LLVM 20 and ROCm comgr for the amd mock, as tinygrad_repo/.github/actions/setup-tinygrad does
         run: |
           . /etc/os-release
@@ -44,7 +44,7 @@ jobs:
           DEV: MOCKUSB+AMD
           CHECK_OOB: 0
           GMMU: 0
-        run: .venv/bin/python -m pytest openpilot/sunnypilot/modeld_v2/tests/test_convert_upstream_pkl.py
+        run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_convert_upstream_pkl.py
       - name: Where tinygrad moved, for the helper or failure point named above
         if: failure() && github.event_name == 'pull_request'
         run: |
