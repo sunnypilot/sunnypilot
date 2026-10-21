@@ -97,6 +97,8 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     center_now = (l_prob * (lines[1, 0] + hw_now) + r_prob * (lines[2, 0] - hw_now)) / (l_prob + r_prob)
     plan_y = np.interp(lookahead, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
     offset = plan_y - np.interp(lookahead, x, center)
+    if min(gone) > 0.5:  # both lines gone: turns, intersections, relearn ideal model position
+      self.usual_offset.initialized = False
     usual = self.usual_offset.x if self.usual_offset.initialized else offset
     swerve = abs(offset - usual) - 0.25 * abs(model_curvature) * lookahead ** 2 / 2
     away = swerve - abs(-center_now - usual)
