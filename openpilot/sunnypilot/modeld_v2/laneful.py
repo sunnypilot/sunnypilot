@@ -30,6 +30,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     self.line_probs = FirstOrderFilter(np.zeros(2), 0.5, DT_MDL)
     self.usual_offset = FirstOrderFilter(0.0, 10.0, DT_MDL, initialized=False)
     self.going_around = False
+    self.since_turning = 0.0
     self.trust = 0.0
     self.model_curvature = 0.0
     self.smooth = 0.0 # smoothens lanelines below .53 lat accel
@@ -106,9 +107,10 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     away = swerve - abs(-center_now - usual)
     lane_curvature = 2.0 * np.polyfit(x, center, 2)[0]
     inside_curve = abs(lane_curvature) * lookahead ** 2 / 2 > 0.1 and (offset - usual) * lane_curvature > 0
+    self.since_turning = 0.0 if abs(model_curvature) * lookahead ** 2 / 2 > 0.5 else self.since_turning + DT_MDL
     if inside_curve:
       self.going_around = False
-    elif away > YIELD[0]:
+    elif away > YIELD[0] and self.since_turning > 2.0:
       self.going_around = True
     elif swerve < YIELD[0] / 2:
       self.going_around = False
