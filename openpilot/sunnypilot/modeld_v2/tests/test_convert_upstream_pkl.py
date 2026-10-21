@@ -36,8 +36,8 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
   @classmethod
   def setUpClass(cls):
     super().setUpClass()
-    if not os.environ.get("DEV", "").startswith("MOCKUSB"):
-      raise unittest.SkipTest("DEV=MOCKUSB+AMD env var not set, skipping mock converter test.")
+    if not os.environ.get("TINYGRAD_TESTS"):
+      raise unittest.SkipTest("TINYGRAD_TESTS not set. skipping converter test")
     from tinygrad import Device, Tensor
     assert Device.DEFAULT == "AMD" and getattr(Device["AMD"], "is_usb", False), f"{Device.DEFAULT} is not an AMD device behind the USB bridge"
     assert (Tensor([1, 2, 3]) * 2).tolist() == [2, 4, 6]

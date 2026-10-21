@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
+      TINYGRAD_TESTS: 1
     steps:
       - uses: actions/checkout@v7
       - run: ./tools/op.sh setup

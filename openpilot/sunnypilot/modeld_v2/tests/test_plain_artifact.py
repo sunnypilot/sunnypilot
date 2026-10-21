@@ -43,8 +43,8 @@ class TestPlainArtifact(OpenpilotTestCase):
   @classmethod
   def setUpClass(cls):
     super().setUpClass()
-    if not os.environ.get("DEV"):
-      raise unittest.SkipTest("DEV env var not set, skipping plain artifact test.")
+    if not os.environ.get("TINYGRAD_TESTS"):
+      raise unittest.SkipTest("TINYGRAD_TESTS env var not set, skipping artifact test.")
     from tinygrad import Tensor
     cls.tmp = tempfile.TemporaryDirectory()
     cls.rng = np.random.default_rng(0)
