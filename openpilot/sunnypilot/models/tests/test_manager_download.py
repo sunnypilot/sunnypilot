@@ -237,7 +237,6 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert artifact.downloadProgress.eta == 6
 
   def test_stalled_speed_drops_to_zero(self):
-    """A stall's decaying speed snaps to exactly 0 so the UI shows no rate, then recovers to the real rate."""
     stall_event = self.stall(0)
     seen_speed = threading.Event()
 

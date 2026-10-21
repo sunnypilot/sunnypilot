@@ -188,7 +188,6 @@ class ModelManagerSP:
     self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta, speed)
 
   async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int) -> None:
-    """Publishes progress, speed and eta every REPORT_INTERVAL until the pieces land. Runs on the event loop: workers never touch messaging."""
     pending = set(tasks)
     last_bytes = progress.snapshot()
     last_time, speed = time.monotonic(), 0.0
@@ -202,7 +201,6 @@ class ModelManagerSP:
       done_bytes = progress.snapshot()
       if (dt := now - last_time) > 0:
         instant = max(0.0, (done_bytes - last_bytes) / dt)  # bytes/s this tick; clamped since retried pieces can lower the byte count
-        # smoothed: mostly the previous speed plus a share of this tick; a first reading is used as-is
         speed = instant if speed == 0 else SPEED_SMOOTHING * speed + (1 - SPEED_SMOOTHING) * instant
         if speed < SPEED_FLOOR:  # a stall decays toward 0 without reaching it, and a near-0 speed overflows the eta
           speed = 0.0
