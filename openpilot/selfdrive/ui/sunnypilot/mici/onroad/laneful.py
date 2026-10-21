@@ -31,7 +31,6 @@ class LanefulRenderer:
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._offset_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._target_frac = 0.0
-    self._pull_frac = 0.0
     self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL)
     self._readout_rect: rl.Rectangle | None = None
     self._settings_page = None
@@ -59,13 +58,12 @@ class LanefulRenderer:
     path = renderer._path.raw_points
     center = path.copy()
     center[:, 1] = np.interp(path[:, 0], left[:, 0], center_y)
-    end_idx = renderer._get_path_length_idx(path[:, 0], min(1.5 * lookahead, left[max_idx, 0]))
-    self._center_points = renderer._map_line_to_polygon(center, 0.1, renderer._path_offset_z, end_idx)
-    self._path_points = renderer._map_line_to_polygon(path, 0.1, renderer._path_offset_z, end_idx)
+    end_idx = renderer._get_path_length_idx(path[:, 0], left[max_idx, 0])
+    self._center_points = renderer._map_line_to_polygon(center, 0.15, renderer._path_offset_z, end_idx)
+    self._path_points = renderer._map_line_to_polygon(path, 0.15, renderer._path_offset_z, end_idx)
     self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
     if laneful.lanefulTrust > 0.0:
       self._target_frac = self._offset_display.update(float(np.clip(np.interp(lookahead, path[:, 0], center[:, 1] - path[:, 1]) / MAX_ERROR, -1.0, 1.0)))
-      self._pull_frac = float(np.clip(self._pull_display.x / MAX_ERROR, -1.0, 1.0))
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
@@ -76,7 +74,7 @@ class LanefulRenderer:
   def draw(self, rect: rl.Rectangle) -> None:
     if self._path_points.size:
       draw_polygon(rect, self._path_points, gradient=self._fade(PATH_COLOR, 255))
-      draw_polygon(rect, self._center_points, gradient=self._fade(CENTER_COLOR, 100))
+      draw_polygon(rect, self._center_points, gradient=self._fade(CENTER_COLOR, 255))
     self._readout_rect = None
     if self._path_points.size:
       self._draw_readout(rect)
@@ -94,7 +92,7 @@ class LanefulRenderer:
 
   def _draw_readout(self, rect: rl.Rectangle) -> None:
     """Top-center pill: pull toward lane center in cm at the lookahead, arrow = side,
-    bar grows from center toward the target (faint) and pull (solid), full at laneful's 1 m cap."""
+    bar grows from center toward the lane-center target, full at laneful's 1 m cap."""
     pull = self._pull_display.x
     w, h = 190, 76
     x, y = rect.x + (rect.width - w) / 2, rect.y + 10
@@ -115,10 +113,8 @@ class LanefulRenderer:
     track = rl.Rectangle(x + 24, y + h - 16, w - 48, 6)
     rl.draw_rectangle_rounded(track, 1.0, 6, self._color((255, 255, 255), 40))
     rl.draw_rectangle(int(cx - 1), int(track.y - 2), 2, int(track.height + 4), self._color((255, 255, 255), 120))
-    for frac, strength in ((self._target_frac, 0.4), (self._pull_frac, 1.0)):
-      fill = track.width / 2 * abs(frac)
-      if fill > 1:
-        fill_x = cx if frac > 0 else cx - fill
-        rl.draw_rectangle_rounded(rl.Rectangle(fill_x, track.y, fill, track.height), 1.0, 6,
-                                  self._color(CENTER_COLOR, strength * 255))
+    fill = track.width / 2 * abs(self._target_frac)
+    if fill > 1:
+      fill_x = cx if self._target_frac > 0 else cx - fill
+      rl.draw_rectangle_rounded(rl.Rectangle(fill_x, track.y, fill, track.height), 1.0, 6, self._color(CENTER_COLOR, 255))
 
