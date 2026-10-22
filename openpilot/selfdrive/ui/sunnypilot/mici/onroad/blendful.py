@@ -12,7 +12,7 @@ import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.sunnypilot.modeld_v2.blendful import LOOKAHEAD_TIME, MIN_LOOKAHEAD, MAX_ERROR
+from openpilot.sunnypilot.modeld_v2.blendful import LANE_WIDTH_CLIP, LANE_WIDTH_DEFAULT, LINE_STD, LOOKAHEAD_TIME, MIN_LOOKAHEAD, MAX_ERROR
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -45,9 +45,9 @@ class BlendfulRenderer:
       return
 
     probs = renderer._lane_line_probs
-    l_prob = float(probs[1] * np.interp(stds[1], [0.15, 0.3], [1.0, 0.0]))
-    r_prob = float(probs[2] * np.interp(stds[2], [0.15, 0.3], [1.0, 0.0]))
-    width = np.clip(right[:, 1] - left[:, 1], 2.8, 4.5) if l_prob * r_prob > 0.5 else 3.7
+    l_prob = float(probs[1] * np.interp(stds[1], LINE_STD, [1.0, 0.0]))
+    r_prob = float(probs[2] * np.interp(stds[2], LINE_STD, [1.0, 0.0]))
+    width = np.clip(right[:, 1] - left[:, 1], *LANE_WIDTH_CLIP) if l_prob * r_prob > 0.5 else LANE_WIDTH_DEFAULT
     center = left.copy()
     center[:, 1] = (l_prob * (left[:, 1] + width / 2) + r_prob * (right[:, 1] - width / 2)) / (l_prob + r_prob + 1e-4)
     self._trust = l_prob + r_prob - l_prob * r_prob
