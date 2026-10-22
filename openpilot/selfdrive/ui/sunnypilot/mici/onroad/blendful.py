@@ -35,7 +35,7 @@ class BlendfulRenderer:
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
     blendful_curvature = ui_state.sm['modelDataV2SP'].blendfulCurvature
-    self._alpha.update(float(blendful_curvature != 0.0))
+    self._alpha.update(float(ui_state.sm['modelDataV2SP'].blendfulTrust > 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
