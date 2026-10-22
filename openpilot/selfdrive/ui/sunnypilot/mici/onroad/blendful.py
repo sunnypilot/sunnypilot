@@ -52,7 +52,7 @@ class BlendfulRenderer:
     center = left.copy()
     center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
     self._trust = blendful.blendfulTrust
-    self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
+    self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx)
 
     # middle of the model path, ending at the lookahead
     path = renderer._path.raw_points
