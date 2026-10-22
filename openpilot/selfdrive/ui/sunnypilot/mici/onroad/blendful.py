@@ -45,14 +45,15 @@ class BlendfulRenderer:
       self._path_points = np.empty((0, 2), dtype=np.float32)
       return
 
-    l_prob, r_prob = blendful.blendfulLeftProb, blendful.blendfulRightProb
-    half_width = np.clip(right[:, 1] - left[:, 1], *LANE_WIDTH_CLIP) / 2 if l_prob * r_prob > 0.5 else blendful.blendfulLaneWidth / 2
-    l_var = stds[1] ** 2 / max(l_prob, 1e-4)
-    r_var = stds[2] ** 2 / max(r_prob, 1e-4)
-    center = left.copy()
-    center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
-    self._trust = blendful.blendfulTrust
-    self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx)
+    if blendful.blendfulTrust > 0.0:
+      l_prob, r_prob = blendful.blendfulLeftProb, blendful.blendfulRightProb
+      half_width = np.clip(right[:, 1] - left[:, 1], *LANE_WIDTH_CLIP) / 2 if l_prob * r_prob > 0.5 else blendful.blendfulLaneWidth / 2
+      l_var = stds[1] ** 2 / max(l_prob, 1e-4)
+      r_var = stds[2] ** 2 / max(r_prob, 1e-4)
+      center = left.copy()
+      center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
+      self._trust = blendful.blendfulTrust
+      self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx)
 
     # middle of the model path, ending at the lookahead
     path = renderer._path.raw_points
