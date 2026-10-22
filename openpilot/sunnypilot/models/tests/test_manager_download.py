@@ -428,6 +428,13 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     assert any(self.reported_resuming), "a resumed download is flagged resuming until its first progress report"
     assert not artifact.downloadProgress.resuming
 
+  def test_resume_with_every_piece_done_clears_resuming(self):
+    self.write_resume_state(done=list(range(NUM_PIECES)))
+    artifact = self.process_artifact()
+    assert self.piece_requests() == []
+    assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
+    assert not artifact.downloadProgress.resuming
+
   def test_probe_failure_moves_past_verifying(self):
     self.server.fail_ranges = {(0, 0): 404}  # the size probe
     with self.assertRaises(requests.exceptions.HTTPError):

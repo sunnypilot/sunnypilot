@@ -295,6 +295,7 @@ class ModelManagerSP:
         raise
 
     _remove_download_state(path)
+    artifact.downloadProgress.resuming = False
     del self._download_start_times[artifact.fileName]
 
   async def _process_artifact(self, artifact, destination_path: str) -> None:
