@@ -5,6 +5,7 @@ from opendbc.car.structs import car
 from openpilot.cereal.visionipc import VisionStreamType
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
+from openpilot.selfdrive.ui.mici.onroad.accel_boost_indicator import AccelBoostIndicator
 from openpilot.selfdrive.ui.mici.onroad.alert_renderer import AlertRenderer
 from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import HudRenderer
@@ -181,6 +182,7 @@ class AugmentedRoadView(CameraView):
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverStateRenderer()
     self._confidence_ball = ConfidenceBall()
+    self._accel_boost_indicator = AccelBoostIndicator()
     self._offroad_label = UnifiedLabel("start the car to\nuse sunnypilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=TextAlignment.CENTER,
@@ -277,7 +279,10 @@ class AugmentedRoadView(CameraView):
     if show_navigation:
       self._navigation.render(rl.Rectangle(self._content_rect.x + self._content_rect.width, self.rect.y, PANEL_WIDTH, self.rect.height))
     else:
-      self._confidence_ball.render(self.rect)
+      # The boost bar owns the side panel while the extra boost is on; the ball only shows with the feature off
+      self._accel_boost_indicator.render(self.rect)
+      if not self._accel_boost_indicator.panel_in_use:
+        self._confidence_ball.render(self.rect)
 
     self._bookmark_icon.render(self.rect)
 
