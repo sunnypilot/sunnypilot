@@ -34,6 +34,8 @@ TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
 # byte ranges count encoded bytes but iter_content yields decoded ones, so ask for an unencoded body
 NO_COMPRESSION = {"Accept-Encoding": "identity"}
+SPEED_SMOOTHING = 0.7  # weight of the previous speed sample in the published speed
+SPEED_FLOOR = 0.05 * 1024 ** 2  # bytes/s; anything slower would only display as 0.0 MB/s, so it reads as no rate
 
 
 class DownloadCancelled(Exception):
@@ -154,6 +156,7 @@ class ModelManagerSP:
         artifact.downloadProgress.status = source_artifact.downloadProgress.status
         artifact.downloadProgress.progress = source_artifact.downloadProgress.progress
         artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
+        artifact.downloadProgress.speed = source_artifact.downloadProgress.speed
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
     if filename not in self._download_start_times or progress <= 0:
@@ -167,28 +170,43 @@ class ModelManagerSP:
     eta = total_estimated_time - elapsed_time
     return max(1, int(eta))  # Return at least 1 second if download is ongoing
 
-  def _set_progress(self, artifact, status, progress: float, eta: int = 0) -> None:
+  def _set_progress(self, artifact, status, progress: float, eta: int = 0, speed: float = 0.0) -> None:
     artifact.downloadProgress.status = status
     artifact.downloadProgress.progress = progress
     artifact.downloadProgress.eta = eta
+    artifact.downloadProgress.speed = speed
     self._sync_artifact_progress(artifact)
     self._report_status()
 
-  def _publish_progress(self, artifact, done_bytes: int, total: int) -> None:
+  def _publish_progress(self, artifact, done_bytes: int, total: int, speed: float) -> None:
     # held at 99 until the file passes its hash check
     progress = min(99.0, done_bytes / total * 100) if total > 0 else 0.0
-    eta = self._calculate_eta(artifact.fileName, progress)
-    self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta)
+    if speed > 0 and total > 0:
+      eta = max(1, int((total - done_bytes) / speed))
+    else:
+      eta = self._calculate_eta(artifact.fileName, progress)
+    self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta, speed)
 
-  async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int) -> None:
+  async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int,
+                               started: tuple[int, float]) -> None:
     pending = set(tasks)
+    last_bytes, last_time = started
+    speed = 0.0
     while pending:
       done, pending = await asyncio.wait(pending, timeout=REPORT_INTERVAL)
       for task in done:
         task.result()  # re-raises a worker failure
       if self._download_interrupted():
         raise DownloadCancelled("Download cancelled")
-      self._publish_progress(artifact, progress.snapshot(), total)
+      now = time.monotonic()
+      done_bytes = progress.snapshot()
+      if (dt := now - last_time) > 0:
+        instant = max(0.0, (done_bytes - last_bytes) / dt)  # bytes/s this tick; clamped since retried pieces can lower the byte count
+        speed = instant if speed == 0 else SPEED_SMOOTHING * speed + (1 - SPEED_SMOOTHING) * instant
+        if speed < SPEED_FLOOR:  # a stall decays toward 0 without reaching it, and a near-0 speed overflows the eta
+          speed = 0.0
+      last_time, last_bytes = now, done_bytes
+      self._publish_progress(artifact, done_bytes, total, speed)
 
   async def _download_file(self, url: str, path: str, artifact) -> None:
     self._download_start_times[artifact.fileName] = time.monotonic()
@@ -199,12 +217,13 @@ class ModelManagerSP:
     await loop.run_in_executor(None, _prepare_target, path, total)
     progress = _Progress()
     cancel = threading.Event()
+    started = progress.snapshot(), time.monotonic()  # before any worker can land bytes
 
     with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_PIECES) as pool:
       tasks = [loop.run_in_executor(pool, _fetch_piece, url, path, i, start, end, progress, cancel, self._block_size)
                for i, (start, end) in enumerate(pieces)]
       try:
-        await self._report_until_done(tasks, artifact, progress, total)
+        await self._report_until_done(tasks, artifact, progress, total, started)
       except BaseException as e:
         cancel.set()
         if isinstance(e, DownloadCancelled):
@@ -247,6 +266,7 @@ class ModelManagerSP:
       self._download_start_times.pop(artifact.fileName, None)
       artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
         self.selected_bundle.status = status.failed
@@ -259,6 +279,7 @@ class ModelManagerSP:
         os.remove(full_path)
       artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
         self.selected_bundle.status = status.failed
@@ -301,6 +322,7 @@ class ModelManagerSP:
           artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
           artifact.downloadProgress.progress = 100
           artifact.downloadProgress.eta = 0
+          artifact.downloadProgress.speed = 0
         else:
           seen_artifacts.add(artifact.fileName)
           await self._process_artifact(artifact, destination_path)
