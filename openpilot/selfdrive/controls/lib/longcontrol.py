@@ -11,6 +11,8 @@ LongCtrlState = car.CarControl.Actuators.LongControlState
 
 STOPPING_JERK_MIN = 0.3  # m/s^3
 STOPPING_JERK_MAX = 2.0  # m/s^3
+STOPPING_RELEASE_JERK = 1.5  # m/s^3
+STOPPING_TAPER_SCALE = 0.5
 STOPPING_HOLD_SPEED = 0.05  # m/s, below this ramp into the standstill hold
 STOPPING_HOLD_JERK = 1.0  # m/s^3, command ramp rate for the standstill hold
 STOPPING_EXIT_FRAMES = 15  # 0.15 s at 100 Hz, debounce should_stop at standstill
@@ -65,9 +67,9 @@ class LongControl:
       goal = float(self.CP.stopAccel)
       jerk = STOPPING_HOLD_JERK
     else:
-      taper = -np.sqrt(2.0 * self.stopping_jerk * v_ego)
+      taper = -np.sqrt(2.0 * self.stopping_jerk * STOPPING_TAPER_SCALE * v_ego)
       goal = max(self.last_output_accel, taper) if self.last_output_accel < 0.0 else taper
-      jerk = self.stopping_jerk
+      jerk = STOPPING_RELEASE_JERK
 
     output_accel = np.clip(min(goal, 0.0), self.last_output_accel - jerk * DT_CTRL,
                            self.last_output_accel + jerk * DT_CTRL)

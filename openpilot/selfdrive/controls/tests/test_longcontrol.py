@@ -2,7 +2,8 @@ from opendbc.car.structs import car
 from openpilot.common.realtime import DT_CTRL
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.cereal import custom
-from openpilot.selfdrive.controls.lib.longcontrol import LongControl, LongCtrlState, long_control_state_trans
+from openpilot.selfdrive.controls.lib.longcontrol import (LongControl, LongCtrlState, long_control_state_trans,
+                                                           STOPPING_RELEASE_JERK)
 
 
 class TestLongControlStateTransition(OpenpilotTestCase):
@@ -87,7 +88,7 @@ class TestLongControlStopping(OpenpilotTestCase):
     loc.last_output_accel = 0.3
     loc.stopping_jerk = 0.66
     out = loc._stopping_accel(0.23, False)
-    assert abs(out - (0.3 - 0.66 * DT_CTRL)) < 1e-6  # no jump to zero
+    assert abs(out - (0.3 - STOPPING_RELEASE_JERK * DT_CTRL)) < 1e-6  # no jump to zero
 
   def test_taper_never_steps(self):
     loc = self.make_control()
@@ -102,8 +103,17 @@ class TestLongControlStopping(OpenpilotTestCase):
       v_ego = max(0.0, v_ego + out * DT_CTRL)
 
     # bounded by the release jerk (and the 1.0 m/s^3 hold ramp), never a step to stopAccel
-    assert max_step <= 1.0 * DT_CTRL + 1e-6
+    assert max_step <= STOPPING_RELEASE_JERK * DT_CTRL + 1e-6
     assert -2.01 < out < -1.9
+
+  def test_taper_scale_releases_to_shallower_decel(self):
+    loc = self.make_control()
+    loc.last_output_accel = -0.5
+    loc.stopping_jerk = 0.5
+    for _ in range(200):
+      loc.last_output_accel = loc._stopping_accel(0.1, False)
+    # 0.5x taper at 0.1 m/s targets ~-0.22 m/s^2 instead of ~-0.32
+    assert -0.24 < loc.last_output_accel < -0.20
 
   def test_taper_releases_before_standstill(self):
     loc = self.make_control()
