@@ -386,8 +386,6 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
-  laneLeftDistance @5 :Float32;  # model distance to the left lane line (m), 0 when not seen
-  laneRightDistance @6 :Float32;  # model distance to the right lane line (m), 0 when not seen
 
   struct Param {
     key @0 :Text;

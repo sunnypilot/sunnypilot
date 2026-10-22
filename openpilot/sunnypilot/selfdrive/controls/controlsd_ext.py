@@ -6,7 +6,6 @@ See the LICENSE.md file in the root directory for more details.
 """
 import time
 
-
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 
@@ -27,8 +26,6 @@ class ControlsExt(ModelStateBase):
     self.params = params
     self._param_update_time: float = 0.0
     self.blinker_pause_lateral = BlinkerPauseLateral()
-    self._lane_shown = [False, False]  # left, right lane lines for car HUDs
-    self._lane_count = [0, 0]
 
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
@@ -93,19 +90,6 @@ class ControlsExt(ModelStateBase):
 
     self.get_lead_data(CC_SP.leadOne, sm['radarState'].leadOne)
     self.get_lead_data(CC_SP.leadTwo, sm['radarState'].leadTwo)
-
-    # model lane lines next to the car, for car HUDs that show lane position. A line appears after 1 s above 70%
-    # confidence and disappears after 0.5 s below 50%, so weak detections on unmarked roads don't flicker
-    lines, probs = sm['modelV2'].laneLines, sm['modelV2'].laneLineProbs
-    if len(lines) == 4 and len(probs) == 4:
-      for i, prob in enumerate((probs[1], probs[2])):
-        if sm.updated['modelV2']:
-          flip = prob < 0.5 if self._lane_shown[i] else prob > 0.7
-          self._lane_count[i] = self._lane_count[i] + 1 if flip else 0
-          if self._lane_count[i] >= (10 if self._lane_shown[i] else 20):  # model runs at 20 Hz
-            self._lane_shown[i], self._lane_count[i] = not self._lane_shown[i], 0
-      CC_SP.laneLeftDistance = float(-lines[1].y[0]) if self._lane_shown[0] else 0.
-      CC_SP.laneRightDistance = float(lines[2].y[0]) if self._lane_shown[1] else 0.
 
     # MADS state
     mads_src = sm['selfdriveStateSP'].mads
