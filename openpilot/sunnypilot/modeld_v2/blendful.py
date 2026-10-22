@@ -22,7 +22,7 @@ YIELD = (0.2, 0.45)
 X_IDXS = np.array(ModelConstants.X_IDXS)
 
 
-class Laneful: # TODO-SP: Rename this to blendful or something similar because it is not pure laneful anymore.
+class Blendful:
   def __init__(self):
     self.lane_width = FirstOrderFilter(LANE_WIDTH_DEFAULT, 10.0, DT_MDL, initialized=False)
     self.line_gone = FirstOrderFilter(np.zeros(2), 2.0, DT_MDL)

@@ -9,11 +9,11 @@ description: Driving model behavior and camera calibration
 sections:
 - id: model_behavior
   title: Model Behavior
-  description: Lane desire, blended laneful, and lead-vehicle awareness tuning
+  description: Lane desire, blendful, and lead-vehicle awareness tuning
   items:
-  - key: Laneful
+  - key: Blendful
     widget: toggle
-    title: Use Blended Laneful Mode
+    title: Use Blendful Mode
     description: Nudges the model's path toward lane center with a smoothly ramped correction that scales with
       lane-line confidence. It fades out automatically when lines are unclear, mid-lane-change, during turns,
       or when the model is going around something, so you keep laneless behavior plus extra centering.

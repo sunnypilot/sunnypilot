@@ -4,15 +4,15 @@ Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-Laneful visuals: cyan lane-center target, thin white "after" path (model path bent by laneful's nudge),
-and a top-center readout of the pull, from the curvature modeld publishes in modelDataV2SP.lanefulCurvature.
+Blendful visuals: cyan lane-center target, thin white "after" path (model path bent by blendful's nudge),
+and a top-center readout of the pull, from the curvature modeld publishes in modelDataV2SP.blendfulCurvature.
 """
 import numpy as np
 import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.sunnypilot.modeld_v2.laneful import LOOKAHEAD_TIME, MIN_LOOKAHEAD, MAX_ERROR
+from openpilot.sunnypilot.modeld_v2.blendful import LOOKAHEAD_TIME, MIN_LOOKAHEAD, MAX_ERROR
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -21,7 +21,7 @@ CENTER_COLOR = (0, 200, 255)
 AFTER_COLOR = (255, 255, 255)
 
 
-class LanefulRenderer:
+class BlendfulRenderer:
   def __init__(self):
     self._center_points = np.empty((0, 2), dtype=np.float32)
     self._after_points = np.empty((0, 2), dtype=np.float32)
@@ -36,8 +36,8 @@ class LanefulRenderer:
 
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
-    laneful_curvature = ui_state.sm['modelDataV2SP'].lanefulCurvature
-    self._alpha.update(float(laneful_curvature != 0.0))
+    blendful_curvature = ui_state.sm['modelDataV2SP'].blendfulCurvature
+    self._alpha.update(float(blendful_curvature != 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
@@ -55,13 +55,13 @@ class LanefulRenderer:
     self._trust = l_prob + r_prob - l_prob * r_prob
     self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
 
-    # "after" path: model path bent by laneful's curvature, ending at the lookahead
+    # "after" path: model path bent by blendful's curvature, ending at the lookahead
     path = renderer._path.raw_points
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
-    self._pull_display.update(laneful_curvature * lookahead ** 2 / 2)  # how far laneful moves the car at the lookahead
+    self._pull_display.update(blendful_curvature * lookahead ** 2 / 2)  # how far blendful moves the car at the lookahead
     self._trust_display.update(self._trust)
     after = path.copy()
-    after[:, 1] += laneful_curvature * path[:, 0] ** 2 / 2
+    after[:, 1] += blendful_curvature * path[:, 0] ** 2 / 2
     self._after_points = renderer._map_line_to_polygon(after, 0.15, renderer._path_offset_z,
                                                        renderer._get_path_length_idx(path[:, 0], lookahead))
 
@@ -77,13 +77,13 @@ class LanefulRenderer:
       self._draw_readout(rect)
 
   def handle_tap(self, pos) -> bool:
-    """Tapping the readout opens the laneful settings page. Returns True if the tap was consumed."""
+    """Tapping the readout opens the blendful settings page. Returns True if the tap was consumed."""
     r = self._readout_rect
     if r is None or not (r.x - 20 <= pos.x <= r.x + r.width + 20 and r.y - 20 <= pos.y <= r.y + r.height + 20):
       return False
     if self._settings_page is None:
-      from openpilot.selfdrive.ui.sunnypilot.mici.layouts.laneful import LanefulLayoutMici
-      self._settings_page = LanefulLayoutMici()
+      from openpilot.selfdrive.ui.sunnypilot.mici.layouts.blendful import BlendfulLayoutMici
+      self._settings_page = BlendfulLayoutMici()
     gui_app.push_widget(self._settings_page)
     return True
 
