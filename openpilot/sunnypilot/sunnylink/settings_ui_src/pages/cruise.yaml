@@ -37,7 +37,6 @@ sections:
       the Following Distance setting, strongest when Aggressive and weakest when Relaxed. The stock boost
       remains active when this is off.
     enablement:
-    - $ref: '#/macros/offroad'
     - $ref: '#/macros/longitudinal'
   - key: IntelligentCruiseButtonManagement
     widget: toggle

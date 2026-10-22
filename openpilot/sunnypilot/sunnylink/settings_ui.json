@@ -627,9 +627,6 @@
               "description": "Adds extra acceleration on top of the stock gas-override boost. The extra boost follows the Following Distance setting, strongest when Aggressive and weakest when Relaxed. The stock boost remains active when this is off.",
               "enablement": [
                 {
-                  "type": "offroad_only"
-                },
-                {
                   "type": "capability",
                   "field": "has_longitudinal_control",
                   "equals": true

@@ -160,7 +160,7 @@ class CruiseLayout(Widget):
         self.scc_v_toggle.action_item.set_enabled(False)
         self.scc_m_toggle.action_item.set_enabled(False)
 
-      self.accel_boost_toggle.action_item.set_enabled(has_long and ui_state.is_offroad())
+      self.accel_boost_toggle.action_item.set_enabled(has_long)
       boost_desc = tr(ACCEL_BOOST_EXT_DESCRIPTION) if has_long else tr(ACCEL_BOOST_EXT_NOLONG_DESCRIPTION)
       if self.accel_boost_toggle.description != boost_desc:
         self.accel_boost_toggle.set_description(boost_desc)

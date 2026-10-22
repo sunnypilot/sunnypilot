@@ -24,7 +24,6 @@ class TogglesLayoutMici(NavScroller):
     self._accel_boost_toggle = BigParamControl("extra acceleration boost", "FollowDistanceAccelBoost",
                                                description="Adds extra acceleration on top of the stock gas-override boost.\n" +
                                                            "The extra boost follows Following Distance: strongest when Aggressive, weakest when Relaxed.")
-    self._accel_boost_toggle.set_enabled(lambda: ui_state.is_offroad())
     is_metric_toggle = BigToggle("use metric units", initial_state=ui_state.params.get_bool("IsMetric"), toggle_callback=self._on_metric_toggle)
     ldw_toggle = BigParamControl("lane departure warnings", "IsLdwEnabled",
                                  description="Warn when you drift across a detected lane line.\n" +

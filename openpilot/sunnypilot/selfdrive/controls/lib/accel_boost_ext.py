@@ -62,6 +62,10 @@ class AccelBoostExt:
       self._extra.boost_this_override = 0.0
       self._extra.boost_eligible = False
 
+      output = self._stock.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise)
+      self.stock_boost = output - output_a_target_e2e
+      return output
+
     target = output_a_target_e2e + self.extra_boost
     output = self._stock.update(sm, target, output_a_target_mpc, a_cruise)
     self.stock_boost = output - target
