@@ -250,6 +250,12 @@ def _allocate_buffers(header: dict, blob: memoryview, device_map: dict | None, s
   return buffers
 
 
+def _fields(what, /, **values):  # a tinygrad dataclass built or replaced with the fields it has today: a dropped field is fine, a new required one is not
+  known = {field.name for field in dataclasses.fields(what)}
+  values = {name: value for name, value in values.items() if name in known}
+  return what(**values) if isinstance(what, type) else dataclasses.replace(what, **values)
+
+
 def _program_uop(call: dict, lib: bytes):
   from tinygrad.helpers import Target
   from tinygrad.uop.ops import KernelInfo, Ops, ProgramInfo, UOp
@@ -257,9 +263,9 @@ def _program_uop(call: dict, lib: bytes):
   for name, compact_slot, dtype, shape in call["signature"]:
     parameter = UOp.param(call["globals"][compact_slot], _dtype(dtype), math.prod(shape))
     image = (shape[0], shape[1]) if len(shape) == 3 and shape[2] == 4 else None
-    parameters.append(parameter.replace(arg=dataclasses.replace(parameter.arg, name=name, image=image)))
-  info = ProgramInfo(global_size=tuple(call["global_size"]), local_size=tuple(call["local_size"]), vars=(), globals=tuple(call["globals"]),
-                     outs=tuple(call["outs"]), ins=tuple(call["ins"]), target=Target(**call["target"]))
+    parameters.append(parameter.replace(arg=_fields(parameter.arg, name=name, image=image)))
+  info = _fields(ProgramInfo, global_size=tuple(call["global_size"]), local_size=tuple(call["local_size"]), globals=tuple(call["globals"]),
+                 outs=tuple(call["outs"]), ins=tuple(call["ins"]), target=_fields(Target, **call["target"]))
   return UOp(Ops.PROGRAM, src=(UOp(Ops.SINK, arg=KernelInfo(name=call["name"])), UOp(Ops.LINEAR, src=tuple(parameters)),
                                UOp(Ops.SOURCE, arg=""), UOp(Ops.BINARY, arg=lib)), arg=info)
 
