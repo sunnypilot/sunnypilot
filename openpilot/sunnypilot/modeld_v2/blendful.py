@@ -32,11 +32,14 @@ class Blendful:
     self.going_around = False
     self.since_turning = 0.0
     self.trust = 0.0
+    self.l_prob = 0.0
+    self.r_prob = 0.0
     self.model_curvature = 0.0
     self.smooth = 0.0 # smoothens lanelines below .53 lat accel
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
+    self.l_prob = self.r_prob = 0.0
     fading = not active or v_ego < MIN_SPEED
     if fading:
       self.trust = 0.0
@@ -64,6 +67,7 @@ class Blendful:
     dropping = bool(np.any(probs < 0.6 * self.line_probs_slow.update(model_output['lane_lines_prob'][0, 1::2][1:3])))
     l_prob = float(probs[0] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
     r_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
+    self.l_prob, self.r_prob = l_prob, r_prob
     # one line steadily on its own still centers at half say conf. a line that is disappearing gives control back to laneless
     if gone[1] > 0.8 and l_prob > 0.5:
       lane_trust = l_prob / 2
