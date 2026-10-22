@@ -207,6 +207,7 @@ class TestAccelBoostExt(OpenpilotTestCase):
   def test_boost_bar_max_matches_profile_cap(self):
     for personality, scale in EXPECTED_SCALE.items():
       self.assertAlmostEqual(get_accel_boost_max(personality), ACCEL_BOOST_MAX * (1.0 + scale))
+      self.assertAlmostEqual(get_accel_boost_max(personality, extra_enabled=False), ACCEL_BOOST_MAX)
 
   def test_total_boost_is_stock_accumulated_plus_extra_applied(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)

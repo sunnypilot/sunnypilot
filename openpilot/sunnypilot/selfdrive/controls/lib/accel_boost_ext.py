@@ -23,8 +23,9 @@ def get_accel_boost_scale(personality) -> float:
   return SCALE_STANDARD
 
 
-def get_accel_boost_max(personality) -> float:
-  """Maximum reported boost: the stock cap plus the profile-scaled extra cap."""
+def get_accel_boost_max(personality, extra_enabled: bool = True) -> float:
+  if not extra_enabled:
+    return ACCEL_BOOST_MAX
   return ACCEL_BOOST_MAX * (1.0 + get_accel_boost_scale(personality))
 
 

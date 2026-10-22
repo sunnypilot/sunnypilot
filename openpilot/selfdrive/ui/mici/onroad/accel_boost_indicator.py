@@ -20,6 +20,7 @@ PROFILE_STYLES = {
   1: ("STD", rl.Color(0, 230, 120, 255)),
   2: ("RELAX", rl.Color(70, 150, 255, 255)),
 }
+STOCK_STYLE = ("STOCK", rl.Color(200, 200, 200, 255))
 
 
 class AccelBoostIndicator(Widget):
@@ -42,8 +43,9 @@ class AccelBoostIndicator(Widget):
 
     if sm.alive['selfdriveState']:
       personality = sm['selfdriveState'].personality
-      self._profile_label, self._profile_color = PROFILE_STYLES.get(personality.raw, PROFILE_STYLES[1])
-      self._max_boost = get_accel_boost_max(personality)
+      extra_enabled = ui_state.params.get_bool("FollowDistanceAccelBoost")
+      self._profile_label, self._profile_color = PROFILE_STYLES.get(personality.raw, PROFILE_STYLES[1]) if extra_enabled else STOCK_STYLE
+      self._max_boost = get_accel_boost_max(personality, extra_enabled)
 
   def _render(self, _):
     alpha = self._alpha_filter.x
