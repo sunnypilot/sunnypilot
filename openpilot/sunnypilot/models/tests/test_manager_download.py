@@ -380,7 +380,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
 
     def record_sync(fd):
       st = os.fstat(fd)
-      synced.append("dir" if stat.S_ISDIR(st.st_mode) else "model" if st.st_ino == os.stat(self.path).st_ino else "sidecar")
+      synced.append("dir" if stat.S_ISDIR(st.st_mode) else "model" if os.path.exists(self.path) and st.st_ino == os.stat(self.path).st_ino else "sidecar")
       real_fsync(fd)
     with mock.patch.object(manager_module.os, 'fsync', side_effect=record_sync):
       self.download_file()

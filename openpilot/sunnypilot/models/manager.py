@@ -109,9 +109,9 @@ def _prepare_target(path: str, layout: dict) -> set[int]:
       return {i for i in state.get("done", []) if isinstance(i, int)}
   except (OSError, ValueError, TypeError):  # missing, unreadable or malformed sidecar: start over
     pass
+  _save_resume_state(path, layout, set())
   with open(path, "wb") as f:
     f.truncate(total)
-  _save_resume_state(path, layout, set())
   return set()
 
 
