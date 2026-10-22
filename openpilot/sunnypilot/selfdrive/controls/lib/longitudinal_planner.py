@@ -9,7 +9,6 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
-from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import AccelBoostExt
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
@@ -33,16 +32,6 @@ class LongitudinalPlannerSP:
 
     self.output_v_target = 0.
     self.output_a_target = 0.
-    self._accel_boost: AccelBoostExt | None = None
-
-  @property
-  def accel_boost(self) -> AccelBoostExt:
-    assert self._accel_boost is not None
-    return self._accel_boost
-
-  @accel_boost.setter
-  def accel_boost(self, controller) -> None:
-    self._accel_boost = AccelBoostExt(controller)
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
