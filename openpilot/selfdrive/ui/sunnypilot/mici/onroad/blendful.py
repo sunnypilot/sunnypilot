@@ -31,8 +31,6 @@ class BlendfulRenderer:
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL) # fades that hoe
-    self._readout_rect: rl.Rectangle | None = None
-    self._settings_page = None
 
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
@@ -71,21 +69,9 @@ class BlendfulRenderer:
   def draw(self, rect: rl.Rectangle) -> None:
     if self._center_points.size and self._trust > 0.05:
       draw_polygon(rect, self._center_points, self._color(CENTER_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
-    self._readout_rect = None
     if self._after_points.size:
       draw_polygon(rect, self._after_points, self._color(AFTER_COLOR, 200))
       self._draw_readout(rect)
-
-  def handle_tap(self, pos) -> bool:
-    """Tapping the readout opens the blendful settings page. Returns True if the tap was consumed."""
-    r = self._readout_rect
-    if r is None or not (r.x - 20 <= pos.x <= r.x + r.width + 20 and r.y - 20 <= pos.y <= r.y + r.height + 20):
-      return False
-    if self._settings_page is None:
-      from openpilot.selfdrive.ui.sunnypilot.mici.layouts.blendful import BlendfulLayoutMici
-      self._settings_page = BlendfulLayoutMici()
-    gui_app.push_widget(self._settings_page)
-    return True
 
   def _draw_readout(self, rect: rl.Rectangle) -> None:
     """Top-center pill: pull toward lane center in cm at the lookahead, arrow = side,
@@ -94,8 +80,7 @@ class BlendfulRenderer:
     w, h = 190, 76
     x, y = rect.x + (rect.width - w) / 2, rect.y + 10
     cx, cy = x + w / 2, y + 30
-    self._readout_rect = rl.Rectangle(x, y, w, h)
-    rl.draw_rectangle_rounded(self._readout_rect, 0.5, 12, self._color((0, 0, 0), 170))
+    rl.draw_rectangle_rounded(rl.Rectangle(x, y, w, h), 0.5, 12, self._color((0, 0, 0), 170))
 
     text = f"{abs(pull) * 100:.0f}"
     text_w = measure_text_cached(self._font, text, 44, 0).x
