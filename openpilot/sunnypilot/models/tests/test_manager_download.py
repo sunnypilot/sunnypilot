@@ -135,7 +135,10 @@ def threaded_server(handler):
 class InlineExecutor(concurrent.futures.Executor):
   def submit(self, fn, /, *args, **kwargs):
     future: concurrent.futures.Future = concurrent.futures.Future()
-    future.set_result(fn(*args, **kwargs))  # the piece lands before the reporter starts
+    try:
+      future.set_result(fn(*args, **kwargs))  # the piece lands before the reporter starts
+    except BaseException as e:
+      future.set_exception(e)
     return future
 
 
@@ -319,11 +322,12 @@ class TestManagerDownload(ManagerDownloadTestBase):
 
   def test_permanent_failure_is_not_retried(self):
     self.server.fail_ranges = {piece_range(1): 404}
+    self.enterContext(mock.patch.object(manager_module, 'ThreadPoolExecutor', lambda max_workers: InlineExecutor()))
     with self.assertRaises(requests.exceptions.HTTPError):
       self.process_artifact()
     assert self.piece_requests().count(piece_range(1)) == 1
-    done = self.resume_state()["done"]
-    assert os.path.isfile(self.path) and done and 1 not in done
+    assert os.path.isfile(self.path)
+    assert self.resume_state()["done"] == [i for i in range(NUM_PIECES) if i != 1]
 
   def test_removing_download_ref_cancels(self):
     stall_event = self.stall(3)
