@@ -34,8 +34,9 @@ class BlendfulRenderer:
 
   def update(self, renderer, max_idx: int) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
-    blendful_curvature = ui_state.sm['modelDataV2SP'].blendfulCurvature
-    self._alpha.update(float(ui_state.sm['modelDataV2SP'].blendfulTrust > 0.0))
+    blendful = ui_state.sm['modelDataV2SP']
+    blendful_curvature = blendful.blendfulCurvature
+    self._alpha.update(float(blendful.blendfulTrust > 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
@@ -50,7 +51,7 @@ class BlendfulRenderer:
     width = np.clip(right[:, 1] - left[:, 1], *LANE_WIDTH_CLIP) if l_prob * r_prob > 0.5 else LANE_WIDTH_DEFAULT
     center = left.copy()
     center[:, 1] = (l_prob * (left[:, 1] + width / 2) + r_prob * (right[:, 1] - width / 2)) / (l_prob + r_prob + 1e-4)
-    self._trust = l_prob + r_prob - l_prob * r_prob
+    self._trust = blendful.blendfulTrust
     self._center_points = renderer._map_line_to_polygon(center, 0.1, 0.0, max_idx)
 
     # "after" path: model path bent by blendful's curvature, ending at the lookahead
