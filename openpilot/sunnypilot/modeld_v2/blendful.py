@@ -17,7 +17,6 @@ MIN_LOOKAHEAD = 10.0  # m
 MIN_SPEED = 5.0  # m/s
 LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
-MAX_ERROR = 1.0
 YIELD = (0.2, 0.45)
 X_IDXS = np.array(ModelConstants.X_IDXS)
 
