@@ -14,7 +14,7 @@ LANE_WIDTH_DEFAULT = 3.6  # m (reseeded to model's lane width upon initializatio
 LANE_WIDTH_CLIP = (2.8, 4.5)  # m
 LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
-MIN_SPEED = 5.0  # m/s
+MIN_SPEED = 1.0  # m/s
 LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
 YIELD = (0.2, 0.45)
@@ -48,9 +48,10 @@ class Blendful:
     self.model_curvature = model_curvature
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
     target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.25, 0.0]))
-    releasing = not fading and (abs(target) < abs(self.curvature) or target * self.curvature < 0)
-    step = (2.0 if releasing else 0.5) / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
-    self.curvature = float(np.clip(target, self.curvature - step, self.curvature + step))
+    build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
+    release = (0.5 if fading else 2.0) / max(v_ego, 1.0) ** 2 * DT_MDL  # lets go fast, but past zero it builds like any other pull
+    c = self.curvature
+    self.curvature = float(np.clip(target, max(c - release, -build) if c > 0 else c - build, min(c + release, build) if c < 0 else c + build))
     return self.curvature
 
   def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
