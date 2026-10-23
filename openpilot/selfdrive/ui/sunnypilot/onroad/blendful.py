@@ -30,8 +30,9 @@ class BlendfulRenderer:
 
   def update(self, renderer, max_idx: int, *map_args) -> None:
     blendful = ui_state.sm['modelDataV2SP']
-    blendful_curvature = blendful.blendfulCurvature
-    self._alpha.update(float(blendful.blendfulTrust > 0.0))
+    new_data = ui_state.sm.updated['modelDataV2SP']
+    if new_data:
+      self._alpha.update(float(blendful.blendfulTrust > 0.0))
 
     left, right = renderer._lane_lines[1].raw_points, renderer._lane_lines[2].raw_points
     stds = list(ui_state.sm['modelV2'].laneLineStds)
@@ -49,9 +50,10 @@ class BlendfulRenderer:
       self._trust = blendful.blendfulTrust
       self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx, *map_args)
 
-    lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
-    self._pull_display.update(blendful_curvature * lookahead ** 2 / 2)
-    self._trust_display.update(self._trust)
+    if new_data:
+      lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
+      self._pull_display.update(blendful.blendfulCurvature * lookahead ** 2 / 2)
+      self._trust_display.update(self._trust)
 
   def _color(self, rgb, alpha: float) -> rl.Color:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
