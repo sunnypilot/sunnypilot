@@ -239,6 +239,9 @@
           ],
           "description": "Unit label for numeric values. Use a string for static units or an object with metric/imperial variants for units that depend on the IsMetric param."
         },
+        "value_transform": {
+          "$ref": "#/$defs/ValueTransformByUnit"
+        },
         "value_map": {
           "type": "object",
           "description": "Maps stored values to display labels.",
@@ -335,6 +338,43 @@
           "items": {
             "$ref": "#/$defs/SchemaItem"
           }
+        }
+      }
+    },
+    "ValueTransformByUnit": {
+      "type": "object",
+      "description": "Transforms a canonical stored numeric value for the selected unit system. Display values equal stored values multiplied by scale and rounded to precision; writes apply the inverse scale.",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "metric": {
+          "$ref": "#/$defs/ValueTransform"
+        },
+        "imperial": {
+          "$ref": "#/$defs/ValueTransform"
+        }
+      }
+    },
+    "ValueTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scale", "precision"],
+      "properties": {
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Multiplier from the canonical stored value to the display value."
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "Number of decimal places shown after applying scale."
+        },
+        "step": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Optional display-space slider step override. It must use the same decimal grid as precision so rounded values remain valid range values."
         }
       }
     },
