@@ -10,7 +10,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
-LANE_WIDTH_DEFAULT = 3.6  # m (reseeded to model's lane width upon initialization)
+LANE_WIDTH_DEFAULT = 3.6  # m
 LANE_WIDTH_CLIP = (2.8, 4.5)  # m
 LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
@@ -31,6 +31,8 @@ class Blendful:
     self.going_around = False
     self.since_turning = 0.0
     self.trust = 0.0
+    self.line_trust = 0.0
+    self.dk = 0.0 # delta kappa; difference between lane center and model plan
     self.l_prob = 0.0
     self.r_prob = 0.0
     self.model_curvature = 0.0
@@ -41,7 +43,7 @@ class Blendful:
     self.l_prob = self.r_prob = 0.0
     fading = not active or v_ego < MIN_SPEED
     if fading:
-      self.trust = 0.0
+      self.trust = self.line_trust = 0.0
       self.usual_offset.initialized = False
       self.lane_width.initialized = False
       self.going_around = False
@@ -50,8 +52,8 @@ class Blendful:
     target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.25, 0.0]))
     build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
     release = (0.5 if fading else 2.0) / max(v_ego, 1.0) ** 2 * DT_MDL  # lets go fast, but past zero it builds like any other pull
-    c = self.curvature
-    self.curvature = float(np.clip(target, max(c - release, -build) if c > 0 else c - build, min(c + release, build) if c < 0 else c + build))
+    k = self.curvature
+    self.curvature = float(np.clip(target, max(k - release, -build) if k > 0 else k - build, min(k + release, build) if k < 0 else k + build))
     return self.curvature
 
   def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
@@ -59,24 +61,33 @@ class Blendful:
     lines = model_output['lane_lines'][0, :, :, 0]
     stds = model_output['lane_lines_stds'][0, :, :, 0]
 
+    lone_weight = np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.5, 1.0])  # 0.5 on straights, 1.0 in curves
     probs = self.line_probs.update(model_output['lane_lines_prob'][0, 1::2][1:3])
+    absent = (probs < 0.3) & (lone_weight > 0.5)
     gone = self.line_gone.update((model_output['lane_lines_prob'][0, 1::2][1:3] < 0.3).astype(float))
-    dropping = bool(np.any(probs < 0.6 * self.line_probs_slow.update(model_output['lane_lines_prob'][0, 1::2][1:3])))
+    missing = np.where(absent, 1.0, gone)
+    dropping = bool(np.any((probs < 0.6 * self.line_probs_slow.update(model_output['lane_lines_prob'][0, 1::2][1:3])) & ~absent))
     l_prob = float(probs[0] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
     r_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
     self.l_prob, self.r_prob = l_prob, r_prob
-    # one line steadily on its own still centers at half say conf. a line that is disappearing gives control back to laneless
-    if gone[1] > 0.8 and l_prob > 0.5:
-      lane_trust = l_prob / 2
-    elif gone[0] > 0.8 and r_prob > 0.5:
-      lane_trust = r_prob / 2
+    # one line steadily on its own still centers at lone_weight. a line that is disappearing gives control back to laneless
+    if missing[1] > 0.8 and l_prob > 0.5:
+      lane_trust = l_prob * lone_weight
+    elif missing[0] > 0.8 and r_prob > 0.5:
+      lane_trust = r_prob * lone_weight
     elif dropping:
       lane_trust = min(l_prob, r_prob)
     else:
       lane_trust = l_prob + r_prob - l_prob * r_prob
+    if lone_weight > 0.5 and lane_trust < self.line_trust:
+      lane_trust = self.line_trust + (lane_trust - self.line_trust) * DT_MDL / (lone_weight - 0.5 + DT_MDL)
+    self.line_trust = lane_trust
     if lane_trust <= 0.0:
       self.trust = 0.0
       return 0.0
+    if l_prob + r_prob <= 0.0:  # keep the last fit while trust lets go
+      self.trust = min(self.trust, lane_trust)
+      return float(self.trust * self.dk)
 
     win = (X_IDXS >= 0.5 * lookahead) & (X_IDXS <= 1.5 * lookahead)
     x = X_IDXS[win]
@@ -123,4 +134,5 @@ class Blendful:
       lane_trust *= np.interp(swerve, (YIELD[0] / 2, YIELD[0]), [1.0, 0.0]) if self.going_around else np.interp(away, YIELD, [1.0, 0.0])
 
     self.trust = lane_trust if lane_trust < self.trust else self.trust + (lane_trust - self.trust) * DT_MDL / (1.5 + DT_MDL)
+    self.dk = dk
     return float(self.trust * dk)
