@@ -86,7 +86,7 @@ class BlendfulRenderer:
     bar = rl.Rectangle(x + 24, y + h - 16, w - 48, 6)
     rl.draw_rectangle_rounded(bar, 1.0, 6, self._color((255, 255, 255), 40))
     rl.draw_rectangle(int(cx - 1), int(bar.y - 2), 2, int(bar.height + 4), self._color((255, 255, 255), 120))
-    fill = bar.width / 2 * float(np.clip(abs(pull) / MAX_ERROR, 0.0, 1.0))
+    fill = bar.width / 2 * float(np.sqrt(np.clip(abs(pull) / MAX_ERROR, 0.0, 1.0)))
     if fill > 1:
       fill_x = cx if pull > 0 else cx - fill
       rl.draw_rectangle_rounded(rl.Rectangle(fill_x, bar.y, fill, bar.height), 1.0, 6,
