@@ -21,7 +21,8 @@ FULL_BAR = 1.0
 
 
 class BlendfulRenderer:
-  def __init__(self):
+  def __init__(self, readout: bool = True):
+    self._readout = readout
     self._center_points = np.empty((0, 2), dtype=np.float32)
     self._trust = 0.0
     self._font = gui_app.font(FontWeight.BOLD)
@@ -30,7 +31,7 @@ class BlendfulRenderer:
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL) # fades that hoe
 
-  def update(self, renderer, max_idx: int) -> None:
+  def update(self, renderer, max_idx: int, *map_args) -> None:
     """Called from the model renderer's update with its lane lines and path already in raw points."""
     blendful = ui_state.sm['modelDataV2SP']
     blendful_curvature = blendful.blendfulCurvature
@@ -50,7 +51,7 @@ class BlendfulRenderer:
       center = left.copy()
       center[:, 1] = (r_var * (left[:, 1] + half_width) + l_var * (right[:, 1] - half_width)) / (l_var + r_var)
       self._trust = blendful.blendfulTrust
-      self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx)
+      self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx, *map_args)
 
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     self._pull_display.update(blendful_curvature * lookahead ** 2 / 2)  # how far blendful moves the car at the lookahead
@@ -62,7 +63,7 @@ class BlendfulRenderer:
   def draw(self, rect: rl.Rectangle) -> None:
     if self._center_points.size and self._trust > 0.05:
       draw_polygon(rect, self._center_points, self._color(BLENDFUL_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
-    if self._center_points.size:
+    if self._center_points.size and self._readout:
       self._draw_readout(rect)
 
   def _draw_readout(self, rect: rl.Rectangle) -> None:

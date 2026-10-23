@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 from openpilot.selfdrive.ui.ui_state import UIStatus
-from openpilot.selfdrive.ui.sunnypilot.mici.onroad.blendful import BlendfulRenderer
+from openpilot.selfdrive.ui.sunnypilot.onroad.blendful import BlendfulRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.rainbow_path import RainbowPath
 
 LANE_LINE_COLORS_SP = {
