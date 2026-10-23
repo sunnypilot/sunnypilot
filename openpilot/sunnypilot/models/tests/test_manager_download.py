@@ -11,11 +11,13 @@ import contextlib
 import dataclasses
 import hashlib
 import http.server
+import json
 import math
 import os
 import random
 import re
 import requests
+import stat
 import tempfile
 import threading
 import time
@@ -133,7 +135,10 @@ def threaded_server(handler):
 class InlineExecutor(concurrent.futures.Executor):
   def submit(self, fn, /, *args, **kwargs):
     future: concurrent.futures.Future = concurrent.futures.Future()
-    future.set_result(fn(*args, **kwargs))  # the piece lands before the reporter starts
+    try:
+      future.set_result(fn(*args, **kwargs))  # the piece lands before the reporter starts
+    except BaseException as e:
+      future.set_exception(e)
     return future
 
 
@@ -152,6 +157,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
 
     self.reported: list[float] = []
     self.reported_statuses: list[int] = []
+    self.reported_resuming: list[bool] = []
 
     self.manager = ModelManagerSP.__new__(ModelManagerSP)
     self.params = self.manager.params = mock.MagicMock()
@@ -172,6 +178,7 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
       self.reported.append(float(artifact.downloadProgress.progress))
       status = artifact.downloadProgress.status
       self.reported_statuses.append(getattr(status, 'raw', status))  # .raw: _DynamicEnum equals its int but does not hash like it
+      self.reported_resuming.append(bool(artifact.downloadProgress.resuming))
 
   def make_artifact(self):
     bundle = custom.ModelManagerSP.ModelBundle.new_message()
@@ -187,6 +194,24 @@ class ManagerDownloadTestBase(OpenpilotTestCase):
   @property
   def path(self) -> str:
     return os.path.join(self.dest, FILE_NAME)
+
+  @property
+  def sidecar(self) -> str:
+    return manager_module._sidecar_path(self.path)
+
+  def resume_state(self) -> dict:
+    with open(self.sidecar) as f:
+      return json.load(f)
+
+  def write_resume_state(self, done: list[int], total: int = len(WHOLE_BODY), file_size: int | None = None,
+                         file_sha256: str = sha256(WHOLE_BODY)) -> None:
+    with open(self.path, 'wb') as f:
+      f.truncate(len(WHOLE_BODY) if file_size is None else file_size)
+      for i in done:
+        f.seek(i * PIECE_SIZE)
+        f.write(WHOLE_BODY[i * PIECE_SIZE:(i + 1) * PIECE_SIZE])
+    with open(self.sidecar, 'w') as f:
+      json.dump({"total": total, "piece_size": PIECE_SIZE, "ranged": True, "sha256": file_sha256, "done": done}, f)
 
   def piece_requests(self) -> list[tuple[int, int]]:
     return [r for r in self.server.request_ranges if r is not None and r != (0, 0)]
@@ -238,6 +263,7 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert max(self.reported) <= 99.0, "progress holds below 100 until the hash check"
     assert artifact.fileName not in self.manager._download_start_times
     assert artifact.downloadProgress.speed > 0, "a running download shows its speed"
+    assert not os.path.exists(self.sidecar), "the resume state goes once every piece has landed"
 
   def test_speed_counts_bytes_landed_before_the_first_report(self):
     self.enterContext(mock.patch.object(manager_module, 'ThreadPoolExecutor', lambda max_workers: InlineExecutor()))
@@ -296,9 +322,12 @@ class TestManagerDownload(ManagerDownloadTestBase):
 
   def test_permanent_failure_is_not_retried(self):
     self.server.fail_ranges = {piece_range(1): 404}
+    self.enterContext(mock.patch.object(manager_module, 'ThreadPoolExecutor', lambda max_workers: InlineExecutor()))
     with self.assertRaises(requests.exceptions.HTTPError):
-      self.download_file()
+      self.process_artifact()
     assert self.piece_requests().count(piece_range(1)) == 1
+    assert os.path.isfile(self.path)
+    assert self.resume_state()["done"] == [i for i in range(NUM_PIECES) if i != 1]
 
   def test_removing_download_ref_cancels(self):
     stall_event = self.stall(3)
@@ -316,6 +345,51 @@ class TestManagerDownload(ManagerDownloadTestBase):
     assert self.server.stall_released_by_event is True, "the cancel must have caught the piece mid-transfer"
     end = piece_range(3)[1] + 1
     assert self.read_path()[end - 100:end] == bytes(100), "the cancelled piece must stop before its last bytes land"
+    done = self.resume_state()["done"]
+    assert done and 3 not in done, "a cancel records the finished pieces, and only those, for resume"
+
+  def test_resume_skips_complete_pieces(self):
+    self.write_resume_state(done=[0, 4])
+    self.download_file()
+    assert piece_range(0) not in self.piece_requests() and piece_range(4) not in self.piece_requests()
+    assert self.read_path() == WHOLE_BODY
+    assert min(self.reported) >= 2 * PIECE_SIZE / len(WHOLE_BODY) * 100 - 1, "progress must not restart below the resumed share"
+
+  def test_unusable_resume_state_starts_over(self):
+    def malformed(content: bytes):
+      self.write_resume_state(done=[0])
+      with open(self.sidecar, 'wb') as f:
+        f.write(content)
+
+    layout = {"total": len(WHOLE_BODY), "piece_size": PIECE_SIZE, "ranged": True, "sha256": sha256(WHOLE_BODY)}
+    cases = {
+      "other size": lambda: self.write_resume_state(done=[0], total=len(WHOLE_BODY) + 1),
+      "other bytes": lambda: self.write_resume_state(done=[0], file_sha256="0" * 64),
+      "truncated file": lambda: self.write_resume_state(done=[0], file_size=PIECE_SIZE),
+      "not an object": lambda: malformed(b'[]'),
+      "cut-off json": lambda: malformed(b'{"total": '),
+      "done not a list": lambda: malformed(json.dumps({**layout, "done": 3}).encode()),
+      "done not ints": lambda: malformed(json.dumps({**layout, "done": ["0", None]}).encode()),
+    }
+    for name, write_state in cases.items():
+      with self.subTest(name):
+        self.server.request_ranges = []
+        write_state()
+        self.download_file()
+        assert sorted(self.piece_requests()) == [piece_range(i) for i in range(NUM_PIECES)], "every piece is fetched again"
+        assert self.read_path() == WHOLE_BODY
+
+  def test_pieces_and_resume_state_are_synced_to_disk(self):
+    real_fsync, synced = os.fsync, []
+
+    def record_sync(fd):
+      st = os.fstat(fd)
+      synced.append("dir" if stat.S_ISDIR(st.st_mode) else "model" if os.path.exists(self.path) and st.st_ino == os.stat(self.path).st_ino else "sidecar")
+      real_fsync(fd)
+    with mock.patch.object(manager_module.os, 'fsync', side_effect=record_sync):
+      self.download_file()
+    assert synced.count("model") == NUM_PIECES, f"expected one fsync per piece, got {synced.count('model')}"
+    assert "sidecar" in synced and "dir" in synced, "sidecar file and directory must be fsync'd"
 
   def test_replaced_download_ref_queues_instead_of_canceling(self):
     self.params.get.return_value = b"other-ref"
@@ -345,8 +419,25 @@ class TestProcessArtifact(ManagerDownloadTestBase):
     self.server.corrupt = True
     with self.assertRaises(ValueError):
       self.process_artifact()
-    assert not os.path.isfile(self.path)
+    assert not os.path.isfile(self.path) and not os.path.exists(self.sidecar), "a corrupt file must not be resumed from"
     assert self.artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.failed
+
+  def test_interrupted_download_resumes_without_reverifying(self):
+    self.write_resume_state(done=[0, 1, 2])
+    artifact = self.process_artifact()
+    ds = custom.ModelManagerSP.DownloadStatus
+    assert self.reported_statuses[0] == ds.downloading, "an in-progress download is not verified first"
+    assert piece_range(0) not in self.piece_requests()
+    assert artifact.downloadProgress.status == ds.downloaded
+    assert any(self.reported_resuming), "a resumed download is flagged resuming until its first progress report"
+    assert not artifact.downloadProgress.resuming
+
+  def test_resume_with_every_piece_done_clears_resuming(self):
+    self.write_resume_state(done=list(range(NUM_PIECES)))
+    artifact = self.process_artifact()
+    assert self.piece_requests() == []
+    assert artifact.downloadProgress.status == custom.ModelManagerSP.DownloadStatus.downloaded
+    assert not artifact.downloadProgress.resuming
 
   def test_probe_failure_moves_past_verifying(self):
     self.server.fail_ranges = {(0, 0): 404}  # the size probe
