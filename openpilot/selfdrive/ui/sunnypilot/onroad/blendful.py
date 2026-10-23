@@ -50,7 +50,7 @@ class BlendfulRenderer:
       self._trust = blendful.blendfulTrust
       self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx, *map_args)
 
-    if new_data:
+    if new_data and self._readout:
       lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
       self._pull_display.update(blendful.blendfulCurvature * lookahead ** 2 / 2)
       self._trust_display.update(self._trust)
