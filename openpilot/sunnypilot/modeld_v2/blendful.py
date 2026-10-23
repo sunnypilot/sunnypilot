@@ -55,9 +55,6 @@ class Blendful:
     return self.curvature
 
   def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
-    if v_ego < MIN_SPEED or 'lane_lines' not in model_output:
-      return 0.0
-
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     lines = model_output['lane_lines'][0, :, :, 0]
     stds = model_output['lane_lines_stds'][0, :, :, 0]
