@@ -103,8 +103,7 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.blendful_toggle = toggle_item_sp(tr("Blendful"),
-                                          tr("Keeps the car centered in its lane. " +
-                                             "Leans on the lane lines when they are clear, drives laneless when they are not."),
+                                          tr("Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not."),
                                           param="Blendful")
 
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,

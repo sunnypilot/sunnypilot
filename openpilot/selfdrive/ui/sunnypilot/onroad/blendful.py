@@ -3,8 +3,6 @@ Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
-
-Blendful visuals: cyan lane-center target and a top-center readout of the pull, from the curvature modeld publishes in modelDataV2SP.blendfulCurvature.
 """
 import numpy as np
 import pyray as rl
@@ -26,13 +24,11 @@ class BlendfulRenderer:
     self._center_points = np.empty((0, 2), dtype=np.float32)
     self._trust = 0.0
     self._font = gui_app.font(FontWeight.BOLD)
-    # smoothed copies for the readout so the numbers don't flicker
     self._pull_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
     self._trust_display = FirstOrderFilter(0.0, 0.5, DT_MDL)
-    self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL) # fades that hoe
+    self._alpha = FirstOrderFilter(0.0, 0.3, DT_MDL)
 
   def update(self, renderer, max_idx: int, *map_args) -> None:
-    """Called from the model renderer's update with its lane lines and path already in raw points."""
     blendful = ui_state.sm['modelDataV2SP']
     blendful_curvature = blendful.blendfulCurvature
     self._alpha.update(float(blendful.blendfulTrust > 0.0))
@@ -54,7 +50,7 @@ class BlendfulRenderer:
       self._center_points = renderer._map_line_to_polygon(center, 0.15, 0.0, max_idx, *map_args)
 
     lookahead = max(ui_state.sm['carState'].vEgo * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
-    self._pull_display.update(blendful_curvature * lookahead ** 2 / 2)  # how far blendful moves the car at the lookahead
+    self._pull_display.update(blendful_curvature * lookahead ** 2 / 2)
     self._trust_display.update(self._trust)
 
   def _color(self, rgb, alpha: float) -> rl.Color:
@@ -67,8 +63,6 @@ class BlendfulRenderer:
       self._draw_readout(rect)
 
   def _draw_readout(self, rect: rl.Rectangle) -> None:
-    """Top-center pill: pull toward lane center in cm at the lookahead, arrow = side,
-    bar grows from center toward the pull (full at the cap), brighter with more lane line trust."""
     pull, trust = self._pull_display.x, self._trust_display.x
     w, h = 190, 76
     x, y = rect.x + (rect.width - w) / 2, rect.y + 10
