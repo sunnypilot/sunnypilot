@@ -208,8 +208,6 @@ class AugmentedRoadView(CameraView):
   def _handle_mouse_release(self, mouse_pos: MousePos):
     # Don't trigger click callback if bookmark was triggered
     if not self._bookmark_icon.interacting():
-      if self._model_renderer.laneful.handle_tap(mouse_pos):
-        return
       super()._handle_mouse_release(mouse_pos)
 
   def _render(self, _):

@@ -14,15 +14,14 @@ LANE_WIDTH_DEFAULT = 3.6  # m (reseeded to model's lane width upon initializatio
 LANE_WIDTH_CLIP = (2.8, 4.5)  # m
 LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
-MIN_SPEED = 5.0  # m/s
+MIN_SPEED = 1.0  # m/s
 LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
-MAX_ERROR = 1.0
 YIELD = (0.2, 0.45)
 X_IDXS = np.array(ModelConstants.X_IDXS)
 
 
-class Laneful: # TODO-SP: Rename this to blendful or something similar because it is not pure laneful anymore.
+class Blendful:
   def __init__(self):
     self.lane_width = FirstOrderFilter(LANE_WIDTH_DEFAULT, 10.0, DT_MDL, initialized=False)
     self.line_gone = FirstOrderFilter(np.zeros(2), 2.0, DT_MDL)
@@ -30,26 +29,32 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     self.line_probs = FirstOrderFilter(np.zeros(2), 0.5, DT_MDL)
     self.usual_offset = FirstOrderFilter(0.0, 10.0, DT_MDL, initialized=False)
     self.going_around = False
+    self.since_turning = 0.0
     self.trust = 0.0
+    self.l_prob = 0.0
+    self.r_prob = 0.0
+    self.model_curvature = 0.0
+    self.smooth = 0.0 # smoothens lanelines below .53 lat accel
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
+    self.l_prob = self.r_prob = 0.0
     fading = not active or v_ego < MIN_SPEED
     if fading:
       self.trust = 0.0
       self.usual_offset.initialized = False
       self.lane_width.initialized = False
       self.going_around = False
+    self.model_curvature = model_curvature
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
-    releasing = not fading and (abs(target) < abs(self.curvature) or target * self.curvature < 0)
-    step = (2.0 if releasing else 0.5) / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
-    self.curvature = float(np.clip(target, self.curvature - step, self.curvature + step))
+    target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.25, 0.0]))
+    build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
+    release = (0.5 if fading else 2.0) / max(v_ego, 1.0) ** 2 * DT_MDL  # lets go fast, but past zero it builds like any other pull
+    c = self.curvature
+    self.curvature = float(np.clip(target, max(c - release, -build) if c > 0 else c - build, min(c + release, build) if c < 0 else c + build))
     return self.curvature
 
   def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
-    if v_ego < MIN_SPEED or 'lane_lines' not in model_output:
-      return 0.0
-
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     lines = model_output['lane_lines'][0, :, :, 0]
     stds = model_output['lane_lines_stds'][0, :, :, 0]
@@ -59,6 +64,7 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     dropping = bool(np.any(probs < 0.6 * self.line_probs_slow.update(model_output['lane_lines_prob'][0, 1::2][1:3])))
     l_prob = float(probs[0] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[1]), LINE_STD, [1.0, 0.0]))
     r_prob = float(probs[1] * np.interp(np.interp(0.5 * lookahead, X_IDXS, stds[2]), LINE_STD, [1.0, 0.0]))
+    self.l_prob, self.r_prob = l_prob, r_prob
     # one line steadily on its own still centers at half say conf. a line that is disappearing gives control back to laneless
     if gone[1] > 0.8 and l_prob > 0.5:
       lane_trust = l_prob / 2
@@ -95,14 +101,17 @@ class Laneful: # TODO-SP: Rename this to blendful or something similar because i
     center_now = (l_prob * (lines[1, 0] + hw_now) + r_prob * (lines[2, 0] - hw_now)) / (l_prob + r_prob)
     plan_y = np.interp(lookahead, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
     offset = plan_y - np.interp(lookahead, x, center)
+    if min(gone) > 0.5:  # both lines gone: turns, intersections, relearn ideal model position
+      self.usual_offset.initialized = False
     usual = self.usual_offset.x if self.usual_offset.initialized else offset
     swerve = abs(offset - usual) - 0.25 * abs(model_curvature) * lookahead ** 2 / 2
     away = swerve - abs(-center_now - usual)
     lane_curvature = 2.0 * np.polyfit(x, center, 2)[0]
     inside_curve = abs(lane_curvature) * lookahead ** 2 / 2 > 0.1 and (offset - usual) * lane_curvature > 0
+    self.since_turning = 0.0 if abs(model_curvature) * lookahead ** 2 / 2 > 0.5 else self.since_turning + DT_MDL
     if inside_curve:
       self.going_around = False
-    elif away > YIELD[0]:
+    elif away > YIELD[0] and self.since_turning > 2.0:
       self.going_around = True
     elif swerve < YIELD[0] / 2:
       self.going_around = False
