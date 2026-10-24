@@ -35,6 +35,10 @@ on:
         required: false
         type: string
         default: 'qcom'
+      tinygrad_ref:
+        description: 'Full tinygrad commit sha to convert a precompiled upstream pkl with, when it differs from the upstream pin'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       upstream_branch:
@@ -58,6 +62,10 @@ on:
         options:
           - qcom
           - chestnut
+      tinygrad_ref:
+        description: 'Full tinygrad commit sha to convert a precompiled upstream pkl with, when it differs from the upstream pin'
+        required: false
+        type: string
         default: 'qcom'
 
 
@@ -224,11 +232,13 @@ jobs:
 
           if [ -f "${{ env.MODELS_DIR }}/upstream_pkl.txt" ]; then
             read -r TG_URL TG_SHA _ < "${{ env.MODELS_DIR }}/upstream_pkl.txt"
+            if [ -n "${{ inputs.tinygrad_ref }}" ]; then TG_SHA="${{ inputs.tinygrad_ref }}"; fi
             echo "Converting commaai's precompiled model with tinygrad $TG_SHA"
             UPSTREAM_TG="${{ runner.temp }}/upstream_tinygrad"
-            rm -rf "$UPSTREAM_TG" && git init -q "$UPSTREAM_TG" && git -C "$UPSTREAM_TG" fetch -q --depth 1 "$TG_URL" "$TG_SHA" && git -C "$UPSTREAM_TG" checkout -q FETCH_HEAD
+            rm -rf "$UPSTREAM_TG" && git init -q "$UPSTREAM_TG" && git -C "$UPSTREAM_TG" fetch -q --depth 1 "$TG_URL" "$TG_SHA" && git -C "$UPSTREAM_TG" checkout -q FETCH_HEAD \
+              || { echo "::error::could not fetch tinygrad $TG_SHA from $TG_URL (a full 40-character commit sha is required)"; exit 1; }
             CONVERTED="${{ runner.temp }}/big_driving_tinygrad_plain.pkl"
-            env DEV=USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" taskset -c 7 python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
+            env DEV=USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" taskset -c 7 python3 -u -X faulthandler openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
               "${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl" "$CONVERTED"
             mv "$CONVERTED" "$OUTPUT_PKL"
           elif NEW_ARCH_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}*driving*.onnx" -print -quit) &&
