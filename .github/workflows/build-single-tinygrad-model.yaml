@@ -118,7 +118,7 @@ on:
         type: string
         default: 'sunnypilot/sunnypilot-models'
       tinygrad_ref:
-        description: 'Tinygrad commit to convert a precompiled upstream pkl with, when it differs from the upstream pin'
+        description: 'Full tinygrad commit sha to convert a precompiled upstream pkl with, when it differs from the upstream pin'
         required: false
         type: string
 env:
