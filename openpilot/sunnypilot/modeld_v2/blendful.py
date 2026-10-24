@@ -49,7 +49,7 @@ class Blendful:
       self.going_around = False
     self.model_curvature = model_curvature
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
-    target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.25, 0.0]))
+    target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.5, 0.0]))
     build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
     release = (0.5 if fading else 2.0) / max(v_ego, 1.0) ** 2 * DT_MDL  # lets go fast, but past zero it builds like any other pull
     k = self.curvature
@@ -133,6 +133,8 @@ class Blendful:
     else:
       lane_trust *= np.interp(swerve, (YIELD[0] / 2, YIELD[0]), [1.0, 0.0]) if self.going_around else np.interp(away, YIELD, [1.0, 0.0])
 
+    if lane_trust < self.trust:
+      dk = float(np.clip(dk, min(self.dk, 0.0), max(self.dk, 0.0)))
     self.trust = lane_trust if lane_trust < self.trust else self.trust + (lane_trust - self.trust) * DT_MDL / (1.5 + DT_MDL)
     self.dk = dk
     return float(self.trust * dk)
