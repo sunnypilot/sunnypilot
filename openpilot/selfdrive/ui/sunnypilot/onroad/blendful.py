@@ -45,8 +45,8 @@ class BlendfulRenderer:
       self._center_points = np.empty((0, 2), dtype=np.float32)
       return
 
-    if blendful.blendfulTrust > 0.0:
-      l_prob, r_prob = blendful.blendfulLeftProb, blendful.blendfulRightProb
+    l_prob, r_prob = blendful.blendfulLeftProb, blendful.blendfulRightProb
+    if blendful.blendfulTrust > 0.0 and l_prob + r_prob > 0.0:
       half_width = np.clip(right[:, 1] - left[:, 1], *LANE_WIDTH_CLIP) / 2 if l_prob * r_prob > 0.5 else blendful.blendfulLaneWidth / 2
       l_var = stds[1] ** 2 / max(l_prob, 1e-4)
       r_var = stds[2] ** 2 / max(r_prob, 1e-4)
