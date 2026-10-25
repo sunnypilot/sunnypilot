@@ -10,8 +10,7 @@ from openpilot.cereal import log
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.ui.lib.application import FontWeight, gui_app
-from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import get_accel_boost_max
 
@@ -23,12 +22,6 @@ MAX_BOOST_BLEND = 0.45
 
 COLOR_TRACK = rl.Color(255, 255, 255, 45)
 COLOR_TRACK_EDGE = rl.Color(255, 255, 255, 70)
-COLOR_TEXT = rl.Color(255, 255, 255, 235)
-COLOR_TEXT_SHADOW = rl.Color(0, 0, 0, 150)
-
-# Temporary debug readout next to the bar, flip off once the bar alone reads right
-SHOW_VALUE = True
-VALUE_FONT_SIZE = 24
 
 AGGRESSIVE_COLOR = rl.Color(255, 80, 60, 255)
 STANDARD_COLOR = rl.Color(0, 230, 120, 255)
@@ -70,7 +63,6 @@ class AccelBoostIndicator(Widget):
     self._alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
     # Smoothly rescale the bar when the follow distance profile changes mid-drive
     self._max_boost_filter = FirstOrderFilter(0.0, 0.25, 1 / gui_app.target_fps)
-    self._font = gui_app.font(FontWeight.BOLD)
     self._profile_color = STANDARD_COLOR
     self._max_boost = 0.0
 
@@ -125,17 +117,3 @@ class AccelBoostIndicator(Widget):
         rl.draw_circle(int(cx), int(track_bottom - fill_h / 2), max(1, int(BAR_WIDTH / 2)), fill)
       else:
         rl.draw_rectangle_rounded(rl.Rectangle(bar_x, track_bottom - fill_h, BAR_WIDTH, fill_h), 0.5, 12, fill)
-
-    if SHOW_VALUE:
-      value = f"+{boost:.2f}"
-      value_size = measure_text_cached(self._font, value, VALUE_FONT_SIZE)
-      value_pos = rl.Vector2(bar_x - 8 - value_size.x, (track_top + track_bottom) / 2 - value_size.y / 2)
-      self._draw_text(self._font, value, value_pos, VALUE_FONT_SIZE,
-                      rl.Color(COLOR_TEXT.r, COLOR_TEXT.g, COLOR_TEXT.b, int(COLOR_TEXT.a * alpha)))
-
-  @staticmethod
-  def _draw_text(font, text: str, pos: rl.Vector2, font_size: int, color: rl.Color) -> None:
-    # Drop shadow keeps the readout legible against the camera feed
-    shadow = rl.Color(COLOR_TEXT_SHADOW.r, COLOR_TEXT_SHADOW.g, COLOR_TEXT_SHADOW.b, int(COLOR_TEXT_SHADOW.a * color.a / 255))
-    rl.draw_text_ex(font, text, rl.Vector2(pos.x + 1, pos.y + 1), font_size, 0, shadow)
-    rl.draw_text_ex(font, text, pos, font_size, 0, color)
