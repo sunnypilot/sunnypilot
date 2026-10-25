@@ -385,7 +385,17 @@ class SpeedLimitAssist:
     self.update_calculations(v_cruise_cluster)
 
     self._state_prev = self.state
-    if self.pcm_op_long:
+    if (self.long_enabled and not self.long_enabled_prev and self.enabled and not long_override and
+        self.state == SpeedLimitAssistState.disabled and self._speed_limit > 0. and self._distance <= 0.):
+      # Accept a valid current zone once per engagement, without a button confirmation.
+      # A retained last limit or an upcoming limit must follow the ordinary state machine.
+      self._plus_hold = self._minus_hold = 0.
+      if self.pcm_op_long:
+        self._update_confirmed_state()
+      else:
+        self.state = SpeedLimitAssistState.active
+      self.is_enabled, self.is_active = True, True
+    elif self.pcm_op_long:
       self.is_enabled, self.is_active = self.update_state_machine_pcm_op_long()
     else:
       self.is_enabled, self.is_active = self.update_state_machine_non_pcm_long()

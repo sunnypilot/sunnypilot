@@ -8,6 +8,14 @@ Optional Speed Limit Control settings can be placed in:
 
 The file is JSON, so it cannot contain comments. Restart openpilot after editing if you want the change applied immediately; the config reader also reloads when the file timestamp changes.
 
+## Engagement
+
+In assist mode, enabling longitudinal control automatically accepts a valid current speed limit,
+including the configured speed offset, without a confirmation prompt. This also applies when
+re-engaging after braking. Upcoming lookahead limits and retained limits without a valid current
+reading are not automatically accepted on engagement. Later transitions keep their existing
+confirmation behavior. This does not save any location data.
+
 ## Example
 
 ```json

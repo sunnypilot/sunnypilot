@@ -112,7 +112,6 @@ class LongitudinalPlannerSP:
     self.events_sp = EventsSP()
     self.resolver = SpeedLimitResolver()
     self.scc = SmartCruiseControl()
-    self.resolver = SpeedLimitResolver()
     self.sla = SpeedLimitAssist(CP, CP_SP)
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
@@ -126,14 +125,16 @@ class LongitudinalPlannerSP:
     v_cruise_cluster_kph = min(CS.vCruiseCluster, V_CRUISE_MAX)
     v_cruise_cluster = v_cruise_cluster_kph * CV.KPH_TO_MS
 
-    long_enabled = sm['carControl'].enabled
+    long_enabled = (sm['carControl'].longActive if self.sla.CP.openpilotLongitudinalControl else
+                    sm['carControl'].enabled and CS.cruiseState.enabled)
     long_override = sm['carControl'].cruiseControl.override
 
     # Smart Cruise Control
     self.scc.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
 
     # Speed Limit Resolver
-    self.resolver.update(v_ego, sm)
+    current_only = self.sla.enabled and long_enabled and not self.sla.long_enabled_prev and not long_override
+    self.resolver.update(v_ego, sm, current_only=current_only)
 
     # Speed Limit Assist
     has_speed_limit = self.resolver.speed_limit_valid or self.resolver.speed_limit_last_valid

@@ -170,6 +170,38 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     assert 99. < resolver.distance <= 100.
     assert not resolver.lower_lookahead_active
 
+  @parameterized.expand([(Policy.map_data_only,), (Policy.car_state_priority,)], names=["policy"])
+  def test_engagement_resolves_current_zone_before_lookahead(self, resolver_class, policy, mocker):
+    resolver = resolver_class()
+    resolver.frame = 1
+    resolver.policy = policy
+    resolver.lookahead_speed_factor_up = 1.0
+    sm = setup_sm_mock(mocker)
+    sm['carStateSP'].speedLimit = 20.
+    sm['liveMapDataSP'].speedLimit = 20.
+    sm['liveMapDataSP'].speedLimitAhead = 30.
+    sm['liveMapDataSP'].speedLimitAheadValid = True
+    sm['liveMapDataSP'].speedLimitAheadDistance = 70.
+    confirm_ahead(resolver, sm, 15.)
+    resolver.update(15., sm, current_only=True)
+    assert resolver.speed_limit == 20.
+    assert resolver.distance == 0.
+    assert not resolver.lower_lookahead_active
+    resolver.update(15., sm)
+    assert resolver.speed_limit == 30.
+    assert resolver.distance > 0.
+
+  def test_engagement_does_not_reuse_stale_current_map_limit(self, resolver_class, mocker):
+    resolver = resolver_class()
+    resolver.frame = 1
+    resolver.policy = Policy.map_data_only
+    sm = setup_sm_mock(mocker)
+    resolver.update(15., sm, current_only=True)
+    assert resolver.speed_limit > 0.
+    sm.logMonoTime['liveMapDataSP'] = int((time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e9)
+    resolver.update(15., sm, current_only=True)
+    assert resolver.speed_limit == 0.
+
   @parametrized_policies
   def test_parser(self, resolver_class, policy, sm_key, function_key, mocker):
     resolver = resolver_class()

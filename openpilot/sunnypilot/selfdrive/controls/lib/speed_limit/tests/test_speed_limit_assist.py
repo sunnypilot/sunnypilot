@@ -128,11 +128,48 @@ class TestSpeedLimitAssist(OpenpilotTestCase):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.disabled
 
-  def test_transition_disabled_to_preactive(self):
+  def test_engagement_accepts_current_limit_without_confirmation(self):
     for _ in range(int(3. / DT_MDL)):
       self.sla.update(True, False, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'], SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert self.sla.state == SpeedLimitAssistState.active
+    assert self.sla.is_enabled and self.sla.is_active
+    assert self.sla.output_v_target == SPEED_LIMITS['city']
+    assert EventNameSP.speedLimitPreActive not in self.events_sp.names
+
+  @parameterized.expand([(True,), (False,)])
+  def test_reengagement_auto_accepts_current_limit_with_offset(self, pcm_op_long):
+    self.sla.pcm_op_long = pcm_op_long
+    limit = SPEED_LIMITS['city']
+    target = limit + 1.
+    for _ in range(2):
+      self.sla.update(False, False, limit + 5, 0, SPEED_LIMITS['highway'], limit, target, True, 0, self.events_sp)
+      self.sla.update(True, False, limit + 5, 0, SPEED_LIMITS['highway'], limit, target, True, 0, self.events_sp)
+      assert self.sla.state in ACTIVE_STATES
+      assert self.sla.output_v_target == target
+      assert EventNameSP.speedLimitPreActive not in self.events_sp.names
+
+  @parameterized.expand([(True,), (False,)])
+  def test_engagement_does_not_accept_lookahead_or_retained_limit(self, pcm_op_long):
+    self.sla.pcm_op_long = pcm_op_long
+    for limit, distance in ((SPEED_LIMITS['city'], 100.), (0., 0.)):
+      self.sla.update(False, False, SPEED_LIMITS['highway'], 0, SPEED_LIMITS['highway'], limit,
+                      SPEED_LIMITS['city'], True, distance, self.events_sp)
+      self.sla.update(True, False, SPEED_LIMITS['highway'], 0, SPEED_LIMITS['highway'], limit,
+                      SPEED_LIMITS['city'], True, distance, self.events_sp)
+      assert not self.sla.is_active
+
+  def test_engagement_with_override_does_not_auto_accept(self):
+    self.sla.update(True, True, SPEED_LIMITS['city'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['city'],
+                    SPEED_LIMITS['city'], True, 0, self.events_sp)
+    assert not self.sla.is_active
+
+  def test_initial_accept_does_not_bypass_later_suspicious_drop(self):
+    self.sla.update(True, False, SPEED_LIMITS['highway'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['highway'],
+                    SPEED_LIMITS['highway'], True, 0, self.events_sp)
+    assert self.sla.is_active
+    self.sla.update(True, False, SPEED_LIMITS['highway'], 0, SPEED_LIMITS['highway'], SPEED_LIMITS['residential'],
+                    SPEED_LIMITS['residential'], True, 0, self.events_sp)
     assert self.sla.state == SpeedLimitAssistState.preActive
-    assert self.sla.is_enabled and not self.sla.is_active
 
   def test_transition_disabled_to_pending_no_speed_limit_not_max_initial_set_speed(self):
     for _ in range(int(3. / DT_MDL)):

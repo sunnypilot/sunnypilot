@@ -85,6 +85,7 @@ class SpeedLimitResolver:
     self.speed_limit_final_last = 0.
     self.speed_limit_offset = 0.
     self.lower_lookahead_active = False
+    self._map_current_speed_limit = 0.
     self._map_lower_lookahead_active = False
     self._reset_map_ahead_candidate()
 
@@ -143,6 +144,7 @@ class SpeedLimitResolver:
 
   def _get_from_map_data(self, sm: messaging.SubMaster) -> None:
     self._reset_limit_sources(SpeedLimitSource.map)
+    self._map_current_speed_limit = 0.
     self._map_lower_lookahead_active = False
     self._process_map_data(sm)
 
@@ -155,6 +157,7 @@ class SpeedLimitResolver:
       return
 
     speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
+    self._map_current_speed_limit = speed_limit
     next_speed_limit = map_data.speedLimitAhead if map_data.speedLimitAheadValid else 0.
 
     self._calculate_map_data_limits(sm, speed_limit, next_speed_limit)
@@ -263,10 +266,16 @@ class SpeedLimitResolver:
 
     return SpeedLimitSource.none
 
-  def _resolve_limit_sources(self, sm: messaging.SubMaster) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimit.Source]:
+  def _resolve_limit_sources(self, sm: messaging.SubMaster, current_only: bool = False) -> tuple[float, float, custom.LongitudinalPlanSP.SpeedLimit.Source]:
     """Get limit solutions from each data source"""
     self._get_from_car_state(sm)
     self._get_from_map_data(sm)
+
+    if current_only:
+      # Engagement accepts the present zone, never an upcoming map target.
+      self.limit_solutions[SpeedLimitSource.map] = self._map_current_speed_limit
+      self.distance_solutions[SpeedLimitSource.map] = 0.
+      self._map_lower_lookahead_active = False
 
     source = self._get_source_solution_according_to_policy()
     speed_limit = self.limit_solutions[source] if source else 0.
@@ -274,11 +283,11 @@ class SpeedLimitResolver:
 
     return speed_limit, distance, source
 
-  def update(self, v_ego: float, sm: messaging.SubMaster) -> None:
+  def update(self, v_ego: float, sm: messaging.SubMaster, current_only: bool = False) -> None:
     self.v_ego = v_ego
     self.update_params()
 
-    self.speed_limit, self.distance, self.source = self._resolve_limit_sources(sm)
+    self.speed_limit, self.distance, self.source = self._resolve_limit_sources(sm, current_only)
     self.lower_lookahead_active = self.source == SpeedLimitSource.map and self._map_lower_lookahead_active and self.distance > 0.
     self.speed_limit_offset = self._get_speed_limit_offset()
 
