@@ -317,8 +317,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     if lead_braking:
       self.coast_lead_stable_time = 0.
       lead_coast_allowed = False
+    e2e_active = selected_source == LongitudinalPlanSource.e2e
     idle_safe = (lead_coast_allowed and not reset_state and not sm['controlsState'].forceDecel and not self.fcw and not any_should_stop and
-                 not is_e2e and sm.all_checks(['radarState', 'modelV2', 'carState']))
+                 not e2e_active and sm.all_checks(['radarState', 'modelV2', 'carState']))
     self.longitudinal_idle = self.coast_lead_gap.update(idle_safe and (speed_limit_idle or normal_decel_idle),
                                                        raw_leads, v_ego, lead_coast_min_gap)
     if self.longitudinal_idle:
