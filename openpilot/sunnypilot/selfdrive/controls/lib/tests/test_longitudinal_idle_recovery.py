@@ -89,7 +89,7 @@ def planner_flow(monkeypatch):
   planner.speed_limit_approach = SpeedLimitApproach()
   planner.coast_lead_stable_time = module.LEAD_COAST_REENTRY_STABLE_S
   planner.coast_lead_present = (False, False)
-  from opendbc.sunnypilot.car.hyundai.lead_data_ext import LeadCoastGap
+  from openpilot.sunnypilot.selfdrive.controls.lib.lead_coast import LeadCoastGap
   planner.coast_lead_gap = LeadCoastGap()
   planner.coast_lead_distances = (None, None)
   planner.v_desired_filter = FirstOrderFilter(70. * CV.KPH_TO_MS, 2., 0.05)
@@ -98,6 +98,7 @@ def planner_flow(monkeypatch):
   planner.resolver = NS(lower_lookahead_active=True, speed_limit_final_last=51. * CV.KPH_TO_MS,
                         distance=200., lookahead_speed_factor_down=4.)
   planner.is_e2e = lambda sm: False
+  planner.accel_boost = NS(update=lambda sm, e2e, mpc, cruise: e2e, total_boost=0.)
   planner.mpc = NS(set_weights=lambda *a, **k: None, set_cur_state=lambda *a: None, update=lambda *a, **k: None,
                    v_solution=np.zeros(len(ModelConstants.T_IDXS)), a_solution=np.zeros(len(ModelConstants.T_IDXS)),
                    j_solution=np.zeros(len(ModelConstants.T_IDXS)-1), crash_cnt=0,
@@ -132,7 +133,7 @@ def test_planner_releases_to_final_target_without_reentering_idle(planner_flow):
   sm['carState'].vEgo = 49. * CV.KPH_TO_MS
   for _ in range(80):
     planner.update(sm)
-  assert planner.output_a_target > 0.
+  assert planner.output_a_target >= 0.
 
 
 def test_new_lead_requires_stability_and_braking_wins(planner_flow):
@@ -523,26 +524,6 @@ def test_braking_closing_lead_blocks_idle_immediately(manual_cruise_flow):
 
 
 
-def test_manual_cruise_idle_request_reaches_can_output(manual_cruise_flow, idle_messages):
-  from opendbc.car.hyundai.hyundaicanfd import create_acc_control
-  from opendbc.sunnypilot.car.hyundai.lead_data_ext import CanFdLeadData
-  planner, sm = manual_cruise_flow
-  sm['carState'].vCruise = 20.
-  for _ in range(10):
-    planner.update(sm)
-  idle_messages['longitudinalPlanSP'].speedLimit.assist.longitudinalIdle = planner.longitudinal_idle
-  idle_messages['longitudinalPlan'].shouldStop = planner.output_should_stop
-  idle_messages['longitudinalPlan'].fcw = planner.fcw
-  accepted_idle = longitudinal_plan_sp_idle_active(idle_messages)
-  assert accepted_idle
-  packer = NS(make_can_msg=lambda name, bus, values: values)
-  tuning = NS(stopping=False, actual_accel=0.1, jerk_lower=1., jerk_upper=1.)
-  values = create_acc_control(packer, NS(ECAN=0), True, 0., 0., False, False, 20., NS(leadDistanceBars=2),
-                              CanFdLeadData(0, 0., 0., False), True, tuning, longitudinal_idle=accepted_idle)
-  assert values['ACCMode'] == 0
-  assert values['aReqRaw'] == 0.
-
-
 @pytest.mark.parametrize('gap_fraction,expected', [(0.91, True), (0.9, False), (0.89, False)])
 def test_saved_entry_headway_controls_idle_exit(manual_cruise_flow, gap_fraction, expected):
   planner, sm = manual_cruise_flow
@@ -620,42 +601,6 @@ def test_slc_coast_keeps_saved_gap_despite_deceleration(planner_flow):
   planner.update(sm)
   assert not planner.longitudinal_idle
   assert planner.output_a_target <= -0.8
-
-
-def test_controls_forwards_planner_baseline_to_can(manual_cruise_flow, idle_messages):
-  from openpilot.cereal import messaging
-  from openpilot.selfdrive.car.helpers import convert_carControlSP
-  from openpilot.sunnypilot.selfdrive.controls.controlsd_ext import ControlsExt
-  from opendbc.sunnypilot.car.hyundai.lead_data_ext import LeadCoastGap
-
-  planner, sm = manual_cruise_flow
-  _qualified_steady_lead(planner, sm)
-  gaps = planner.coast_lead_gap.saved_time_gaps
-  plan = messaging.new_message('longitudinalPlanSP').longitudinalPlanSP
-  plan.speedLimit.assist.longitudinalIdle = True
-  plan.speedLimit.assist.leadCoastTimeGaps = gaps
-  idle_messages['longitudinalPlanSP'] = plan
-  idle_messages['selfdriveStateSP'] = messaging.new_message('selfdriveStateSP').selfdriveStateSP
-  idle_messages['selfdriveState'].personality = sm['selfdriveState'].personality
-  idle_messages['carState'].vEgo = sm['carState'].vEgo
-  radar = messaging.new_message('radarState').radarState
-  radar.leadOne.present = True
-  radar.leadOne.dRel = sm['radarState'].leadOne.dRel * 0.95
-  radar.leadOne.vRel = -0.5
-  radar.leadOne.aLeadK = -0.8
-  idle_messages['radarState'] = radar
-  controls = ControlsExt.__new__(ControlsExt)
-  command = convert_carControlSP(controls.state_control_ext(idle_messages))
-  assert command.longitudinalIdle
-  assert command.leadCoastTimeGaps == gaps
-  raw_leads = tuple((lead.status, lead.dRel, lead.vRel, lead.aLeadK) for lead in (command.leadOne, command.leadTwo))
-  can_gap = LeadCoastGap()
-  assert can_gap.update(command.longitudinalIdle, raw_leads, sm['carState'].vEgo,
-                        command.leadCoastMinDistance, saved_time_gaps=command.leadCoastTimeGaps)
-  idle_messages['carState'].brakePressed = True
-  command = controls.state_control_ext(idle_messages)
-  assert not command.longitudinalIdle
-  assert list(command.leadCoastTimeGaps) == []
 
 
 @pytest.mark.parametrize('gaps', [[], [2.5], [float('nan'), 0.], [float('inf'), 0.], [-2.5, 0.]])

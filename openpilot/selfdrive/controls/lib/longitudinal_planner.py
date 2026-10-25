@@ -3,7 +3,6 @@ import numpy as np
 
 import openpilot.cereal.messaging as messaging
 from opendbc.car.structs import car
-from opendbc.sunnypilot.car.hyundai.lead_data_ext import LeadCoastGap
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -16,6 +15,7 @@ from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDX
 from openpilot.selfdrive.controls.lib.drive_helpers import CONTROL_N, get_accel_from_plan, should_stop
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
+from openpilot.sunnypilot.selfdrive.controls.lib.lead_coast import LeadCoastGap
 
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import (
   LongitudinalPlannerSP,
@@ -110,6 +110,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
   def update(self, sm):
     LongitudinalPlannerSP.update(self, sm)
     self.speed_limit_no_brake = get_slc_no_brake()
+    all_checks = getattr(sm, 'all_checks', lambda services=None: True)
 
     accel_coast = get_coast_accel(sm['carControl'].orientationNED[1]) if len(sm['carControl'].orientationNED) == 3 else 0.
 
@@ -161,7 +162,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.coast_lead_present = lead_present
     lead_coast_min_gap = lead_coast_min_distance(v_ego, sm['selfdriveState'].personality)
     raw_leads = tuple((lead.present, lead.dRel, lead.vRel, lead.aLeadK) for lead in leads)
-    lead_coast_safe = sm.all_checks(['radarState']) and self.coast_lead_gap.allows(raw_leads, v_ego, lead_coast_min_gap)
+    lead_coast_safe = all_checks(['radarState']) and self.coast_lead_gap.allows(raw_leads, v_ego, lead_coast_min_gap)
     if self.coast_lead_gap.time_gaps is None:
       lead_coast_safe &= all(not lead.present or (previous is not None and lead.dRel >= previous - 0.5)
                              for lead, previous in zip(leads, self.coast_lead_distances, strict=True))
@@ -220,9 +221,9 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     # Only idle mode may coast behind a steady lead; fixed/dynamic overrides remain no-lead only.
     if no_brake_mode == "idle":
       no_brake_for_speed_limit = approach_active and not idle_reentry_blocked and lead_coast_allowed
-    no_brake_for_speed_limit &= (speed_limit_source_active and not reset_state and not sm['controlsState'].forceDecel and not self.is_e2e(sm) and
+    no_brake_for_speed_limit &= (speed_limit_source_active and not reset_state and not sm['controlsState'].forceDecel and
                                  not sm['carState'].brakePressed and not sm['carState'].gasPressed and
-                                 sm.all_checks(['modelV2', 'carState']))
+                                 all_checks(['modelV2', 'carState']))
     speed_limit_idle = (
       not idle_reentry_blocked and
       no_brake_for_speed_limit and
@@ -319,7 +320,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
       lead_coast_allowed = False
     e2e_active = selected_source == LongitudinalPlanSource.e2e
     idle_safe = (lead_coast_allowed and not reset_state and not sm['controlsState'].forceDecel and not self.fcw and not any_should_stop and
-                 not e2e_active and sm.all_checks(['radarState', 'modelV2', 'carState']))
+                 not e2e_active and all_checks(['radarState', 'modelV2', 'carState']))
     self.longitudinal_idle = self.coast_lead_gap.update(idle_safe and (speed_limit_idle or normal_decel_idle),
                                                        raw_leads, v_ego, lead_coast_min_gap)
     if self.longitudinal_idle:

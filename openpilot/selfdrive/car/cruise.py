@@ -121,11 +121,15 @@ class VCruiseHelper(VCruiseHelperSP):
 
     # When the SLC target sits close to a normal cruise step, visit the target first.
     slc_target_is_current = self.speed_limit_assist_enabled and self.has_speed_limit and abs(self.v_cruise_kph - slc_target) <= snap_tolerance
-    nearest_slc_step = round(slc_target / v_cruise_delta) * v_cruise_delta if v_cruise_delta > 0 else slc_target
-    slc_target_replaces_step = not button_long_press and slc_target_is_current and abs(slc_target - nearest_slc_step) < v_cruise_delta / 3.
+    nearest_slc_step = (CRUISE_NEAREST_FUNC[button_type](slc_target / v_cruise_delta) * v_cruise_delta
+                        if v_cruise_delta > 0 else slc_target)
+    slc_target_replaces_step = not button_long_press and slc_target_is_current
 
     if slc_target_replaces_step:
-      self.v_cruise_kph = nearest_slc_step + v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type]
+      # Very close targets replace the adjacent normal step; otherwise visit
+      # that step next after leaving the exact SLC target.
+      skip_replaced_step = abs(slc_target - nearest_slc_step) < v_cruise_delta / 4.
+      self.v_cruise_kph = nearest_slc_step + (v_cruise_delta * CRUISE_INTERVAL_SIGN[button_type] if skip_replaced_step else 0.)
     elif long_press and self.v_cruise_kph % v_cruise_delta != 0:  # partial interval
       self.v_cruise_kph = CRUISE_NEAREST_FUNC[button_type](self.v_cruise_kph / v_cruise_delta) * v_cruise_delta
     else:

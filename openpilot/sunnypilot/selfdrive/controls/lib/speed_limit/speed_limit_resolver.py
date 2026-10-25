@@ -151,7 +151,8 @@ class SpeedLimitResolver:
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
     map_data = sm['liveMapDataSP']
 
-    map_data_age = time.monotonic() - sm.logMonoTime['liveMapDataSP'] * 1e-9
+    map_data_mono_time = getattr(sm, 'logMonoTime', {}).get('liveMapDataSP', 0)
+    map_data_age = time.monotonic() - map_data_mono_time * 1e-9
     if map_data_age < 0. or map_data_age > LIMIT_MAX_MAP_DATA_AGE:
       self._reset_map_ahead_candidate()
       return

@@ -29,6 +29,10 @@ class TestCustomAccIncrements(TestVCruiseHelper):
 
   def press_button_short(self, button_type: car.CarState.ButtonEvent.Type) -> None:
     """Simulate a short button press (press + release)"""
+    # Keep the helper in an already-observed SLC state so this tests the button
+    # snap behavior rather than the separate automatic SLC activation update.
+    self.v_cruise_helper.prev_sla_state = self.v_cruise_helper.sla_state
+    self.v_cruise_helper.prev_speed_limit_final_last_kph = self.v_cruise_helper.speed_limit_final_last_kph
     CS = car.CarState(cruiseState={"available": True})
     CS.buttonEvents = [ButtonEvent(type=button_type, pressed=True)]
     self.v_cruise_helper.update_v_cruise(CS, enabled=True, is_metric=True)
@@ -117,7 +121,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_only_when_assist_enabled(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.warning), block=True)
-    self.enable(60 * CV.KPH_TO_MS, False, False)
+    self.enable(60 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 55
@@ -131,7 +135,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_when_inactive_after_manual_adjustment(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(40 * CV.KPH_TO_MS, False, False)
+    self.enable(40 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 52
@@ -148,7 +152,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_when_planner_state_disabled_but_assist_mode_enabled(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(40 * CV.KPH_TO_MS, False, False)
+    self.enable(40 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 30.9
@@ -160,7 +164,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_once_when_crossing_target(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(60 * CV.KPH_TO_MS, False, False)
+    self.enable(60 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 53
@@ -180,7 +184,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_once_when_crossing_target_from_below(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(40 * CV.KPH_TO_MS, False, False)
+    self.enable(40 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 53
@@ -200,7 +204,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_before_crossing_only_when_within_third_step(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(40 * CV.KPH_TO_MS, False, False)
+    self.enable(40 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 56
@@ -215,7 +219,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_before_crossing_when_close_to_next_step(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(40 * CV.KPH_TO_MS, False, False)
+    self.enable(40 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = 52
@@ -235,7 +239,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_offset_sequences(self, slc_target, initial_speed, button_type, expected):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(initial_speed * CV.KPH_TO_MS, False, False)
+    self.enable(initial_speed * CV.KPH_TO_MS)
 
     self.v_cruise_helper.has_speed_limit = True
     self.v_cruise_helper.speed_limit_final_last_kph = slc_target
@@ -251,7 +255,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_from_just_below_target(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(50 * CV.KPH_TO_MS, False, False)
+    self.enable(50 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.v_cruise_kph = 54.5
     self.v_cruise_helper.has_speed_limit = True
@@ -265,7 +269,7 @@ class TestCustomAccIncrements(TestVCruiseHelper):
   def test_snap_to_slc_from_just_above_target(self):
     self.set_custom_increments(enabled=True, short_inc=10, long_inc=10)
     self.params.put("SpeedLimitMode", int(SpeedLimitMode.assist), block=True)
-    self.enable(60 * CV.KPH_TO_MS, False, False)
+    self.enable(60 * CV.KPH_TO_MS)
 
     self.v_cruise_helper.v_cruise_kph = 53.5
     self.v_cruise_helper.has_speed_limit = True
