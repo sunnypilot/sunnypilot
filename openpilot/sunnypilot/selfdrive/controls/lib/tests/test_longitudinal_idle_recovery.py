@@ -1,4 +1,5 @@
 from types import SimpleNamespace as NS
+from typing import Any
 
 import pytest
 
@@ -67,6 +68,7 @@ def planner_flow(monkeypatch):
                     LongitudinalPlanSource=log.LongitudinalPlan.LongitudinalPlanSource, T_IDXS=ModelConstants.T_IDXS))
     spec = importlib.util.spec_from_file_location('planner_idle_test', Path(__file__).resolve().parents[5] /
                                                  'selfdrive/controls/lib/longitudinal_planner.py')
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
@@ -256,6 +258,7 @@ def rocket_fuel(monkeypatch):
                     NS(measure_text_cached=lambda *args: NS(x=30., y=48.)))
     path = Path(__file__).resolve().parents[5] / 'selfdrive/ui/sunnypilot/onroad/rocket_fuel.py'
     spec = importlib.util.spec_from_file_location('rocket_fuel_idle_test', path)
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
   return module.RocketFuel
@@ -631,7 +634,7 @@ class TestSLCEngagement(OpenpilotTestCase):
     planner.resolver.policy = Policy.map_data_only
     planner.resolver.frame = 1
     planner.events_sp = EventsSP()
-    planner.scc = NS(update=lambda *args: None, vision=NS(output_v_target=255., output_a_target=0.),
+    planner.scc = NS(update=lambda *args: None, vision=NS(output_v_target=255., output_a_target=0.),  # ty: ignore[invalid-assignment]
                      map=NS(output_v_target=255., output_a_target=0.))
     sm = IdleMessages(
       carState=NS(vCruiseCluster=90., cruiseState=NS(enabled=False)),
@@ -641,16 +644,17 @@ class TestSLCEngagement(OpenpilotTestCase):
                        speedLimitAhead=0., speedLimitAheadValid=False, speedLimitAheadDistance=0.),
     )
     sm.logMonoTime = {'liveMapDataSP': time.monotonic_ns()}
-    planner.update_targets(sm, 20., 0., 25.)
+    sm_any: Any = sm
+    planner.update_targets(sm_any, 20., 0., 25.)
     assert not planner.sla.is_enabled  # Lateral enabled alone must not accept SLC.
     for limit in (50., 30.):
       sm['carControl'].longActive = True
       sm['carState'].cruiseState.enabled = True
       sm['liveMapDataSP'].speedLimit = limit * CV.KPH_TO_MS
-      planner.update_targets(sm, 20., 0., 25.)
+      planner.update_targets(sm_any, 20., 0., 25.)
       assert planner.sla.is_active
       assert planner.sla.output_v_target == limit * CV.KPH_TO_MS
       sm['carControl'].longActive = False
       sm['carState'].cruiseState.enabled = False
-      planner.update_targets(sm, 20., 0., 25.)
+      planner.update_targets(sm_any, 20., 0., 25.)
       assert planner.sla.state == SpeedLimitAssistState.disabled
