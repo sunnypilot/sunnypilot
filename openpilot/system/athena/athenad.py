@@ -385,19 +385,6 @@ def getVersion() -> dict[str, str]:
   }
 
 
-@dispatcher.add_method
-def setNavDestination(latitude: int = 0, longitude: int = 0, place_name: str | None = None, place_details: str | None = None) -> dict[str, int]:
-  destination = {
-    "latitude": latitude,
-    "longitude": longitude,
-    "place_name": place_name,
-    "place_details": place_details,
-  }
-  Params().put("NavDestination", json.dumps(destination))
-
-  return {"success": 1}
-
-
 def scan_dir(path: str, prefix: str, base: str | None = None) -> list[str]:
   if base is None:
     base = path
@@ -719,6 +706,20 @@ def cancelUpload(upload_id: str | list[str]) -> dict[str, int | str]:
 
   cancelled_uploads.update(cancelled_ids)
   return {"success": 1}
+
+@dispatcher.add_method
+def setNavDestination(latitude: float, longitude: float) -> dict[str, int | str]:
+  if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+    return {"success": 0, "error": "Invalid destination coordinates"}
+  Params().put("NavDestination", {"latitude": latitude, "longitude": longitude}, block=True)
+  return {"success": 1}
+
+
+@dispatcher.add_method
+def clearNavDestination() -> dict[str, int]:
+  Params().remove("NavDestination")
+  return {"success": 1}
+
 
 @dispatcher.add_method
 def setRouteViewed(route: str) -> dict[str, int | str]:
