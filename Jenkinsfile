@@ -12,16 +12,18 @@ def retryWithDelay(int maxRetries, int delay, Closure body) {
 def device(String ip, String step_label, String cmd) {
   withCredentials([file(credentialsId: 'id_rsa', variable: 'key_file')]) {
     def ssh_cmd = """
-ssh -o ConnectTimeout=5 -o ServerAliveInterval=5 -o ServerAliveCountMax=2 -o BatchMode=yes -o StrictHostKeyChecking=no -i ${key_file} 'comma@${ip}' exec /usr/bin/bash <<'END'
+ssh -o ControlMaster=no -o ControlPath=none -o ConnectTimeout=5 -o ServerAliveInterval=5 -o ServerAliveCountMax=12 -o BatchMode=yes -o StrictHostKeyChecking=no -i ${key_file} 'comma@${ip}' exec setpriv --pdeathsig HUP /usr/bin/bash <<'END'
 
 set -e
 
 export TERM=xterm-256color
 
-shopt -s huponexit # kill all child processes when the shell exits
+trap 'kill 0' HUP # stop this process group on SSH disconnect
 
 export CI=1
 export PYTHONWARNINGS=error
+export PYTHONFAULTHANDLER=1
+export COMMA_CACHE=/data/tmp/comma_download_cache
 #export LOGPRINT=debug # this has gotten too spammy...
 export TEST_DIR=${env.TEST_DIR}
 export SOURCE_DIR=${env.SOURCE_DIR}
@@ -30,14 +32,14 @@ export GIT_COMMIT=${env.GIT_COMMIT}
 export CI_ARTIFACTS_TOKEN=${env.CI_ARTIFACTS_TOKEN}
 export GITHUB_COMMENTS_TOKEN=${env.GITHUB_COMMENTS_TOKEN}
 export AZURE_TOKEN='${env.AZURE_TOKEN}'
-# only use 1 thread for tici tests since most require HIL
+# only use 1 thread since most require real hardware that can't be shared
 export PYTEST_ADDOPTS="-n0 -s"
 
 
 export GIT_SSH_COMMAND="ssh -i /data/gitkey"
 
 source ~/.bash_profile
-if [ -f /TICI ]; then
+if [ -f /AGNOS ]; then
   source /etc/profile
 
   rm -rf /tmp/tmp*
@@ -63,10 +65,13 @@ if [ -f /data/openpilot/launch_env.sh ]; then
   source /data/openpilot/launch_env.sh
 fi
 
+export LD_LIBRARY_PATH="\$(python -c 'import ffmpeg; print(ffmpeg.LIB_DIR)'):/usr/local/lib:\${LD_LIBRARY_PATH:-}"
+
 ln -snf ${env.TEST_DIR} /data/pythonpath
 
 cd ${env.TEST_DIR} || true
-time ${cmd}
+time ( ${cmd} ) &
+wait \$!
 END"""
 
     sh script: ssh_cmd, label: step_label
@@ -93,7 +98,7 @@ def deviceStage(String stageName, String deviceType, List extra_env, def steps) 
           retry (3) {
             def date = sh(script: 'date', returnStdout: true).trim();
             device(device_ip, "set time", "date -s '" + date + "'")
-            device(device_ip, "git checkout", extra + "\n" + readFile("selfdrive/test/setup_device_ci.sh"))
+            device(device_ip, "git checkout", extra + "\n" + readFile("openpilot/selfdrive/test/setup_device_ci.sh"))
           }
           steps.each { item ->
             def name = item[0]
@@ -156,6 +161,14 @@ def step(String name, String cmd, Map args = [:]) {
   return [name, cmd, args]
 }
 
+def chestnutStage(String name = "chestnut") {
+  deviceStage(name, "mici-chestnut-ci", ["UNSAFE=1", "CHESTNUT=1"], [
+    step("build", "./openpilot/selfdrive/test/chestnut.sh"),
+    step("model replay", "openpilot/selfdrive/test/process_replay/model_replay.py --chestnut"),
+    step("onroad tests", "./openpilot/selfdrive/test/test_onroad.py TestChestnutOnroad", [timeout: 120]),
+  ])
+}
+
 node {
   env.CI = "1"
   env.PYTHONWARNINGS = "error"
@@ -166,8 +179,38 @@ node {
   env.GIT_BRANCH = checkout(scm).GIT_BRANCH
   env.GIT_COMMIT = checkout(scm).GIT_COMMIT
 
-  def excludeBranches = ['__nightly', 'devel', 'devel-staging', 'release3', 'release3-staging',
-                         'release-tici', 'release-tizi', 'release-tizi-staging', 'release-mici-staging', 'testing-closet*', 'hotfix-*']
+  if (env.JOB_BASE_NAME == 'chestnut-stresstest') {
+    sh 'git fetch --no-tags origin nightly-chestnut'
+    env.GIT_COMMIT = sh(script: 'git show FETCH_HEAD:git_src_commit', returnStdout: true).trim()
+    if (!(env.GIT_COMMIT ==~ /[0-9a-f]{40}/)) {
+      error("invalid nightly-chestnut source commit")
+    }
+    def results = []
+    try {
+      timeout(time: 12, unit: 'HOURS') {
+        for (int run = 1; run <= 100; run++) {
+          results << "run ${run}: INCOMPLETE"
+          try {
+            chestnutStage("chestnut ${run}/100")
+            results[run - 1] = "run ${run}: PASS"
+          } catch (hudson.AbortException e) {
+            results[run - 1] = "run ${run}: FAIL"
+            echo e.toString()
+          }
+        }
+      }
+    } finally {
+      writeFile file: 'chestnut_stress_report.txt', text: "commit: ${env.GIT_COMMIT}\ncompleted: ${results.count { !it.endsWith('INCOMPLETE') }}/100\n" + results.join('\n') + '\n'
+      archiveArtifacts artifacts: 'chestnut_stress_report.txt'
+    }
+    if (results.any { !it.endsWith('PASS') }) {
+      error("chestnut stress test failed")
+    }
+    return
+  }
+
+  def excludeBranches = ['__nightly', '__nightly-chestnut', 'devel', 'devel-staging',
+                         'release-tizi', 'release-tizi-staging', 'release-mici', 'release-mici-staging', 'testing-closet*', 'hotfix-*']
   def excludeRegex = excludeBranches.join('|').replaceAll('\\*', '.*')
 
   if (env.BRANCH_NAME != 'master' && !env.BRANCH_NAME.contains('__jenkins_loop_')) {
@@ -179,7 +222,7 @@ node {
   try {
     if (env.BRANCH_NAME == 'devel-staging') {
       deviceStage("build release-tizi-staging", "tizi-needs-can", [], [
-        step("build release-tizi-staging", "RELEASE_BRANCH=release-tizi-staging $SOURCE_DIR/release/build_release.sh && git push -f origin release-tizi-staging:release-mici-staging"),
+        step("build release-tizi-staging", "RELEASE_BRANCH=release-tizi-staging,release-mici-staging $SOURCE_DIR/tools/release/build_release.sh"),
       ])
     }
 
@@ -187,12 +230,27 @@ node {
       parallel (
         'nightly': {
           deviceStage("build nightly", "tizi-needs-can", [], [
-            step("build nightly", "RELEASE_BRANCH=nightly $SOURCE_DIR/release/build_release.sh"),
+            step("build nightly", "RELEASE_BRANCH=nightly $SOURCE_DIR/tools/release/build_release.sh"),
           ])
         },
         'nightly-dev': {
           deviceStage("build nightly-dev", "tizi-needs-can", [], [
-            step("build nightly-dev", "PANDA_DEBUG_BUILD=1 RELEASE_BRANCH=nightly-dev $SOURCE_DIR/release/build_release.sh"),
+            step("build nightly-dev", "PANDA_DEBUG_BUILD=1 RELEASE_BRANCH=nightly-dev $SOURCE_DIR/tools/release/build_release.sh"),
+          ])
+        },
+      )
+    }
+
+    if (env.BRANCH_NAME == '__nightly-chestnut') {
+      parallel (
+        'nightly-chestnut': {
+          deviceStage("build nightly-chestnut", "mici-chestnut-ci", ["CHESTNUT=1"], [
+            step("build nightly-chestnut", "SCONSFLAGS=-j4 INCLUDE_BIG_MODEL=1 RELEASE_BRANCH=nightly-chestnut $SOURCE_DIR/tools/release/build_release.sh TestChestnutOnroad"),
+          ])
+        },
+        'nightly-chestnut-dev': {
+          deviceStage("build nightly-chestnut-dev", "mici-chestnut-ci", ["CHESTNUT=1"], [
+            step("build nightly-chestnut-dev", "SCONSFLAGS=-j4 INCLUDE_BIG_MODEL=1 PANDA_DEBUG_BUILD=1 RELEASE_BRANCH=nightly-chestnut-dev $SOURCE_DIR/tools/release/build_release.sh TestChestnutOnroad"),
           ])
         },
       )
@@ -202,53 +260,55 @@ node {
     parallel (
       'onroad tests': {
         deviceStage("onroad", "tizi-needs-can", ["UNSAFE=1"], [
-          step("build openpilot", "cd system/manager && ./build.py"),
-          step("check dirty", "release/check-dirty.sh"),
-          step("onroad tests", "pytest selfdrive/test/test_onroad.py -s", [timeout: 60]),
+          step("build openpilot", "cd openpilot/system/manager && ./build.py"),
+          step("check dirty", "tools/release/check-dirty.sh"),
+          step("onroad tests", "./openpilot/selfdrive/test/test_onroad.py", [timeout: 60]),
         ])
       },
       'HW + Unit Tests': {
         deviceStage("tizi-hardware", "tizi-common", ["UNSAFE=1"], [
-          step("build", "cd system/manager && ./build.py"),
-          step("test power draw", "pytest -s system/hardware/tici/tests/test_power_draw.py"),
-          step("test encoder", "LD_LIBRARY_PATH=/usr/local/lib pytest system/loggerd/tests/test_encoder.py", [diffPaths: ["system/loggerd/"]]),
-          step("test manager", "pytest system/manager/test/test_manager.py"),
+          step("build", "cd openpilot/system/manager && ./build.py"),
+          step("test power draw", "./openpilot/selfdrive/test/test_power_draw.py"),
+          step("test encoder", "./openpilot/system/loggerd/tests/test_encoder.py", [diffPaths: ["openpilot/system/loggerd/"]]),
+          step("test manager", "./openpilot/system/manager/test/test_manager.py"),
         ])
       },
       'camerad OX03C10': {
         deviceStage("OX03C10", "tizi-ox03c10", ["UNSAFE=1"], [
-          step("build", "cd system/manager && ./build.py"),
-          step("test pandad", "pytest selfdrive/pandad/tests/test_pandad.py"),
-          step("test camerad", "pytest system/camerad/test/test_camerad.py", [timeout: 90]),
+          step("build", "cd openpilot/system/manager && ./build.py"),
+          step("test pandad", "./openpilot/selfdrive/pandad/tests/test_pandad.py"),
+          step("test camerad", "./openpilot/system/camerad/test/test_camerad.py", [timeout: 90]),
         ])
       },
       'camerad OS04C10': {
         deviceStage("OS04C10", "tici-os04c10", ["UNSAFE=1"], [
-          step("build", "cd system/manager && ./build.py"),
-          step("test pandad", "pytest selfdrive/pandad/tests/test_pandad.py"),
-          step("test camerad", "pytest system/camerad/test/test_camerad.py", [timeout: 90]),
+          step("build", "cd openpilot/system/manager && ./build.py"),
+          step("test pandad", "./openpilot/selfdrive/pandad/tests/test_pandad.py"),
+          step("test camerad", "./openpilot/system/camerad/test/test_camerad.py", [timeout: 90]),
         ])
       },
       'sensord': {
         deviceStage("LSM + MMC", "tizi-lsmc", ["UNSAFE=1"], [
-          step("build", "cd system/manager && ./build.py"),
-          step("test sensord", "pytest system/sensord/tests/test_sensord.py"),
+          step("build", "cd openpilot/system/manager && ./build.py"),
+          step("test sensord", "./openpilot/system/sensord/tests/test_sensord.py"),
         ])
       },
       'replay': {
         deviceStage("model-replay", "tizi-replay", ["UNSAFE=1"], [
-          step("build", "cd system/manager && ./build.py", [diffPaths: ["selfdrive/modeld/", "tinygrad_repo", "selfdrive/test/process_replay/model_replay.py"]]),
-          step("model replay", "selfdrive/test/process_replay/model_replay.py", [diffPaths: ["selfdrive/modeld/", "tinygrad_repo", "selfdrive/test/process_replay/model_replay.py"]]),
+          step("build", "cd openpilot/system/manager && ./build.py", [diffPaths: ["openpilot/selfdrive/modeld/", "tinygrad_repo", "openpilot/selfdrive/test/process_replay/model_replay.py"]]),
+          step("model replay", "openpilot/selfdrive/test/process_replay/model_replay.py", [diffPaths: ["openpilot/selfdrive/modeld/", "tinygrad_repo", "openpilot/selfdrive/test/process_replay/model_replay.py"]]),
         ])
       },
       'tizi': {
         deviceStage("tizi", "tizi", ["UNSAFE=1"], [
-          step("build openpilot", "cd system/manager && ./build.py"),
-          step("test pandad loopback", "pytest selfdrive/pandad/tests/test_pandad_loopback.py"),
-          step("test pandad spi", "pytest selfdrive/pandad/tests/test_pandad_spi.py"),
-          step("test amp", "pytest system/hardware/tici/tests/test_amplifier.py"),
-          step("test qcomgpsd", "pytest system/qcomgpsd/tests/test_qcomgpsd.py", [diffPaths: ["system/qcomgpsd/"]]),
+          step("build openpilot", "cd openpilot/system/manager && ./build.py"),
+          step("test pandad loopback", "./openpilot/selfdrive/pandad/tests/test_pandad_loopback.py"),
+          step("test pandad spi", "./openpilot/selfdrive/pandad/tests/test_pandad_spi.py"),
+          step("test amp", "./openpilot/common/hardware/comma/tests/test_amplifier.py"),
         ])
+      },
+      'chestnut': {
+        chestnutStage()
       },
 
     )
