@@ -503,8 +503,8 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download model chunks from HF
-        uses: ./.github/workflows/download-hf-model-chunks
+      - name: Download models from HF
+        uses: ./.github/workflows/download-hf-model
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
@@ -573,8 +573,8 @@ jobs:
           mkdir -p ${{ env.OUTPUT_DIR }}
           tar xzf prebuilt.tar.gz -C ${{ env.OUTPUT_DIR }}
 
-      - name: Download model chunks from HF
-        uses: ./.github/workflows/download-hf-model-chunks
+      - name: Download models from HF
+        uses: ./.github/workflows/download-hf-model
         with:
           hf_repo: sunnypilot/sunnypilot_models_v1
           dest_dir: ${{ env.OUTPUT_DIR }}/openpilot/selfdrive/modeld/models
@@ -594,8 +594,14 @@ jobs:
       - name: Publish chestnut branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
+          cp .lfsconfig "${{ env.OUTPUT_DIR }}/"
+          echo 'openpilot/selfdrive/modeld/models/big_*_tinygrad.pkl filter=lfs diff=lfs merge=lfs -text' > "${{ env.OUTPUT_DIR }}/.gitattributes"
+          git lfs install
+          git config --global credential.helper store
+          echo "https://user:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
 
           ${{ env.CI_DIR }}/publish.sh \
             "${{ github.workspace }}" \
