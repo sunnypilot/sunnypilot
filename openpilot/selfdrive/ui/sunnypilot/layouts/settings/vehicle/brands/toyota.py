@@ -4,8 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from opendbc.car.toyota.values import ToyotaFlags
-from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle.brands.base import BrandSettings
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
@@ -13,6 +11,8 @@ from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from opendbc.car.toyota.values import ToyotaFlags
+from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 
 
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
