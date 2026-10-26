@@ -1,9 +1,15 @@
+"""
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 import unittest
 
 from openpilot.cereal import log
 from openpilot.selfdrive.controls.lib.accel_boost import ACCEL_BOOST_MAX
-from openpilot.selfdrive.ui.mici.onroad.accel_boost_indicator import (get_boost_style, get_boost_fraction, lighten,
-                                                                     AGGRESSIVE_COLOR, RELAXED_COLOR, STANDARD_COLOR)
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.accel_boost_indicator import (get_boost_style, get_boost_fraction, lighten,
+                                                                                AGGRESSIVE_COLOR, RELAXED_COLOR, STANDARD_COLOR)
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import (SCALE_AGGRESSIVE, SCALE_RELAXED, SCALE_STANDARD,
                                                                         get_accel_boost_max)
 

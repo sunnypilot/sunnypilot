@@ -1,5 +1,5 @@
 """
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
@@ -80,7 +80,8 @@ class AccelBoostIndicator(Widget):
       self._profile_color, self._max_boost = get_boost_style(sm['selfdriveState'].personality)
     self._max_boost_filter.update(self._max_boost)
 
-    self.panel_in_use = extra_enabled and ui_state.has_longitudinal_control
+    # The bar owns the panel only while it is actually drawn; the ball returns when the bar fades out
+    self.panel_in_use = visible and extra_enabled
 
   def _render(self, _):
     alpha = self._alpha_filter.x
@@ -114,6 +115,8 @@ class AccelBoostIndicator(Widget):
 
       fill = rl.Color(fill_color.r, fill_color.g, fill_color.b, int(255 * alpha))
       if fill_h < BAR_WIDTH:
-        rl.draw_circle(int(cx), int(track_bottom - fill_h / 2), max(1, int(BAR_WIDTH / 2)), fill)
+        # Keep the cap inside the track: a fixed radius would paint below the track near zero boost
+        radius = max(1, int(fill_h / 2))
+        rl.draw_circle(int(cx), int(track_bottom - radius), radius, fill)
       else:
         rl.draw_rectangle_rounded(rl.Rectangle(bar_x, track_bottom - fill_h, BAR_WIDTH, fill_h), 0.5, 12, fill)
