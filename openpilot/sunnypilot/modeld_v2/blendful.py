@@ -41,10 +41,10 @@ class Blendful:
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float, enabled: bool = True) -> float:
     self.l_prob = self.r_prob = 0.0
+    self.model_curvature = model_curvature
     if not enabled:
       if self.curvature or self.trust:
         self.__init__()
-      self.model_curvature = model_curvature
       return 0.0
     fading = not active or v_ego < MIN_SPEED
     if fading:
@@ -52,7 +52,6 @@ class Blendful:
       self.usual_offset.initialized = False
       self.lane_width.initialized = False
       self.going_around = False
-    self.model_curvature = model_curvature
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
     target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.5, 0.0]))
     build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
@@ -133,6 +132,7 @@ class Blendful:
       self.going_around = False
     self.usual_offset.update_alpha(20.0 if self.going_around else 10.0)
     self.usual_offset.update(offset)
+
     if inside_curve:
       lane_trust *= np.interp(abs(offset) - abs(center_now) - 0.25 * abs(model_curvature) * lookahead ** 2 / 2, (0.5, 1.0), [1.0, 0.0])
     else:
