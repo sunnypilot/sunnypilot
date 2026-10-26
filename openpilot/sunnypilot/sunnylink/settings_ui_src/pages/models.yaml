@@ -14,7 +14,7 @@ sections:
   - key: Blendful
     widget: toggle
     title: Blendful Mode (Alpha)
-    description: Gently pulls the model toward the lane center, as much as it trusts the lane lines while yielding around obstacles.
+    description: Gently pulls the model toward the lane center, as much as it trusts the lane lines, and yields around obstacles.
     enablement:
       - $ref: '#/macros/custom_model'
   - key: LaneTurnDesire

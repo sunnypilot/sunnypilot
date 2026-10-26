@@ -96,8 +96,8 @@ class ModelsLayoutMici(NavScroller):
     self._cache_size_time = 0.0
 
     self.blendful_toggle = BigParamControl("blendful (alpha)", "Blendful",
-                                           description="Gently pulls the model toward the lane center, as much as it trusts the lane lines.\n" +
-                                                       "Allowing the model to yield around obstacles.")
+                                           description="Gently pulls the model toward the lane center, as much as it trusts the lane lines, " +
+                                                       "and yields around obstacles.")
 
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle]
