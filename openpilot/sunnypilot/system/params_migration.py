@@ -84,6 +84,25 @@ def _migrate_tesla_mads_screen_button(_params):
     cloudlog.exception(f"Error migrating TeslaMadsScreenButton: {e}")
 
 
+def _migrate_model_bundle_slots(_params):
+  # Pre-split, a chestnut user's big-model selection lived in the single
+  # ActiveBundle. Seed both slots; validation drops whichever does not match
+  # its own manifest.
+  try:
+    if _params.get("ModelManager_ActiveBundleChestnut") is not None:
+      return
+    if (chestnut_bundle := _params.get("ModelManager_ActiveBundleUSBGPU")) is not None:
+      _params.put("ModelManager_ActiveBundleChestnut", chestnut_bundle, block=True)
+      cloudlog.info("params_migration: seeded ModelManager_ActiveBundleChestnut from ModelManager_ActiveBundleUSBGPU")
+      return
+    if (bundle := _params.get("ModelManager_ActiveBundle")) is None:
+      return
+    _params.put("ModelManager_ActiveBundleChestnut", bundle, block=True)
+    cloudlog.info("params_migration: seeded ModelManager_ActiveBundleChestnut from ModelManager_ActiveBundle")
+  except Exception as e:
+    cloudlog.exception(f"Error migrating model bundle slots: {e}")
+
+
 def run_migration(_params):
   # migrate OnroadScreenOffBrightness
   if _params.get("OnroadScreenOffBrightnessMigrated") != ONROAD_BRIGHTNESS_MIGRATION_VERSION:
@@ -120,3 +139,6 @@ def run_migration(_params):
 
   # seed TeslaMadsScreenButton for existing Tesla installs
   _migrate_tesla_mads_screen_button(_params)
+
+  # seed the chestnut model slot from the pre-split single slot
+  _migrate_model_bundle_slots(_params)

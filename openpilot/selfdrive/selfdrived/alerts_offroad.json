@@ -17,12 +17,40 @@
     "severity": 1,
     "_comment": "Set extra field to the failed reason."
   },
-  "Offroad_NeosUpdate": {
-    "text": "An update to your device's operating system is downloading in the background. You will be prompted to update when it's ready to install.",
+  "Offroad_ChestnutBranch": {
+    "text": "Chestnut detected! Switch to the %1 branch to use chestnut-class models.",
+    "severity": -1
+  },
+  "Offroad_ChestnutModelError": {
+    "text": "Chestnut model error. Restart the car to retry.",
+    "severity": 0
+  },
+  "Offroad_ChestnutNotDetected": {
+    "text": "Chestnut not detected. Check USB and 12V connections, then restart the car.",
+    "severity": 0
+  },
+  "Offroad_ChestnutOverheated": {
+    "text": "Chestnut overheated. Ensure good airflow.",
+    "severity": 0
+  },
+  "Offroad_ChestnutPcieUnavailable": {
+    "text": "%1",
+    "severity": 0
+  },
+  "Offroad_ChestnutUpdateFailed": {
+    "text": "Chestnut update failed. Check the USB cable.",
+    "severity": 0
+  },
+  "Offroad_ChestnutUsbSlow": {
+    "text": "Chestnut USB link is slow. Check the USB cable. The current speed is %1.",
     "severity": 0
   },
   "Offroad_UnregisteredHardware": {
     "text": "Failed to register with comma.ai backend. It will not connect or upload to comma.ai servers, and receives no support from comma.ai. If this is a device purchased at comma.ai/shop, open a ticket at https://comma.ai/support.",
+    "severity": 1
+  },
+  "Offroad_UploadsIgnored": {
+    "text": "Uploads ignored due to a potential detected safety policy violation. Contact comma.ai/support if you believe this was made in error.",
     "severity": 1
   },
   "Offroad_CarUnrecognized": {
@@ -50,5 +78,10 @@
     "text": "<b>Unsupported branch detected</b> - The current version of <b><u>%1</u></b> branch is no longer supported on the comma three. Please go to <b>[Device > Software]</b> and install a supported branch with <b><u>-tici</u></b> in the branch name for the comma three.",
     "severity": 1,
     "_comment": "Set extra field to the current branch name."
+  },
+  "Offroad_Pairing": {
+    "text": "Finish setup. Pair your device with comma connect to view recent drives and bookmarked routes.",
+    "severity": -2,
+    "icon": "icons_mici/settings/device/green_settings.png"
   }
 }

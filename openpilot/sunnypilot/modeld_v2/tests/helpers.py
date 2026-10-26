@@ -6,8 +6,9 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import pathlib
-import pickle
 import tempfile
+import codecs
+import pickle
 
 import openpilot.sunnypilot.models.helpers as helpers
 import openpilot.sunnypilot.modeld_v2.modeld as modeld_module
@@ -118,7 +119,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='split',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'vision_multi_policy': Archetype(
@@ -131,7 +132,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='multi_policy',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'tri_policy': Archetype(
@@ -145,7 +146,7 @@ ARCHETYPES = {
     is_20hz=True,
     expected_model_type='multi_policy',
     expected_constants_class=SplitModelConstants,
-    expected_parser_module='parse_model_outputs_split',
+    expected_parser_module='parse_model_outputs',
     expected_desire_key='desire',
   ),
   'supercombo_non20hz': Archetype(
@@ -162,16 +163,33 @@ ARCHETYPES = {
 
 
 def make_pkl_data(archetype):
+  if archetype.expected_model_type == 'supercombo':
+    slices_b64 = codecs.encode(pickle.dumps(archetype.metadata_structure['model']['output_slices']), 'base64').decode()
+    return {
+      'metadata': {
+        'metadata': {'output_slices': slices_b64},
+        'model': {
+          'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+          'output_slices': archetype.metadata_structure['model']['output_slices']
+        },
+        'input_shapes': archetype.metadata_structure['model']['input_shapes'],
+        'output_slices': archetype.metadata_structure['model']['output_slices'],
+        'output_shapes': {}
+      },
+      'run_policy': _noop_jit,
+      (CAM_W, CAM_H): _noop_jit
+    }
+
   return {
     'metadata': archetype.metadata_structure,
-    (CAM_W, CAM_H): {'run_policy': _noop_jit, 'warp_enqueue': _noop_jit},
+    'run_policy': _noop_jit,
+    (CAM_W, CAM_H): _noop_jit,
   }
 
 
 def write_pkl(tmp_path, archetype):
   pkl_path = tmp_path / 'driving_test_tinygrad.pkl'
-  with open(pkl_path, 'wb') as f:
-    pickle.dump(make_pkl_data(archetype), f)
+  pkl_path.write_bytes(pickle.dumps(make_pkl_data(archetype)))
   return pkl_path
 
 
@@ -189,8 +207,9 @@ def tmp_path():
 
 def patch_modeld(monkeypatch):
   def _patch(bundle):
-    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None: bundle)
-    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None: bundle)
+    monkeypatch.setattr(helpers, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
+    monkeypatch.setattr(modeld_module, 'get_active_bundle', lambda params=None, *, chestnut=None: bundle)
+    monkeypatch.setattr(modeld_module, 'load_model', lambda path, **_: pickle.loads(pathlib.Path(path).read_bytes()))
 
   return _patch
 
