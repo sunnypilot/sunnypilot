@@ -117,10 +117,6 @@ on:
         required: false
         type: string
         default: 'sunnypilot/sunnypilot-models'
-      tinygrad_ref:
-        description: 'Full tinygrad commit sha to convert a precompiled upstream pkl with, when it differs from the upstream pin'
-        required: false
-        type: string
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
   JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'chestnut' && 'chestnut_v' || 'v' }}${{ inputs.json_version }}.json
@@ -134,7 +130,6 @@ jobs:
       is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
       target_hardware: ${{ inputs.target_hardware }}
-      tinygrad_ref: ${{ inputs.tinygrad_ref }}
     secrets: inherit
 
   publish_model:
