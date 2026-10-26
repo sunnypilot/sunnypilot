@@ -233,6 +233,10 @@ class UIStateSP:
       self.params.remove("IntelligentCruiseButtonManagement")
       self.has_icbm = False
 
+    # Extra boost needs sunnypilot longitudinal control; ICBM alone is not enough
+    if not has_long:
+      self.params.remove("FollowDistanceAccelBoost")
+
     # Cruise features requiring longitudinal or ICBM
     if not (has_long or self.has_icbm):
       self.params.remove("CustomAccIncrementsEnabled")

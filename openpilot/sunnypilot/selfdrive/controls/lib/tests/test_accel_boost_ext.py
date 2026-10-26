@@ -1,17 +1,23 @@
+"""
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+"""
 from types import SimpleNamespace
 from unittest import mock
 
 from openpilot.cereal import log
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
-from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost, ACCEL_BOOST_MAX, ACCEL_BOOST_PER_OVERRIDE
+from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost, ACCEL_BOOST_MAX, ACCEL_BOOST_PER_OVERRIDE, ACCEL_BOOST_RATE
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost_ext import AccelBoostExt, get_accel_boost_max
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
 
 E2E_ACCEL = 0.5
 PLANNER_ACCEL = 2.0
-STEPS_PER_OVERRIDE = round(ACCEL_BOOST_PER_OVERRIDE / (0.025 * DT_MDL))
+STEPS_PER_OVERRIDE = round(ACCEL_BOOST_PER_OVERRIDE / (ACCEL_BOOST_RATE * DT_MDL))
 EXPECTED_SCALE = {
   log.LongitudinalPersonality.relaxed: 0.3,
   log.LongitudinalPersonality.standard: 0.5,
@@ -95,7 +101,7 @@ class TestAccelBoostExt(OpenpilotTestCase):
       self.assertAlmostEqual(ext_out, stock_out)
 
     self.assertAlmostEqual(ext.total_boost, stock.total_boost)
-    self.assertAlmostEqual(ext.stock_boost, stock_out - E2E_ACCEL)
+    self.assertAlmostEqual(ext._stock.total_boost, stock_out - E2E_ACCEL)
     self.assertEqual(ext.extra_boost, 0.0)
     self.assertEqual(ext._extra.total_boost, 0.0)
 
@@ -115,7 +121,7 @@ class TestAccelBoostExt(OpenpilotTestCase):
     for _ in range(10):
       ext.update(sm, E2E_ACCEL, E2E_ACCEL, E2E_ACCEL)
     self.assertEqual(ext.total_boost, 0.0)
-    self.assertEqual(ext.stock_boost, 0.0)
+    self.assertEqual(ext._stock.total_boost, 0.0)
     self.assertEqual(ext.extra_boost, 0.0)
     self.assertEqual(ext._extra.total_boost, 0.0)
 
@@ -172,16 +178,16 @@ class TestAccelBoostExt(OpenpilotTestCase):
     # First call is our extra layer on the raw target, last call is stock on the boosted target.
     self.assertAlmostEqual(inputs[0], E2E_ACCEL)
     self.assertAlmostEqual(inputs[-1], E2E_ACCEL + ext.extra_boost)
-    self.assertAlmostEqual(out, inputs[-1] + ext.stock_boost)
+    self.assertAlmostEqual(out, inputs[-1] + ext._stock.total_boost)
 
   def test_extra_is_added_on_top_of_stock_boost(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
     sm['carState'].gasPressed = True
     out = update(ext, sm)
-    extra = out - E2E_ACCEL - ext.stock_boost
+    extra = out - E2E_ACCEL - ext._stock.total_boost
     self.assertAlmostEqual(ext._stock.total_boost, ACCEL_BOOST_MAX)
     self.assertAlmostEqual(ext.total_boost, ACCEL_BOOST_MAX + ext.extra_boost)
-    self.assertAlmostEqual(ext.stock_boost, ACCEL_BOOST_MAX)
+    self.assertAlmostEqual(ext._stock.total_boost, ACCEL_BOOST_MAX)
     self.assertAlmostEqual(ext.extra_boost, ACCEL_BOOST_MAX * EXPECTED_SCALE[log.LongitudinalPersonality.aggressive])
     self.assertAlmostEqual(extra, ext.extra_boost)
 
@@ -207,7 +213,6 @@ class TestAccelBoostExt(OpenpilotTestCase):
   def test_boost_bar_max_matches_profile_cap(self):
     for personality, scale in EXPECTED_SCALE.items():
       self.assertAlmostEqual(get_accel_boost_max(personality), ACCEL_BOOST_MAX * (1.0 + scale))
-      self.assertAlmostEqual(get_accel_boost_max(personality, extra_enabled=False), ACCEL_BOOST_MAX)
 
   def test_total_boost_is_stock_accumulated_plus_extra_applied(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)
@@ -227,7 +232,7 @@ class TestAccelBoostExt(OpenpilotTestCase):
 
     self.assertEqual(ext._extra.total_boost, 0.0)
     self.assertEqual(ext.extra_boost, 0.0)
-    self.assertAlmostEqual(out, E2E_ACCEL + ext.stock_boost)
+    self.assertAlmostEqual(out, E2E_ACCEL + ext._stock.total_boost)
 
   def test_relaxing_following_distance_applies_immediately(self):
     ext, sm = self._boost_to_max(log.LongitudinalPersonality.aggressive)

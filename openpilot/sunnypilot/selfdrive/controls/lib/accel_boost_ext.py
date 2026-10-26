@@ -1,5 +1,5 @@
 """
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
@@ -23,9 +23,7 @@ def get_accel_boost_scale(personality) -> float:
   return SCALE_STANDARD
 
 
-def get_accel_boost_max(personality, extra_enabled: bool = True) -> float:
-  if not extra_enabled:
-    return ACCEL_BOOST_MAX
+def get_accel_boost_max(personality) -> float:
   return ACCEL_BOOST_MAX * (1.0 + get_accel_boost_scale(personality))
 
 
@@ -37,7 +35,6 @@ class AccelBoostExt:
     self.frame = -1
     self.enabled = self.params.get_bool("FollowDistanceAccelBoost")
 
-    self.stock_boost = 0.0
     self.extra_boost = 0.0
 
   @property
@@ -62,11 +59,7 @@ class AccelBoostExt:
       self._extra.boost_this_override = 0.0
       self._extra.boost_eligible = False
 
-      output = self._stock.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise)
-      self.stock_boost = output - output_a_target_e2e
-      return output
+      return self._stock.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise)
 
     target = output_a_target_e2e + self.extra_boost
-    output = self._stock.update(sm, target, output_a_target_mpc, a_cruise)
-    self.stock_boost = output - target
-    return output
+    return self._stock.update(sm, target, output_a_target_mpc, a_cruise)
