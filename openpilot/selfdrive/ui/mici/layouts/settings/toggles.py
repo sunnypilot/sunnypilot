@@ -21,6 +21,9 @@ class TogglesLayoutMici(NavScroller):
                                                                "Use the steering wheel distance button on supported cars.")
     self._initial_cruise_speed = InitialCruiseSpeedButton()
     self._initial_cruise_speed.set_visible(lambda: ui_state.CP is not None and ui_state.has_longitudinal_control and not ui_state.CP.pcmCruise)
+    self._accel_boost_toggle = BigParamControl("extra acceleration boost", "FollowDistanceAccelBoost",
+                                               description="Adds extra acceleration on top of the stock gas-override boost.\n" +
+                                                           "The extra boost follows Following Distance: strongest when Aggressive, weakest when Relaxed.")
     is_metric_toggle = BigToggle("use metric units", initial_state=ui_state.params.get_bool("IsMetric"), toggle_callback=self._on_metric_toggle)
     ldw_toggle = BigParamControl("lane departure warnings", "IsLdwEnabled",
                                  description="Warn when you drift across a detected lane line.\n" +
@@ -40,6 +43,7 @@ class TogglesLayoutMici(NavScroller):
 
     self._scroller.add_widgets([
       self._personality_toggle,
+      self._accel_boost_toggle,
       self._initial_cruise_speed,
       is_metric_toggle,
       ldw_toggle,
@@ -51,6 +55,7 @@ class TogglesLayoutMici(NavScroller):
 
     # Toggle lists
     self._refresh_toggles = (
+      ("FollowDistanceAccelBoost", self._accel_boost_toggle),
       ("IsMetric", is_metric_toggle),
       ("IsLdwEnabled", ldw_toggle),
       ("AlwaysOnDM", always_on_dm_toggle),
@@ -92,6 +97,7 @@ class TogglesLayoutMici(NavScroller):
 
     if ui_state.CP is not None:
       self._personality_toggle.set_visible(ui_state.has_longitudinal_control)
+      self._accel_boost_toggle.set_visible(ui_state.has_longitudinal_control)
 
     # Refresh toggles from params to mirror external changes
     for key, item in self._refresh_toggles:
