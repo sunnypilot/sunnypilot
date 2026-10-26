@@ -39,8 +39,13 @@ class Blendful:
     self.smooth = 0.0 # smoothens lanelines below .53 lat accel
     self.curvature = 0.0
 
-  def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float) -> float:
+  def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float, enabled: bool = True) -> float:
     self.l_prob = self.r_prob = 0.0
+    if not enabled:
+      if self.curvature or self.trust:
+        self.__init__()
+      self.model_curvature = model_curvature
+      return 0.0
     fading = not active or v_ego < MIN_SPEED
     if fading:
       self.trust = self.line_trust = 0.0

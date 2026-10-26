@@ -490,9 +490,9 @@ def main(demo=False):
 
       if not sm['carControl'].latActive:
         prev_action.desiredCurvature = sm['controlsState'].curvature
-      blendful_active = blendful_enabled and desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
+      blendful_active = desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
-                                           partial(blendful.update, model_output, v_ego, blendful_active))
+                                           partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled))
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
