@@ -95,7 +95,7 @@ class ModelsLayoutMici(NavScroller):
     self.clear_cache_btn.set_click_callback(self._confirm_clear_cache)
     self._cache_size_time = 0.0
 
-    self.blendful_toggle = BigParamControl("blendful", "Blendful",
+    self.blendful_toggle = BigParamControl("blendful (alpha)", "Blendful",
                                            description="Nudges the car toward the lane center when the lane lines are clear.\n" +
                                                        "Drives laneless when they are not.")
 
@@ -221,6 +221,14 @@ class ModelsLayoutMici(NavScroller):
     self.cancel_download_btn.set_visible(False)
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
+
+    blendful_allowed = ui_state.active_bundle is not None
+    if blendful_allowed:
+      self.blendful_toggle.set_checked(ui_state.params.get_bool("Blendful"))
+      self.blendful_toggle.set_enabled(True)
+    else:
+      self.blendful_toggle.set_checked(False)
+      self.blendful_toggle.set_enabled(False)
 
     manager = self.model_manager
     self._download_frame += 1

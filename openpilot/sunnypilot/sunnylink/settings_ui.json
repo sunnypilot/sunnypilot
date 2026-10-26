@@ -2026,8 +2026,15 @@
             {
               "key": "Blendful",
               "widget": "toggle",
-              "title": "Blendful Mode",
-              "description": "Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not."
+              "title": "Blendful Mode (Alpha)",
+              "description": "Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "custom_model_active",
+                  "equals": true
+                }
+              ]
             },
             {
               "key": "LaneTurnDesire",

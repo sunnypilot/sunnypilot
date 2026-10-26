@@ -13,8 +13,10 @@ sections:
   items:
   - key: Blendful
     widget: toggle
-    title: Blendful Mode
+    title: Blendful Mode (Alpha)
     description: Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not.
+    enablement:
+      - $ref: '#/macros/custom_model'
   - key: LaneTurnDesire
     widget: toggle
     title: Use Lane Turn Desires

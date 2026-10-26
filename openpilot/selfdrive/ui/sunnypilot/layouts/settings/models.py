@@ -102,7 +102,7 @@ class ModelsLayout(Widget):
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
-    self.blendful_toggle = toggle_item_sp(tr("Blendful"),
+    self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"),
                                           tr("Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not."),
                                           param="Blendful")
 
@@ -327,7 +327,15 @@ class ModelsLayout(Widget):
     self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
     self.lagd_toggle.action_item.set_state(live_delay)
-    self.blendful_toggle.action_item.set_state(ui_state.params.get_bool("Blendful"))
+
+    blendful_allowed = ui_state.active_bundle is not None
+    if blendful_allowed:
+      self.blendful_toggle.action_item.set_state(ui_state.params.get_bool("Blendful"))
+      self.blendful_toggle.action_item.set_enabled(True)
+    else:
+      self.blendful_toggle.action_item.set_state(False)
+      self.blendful_toggle.action_item.set_enabled(False)
+
     self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item is not None and self.lane_turn_value_control.action_item.value_change_step != new_step:
