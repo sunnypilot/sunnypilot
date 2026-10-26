@@ -11,7 +11,7 @@ import pyray as rl
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
-from openpilot.selfdrive.ui.mici.widgets.button import BigButton
+from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigParamControl
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
                                                            default_model_name, model_cache_size_mb, model_info, queued_name,
@@ -95,7 +95,12 @@ class ModelsLayoutMici(NavScroller):
     self.clear_cache_btn.set_click_callback(self._confirm_clear_cache)
     self._cache_size_time = 0.0
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn]
+    self.blendful_toggle = BigParamControl("blendful (alpha)", "Blendful",
+                                           description="Gently pulls the model toward the lane center, as much as it trusts the lane lines, " +
+                                                       "and yields around obstacles.")
+
+    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
+                       self.blendful_toggle]
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -205,6 +210,10 @@ class ModelsLayoutMici(NavScroller):
       device.set_override_interactive_timeout(None)
       self._was_downloading = False
 
+  def show_event(self):
+    super().show_event()
+    self.blendful_toggle.refresh()
+
   def _update_state(self):
     super()._update_state()
 
@@ -212,6 +221,14 @@ class ModelsLayoutMici(NavScroller):
     self.cancel_download_btn.set_visible(False)
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
+
+    blendful_allowed = ui_state.active_bundle is not None
+    if blendful_allowed:
+      self.blendful_toggle.set_checked(ui_state.params.get_bool("Blendful"))
+      self.blendful_toggle.set_enabled(True)
+    else:
+      self.blendful_toggle.set_checked(False)
+      self.blendful_toggle.set_enabled(False)
 
     manager = self.model_manager
     self._download_frame += 1

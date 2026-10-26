@@ -9,8 +9,14 @@ description: Driving model behavior and camera calibration
 sections:
 - id: model_behavior
   title: Model Behavior
-  description: Lane desire and lead-vehicle awareness tuning
+  description: Lane desire, Blendful lane centering, and lead-vehicle awareness tuning
   items:
+  - key: Blendful
+    widget: toggle
+    title: Blendful Mode (Alpha)
+    description: Gently pulls the model toward the lane center, as much as it trusts the lane lines, and yields around obstacles.
+    enablement:
+      - $ref: '#/macros/custom_model'
   - key: LaneTurnDesire
     widget: toggle
     title: Use Lane Turn Desires

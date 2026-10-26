@@ -16,7 +16,7 @@ from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware import HARDWARE
-
+from openpilot.sunnypilot.models.helpers import get_active_source, ACTIVE_BUNDLE_KEYS
 
 # Wire-protocol version for the capabilities payload. Bump on breaking changes
 # only; additive fields are backward-compatible and do not require a bump.
@@ -44,6 +44,7 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "custom_model_active",
   "toyota_enhanced_bsm_available",
 )
 
@@ -67,6 +68,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "custom_model_active": "Custom model selected",
   "toyota_enhanced_bsm_available": "Toyota Enhanced BSM available",
 }
 
@@ -145,6 +147,12 @@ def generate_capabilities(params: Params | None = None) -> dict:
   caps["is_sp_release"] = params.get_bool("IsReleaseSpBranch")
   caps["is_development"] = params.get_bool("IsDevelopmentBranch")
   caps["stock_longitudinal"] = params.get_bool("ToyotaEnforceStockLongitudinal")
+
+  # Model source based custom model flag
+  model_source = get_active_source(chestnut_active=params.get_bool("ChestnutActive"),
+                                   chestnut_loading=params.get_bool("ChestnutLoading"),
+                                   offroad=params.get_bool("IsOffroad"))
+  caps["custom_model_active"] = bool(params.get(ACTIVE_BUNDLE_KEYS[model_source]))
 
   bundle = params.get("CarPlatformBundle")
   bundle_brand = _bundle_field(bundle, "brand")
