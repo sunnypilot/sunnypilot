@@ -2027,7 +2027,7 @@
               "key": "Blendful",
               "widget": "toggle",
               "title": "Blendful Mode (Alpha)",
-              "description": "Nudges the car toward the lane center when the lane lines are clear. Drives laneless when they are not.",
+              "description": "Gently pulls the model toward the lane center, as much as it trusts the lane lines while yielding around obstacles.",
               "enablement": [
                 {
                   "type": "capability",
