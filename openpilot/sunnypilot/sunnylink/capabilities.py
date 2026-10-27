@@ -10,6 +10,7 @@ from openpilot.cereal import custom, messaging
 from opendbc.car.structs import car
 from opendbc.car.hyundai.values import CAR as HYUNDAI_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
+from opendbc.car.toyota.values import CAR as TOYOTA_CAR, ToyotaFlags
 from opendbc.sunnypilot.car.interfaces import has_bsm
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
@@ -43,6 +44,7 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "toyota_tss2",
   "custom_model_active",
 )
 
@@ -66,6 +68,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "toyota_tss2": "Toyota TSS2 platform",
   "custom_model_active": "Custom model selected",
 }
 
@@ -112,6 +115,15 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
     elif CP is not None:
       caps["subaru_has_sng"] = not bool(CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
       caps["has_stop_and_go"] = caps["subaru_has_sng"]
+
+  elif brand == "toyota":
+    if bundle_platform:
+      try:
+        caps["toyota_tss2"] = bool(TOYOTA_CAR[bundle_platform].config.flags & ToyotaFlags.TSS2)
+      except KeyError:
+        cloudlog.exception(f"capabilities: unknown toyota platform {bundle_platform!r}")
+    elif CP is not None:
+      caps["toyota_tss2"] = bool(CP.flags & ToyotaFlags.TSS2)
 
 
 def generate_capabilities(params: Params | None = None) -> dict:

@@ -2337,6 +2337,33 @@
               "equals": false
             }
           ]
+        },
+        {
+          "key": "ToyotaTSS2Smooth",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "TSS2 Smooth Longitudinal (Alpha)",
+          "description": "Enable smoother longitudinal control for TSS2 vehicles. Uses a custom speed-dependent integral gain curve for smoother traffic driving.",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            },
+            {
+              "type": "capability",
+              "field": "has_longitudinal_control",
+              "equals": true
+            },
+            {
+              "type": "param",
+              "key": "ToyotaEnforceStockLongitudinal",
+              "equals": false
+            },
+            {
+              "type": "capability",
+              "field": "toyota_tss2",
+              "equals": true
+            }
+          ]
         }
       ]
     }
