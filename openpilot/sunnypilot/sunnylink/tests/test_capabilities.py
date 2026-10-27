@@ -75,6 +75,12 @@ class TestOpaquePerBrandFlags(OpenpilotTestCase):
   def test_hyundai_alpha_long_available_default_false(self, caps):
     assert caps["hyundai_alpha_long_available"] is False
 
+  def test_toyota_tss2_field_present(self):
+    assert "toyota_tss2" in CAPABILITY_FIELDS
+
+  def test_toyota_tss2_default_false(self, caps):
+    assert caps["toyota_tss2"] is False
+
 
 class TestCapabilitiesShape(OpenpilotTestCase):
   def test_all_fields_present(self, caps):
