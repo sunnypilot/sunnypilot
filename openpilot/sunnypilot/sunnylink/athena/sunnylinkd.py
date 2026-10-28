@@ -16,6 +16,7 @@ import ssl
 import threading
 import time
 
+from collections.abc import Callable
 from functools import partial
 from openpilot.system.athena.rpc import dispatcher
 from openpilot.common.params import Params, ParamKeyType
@@ -34,6 +35,7 @@ from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
 from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities, CAPABILITY_LABELS
 from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import generate_schema
+from openpilot.sunnypilot.sunnylink.athena.local_params import cloud_may_write, is_local_param
 
 SUNNYLINK_ATHENA_HOST = os.getenv('SUNNYLINK_ATHENA_HOST', 'wss://athena.sunnylink.ai')
 HANDLER_THREADS = int(os.getenv('HANDLER_THREADS', "4"))
@@ -41,8 +43,6 @@ LOCAL_PORT_WHITELIST = {8022}
 SUNNYLINK_LOG_ATTR_NAME = "user.sunny.upload"
 SUNNYLINK_RECONNECT_TIMEOUT_S = 70  # FYI changing this will also would require a change on sidebar.cc
 DISALLOW_LOG_UPLOAD = threading.Event()
-
-params = Params()
 
 # Parameters that should never be remotely modified
 BLOCKED_PARAMS = {
@@ -56,60 +56,6 @@ BLOCKED_PARAMS = {
   "OnroadCycleRequested",      # Prevent remote cycle trigger
   "ParamsVersion",         # Device-managed version counter
 }
-
-
-def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
-  cloudlog.info("sunnylinkd.handle_long_poll started")
-  sm = messaging.SubMaster(['deviceState'])
-  end_event = threading.Event()
-  comma_prime_cellular_end_event = threading.Event()
-
-  threads = [
-              threading.Thread(target=ws_manage, args=(ws, end_event), name='ws_manage'),
-              threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
-              threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
-              threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
-              threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
-              threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
-              threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
-            ] + [
-              threading.Thread(target=jsonrpc_handler, args=(end_event, partial(startLocalProxy, end_event),), name=f'worker_{x}')
-              for x in range(HANDLER_THREADS)
-            ]
-
-  for thread in threads:
-    thread.start()
-  try:
-    while not end_event.wait(0.1):
-      if not sunnylink_ready(params):
-        cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
-        break
-
-      sm.update(0)
-      if exit_event is not None and exit_event.is_set():
-        end_event.set()
-        comma_prime_cellular_end_event.set()
-
-      prime_type = params.get("PrimeType") or 0
-      metered = sm['deviceState'].networkMetered
-
-      if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
-        cloudlog.debug("sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
-        comma_prime_cellular_end_event.set()
-      elif metered and int(prime_type) > 2:
-        cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
-        comma_prime_cellular_end_event.set()
-      elif comma_prime_cellular_end_event.is_set() and not DISALLOW_LOG_UPLOAD.is_set():
-        cloudlog.debug(
-          f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
-        comma_prime_cellular_end_event.clear()
-  finally:
-    end_event.set()
-    comma_prime_cellular_end_event.set()
-    for thread in threads:
-      cloudlog.debug(f"sunnylinkd athena.joining {thread.name}")
-      thread.join()
-      cloudlog.debug(f"sunnylinkd athena.joined {thread.name}")
 
 
 def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
@@ -158,112 +104,186 @@ def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event
   comma_prime_cellular_end_event.set()
 
 
-@dispatcher.add_method
-def toggleLogUpload(enabled: bool):
-  DISALLOW_LOG_UPLOAD.clear() if enabled and DISALLOW_LOG_UPLOAD.is_set() else DISALLOW_LOG_UPLOAD.set()
+class Sunnylinkd:
+  """The cloud half of sunnylink: the athena connection that serves the settings RPCs.
 
-
-@dispatcher.add_method
-def getParamsAllKeys() -> list[str]:
-  keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
-  return keys
-
-
-@dispatcher.add_method
-def getParamsMetadata() -> str:
-  """Return settings_ui.json + live capabilities as gzip-compressed, base64-encoded string.
-
-  Reads settings_ui.json, injects live capabilities from CarParams, compresses,
-  and returns. Single RPC for the frontend to get the complete settings UI and
-  runtime capabilities.
+  The LAN half is `localsunnylinkd.LocalSunnylinkd`, which subclasses this and overrides only the
+  RPCs and helpers it changes. Every method here is shared, and none of them may read or write a
+  param the local side owns.
   """
-  try:
-    schema = generate_schema()
-    schema["capabilities"] = generate_capabilities()
-    schema["capability_labels"] = CAPABILITY_LABELS
-    schema["default_model"] = DEFAULT_MODEL
-    schema["default_big_model"] = DEFAULT_BIG_MODEL
-    schema["chestnut_active"] = params.get_bool("ChestnutActive")
-    raw = json.dumps(schema, separators=(",", ":")).encode("utf-8")
-    return base64.b64encode(gzip.compress(raw)).decode("utf-8")
-  except Exception:
-    cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
-    raise
 
+  # What this daemon serves over the wire. `startLocalProxy` is deliberately absent: the athena
+  # jsonrpc workers install it on the dispatcher themselves, with the event this daemon owns.
+  RPC_METHODS = ("toggleLogUpload", "getParamsAllKeys", "getParamsMetadata", "getParams", "saveParams")
 
-@dispatcher.add_method
-def getParams(params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
-  params = Params()
-  available_keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
+  def __init__(self, params: Params | None = None):
+    self.params = params or Params()
 
-  try:
-    zero_values: dict[int, bytes] = {
-      ParamKeyType.STRING.value: b"",
-      ParamKeyType.BOOL.value: b"0",
-      ParamKeyType.INT.value: b"0",
-      ParamKeyType.FLOAT.value: b"0.0",
-      ParamKeyType.TIME.value: b"",
-      ParamKeyType.JSON.value: b"{}",
-      ParamKeyType.BYTES.value: b"",
-    }
+  def methods(self) -> dict[str, Callable[..., object]]:
+    """The RPC surface this daemon serves, keyed by wire method name."""
+    return {name: getattr(self, name) for name in self.RPC_METHODS}
 
-    param_keys_validated = [key for key in params_keys if key in available_keys]
-    params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
-    for key in param_keys_validated:
-      value = get_param_as_byte(key)
-      if value is None:
-        value = get_param_as_byte(key, get_default=True)
-      if value is None:
-        param_type = params.get_type(key)
-        value = zero_values.get(param_type.value, b"")
+  def handle_long_poll(self, ws: WebSocket, exit_event: threading.Event | None) -> None:
+    cloudlog.info("sunnylinkd.handle_long_poll started")
+    sm = messaging.SubMaster(['deviceState'])
+    end_event = threading.Event()
+    comma_prime_cellular_end_event = threading.Event()
 
-      params_dict["params"].append({
-        "key": key,
-        "value": base64.b64encode(gzip.compress(value) if compression else value).decode('utf-8'),
-        "type": int(params.get_type(key).value),
-        "is_compressed": compression
-      })
+    threads = [
+                threading.Thread(target=ws_manage, args=(ws, end_event), name='ws_manage'),
+                threading.Thread(target=ws_recv, args=(ws, end_event), name='ws_recv'),
+                threading.Thread(target=ws_send, args=(ws, end_event), name='ws_send'),
+                threading.Thread(target=ws_ping, args=(ws, end_event), name='ws_ping'),
+                threading.Thread(target=upload_handler, args=(end_event,), name='upload_handler'),
+                threading.Thread(target=sunny_log_handler, args=(end_event, comma_prime_cellular_end_event), name='log_handler'),
+                threading.Thread(target=stat_handler, args=(end_event, Paths.stats_sp_root(), True), name='stat_handler'),
+              ] + [
+                threading.Thread(target=jsonrpc_handler, args=(end_event, partial(self.startLocalProxy, end_event),), name=f'worker_{x}')
+                for x in range(HANDLER_THREADS)
+              ]
 
-    response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
-    response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
-    return response
+    for thread in threads:
+      thread.start()
+    try:
+      while not end_event.wait(0.1):
+        if not sunnylink_ready(self.params):
+          cloudlog.warning("Exiting sunnylinkd.handle_long_poll as SunnylinkEnabled is False")
+          break
 
-  except Exception as e:
-    cloudlog.exception("sunnylinkd.getParams.exception", e)
-    raise
+        sm.update(0)
+        if exit_event is not None and exit_event.is_set():
+          end_event.set()
+          comma_prime_cellular_end_event.set()
 
+        prime_type = self.params.get("PrimeType") or 0
+        metered = sm['deviceState'].networkMetered
 
-@dispatcher.add_method
-def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
-  for key, value in params_to_update.items():
-    # disallow modifications to blocked parameters
-    if key in BLOCKED_PARAMS:
-      cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
-      continue
+        if DISALLOW_LOG_UPLOAD.is_set() and not comma_prime_cellular_end_event.is_set():
+          cloudlog.debug("sunnylinkd.handle_long_poll: DISALLOW_LOG_UPLOAD, setting comma_prime_cellular_end_event")
+          comma_prime_cellular_end_event.set()
+        elif metered and int(prime_type) > 2:
+          cloudlog.debug(f"sunnylinkd.handle_long_poll: PrimeType({prime_type}) > 2 and networkMetered({metered})")
+          comma_prime_cellular_end_event.set()
+        elif comma_prime_cellular_end_event.is_set() and not DISALLOW_LOG_UPLOAD.is_set():
+          cloudlog.debug(
+            f"sunnylinkd.handle_long_poll: comma_prime_cellular_end_event is set and not PrimeType({prime_type}) > 2 or not networkMetered({metered})")
+          comma_prime_cellular_end_event.clear()
+    finally:
+      end_event.set()
+      comma_prime_cellular_end_event.set()
+      for thread in threads:
+        cloudlog.debug(f"sunnylinkd athena.joining {thread.name}")
+        thread.join()
+        cloudlog.debug(f"sunnylinkd athena.joined {thread.name}")
+
+  def toggleLogUpload(self, enabled: bool):
+    DISALLOW_LOG_UPLOAD.clear() if enabled and DISALLOW_LOG_UPLOAD.is_set() else DISALLOW_LOG_UPLOAD.set()
+
+  def getParamsAllKeys(self) -> list[str]:
+    keys: list[str] = [k.decode('utf-8') for k in self.params.all_keys()]
+    return [key for key in keys if not is_local_param(key)]
+
+  def getParamsMetadata(self) -> str:
+    """Return settings_ui.json + live capabilities as gzip-compressed, base64-encoded string.
+
+    Reads settings_ui.json, injects live capabilities from CarParams, compresses,
+    and returns. Single RPC for the frontend to get the complete settings UI and
+    runtime capabilities.
+    """
+    try:
+      schema = generate_schema()
+      schema["capabilities"] = generate_capabilities()
+      schema["capability_labels"] = CAPABILITY_LABELS
+      schema["default_model"] = DEFAULT_MODEL
+      schema["default_big_model"] = DEFAULT_BIG_MODEL
+      schema["chestnut_active"] = self.params.get_bool("ChestnutActive")
+      raw = json.dumps(schema, separators=(",", ":")).encode("utf-8")
+      return base64.b64encode(gzip.compress(raw)).decode("utf-8")
+    except Exception:
+      cloudlog.exception("sunnylinkd.getParamsMetadata.exception")
+      raise
+
+  def getParams(self, params_keys: list[str], compression: bool = False) -> str | dict[str, str]:
+    available_keys: list[str] = [k.decode('utf-8') for k in self.params.all_keys()]
 
     try:
-      save_param_from_base64_encoded_string(key, value, compression)
+      zero_values: dict[int, bytes] = {
+        ParamKeyType.STRING.value: b"",
+        ParamKeyType.BOOL.value: b"0",
+        ParamKeyType.INT.value: b"0",
+        ParamKeyType.FLOAT.value: b"0.0",
+        ParamKeyType.TIME.value: b"",
+        ParamKeyType.JSON.value: b"{}",
+        ParamKeyType.BYTES.value: b"",
+      }
+
+      param_keys_validated = [key for key in params_keys if key in available_keys and not is_local_param(key)]
+      params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
+      for key in param_keys_validated:
+        value = get_param_as_byte(key)
+        if value is None:
+          value = get_param_as_byte(key, get_default=True)
+        if value is None:
+          param_type = self.params.get_type(key)
+          value = zero_values.get(param_type.value, b"")
+
+        params_dict["params"].append({
+          "key": key,
+          "value": base64.b64encode(gzip.compress(value) if compression else value).decode('utf-8'),
+          "type": int(self.params.get_type(key).value),
+          "is_compressed": compression
+        })
+
+      response = {str(param.get('key')): str(param.get('value')) for param in params_dict.get("params", [])}
+      response |= {"params": json.dumps(params_dict.get("params", []))} # Upcoming for settings v1
+      return response
+
     except Exception as e:
-      cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
+      cloudlog.exception("sunnylinkd.getParams.exception", e)
+      raise
 
-  # Increment version counter for frontend change detection
-  try:
-    current = int(params.get("ParamsVersion") or "0")
-    params.put("ParamsVersion", str(current + 1), block=True)
-  except Exception:
-    pass
+  def saveParams(self, params_to_update: dict[str, str], compression: bool = False) -> None:
+    for key, value in params_to_update.items():
+      # disallow modifications to blocked parameters, and to anything the local side owns
+      if key in BLOCKED_PARAMS or not cloud_may_write(key):
+        cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
+        continue
+
+      try:
+        save_param_from_base64_encoded_string(key, value, compression)
+      except Exception as e:
+        cloudlog.error(f"sunnylinkd.saveParams.exception {e}")
+
+    # Increment version counter for frontend change detection
+    try:
+      current = int(self.params.get("ParamsVersion") or "0")
+      self.params.put("ParamsVersion", str(current + 1), block=True)
+    except Exception:
+      pass
+
+  def startLocalProxy(self, global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
+    sunnylink_dongle_id = self.params.get("SunnylinkDongleId")
+    sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
+
+    cloudlog.debug("athena.startLocalProxy.starting")
+    ws = create_connection(
+      remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True, sslopt={"cert_reqs": ssl.CERT_NONE}
+    )
+
+    return start_local_proxy_shim(global_end_event, local_port, ws)
 
 
-def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local_port: int) -> dict[str, int]:
-  sunnylink_dongle_id = params.get("SunnylinkDongleId")
-  sunnylink_api = SunnylinkApi(sunnylink_dongle_id)
-
-  cloudlog.debug("athena.startLocalProxy.starting")
-  ws = create_connection(
-    remote_ws_uri, header={"Authorization": f"Bearer {sunnylink_api.get_token()}"}, enable_multithread=True, sslopt={"cert_reqs": ssl.CERT_NONE}
-  )
-
-  return start_local_proxy_shim(global_end_event, local_port, ws)
+def log_connection_error(e: Exception) -> None:
+  """Report a failed connection the way stock sunnylinkd.main did; shared with localsunnylinkd."""
+  if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
+    cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
+  elif isinstance(e, OSError):
+    name = errno.errorcode.get(e.errno or -1, "UNKNOWN")
+    msg = f"sunnylinkd.main.OSError.{name} ({e.errno})"
+    is_expected_error = e.errno in (errno.ENETDOWN, errno.ENETRESET, errno.ENETUNREACH)
+    cloudlog.warning(msg) if is_expected_error else cloudlog.exception(msg)
+  else:
+    cloudlog.exception("sunnylinkd.main.exception")
 
 
 def main(exit_event: threading.Event | None = None):
@@ -271,6 +291,12 @@ def main(exit_event: threading.Event | None = None):
     set_core_affinity([0, 1, 2, 3])
   except Exception:
     cloudlog.exception("failed to set core affinity")
+
+  daemon = Sunnylinkd()
+  for method in daemon.methods().values():
+    dispatcher.add_method(method)
+
+  params = daemon.params
 
   while sunnylink_need_register(params):
     cloudlog.info("Waiting for sunnylink registration to complete")
@@ -305,22 +331,13 @@ def main(exit_event: threading.Event | None = None):
       conn_retries = 0
       cur_upload_items.clear()
 
-      handle_long_poll(ws, exit_event)
+      daemon.handle_long_poll(ws, exit_event)
     except (KeyboardInterrupt, SystemExit):
       break
     except Exception as e:
       conn_retries += 1
       params.remove("LastSunnylinkPingTime")
-
-      if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
-        cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
-      elif isinstance(e, OSError):
-        name = errno.errorcode.get(e.errno or -1, "UNKNOWN")
-        msg = f"sunnylinkd.main.OSError.{name} ({e.errno})"
-        is_expected_error = e.errno in (errno.ENETDOWN, errno.ENETRESET, errno.ENETUNREACH)
-        cloudlog.warning(msg) if is_expected_error else cloudlog.exception(msg)
-      else:
-        cloudlog.exception("sunnylinkd.main.exception")
+      log_connection_error(e)
 
     time.sleep(backoff(conn_retries))
 

@@ -4,23 +4,48 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
 import pyray as rl
+from functools import partial
 from openpilot.cereal import custom
+from openpilot.common.params import Params
+from openpilot.common.qrcode import make_texture
+from openpilot.common.swaglog import cloudlog
+from openpilot.common.version import sunnylink_consent_version
 from openpilot.selfdrive.ui.sunnypilot.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
+  clear_pairing_params,
+  read_grant_meta,
+  read_granted_apps,
+  read_pairing_qr,
+  request_revoke,
+  request_revoke_all,
+)
+from openpilot.sunnypilot.sunnylink.athena.local_app_rows import (
+  MAX_LOCAL_APP_ROWS,
+  LocalAppRow,
+  build_local_app_rows,
+)
+from openpilot.sunnypilot.sunnylink.athena.local_discovery import latest_discovered_app
+from openpilot.sunnypilot.sunnylink.athena.local_state import PAIRING_REQUEST_KEY
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment, TextAlignmentVertical
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from openpilot.system.ui.lib.wrap_text import wrap_text
+from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, button_item_sp, toggle_item_sp
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets import Widget, DialogResult
-from openpilot.system.ui.widgets.button import ButtonStyle, Button
+from openpilot.system.ui.widgets.button import ButtonStyle, Button, IconButton
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.list_view import dual_button_item
+from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
-from openpilot.common.version import sunnylink_consent_version
+
+# Read-only value colors used by the local-mode rows.
+_LOCAL_DISCOVERED_COLOR = rl.Color(170, 170, 170, 255)  # grey: no app in sight
+_LOCAL_ACTIVE_COLOR = rl.Color(0, 255, 0, 255)          # green: discovered / pairing code
 
 
 class SunnylinkHeader(Widget):
@@ -145,6 +170,7 @@ class SunnylinkLayout(Widget):
     self._restore_in_progress = False
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
+    self._local_enabled = ui_state.params.get_bool("SunnylinkLocalEnabled")
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=False, spacing=0)
@@ -192,6 +218,23 @@ class SunnylinkLayout(Widget):
     self._backup_btn.set_button_style(ButtonStyle.NORMAL)
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
 
+    self._local_connections_toggle = toggle_item_sp(
+      title=tr("Enable local connections"),
+      description=tr("Let the sunnylink mobile app connect to this device over Wi-Fi. ") +
+                  tr("Turn this off to stop the local daemon and keep sunnylink itself running."),
+      param="SunnylinkLocalEnabled",
+    )
+    self._local_connections_toggle.set_visible(lambda: self._sunnylink_enabled)
+
+    self._mobile_app_btn = button_item_sp(
+      title=tr("Sunnylink Local Connections"),
+      button_text=tr("CONFIGURE"),
+      description=tr("Manage the mobile app(s) connected over Wi-Fi: pair a new app ") +
+                  tr("or unpair existing ones."),
+      callback=self._open_local_apps,
+    )
+    self._mobile_app_btn.set_visible(lambda: self._sunnylink_enabled and self._local_enabled)
+
     items = [
       SunnylinkHeader(),
       LineSeparator(),
@@ -202,9 +245,13 @@ class SunnylinkLayout(Widget):
       LineSeparator(),
       self._pair_btn,
       LineSeparator(),
+      self._local_connections_toggle,
+      LineSeparator(),
+      self._mobile_app_btn,
+      LineSeparator(),
       self._sunnylink_uploader_toggle,
       LineSeparator(),
-      self._sunnylink_backup_restore_buttons
+      self._sunnylink_backup_restore_buttons,
     ]
     return items
 
@@ -317,6 +364,8 @@ class SunnylinkLayout(Widget):
       gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
+      if not state:
+        clear_pairing_params()
       self._update_description(state)
 
   def _update_description(self, state: bool):
@@ -336,6 +385,7 @@ class SunnylinkLayout(Widget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
+    self._local_enabled = ui_state.params.get_bool("SunnylinkLocalEnabled")
     self._sunnylink_toggle.set_right_value(tr("Dongle ID") + ": " + self._get_sunnylink_dongle_id())
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
@@ -352,6 +402,9 @@ class SunnylinkLayout(Widget):
     self._pair_btn.action_item.set_text(pair_btn_text)
     self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
 
+  def _open_local_apps(self):
+    gui_app.push_widget(SunnylinkLocalAppLayout())
+
   def _render(self, rect):
     self._scroller.render(rect)
 
@@ -364,3 +417,241 @@ class SunnylinkLayout(Widget):
   def hide_event(self):
     super().hide_event()
     ui_state.sunnylink_state.set_settings_open(False)
+
+
+class SunnylinkLocalAppLayout(Widget):
+
+  def __init__(self):
+    super().__init__()
+    self._rows_cache: list[LocalAppRow] = []
+    self._has_grants = False
+
+    self._back_button = NavButton(tr("Back"))
+    self._back_button.set_click_callback(gui_app.pop_widget)
+
+    self._pair_app_btn = button_item_sp(
+      title=tr("Pair App"),
+      button_text=tr("SCAN"),
+      description=tr("Show a QR code the sunnylink app scans to enroll this phone's key. ") +
+                  tr("The app must be signed in, and the code expires after 2 minutes."),
+      callback=self._show_pairing_dialog,
+    )
+
+    self._revoke_all_btn = button_item_sp(
+      title=tr("Unpair all phones"),
+      button_text=tr("REVOKE ALL"),
+      description=tr("Revoke every enrolled phone at once. Each phone must pair again ") +
+                  tr("from the sunnylink app to reconnect."),
+      callback=self._revoke_all,
+    )
+    self._revoke_all_btn.set_visible(lambda: self._has_grants)
+
+    self._local_app_rows: list[ListItemSP] = []
+    self._local_app_seps: list[LineSeparator] = []
+    for i in range(MAX_LOCAL_APP_ROWS):
+      row = button_item_sp(
+        title=lambda i=i: self._row_title(i),
+        button_text=tr("UNPAIR"),
+        description=lambda i=i: self._row_subtitle(i),
+        callback=partial(self._unpair_row, i),
+      )
+      sep = LineSeparator()
+      row.set_visible(lambda i=i: self._local_row_visible(i))
+      sep.set_visible(lambda i=i: self._local_row_visible(i))
+      self._local_app_rows.append(row)
+      self._local_app_seps.append(sep)
+
+    items = [self._pair_app_btn, LineSeparator(), self._revoke_all_btn, LineSeparator()]
+    for row, sep in zip(self._local_app_rows, self._local_app_seps, strict=True):
+      items.extend((row, sep))
+    self._scroller = Scroller(items, line_separator=False, spacing=0)
+
+  def _local_row_visible(self, i: int) -> bool:
+    return i < len(self._rows_cache)
+
+  def _row_title(self, i: int) -> str:
+    return self._rows_cache[i].title if i < len(self._rows_cache) else ""
+
+  def _row_subtitle(self, i: int) -> str:
+    return self._rows_cache[i].subtitle if i < len(self._rows_cache) else ""
+
+  def _show_pairing_dialog(self):
+    gui_app.push_widget(SunnylinkLocalPairingDialog())
+
+  def _revoke_all(self):
+    def on_confirm(_dialog_result: int):
+      # A request the daemon applies on its next tick.
+      request_revoke_all()
+
+    dialog = ConfirmDialog(
+      text=tr("Revoke all phones?") + " " + tr("They will need to pair again from the app."),
+      confirm_text=tr("Revoke all"),
+      callback=on_confirm,
+    )
+    gui_app.push_widget(dialog)
+
+  def _unpair_row(self, index: int):
+    rows = self._rows_cache
+    if index >= len(rows):
+      return
+    row = rows[index]
+
+    def on_confirm(_dialog_result: int):
+      # A request only: the daemon revokes through its live authority on its next tick, so a
+      # phone enrolled after this row was read cannot be dropped by a stale snapshot.
+      request_revoke(row.app_id)
+
+    dialog = ConfirmDialog(
+      text=tr("Unpair") + f" {row.title}? " + tr("You will need to enroll this phone again from the app."),
+      confirm_text=tr("Unpair"),
+      callback=on_confirm,
+    )
+    gui_app.push_widget(dialog)
+
+  def _update_state(self):
+    super()._update_state()
+    grants = read_granted_apps()
+    self._has_grants = bool(grants)
+    self._rows_cache = build_local_app_rows(grants, read_grant_meta(), time.monotonic())
+
+  def _render(self, rect):
+    self._back_button.set_position(self._rect.x, self._rect.y + 20)
+    self._back_button.render()
+    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40,
+                                rect.width, rect.height - self._back_button.rect.height - 40)
+    self._scroller.render(content_rect)
+
+  def show_event(self):
+    super().show_event()
+    self._scroller.show_event()
+
+  def hide_event(self):
+    super().hide_event()
+    self._scroller.hide_event()
+
+
+class SunnylinkLocalPairingDialog(Widget):
+  """Pairing: the phone scans this QR, enrolls through the cloud and only then dials the device
+  over pinned TLS.
+
+  The window belongs to the local daemon (another process): this dialog sets the arm request and
+  renders the QR that gets published. The published QR is the window state — removing it (Cancel,
+  or the daemon's own expiry) closes the window.
+  """
+
+  # sunnylinkd services the request about once a second; taking longer means it is not running.
+  ARM_GRACE_S = 5.0
+
+  def __init__(self):
+    super().__init__()
+    self._params = Params()
+    self._requested_at = time.monotonic()
+    self._seen_qr = False
+    self._qr_string: str | None = None
+    self._qr_texture: rl.Texture | None = None
+    self._request_window()
+    self._close_btn = IconButton(gui_app.texture("icons/close.png", 80, 80))
+    self._close_btn.set_click_callback(self._cancel)
+
+  def _request_window(self) -> None:
+    try:
+      self._params.put_bool(PAIRING_REQUEST_KEY, True, block=True)
+    except Exception:
+      cloudlog.exception("sunnylink.local_pairing.request_failed")
+
+  def _cancel(self) -> None:
+    # Params only: this process does not own the window, the daemon cancels it on its next tick.
+    clear_pairing_params()
+    gui_app.pop_widget()
+
+  def _refresh_qr_texture(self, qr: str | None) -> None:
+    """Regenerate the texture only when the published QR actually changed."""
+    if qr == self._qr_string:
+      return
+    if self._qr_texture is not None and self._qr_texture.id != 0:
+      rl.unload_texture(self._qr_texture)
+    self._qr_texture = None
+    self._qr_string = qr
+    if not qr:
+      return
+    try:
+      self._qr_texture = make_texture(qr)
+      # The texture is drawn smaller than it is built, and the modules must stay hard-edged for
+      # a camera to read them.
+      rl.set_texture_filter(self._qr_texture, rl.TextureFilter.TEXTURE_FILTER_POINT)
+    except Exception:
+      cloudlog.exception("sunnylink.local_pairing.qr_texture_failed")
+
+  def _update_state(self):
+    if read_pairing_qr() is not None:
+      self._seen_qr = True
+      return
+    # The daemon clears the published QR when the window ends (enrolled, expired or cancelled).
+    if self._seen_qr or time.monotonic() - self._requested_at > self.ARM_GRACE_S:
+      gui_app.pop_widget()
+
+  def _render(self, rect) -> int:
+    rl.clear_background(rl.Color(224, 224, 224, 255))
+
+    self._refresh_qr_texture(read_pairing_qr())
+
+    margin = 70
+    content_rect = rl.Rectangle(rect.x + margin, rect.y + margin,
+                                rect.width - 2 * margin, rect.height - 2 * margin)
+    y = content_rect.y
+
+    close_size = 80
+    pad = 20
+    close_rect = rl.Rectangle(content_rect.x - pad, y - pad, close_size + pad * 2, close_size + pad * 2)
+    self._close_btn.render(close_rect)
+    y += close_size + 40
+
+    # Two columns, the layout the cloud pairing dialog uses: the QR takes half the width and the
+    # full height, which is 900px at this display's 2160x1080 — 31 px per module for the compact
+    # 29-module pointer, read easily from any scanning distance.
+    left_width = int(content_rect.width * 0.5 - 15)
+    right_width = int(content_rect.width // 2 - 20)
+
+    title_font = gui_app.font(FontWeight.NORMAL)
+    title_wrapped = wrap_text(title_font, tr("Pair with mobile app"), 70, left_width)
+    rl.draw_text_ex(title_font, "\n".join(title_wrapped), rl.Vector2(content_rect.x, y), 70, 0.0, rl.BLACK)
+    y += len(title_wrapped) * 70 + 40
+
+    qr_size = int(min(right_width, content_rect.height) - 40)
+    qr_rect = rl.Rectangle(content_rect.x + left_width + 40 + (right_width - qr_size) / 2,
+                           content_rect.y, qr_size, qr_size)
+    card = rl.Rectangle(qr_rect.x - 10, qr_rect.y - 10, qr_rect.width + 20, qr_rect.height + 20)
+    rl.draw_rectangle_rounded(card, 0.05, 10, rl.WHITE)
+    if self._qr_texture is not None:
+      source = rl.Rectangle(0, 0, self._qr_texture.width, self._qr_texture.height)
+      rl.draw_texture_pro(self._qr_texture, source, qr_rect, rl.Vector2(0, 0), 0, rl.WHITE)
+
+    # Left column: what to do. The QR is the only way to enroll, so what matters here is that the
+    # steps are readable next to a code that is as large as the panel allows inside the QR's own
+    # calm zone.
+    hint_font = gui_app.font(FontWeight.NORMAL)
+    hints = [
+      tr("In the sunnylink app, open Local Connectivity → Pair a device."),
+      tr("Sign in to the same sunnypilot account on both."),
+      tr("The code expires after 2 minutes."),
+    ] if self._qr_texture is not None else [tr("Preparing a secure pairing code…")]
+    for hint in hints:
+      wrapped = wrap_text(hint_font, hint, 38, left_width)
+      rl.draw_text_ex(hint_font, "\n".join(wrapped), rl.Vector2(content_rect.x, y), 38, 0.0, rl.BLACK)
+      y += len(wrapped) * 38 + 14
+
+    discovered = latest_discovered_app()
+    if discovered is not None:
+      endpoint, age = discovered
+      status = endpoint if age < 2 else f"{endpoint} ({age}s)"
+      color = _LOCAL_ACTIVE_COLOR
+    else:
+      status = tr("Waiting for the phone…")
+      color = _LOCAL_DISCOVERED_COLOR
+    status_font = gui_app.font(FontWeight.NORMAL)
+    rl.draw_text_ex(status_font, status, rl.Vector2(content_rect.x, y + 10), 40, 0.0, color)
+    return -1
+
+  def __del__(self):
+    if self._qr_texture is not None and self._qr_texture.id != 0:
+      rl.unload_texture(self._qr_texture)

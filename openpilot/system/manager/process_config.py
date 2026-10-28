@@ -74,6 +74,11 @@ def livestream(started: bool, params: Params, CP: car.CarParams) -> bool:
 def use_copyparty(started, params, CP: car.CarParams) -> bool:
   return bool(params.get_bool("EnableCopyparty"))
 
+def localsunnylinkd_enabled(started, params, CP: car.CarParams) -> bool:
+  """Local connections are a sunnylink feature with their own switch."""
+  return params.get_bool("SunnylinkEnabled") and not params.get_bool("SunnylinkTempFault") \
+     and params.get_bool("SunnylinkLocalEnabled")
+
 def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
   """Shim for sunnylink_ready to match the process manager signature."""
   return sunnylink_ready(params)
@@ -166,6 +171,7 @@ procs = [
 
   # sunnylink <3
   DaemonProcess("manage_sunnylinkd", "openpilot.sunnypilot.sunnylink.athena.manage_sunnylinkd", "SunnylinkdPid"),
+  PythonProcess("localsunnylinkd", "openpilot.sunnypilot.sunnylink.athena.localsunnylinkd", localsunnylinkd_enabled),
   PythonProcess("sunnylink_registration_manager", "openpilot.sunnypilot.sunnylink.registration_manager", sunnylink_need_register_shim),
   PythonProcess("statsd_sp", "openpilot.sunnypilot.sunnylink.statsd", and_(always_run, sunnylink_ready_shim)),
 ]
