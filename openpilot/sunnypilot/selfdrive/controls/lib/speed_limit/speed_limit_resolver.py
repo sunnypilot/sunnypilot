@@ -9,7 +9,6 @@ import time
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import custom
 from openpilot.common.constants import CV
-from openpilot.common.gps import get_gps_location_service
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD, get_sanitize_int_param
@@ -19,6 +18,8 @@ from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.common import Polic
 SpeedLimitSource = custom.LongitudinalPlanSP.SpeedLimit.Source
 
 ALL_SOURCES = tuple(SpeedLimitSource.schema.enumerants.values())
+
+AHEAD_LATCH_PASSED_MARGIN = 50.
 
 
 class SpeedLimitResolver:
@@ -37,9 +38,10 @@ class SpeedLimitResolver:
     self.params = Params()
     self.frame = -1
 
-    self._gps_location_service = get_gps_location_service(self.params)
     self.limit_solutions = {}  # Store for speed limit solutions from different sources
     self.distance_solutions = {}  # Store for distance to current speed limit start for different sources
+    self._ahead_limit_latched = 0.
+    self._ahead_dist_remaining = 0.
 
     self.policy = self.params.get("SpeedLimitPolicy", return_default=True)
     self.policy = get_sanitize_int_param(
@@ -120,34 +122,50 @@ class SpeedLimitResolver:
     self._process_map_data(sm)
 
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
-    gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    gps_fix_age = time.monotonic() - gps_data.unixTimestampMillis * 1e-3
-    if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
+    # logMonoTime and time.monotonic_ns() share the same clock
+    log_mono_time = getattr(sm, 'logMonoTime', {}).get('liveMapDataSP', 0)
+    map_data_age = (time.monotonic_ns() - log_mono_time) * 1e-9
+    if map_data_age > LIMIT_MAX_MAP_DATA_AGE:
       return
 
     speed_limit = map_data.speedLimit if map_data.speedLimitValid else 0.
     next_speed_limit = map_data.speedLimitAhead if map_data.speedLimitAheadValid else 0.
 
-    self._calculate_map_data_limits(sm, speed_limit, next_speed_limit)
+    self._calculate_map_data_limits(sm, speed_limit, next_speed_limit, map_data_age)
 
-  def _calculate_map_data_limits(self, sm: messaging.SubMaster, speed_limit: float, next_speed_limit: float) -> None:
-    gps_data = sm[self._gps_location_service]
+  def _calculate_map_data_limits(self, sm: messaging.SubMaster, speed_limit: float, next_speed_limit: float, map_data_age: float) -> None:
     map_data = sm['liveMapDataSP']
 
-    distance_since_fix = self.v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
-    distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
+    # Distance is computed by sm publish time, compensate for distance travelled since
+    distance_since_publish = self.v_ego * max(0., map_data_age)
+    distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_publish)
 
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
-    # FIXME-SP: this is not working as expected
+    # Latched upcoming limit: hold it until the sign is passed or changed
+    if self._ahead_limit_latched > 0.:
+      self._ahead_dist_remaining -= self.v_ego * DT_MDL  # dead-reckon; re-synced below while map still reports the sign
+      speed_limit_changed = 0. < next_speed_limit != self._ahead_limit_latched
+      speed_limit_passed = speed_limit == self._ahead_limit_latched or self._ahead_dist_remaining < -AHEAD_LATCH_PASSED_MARGIN
+      if speed_limit_changed or speed_limit_passed:
+        self._ahead_limit_latched = 0.
+      else:
+        if next_speed_limit == self._ahead_limit_latched:
+          self._ahead_dist_remaining = distance_to_speed_limit_ahead
+        self.limit_solutions[SpeedLimitSource.map] = self._ahead_limit_latched
+        self.distance_solutions[SpeedLimitSource.map] = max(0., self._ahead_dist_remaining)
+        return
+
     if 0. < next_speed_limit < self.v_ego:
       adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
       adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
 
       if distance_to_speed_limit_ahead <= adapt_distance:
+        self._ahead_limit_latched = next_speed_limit
+        self._ahead_dist_remaining = distance_to_speed_limit_ahead
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit
         self.distance_solutions[SpeedLimitSource.map] = distance_to_speed_limit_ahead
 
