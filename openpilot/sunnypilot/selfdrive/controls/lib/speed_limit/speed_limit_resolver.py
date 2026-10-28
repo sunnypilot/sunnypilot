@@ -125,7 +125,8 @@ class SpeedLimitResolver:
     map_data = sm['liveMapDataSP']
 
     # logMonoTime and time.monotonic_ns() share the same clock
-    map_data_age = (time.monotonic_ns() - sm.logMonoTime['liveMapDataSP']) * 1e-9
+    log_mono_time = getattr(sm, 'logMonoTime', {}).get('liveMapDataSP', 0)
+    map_data_age = (time.monotonic_ns() - log_mono_time) * 1e-9
     if map_data_age > LIMIT_MAX_MAP_DATA_AGE:
       return
 
