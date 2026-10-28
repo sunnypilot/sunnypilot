@@ -2027,7 +2027,7 @@
               "key": "Blendful",
               "widget": "toggle",
               "title": "Blendful (Alpha)",
-              "description": "Gently guides the car toward lane center based on lane-line confidence and yields around obstacles. Not available with the Default model.",
+              "description": "Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear. Yields around obstacles. Not available with the Default model.",
               "enablement": [
                 {
                   "type": "capability",

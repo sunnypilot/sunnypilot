@@ -103,8 +103,8 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"),
-                                          tr("Gently guides the car toward lane center based on lane-line confidence and yields around obstacles." +
-                                             " Not available with the Default model."),
+                                          tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear." +
+                                             " Yields around obstacles. Not available with the Default model."),
                                           param="Blendful")
 
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
