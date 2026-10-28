@@ -9,6 +9,7 @@ import pyray as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 from openpilot.sunnypilot.modeld_v2.blendful import LANE_WIDTH_CLIP, LOOKAHEAD_TIME, MIN_LOOKAHEAD
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon
@@ -19,8 +20,9 @@ FULL_BAR = 1.0
 
 
 class BlendfulRenderer:
-  def __init__(self, readout: bool = True):
+  def __init__(self, readout: bool = True, rect_relative: bool = False):
     self._readout = readout
+    self._rect_relative = rect_relative
     self._center_points = np.empty((0, 2), dtype=np.float32)
     self._trust = 0.0
     self._font = gui_app.font(FontWeight.BOLD)
@@ -58,8 +60,11 @@ class BlendfulRenderer:
     return rl.Color(*rgb, int(alpha * self._alpha.x))
 
   def draw(self, rect: rl.Rectangle) -> None:
+    if not UIStateSP.lateral_active(ui_state):
+      return
     if self._center_points.size and self._trust > 0.05:
-      draw_polygon(rect, self._center_points, self._color(BLENDFUL_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
+      points = self._center_points + (rect.x, rect.y) if self._rect_relative else self._center_points
+      draw_polygon(rect, points, self._color(BLENDFUL_COLOR, np.clip(self._trust, 0.2, 1.0) * 255))
     if self._center_points.size and self._readout:
       self._draw_readout(rect)
 

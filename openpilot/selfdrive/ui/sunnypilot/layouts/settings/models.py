@@ -103,8 +103,8 @@ class ModelsLayout(Widget):
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
     self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"),
-                                          tr("Gently pulls the model toward the lane center, as much as it trusts the lane lines," +
-                                             " and yields around obstacles."),
+                                          tr("Gently guides the car toward lane center based on lane-line confidence and yields around obstacles." +
+                                             " Not available with the Default model."),
                                           param="Blendful")
 
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
@@ -329,7 +329,7 @@ class ModelsLayout(Widget):
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
     self.lagd_toggle.action_item.set_state(live_delay)
 
-    blendful_allowed = ui_state.active_bundle is not None
+    blendful_allowed = ui_state.model_runner_tinygrad
     if blendful_allowed:
       self.blendful_toggle.action_item.set_state(ui_state.params.get_bool("Blendful"))
       self.blendful_toggle.action_item.set_enabled(True)

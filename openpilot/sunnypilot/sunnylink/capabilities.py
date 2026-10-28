@@ -69,7 +69,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
   "toyota_tss2": "Toyota TSS2 platform",
-  "custom_model_active": "Custom model selected",
+  "custom_model_active": "Non-Default model selected",
 }
 
 # Explicit defaults for non-boolean capability fields
@@ -151,7 +151,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
   model_source = get_active_source(chestnut_active=params.get_bool("ChestnutActive"),
                                    chestnut_loading=params.get_bool("ChestnutLoading"),
                                    offroad=params.get_bool("IsOffroad"))
-  caps["custom_model_active"] = bool(params.get(ACTIVE_BUNDLE_KEYS[model_source]))
+  caps["custom_model_active"] = (params.get(ACTIVE_BUNDLE_KEYS[model_source]) or {}).get("runner") == "tinygrad"
 
   bundle = params.get("CarPlatformBundle")
   bundle_brand = _bundle_field(bundle, "brand")

@@ -95,9 +95,9 @@ class ModelsLayoutMici(NavScroller):
     self.clear_cache_btn.set_click_callback(self._confirm_clear_cache)
     self._cache_size_time = 0.0
 
-    self.blendful_toggle = BigParamControl("blendful (alpha)", "Blendful",
-                                           description="Gently pulls the model toward the lane center, as much as it trusts the lane lines, " +
-                                                       "and yields around obstacles.")
+    self.blendful_toggle = BigParamControl(tr("blendful (alpha)"), "Blendful",
+                                           description=tr("Gently guides the car toward lane center based on lane-line confidence and " +
+                                                          "yields around obstacles. Not available with the Default model."))
 
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle]
@@ -222,7 +222,7 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
 
-    blendful_allowed = ui_state.active_bundle is not None
+    blendful_allowed = ui_state.model_runner_tinygrad
     if blendful_allowed:
       self.blendful_toggle.set_checked(ui_state.params.get_bool("Blendful"))
       self.blendful_toggle.set_enabled(True)

@@ -36,7 +36,7 @@ class Blendful:
     self.l_prob = 0.0
     self.r_prob = 0.0
     self.model_curvature = 0.0
-    self.smooth = 0.0 # smoothens lanelines below .53 lat accel
+    self.smooth = 0.0 # smooths the correction target below .53 lat accel
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float, enabled: bool = True) -> float:
@@ -107,7 +107,7 @@ class Blendful:
 
     # Fit curvature to place the plant in center: e ~ dk x^2 / 2
     plan_x = np.interp(x, model_output['plan'][0, :, 0], model_output['plan'][0, :, 1])
-    plan_share = np.interp(abs(model_curvature) * lookahead ** 2 / 2, [0.5, 2.0], [0.3, 0.5]) # blending up to 50% plan with action during sharp curvature
+    plan_share = np.interp(abs(model_curvature) * lookahead ** 2 / 2, [0.5, 2.0], [0.3, 0.5]) # up to 50% plan y vs curvature parabola in sharp curves
     error = np.clip(center - ((1 - plan_share) * model_curvature * x ** 2 / 2 + plan_share * plan_x), -1.0, 1.0)
     dk = 2.0 * np.sum(weight * error * x ** 2) / np.sum(weight * x ** 4)
 

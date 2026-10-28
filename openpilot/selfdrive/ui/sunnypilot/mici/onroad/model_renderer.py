@@ -18,4 +18,4 @@ LANE_LINE_COLORS_SP = {
 class ModelRendererSP:
   def __init__(self):
     self.rainbow_path = RainbowPath()
-    self.blendful = BlendfulRenderer()
+    self.blendful = BlendfulRenderer(rect_relative=True)

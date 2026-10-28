@@ -123,8 +123,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     # Draw elements
     self._draw_lane_lines()
     self._draw_path()
-    if self._lateral_active:
-      self.blendful.draw(self._rect)
+    self.blendful.draw(self._rect)
 
     if render_lead_indicator and radar_state:
       self._draw_lead_indicator()

@@ -110,6 +110,14 @@ class UIStateSP:
     return self.onroad_brightness in (OnroadBrightness.AUTO, OnroadBrightness.AUTO_DARK)
 
   @staticmethod
+  def lateral_active(_ui_state) -> bool:
+    if _ui_state.sm.valid["selfdriveStateSP"]:
+      mads = _ui_state.sm["selfdriveStateSP"].mads
+      if mads.available:
+        return mads.enabled and mads.state != MADSState.paused
+    return _ui_state.status.value in ("engaged", "lat_only")
+
+  @staticmethod
   def update_status(ss, ss_sp, onroad_evt) -> str:
     state = ss.state
     mads = ss_sp.mads
