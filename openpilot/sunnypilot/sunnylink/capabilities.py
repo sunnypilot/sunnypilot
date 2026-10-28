@@ -16,7 +16,7 @@ from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware import HARDWARE
-from openpilot.sunnypilot.models.helpers import get_active_source, ACTIVE_BUNDLE_KEYS
+
 
 # Wire-protocol version for the capabilities payload. Bump on breaking changes
 # only; additive fields are backward-compatible and do not require a bump.
@@ -147,11 +147,8 @@ def generate_capabilities(params: Params | None = None) -> dict:
   caps["is_development"] = params.get_bool("IsDevelopmentBranch")
   caps["stock_longitudinal"] = params.get_bool("ToyotaEnforceStockLongitudinal")
 
-  # Model source based custom model flag
-  model_source = get_active_source(chestnut_active=params.get_bool("ChestnutActive"),
-                                   chestnut_loading=params.get_bool("ChestnutLoading"),
-                                   offroad=params.get_bool("IsOffroad"))
-  caps["custom_model_active"] = (params.get(ACTIVE_BUNDLE_KEYS[model_source]) or {}).get("runner") == "tinygrad"
+  # runner the manager launches (process_config.is_tinygrad_model); with a chestnut the big slot decides
+  caps["custom_model_active"] = params.get("ModelRunnerTypeCache") == custom.ModelManagerSP.Runner.tinygrad
 
   bundle = params.get("CarPlatformBundle")
   bundle_brand = _bundle_field(bundle, "brand")

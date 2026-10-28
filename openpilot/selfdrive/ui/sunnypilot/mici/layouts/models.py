@@ -222,7 +222,7 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
 
-    blendful_allowed = ui_state.model_runner_tinygrad
+    blendful_allowed = ui_state.active_runner_tinygrad
     if blendful_allowed:
       self.blendful_toggle.set_checked(ui_state.params.get_bool("Blendful"))
       self.blendful_toggle.set_enabled(True)
