@@ -10,6 +10,7 @@ from openpilot.cereal import custom, messaging
 from opendbc.car.structs import car
 from opendbc.car.hyundai.values import CAR as HYUNDAI_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
+from opendbc.car.toyota.values import CAR as TOYOTA_CAR, ToyotaFlags
 from opendbc.sunnypilot.car.interfaces import has_bsm
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
@@ -43,6 +44,8 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "toyota_tss2",
+  "custom_model_active",
 )
 
 CAPABILITY_LABELS: dict[str, str] = {
@@ -65,7 +68,28 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "toyota_tss2": "Toyota TSS2 platform",
+  "custom_model_active": "Non-Default model selected",
 }
+
+# Fields read from the car (CarParams*, CarPlatformBundle). Until a car is seen these stay at
+# their defaults, so a rule failing on one of them means "start the vehicle", not a real reason.
+CAR_CAPABILITY_FIELDS = (
+  "has_longitudinal_control",
+  "has_icbm",
+  "icbm_available",
+  "torque_allowed",
+  "brand",
+  "pcm_cruise",
+  "alpha_long_available",
+  "steer_control_type",
+  "has_bsm",
+  "tesla_has_vehicle_bus",
+  "has_stop_and_go",
+  "subaru_has_sng",
+  "hyundai_alpha_long_available",
+  "toyota_tss2",
+)
 
 # Explicit defaults for non-boolean capability fields
 CAPABILITY_DEFAULTS: dict[str, bool | str | int] = {
@@ -111,6 +135,15 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
       caps["subaru_has_sng"] = not bool(CP.flags & (SubaruFlags.GLOBAL_GEN2 | SubaruFlags.HYBRID))
       caps["has_stop_and_go"] = caps["subaru_has_sng"]
 
+  elif brand == "toyota":
+    if bundle_platform:
+      try:
+        caps["toyota_tss2"] = bool(TOYOTA_CAR[bundle_platform].config.flags & ToyotaFlags.TSS2)
+      except KeyError:
+        cloudlog.exception(f"capabilities: unknown toyota platform {bundle_platform!r}")
+    elif CP is not None:
+      caps["toyota_tss2"] = bool(CP.flags & ToyotaFlags.TSS2)
+
 
 def generate_capabilities(params: Params | None = None) -> dict:
   """Generate a SettingsCapabilities dict from CarParams + boolean params.
@@ -132,6 +165,9 @@ def generate_capabilities(params: Params | None = None) -> dict:
   caps["is_sp_release"] = params.get_bool("IsReleaseSpBranch")
   caps["is_development"] = params.get_bool("IsDevelopmentBranch")
   caps["stock_longitudinal"] = params.get_bool("ToyotaEnforceStockLongitudinal")
+
+  # runner the manager launches (process_config.is_tinygrad_model); with a chestnut the big slot decides
+  caps["custom_model_active"] = params.get("ModelRunnerTypeCache") == custom.ModelManagerSP.Runner.tinygrad
 
   bundle = params.get("CarPlatformBundle")
   bundle_brand = _bundle_field(bundle, "brand")
