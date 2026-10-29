@@ -83,9 +83,14 @@ class TestLocationdProc(OpenpilotTestCase):
       self.pm.send(msg.which(), msg)
       if msg.which() == "cameraOdometry":
         self.pm.wait_for_readers_to_update(msg.which(), timeout=1, dt=0.005)
-    time.sleep(1)  # wait for async params write
+    for _ in range(50):
+      val = self.params.get('LastGPSPositionLLK')
+      if val is not None:
+        break
+      time.sleep(0.1)
 
-    lastGPS = json.loads(self.params.get('LastGPSPositionLLK'))
+    self.assertIsNotNone(val, "LastGPSPositionLLK not written within 5s")
+    lastGPS = json.loads(val)
     self.assertAlmostEqual(lastGPS['latitude'], self.lat, delta=0.001)
     self.assertAlmostEqual(lastGPS['longitude'], self.lon, delta=0.001)
     self.assertAlmostEqual(lastGPS['altitude'], self.alt, delta=0.001)

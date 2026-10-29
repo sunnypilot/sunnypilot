@@ -30,7 +30,7 @@ on:
         type: boolean
         default: true
       target_hardware:
-        description: 'Hardware target to compile for (qcom or usbgpu)'
+        description: 'Hardware target to compile for (qcom or chestnut)'
         required: false
         type: string
         default: 'qcom'
@@ -39,6 +39,11 @@ on:
         required: false
         type: string
         default: 'sunnypilot/sunnypilot_models_v1'
+      docs_repo:
+        description: 'GitHub repo holding the driving_models JSON on its gh-pages branch'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot-models'
       set_min_version:
         description: 'Minimum selector version'
         required: false
@@ -101,15 +106,20 @@ on:
         default: 'qcom'
         options:
           - qcom
-          - usbgpu
+          - chestnut
       hf_repo:
         description: 'Hugging Face dataset repository'
         required: false
         type: string
         default: 'sunnypilot/sunnypilot_models_v1'
+      docs_repo:
+        description: 'GitHub repo holding the driving_models JSON on its gh-pages branch'
+        required: false
+        type: string
+        default: 'sunnypilot/sunnypilot-models'
 env:
   RECOMPILED_DIR: recompiled${{ inputs.recompiled_dir }}
-  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'usbgpu' && 'usbgpu_v' || 'v' }}${{ inputs.json_version }}.json
+  JSON_FILE: docs/docs/driving_models_${{ inputs.target_hardware == 'chestnut' && 'chestnut_v' || 'v' }}${{ inputs.json_version }}.json
 
 jobs:
   build_model:
@@ -124,19 +134,17 @@ jobs:
 
   publish_model:
     if: ${{ !cancelled() && needs.build_model.result == 'success' }}
-    concurrency:
-      group: hf-push-${{ inputs.recompiled_dir }}
-      cancel-in-progress: false
     needs: build_model
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       id-token: write
       contents: write
     steps:
       - name: Checkout docs repo
         uses: actions/checkout@v4
         with:
-          repository: sunnypilot/sunnypilot-models
+          repository: ${{ inputs.docs_repo }}
           ref: gh-pages
           path: docs
           ssh-key: ${{ secrets.CI_SUNNYPILOT_DOCS_PRIVATE_KEY }}
@@ -146,7 +154,7 @@ jobs:
 
       - name: Validate hf_repo and JSON version
         env:
-          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           if [ ! -f "$JSON_FILE" ]; then
             echo "JSON file $JSON_FILE does not exist!"
@@ -155,13 +163,8 @@ jobs:
           python3 -c "
           import sys
           from huggingface_hub import HfApi
-          try:
-              api = HfApi()
-              api.repo_info(repo_id=sys.argv[1], repo_type='dataset')
-              print(f'Success: Repo {sys.argv[1]} exists.')
-          except Exception as e:
-              print('HF validation failed:', e)
-              sys.exit(1)
+          HfApi().repo_info(repo_id=sys.argv[1], repo_type='dataset')
+          print(f'Success: Repo {sys.argv[1]} exists.')
           " "${{ inputs.hf_repo }}"
 
       - name: Download artifact name file
@@ -177,22 +180,25 @@ jobs:
           echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
       - name: Download and extract model artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ steps.read-artifact-name.outputs.artifact_name }}
-          path: output
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
+        run: |
+          id=$(gh api -X GET "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" -f name="$ARTIFACT_NAME" --jq '.artifacts[0].id')
+          url=$(curl -sf -o /dev/null -w '%{redirect_url}' -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip")
+          sudo apt-get install -y -qq aria2 > /dev/null
+          aria2c -q -x16 -s16 -k8M --max-tries=5 --file-allocation=none -o model.zip "$url" && unzip -q model.zip -d output && rm model.zip
 
       - name: Create models folder
         env:
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           mkdir -p "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}"
-          cp -r output/* "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
-          rm -f "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/artifact_name.txt"
+          cp output/metadata.json "local_models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/"
 
       - name: Upload to Hugging Face
         env:
-          HF_OIDC_RESOURCE: datasets/${{ inputs.hf_repo }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           ARTIFACT_NAME: ${{ steps.read-artifact-name.outputs.artifact_name }}
         run: |
           hf upload ${{ inputs.hf_repo }} \
@@ -200,13 +206,12 @@ jobs:
             "models/${RECOMPILED_DIR}/${ARTIFACT_NAME}/" \
             --repo-type=dataset
 
-      - name: Pull gh-pages
+      - name: Update and push JSON to docs repo
         run: |
           cd docs
-          git pull origin gh-pages
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
 
-      - name: Run json_parser.py to update JSON
-        run: |
           FOLDER="${{ inputs.model_folder }}"
           if [ "$FOLDER" = "Other" ]; then
             FOLDER="${{ inputs.custom_model_folder }}"
@@ -219,18 +224,27 @@ jobs:
           [ -n "${{ inputs.version }}" ] && ARGS="$ARGS --version \"${{ inputs.version }}\""
           [ -n "${{ inputs.set_min_version }}" ] && ARGS="$ARGS --set-min-version \"${{ inputs.set_min_version }}\""
           [ -n "${{ inputs.tinygrad_ref }}" ] && ARGS="$ARGS --tinygrad-ref \"${{ inputs.tinygrad_ref }}\""
-          eval python3 docs/json_parser.py \
-            --json-path "$JSON_FILE" \
-            --recompiled-dir "local_models/$RECOMPILED_DIR" \
-            --sort-by-date \
-            $ARGS
 
-      - name: Push updated JSON to GitHub docs repo
-        run: |
-          cd docs
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git checkout gh-pages
-          git add docs/"$(basename $JSON_FILE)"
-          git commit -m "Update $(basename $JSON_FILE) after recompiling model" || echo "No changes to commit"
-          git push origin gh-pages
+          for attempt in $(seq 1 10); do
+            git fetch origin gh-pages
+            git reset --hard origin/gh-pages
+
+            eval python3 json_parser.py \
+              --json-path "docs/$(basename $JSON_FILE)" \
+              --recompiled-dir "../local_models/$RECOMPILED_DIR" \
+              --sort-by-date \
+              $ARGS
+
+            git add docs/"$(basename $JSON_FILE)"
+            git commit -m "Update $(basename $JSON_FILE) after recompiling model" || { echo "No changes to commit"; exit 0; }
+
+            if git push origin gh-pages; then
+              echo "Push succeeded on attempt $attempt"
+              exit 0
+            fi
+
+            echo "Push failed (attempt $attempt/10), retrying after backoff..."
+            sleep $((RANDOM % 10 + 3))
+          done
+          echo "All 10 push attempts failed"
+          exit 1

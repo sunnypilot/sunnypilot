@@ -15,5 +15,5 @@ class SmartCruiseControl:
     self.map = SmartCruiseControlMap()
 
   def update(self, sm: messaging.SubMaster, long_enabled: bool, long_override: bool, v_ego: float, a_ego: float, v_cruise: float) -> None:
-    self.map.update(long_enabled, long_override, v_ego, a_ego, v_cruise)
+    self.map.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)
     self.vision.update(sm, long_enabled, long_override, v_ego, a_ego, v_cruise)

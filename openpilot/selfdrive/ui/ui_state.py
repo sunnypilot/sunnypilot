@@ -12,7 +12,9 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.lib.prime_state import PrimeState
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.common.hardware import HARDWARE, PC
-from openpilot.selfdrive.modeld.helpers import usbgpu_compiled
+from openpilot.common.hardware.usb import cable_connected, get_usb_state, is_chestnut_usb_id
+from openpilot.selfdrive.modeld.helpers import chestnut_compiled
+from openpilot.selfdrive.selfdrived.alertmanager import OFFROAD_ALERTS
 
 from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP, DeviceSP
 
@@ -26,6 +28,15 @@ class UIStatus(Enum):
   OVERRIDE = "override"
   LAT_ONLY = "lat_only"
   LONG_ONLY = "long_only"
+
+
+class ChestnutState(Enum):
+  DISCONNECTED = "disconnected"
+  UNCOMPILED = "uncompiled"
+  READY = "ready"
+  LOADING = "loading"
+  ACTIVE = "active"
+  FAILED = "failed"
 
 
 class UIState(UIStateSP):
@@ -59,6 +70,8 @@ class UIState(UIStateSP):
         "selfdriveState",
         "longitudinalPlan",
         "gpsLocationExternal",
+        "gpsLocation",
+        "navInstruction",
         "carOutput",
         "carControl",
         "vehicleParameters",
@@ -78,14 +91,21 @@ class UIState(UIStateSP):
 
     # Core state variables
     self.is_metric: bool = self.params.get_bool("IsMetric")
+    self.initial_cruise_speed: int = self.params.get("InitialCruiseSpeedKph", return_default=True)
     self.is_release = False  # self.params.get_bool("IsReleaseBranch")
     self.always_on_dm: bool = self.params.get_bool("AlwaysOnDM")
-    self.experimental_mode: bool = self.params.get_bool("ExperimentalMode")
-    self.experimental_mode_confirmed: bool = self.params.get_bool("ExperimentalModeConfirmed")
-    self.usbgpu: bool = False
-    self.usbgpu_compiled: bool = usbgpu_compiled()
-    self.usbgpu_active: bool | None = self.params.get("UsbGpuActive")
-    self.usbgpu_loading: bool = self.params.get_bool("UsbGpuLoading")
+    self.navigation_enabled: bool = self.params.get_bool("NavigationEnabled")
+    self.nav_destination_set: bool = self.params.get("NavDestination") is not None
+    self.chestnut_present: bool = False
+    self.chestnut_compiled: bool = chestnut_compiled()
+    self.chestnut_active: bool | None = None
+    self.chestnut_loading: bool = False
+    self.chestnut_alert: bool = False
+    self.usb_connected: bool = False
+    self.usb_connected_ts: float | None = None
+    self.usb_disconnected_ts: float | None = None
+    self.usb_unknown: bool = False
+    self.chestnut_state = ChestnutState.DISCONNECTED
     self.started: bool = False
     self.ignition: bool = False
     self.recording_audio: bool = False
@@ -131,6 +151,7 @@ class UIState(UIStateSP):
     self.sm.update(0)
     self._update_state()
     self._update_status()
+    self._update_chestnut_state()
     device.update()
     UIStateSP.update(self)
 
@@ -194,11 +215,35 @@ class UIState(UIStateSP):
         self.status = UIStatus.DISENGAGED
         self.started_frame = self.sm.frame
         self.started_time = time.monotonic()
+        self.chestnut_present = self.sm["deviceState"].chestnutPresent or (self.chestnut_compiled and self.usb_connected)
 
       for callback in self._offroad_transition_callbacks:
         callback()
 
       self._started_prev = self.started
+
+  def _update_chestnut_state(self) -> None:
+    detected = self.sm["deviceState"].chestnutPresent
+    if not self.started:
+      self.chestnut_present = detected
+      self.chestnut_state = (ChestnutState.FAILED if self.chestnut_alert else
+                             ChestnutState.READY if detected and self.chestnut_compiled else
+                             ChestnutState.UNCOMPILED if detected else ChestnutState.DISCONNECTED)
+      return
+
+    model_seen = self.sm.recv_frame["modelV2"] > self.started_frame
+    if not self.chestnut_present:
+      self.chestnut_state = ChestnutState.DISCONNECTED
+    elif not self.chestnut_compiled:
+      self.chestnut_state = ChestnutState.UNCOMPILED
+    elif self.chestnut_loading or not model_seen:
+      self.chestnut_state = ChestnutState.LOADING
+    elif self.chestnut_state == ChestnutState.FAILED or not detected or (model_seen and (not self.sm.alive["modelV2"] or not self.sm["modelV2"].big)):
+      self.chestnut_state = ChestnutState.FAILED
+    elif self.chestnut_active is False:
+      self.chestnut_state = ChestnutState.FAILED
+    else:
+      self.chestnut_state = ChestnutState.ACTIVE
 
   def update_params(self) -> None:
     # For slower operations
@@ -213,15 +258,30 @@ class UIState(UIStateSP):
 
     self.recording_audio = self.params.get_bool("RecordAudio") and self.started
     self.is_metric = self.params.get_bool("IsMetric")
+    self.initial_cruise_speed = self.params.get("InitialCruiseSpeedKph", return_default=True)
     self.always_on_dm = self.params.get_bool("AlwaysOnDM")
-    self.experimental_mode = self.params.get_bool("ExperimentalMode")
-    self.experimental_mode_confirmed = self.params.get_bool("ExperimentalModeConfirmed")
-    # keep usbgpu UI active until offroad transition when gpu disappears
-    self.usbgpu = self.sm["deviceState"].chestnutPresent or (self.usbgpu and self.started)
-    if not self.usbgpu_compiled:
-      self.usbgpu_compiled = usbgpu_compiled()
-    self.usbgpu_active = self.params.get("UsbGpuActive")
-    self.usbgpu_loading = self.params.get_bool("UsbGpuLoading")
+    self.navigation_enabled = self.params.get_bool("NavigationEnabled")
+    self.nav_destination_set = self.params.get("NavDestination") is not None
+    self.chestnut_active = self.params.get("ChestnutActive")
+    self.chestnut_loading = self.params.get_bool("ChestnutLoading")
+    self.chestnut_alert = any(self.params.get(k) is not None for k, a in OFFROAD_ALERTS.items() if k.startswith("Offroad_Chestnut") and a["severity"] >= 0)
+    now = time.monotonic()
+    if cable_connected():
+      self.usb_disconnected_ts = None
+      if not self.usb_connected:
+        self.usb_connected = True
+        self.usb_connected_ts = now
+        self.usb_unknown = False
+      elif self.usb_connected_ts is not None and now - self.usb_connected_ts > 10.:
+        self.usb_unknown = not any(is_chestnut_usb_id(d["vendorId"], d["productId"], True) for d in get_usb_state())
+        self.usb_connected_ts = None
+    elif self.usb_connected:
+      if self.usb_disconnected_ts is None:
+        self.usb_disconnected_ts = now
+      elif now - self.usb_disconnected_ts > PARAM_UPDATE_TIME:
+        self.usb_connected = False
+        self.usb_connected_ts = None
+        self.usb_unknown = False
 
     UIStateSP.update_params(self)
 
