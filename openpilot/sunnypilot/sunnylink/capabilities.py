@@ -72,6 +72,25 @@ CAPABILITY_LABELS: dict[str, str] = {
   "custom_model_active": "Non-Default model selected",
 }
 
+# Fields read from the car (CarParams*, CarPlatformBundle). Until a car is seen these stay at
+# their defaults, so a rule failing on one of them means "start the vehicle", not a real reason.
+CAR_CAPABILITY_FIELDS = (
+  "has_longitudinal_control",
+  "has_icbm",
+  "icbm_available",
+  "torque_allowed",
+  "brand",
+  "pcm_cruise",
+  "alpha_long_available",
+  "steer_control_type",
+  "has_bsm",
+  "tesla_has_vehicle_bus",
+  "has_stop_and_go",
+  "subaru_has_sng",
+  "hyundai_alpha_long_available",
+  "toyota_tss2",
+)
+
 # Explicit defaults for non-boolean capability fields
 CAPABILITY_DEFAULTS: dict[str, bool | str | int] = {
   "brand": "",

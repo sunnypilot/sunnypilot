@@ -229,6 +229,9 @@ class ModelsLayoutMici(NavScroller):
     else:
       self.blendful_toggle.set_checked(False)
       self.blendful_toggle.set_enabled(False)
+    blendful_value = "" if blendful_allowed else tr("select a custom model")
+    if self.blendful_toggle.value != blendful_value:
+      self.blendful_toggle.set_value(blendful_value)
 
     manager = self.model_manager
     self._download_frame += 1
