@@ -1,5 +1,5 @@
-import pytest
 import platform
+import unittest
 import json
 import random
 import time
@@ -11,14 +11,12 @@ from openpilot.common.params import Params
 from openpilot.common.transformations.coordinates import ecef2geodetic
 
 from openpilot.system.manager.process_config import managed_processes
+from openpilot.common.test import OpenpilotTestCase
 
 
-if platform.system() == 'Darwin':
-  pytest.skip("Skipping locationd test on macOS due to unsupported msgq.", allow_module_level=True)
-
-
-class TestLocationdProc:
-  LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'liveCalibration',
+@unittest.skipIf(platform.system() == 'Darwin', "msgq unsupported on macOS")
+class TestLocationdProc(OpenpilotTestCase):
+  LLD_MSGS = ['gpsLocationExternal', 'cameraOdometry', 'carState', 'extrinsicsCalibration',
               'accelerometer', 'gyroscope']
 
   def setup_method(self):
@@ -85,9 +83,14 @@ class TestLocationdProc:
       self.pm.send(msg.which(), msg)
       if msg.which() == "cameraOdometry":
         self.pm.wait_for_readers_to_update(msg.which(), timeout=1, dt=0.005)
-    time.sleep(1)  # wait for async params write
+    for _ in range(50):
+      val = self.params.get('LastGPSPositionLLK')
+      if val is not None:
+        break
+      time.sleep(0.1)
 
-    lastGPS = json.loads(self.params.get('LastGPSPositionLLK'))
-    assert lastGPS['latitude'] == pytest.approx(self.lat, abs=0.001)
-    assert lastGPS['longitude'] == pytest.approx(self.lon, abs=0.001)
-    assert lastGPS['altitude'] == pytest.approx(self.alt, abs=0.001)
+    self.assertIsNotNone(val, "LastGPSPositionLLK not written within 5s")
+    lastGPS = json.loads(val)
+    self.assertAlmostEqual(lastGPS['latitude'], self.lat, delta=0.001)
+    self.assertAlmostEqual(lastGPS['longitude'], self.lon, delta=0.001)
+    self.assertAlmostEqual(lastGPS['altitude'], self.alt, delta=0.001)

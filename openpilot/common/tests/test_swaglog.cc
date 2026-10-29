@@ -1,12 +1,11 @@
+#include <cstdlib>
+#include <string>
+
 #include <zmq.h>
 
-#include <iostream>
-
-#include "catch2/catch.hpp"
-#include "common/swaglog.h"
-#include "common/util.h"
-#include "common/version.h"
 #include "common/hardware/hw.h"
+#include "common/swaglog.h"
+#include "common/tests/native_test.h"
 #include "json11/json11.hpp"
 
 #include "sunnypilot/common/version.h"
@@ -15,12 +14,38 @@ std::string daemon_name = "testy";
 std::string dongle_id = "test_dongle_id";
 int LINE_NO = 0;
 
-void log_thread(int thread_id, int msg_cnt) {
-  for (int i = 0; i < msg_cnt; ++i) {
-    LOGD("%d", thread_id);
-    LINE_NO = __LINE__ - 1;
-    usleep(1);
-  }
+void test_swaglog() {
+  setenv("MANAGER_DAEMON", "swaglog_test", 1);
+  setenv("DONGLE_ID", "test_dongle_id", 1);
+  setenv("CLEAN", "1", 1);
+
+  void *context = zmq_ctx_new();
+  CHECK(context != nullptr);
+  void *socket = zmq_socket(context, ZMQ_PULL);
+  CHECK(socket != nullptr);
+  int timeout = 5000;
+  CHECK(zmq_setsockopt(socket, ZMQ_RCVTIMEO, &timeout, sizeof(timeout)) == 0);
+  CHECK(zmq_bind(socket, Path::swaglog_ipc().c_str()) == 0);
+
+  LOGD("native-cpp-log");
+
+  char buffer[4096] = {};
+  const int size = zmq_recv(socket, buffer, sizeof(buffer), 0);
+  CHECK(size > 1);
+  CHECK(buffer[0] == CLOUDLOG_DEBUG);
+  std::string error;
+  const auto message = json11::Json::parse(std::string(buffer + 1, size - 1), error);
+  CHECK(error.empty());
+  CHECK(message["levelnum"].int_value() == CLOUDLOG_DEBUG);
+  CHECK(message["msg"].string_value() == "native-cpp-log");
+  CHECK(message["funcname"].string_value() == "test_swaglog");
+  CHECK(message["filename"].string_value().find("test_swaglog.cc") != std::string::npos);
+  CHECK(message["ctx"]["daemon"].string_value() == "swaglog_test");
+  CHECK(message["ctx"]["dongle_id"].string_value() == "test_dongle_id");
+  CHECK(message["ctx"]["dirty"].bool_value() == false);
+
+  CHECK(zmq_close(socket) == 0);
+  CHECK(zmq_ctx_destroy(context) == 0);
 }
 
 void recv_log(int thread_cnt, int thread_msg_cnt) {
@@ -39,52 +64,39 @@ void recv_log(int thread_cnt, int thread_msg_cnt) {
       break;
     }
 
-    REQUIRE(buf[0] == CLOUDLOG_DEBUG);
+    CHECK(buf[0] == CLOUDLOG_DEBUG);
     std::string err;
     auto msg = json11::Json::parse(buf + 1, err);
-    REQUIRE(!msg.is_null());
+    CHECK(!msg.is_null());
 
-    REQUIRE(msg["levelnum"].int_value() == CLOUDLOG_DEBUG);
-    REQUIRE_THAT(msg["filename"].string_value(), Catch::Contains("test_swaglog.cc"));
-    REQUIRE(msg["funcname"].string_value() == "log_thread");
-    REQUIRE(msg["lineno"].int_value() == LINE_NO);
+    CHECK(msg["levelnum"].int_value() == CLOUDLOG_DEBUG);
+    CHECK(msg["filename"].string_value().find("test_swaglog.cc") != std::string::npos);
+    CHECK(msg["funcname"].string_value() == "log_thread");
+    CHECK(msg["lineno"].int_value() == LINE_NO);
 
     auto ctx = msg["ctx"];
 
-    REQUIRE(ctx["daemon"].string_value() == daemon_name);
-    REQUIRE(ctx["dongle_id"].string_value() == dongle_id);
-    REQUIRE(ctx["dirty"].bool_value() == true);
+    CHECK(ctx["daemon"].string_value() == daemon_name);
+    CHECK(ctx["dongle_id"].string_value() == dongle_id);
+    CHECK(ctx["dirty"].bool_value() == true);
 
-    REQUIRE(ctx["version"].string_value() == SUNNYPILOT_VERSION);
+    CHECK(ctx["version"].string_value() == SUNNYPILOT_VERSION);
 
     std::string device = Hardware::get_name();
-    REQUIRE(ctx["device"].string_value() == device);
+    CHECK(ctx["device"].string_value() == device);
 
     int thread_id = atoi(msg["msg"].string_value().c_str());
-    REQUIRE((thread_id >= 0 && thread_id < thread_cnt));
+    CHECK((thread_id >= 0 && thread_id < thread_cnt));
     thread_msgs[thread_id]++;
     total_count++;
   }
   for (int i = 0; i < thread_cnt; ++i) {
-    INFO("thread :" << i);
-    REQUIRE(thread_msgs[i] == thread_msg_cnt);
+    CHECK(thread_msgs[i] == thread_msg_cnt);
   }
   zmq_close(sock);
   zmq_ctx_destroy(zctx);
 }
 
-TEST_CASE("swaglog") {
-  setenv("MANAGER_DAEMON", daemon_name.c_str(), 1);
-  setenv("DONGLE_ID", dongle_id.c_str(), 1);
-  setenv("dirty", "1", 1);
-  const int thread_cnt = 5;
-  const int thread_msg_cnt = 100;
-
-  std::vector<std::thread> log_threads;
-  for (int i = 0; i < thread_cnt; ++i) {
-    log_threads.push_back(std::thread(log_thread, i, thread_msg_cnt));
-  }
-  for (auto &t : log_threads) t.join();
-
-  recv_log(thread_cnt, thread_msg_cnt);
+int main() {
+  return run_native_test(test_swaglog);
 }

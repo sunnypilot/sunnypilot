@@ -5,14 +5,13 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import pytest
-from pytest_mock import MockerFixture
 
 from openpilot.cereal import custom
 from openpilot.common.realtime import DT_CTRL
 from openpilot.sunnypilot.mads.state import StateMachine, SOFT_DISABLE_TIME
 from openpilot.selfdrive.selfdrived.events import ET, NormalPermanentAlert, Events
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP, EVENTS_SP
+from openpilot.common.test import OpenpilotTestCase
 
 State = custom.ModularAssistiveDrivingSystem.ModularAssistiveDrivingSystemState
 EventNameSP = custom.OnroadEventSP.EventName
@@ -34,16 +33,16 @@ def make_event(event_types):
 
 
 class MockMADS:
-  def __init__(self, mocker: MockerFixture):
+  def __init__(self, mocker):
     self.selfdrive = mocker.MagicMock()
     self.selfdrive.state_machine = mocker.MagicMock()
     self.selfdrive.events = Events()
     self.selfdrive.events_sp = EventsSP()
 
 
-class TestMADSStateMachine:
-  @pytest.fixture(autouse=True)
-  def setup_method(self, mocker: MockerFixture):
+class TestMADSStateMachine(OpenpilotTestCase):
+  def setup_method(self):
+    mocker = self._fixture("mocker")
     self.mads = MockMADS(mocker)
     self.state_machine = StateMachine(self.mads)
     self.events = self.mads.selfdrive.events

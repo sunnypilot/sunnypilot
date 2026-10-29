@@ -13,19 +13,10 @@ from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import set_speed_limit_assist_availability
 
-import openpilot.system.sentry as sentry
-
 from openpilot.sunnypilot.sunnylink.statsd import STATSLOGSP
 
 
-def log_fingerprint(CP: structs.CarParams) -> None:
-  if CP.carFingerprint == "MOCK":
-    sentry.capture_fingerprint_mock()
-  else:
-    sentry.capture_fingerprint(CP.carFingerprint, CP.brand)
-
-
-def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params = None, enabled: bool = False) -> bool:
+def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params | None = None, enabled: bool = False) -> bool:
   if params is None:
     params = Params()
 
@@ -36,7 +27,7 @@ def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params = None
 
 
 def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: structs.CarParamsSP,
-                                               params: Params = None, enabled: bool = False) -> bool:
+                                               params: Params | None = None, enabled: bool = False) -> bool:
   if params is None:
     params = Params()
 
@@ -55,7 +46,7 @@ def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: str
   return enabled
 
 
-def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params | None = None) -> None:
   if params is None:
     params = Params()
 
@@ -69,14 +60,20 @@ def _initialize_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarPara
     CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
 
 
-def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params = None) -> None:
+def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params | None = None) -> None:
   if params is None:
     params = Params()
+
+  if params.get_bool("LateralJerkTorqueController") and params.get_bool("NeuralNetworkLateralControl"):
+    cloudlog.warning("LateralJerkTorqueController and NeuralNetworkLateralControl both enabled, disabling both")
+    params.put_bool("LateralJerkTorqueController", False, block=True)
+    params.put_bool("NeuralNetworkLateralControl", False, block=True)
 
   if CP.steerControlType == structs.CarParams.SteerControlType.angle:
     cloudlog.warning("SteerControlType is angle, cleaning up params")
     params.remove("NeuralNetworkLateralControl")
     params.remove("EnforceTorqueControl")
+    params.remove("LateralJerkTorqueController")
 
   if not CP_SP.intelligentCruiseButtonManagementAvailable or CP.openpilotLongitudinalControl:
     cloudlog.warning("ICBM not available or openpilot Longitudinal Control enabled, cleaning up params")
@@ -84,7 +81,6 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
 
   if not CP.openpilotLongitudinalControl and CP_SP.pcmCruiseSpeed:
     cloudlog.warning("openpilot Longitudinal Control and ICBM not available, cleaning up params")
-    params.remove("DynamicExperimentalControl")
     params.remove("CustomAccIncrementsEnabled")
     params.remove("SmartCruiseControlVision")
     params.remove("SmartCruiseControlMap")
@@ -92,7 +88,7 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
   set_speed_limit_assist_availability(CP, CP_SP, params)
 
 
-def setup_interfaces(CI: CarInterfaceBase, params: Params = None) -> None:
+def setup_interfaces(CI: CarInterfaceBase, params: Params | None = None) -> None:
   enforce_torque = _enforce_torque_lateral_control(CI.CP, params)
   nnlc_enabled = _initialize_neural_network_lateral_control(CI.CP, CI.CP_SP, params)
   _initialize_intelligent_cruise_button_management(CI.CP, CI.CP_SP, params)
@@ -123,12 +119,14 @@ def initialize_params(params) -> list[dict[str, Any]]:
   # tesla
   keys.extend([
     "TeslaCoopSteering",
+    "TeslaMadsScreenButton",
   ])
 
   # toyota
   keys.extend([
     "ToyotaEnforceStockLongitudinal",
     "ToyotaStopAndGoHack",
+    "ToyotaTSS2Smooth",
   ])
 
   return [{k: params.get(k, return_default=True)} for k in keys]

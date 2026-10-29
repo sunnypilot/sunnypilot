@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from typing import Any
 
 import numpy as np
-import pytest
+from openpilot.common.parameterized import parameterized
 
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import custom, log
@@ -17,6 +17,7 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_UNSET
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control import MIN_V
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.vision_controller import SmartCruiseControlVision, _ENTERING_PRED_LAT_ACC_TH
+from openpilot.common.test import OpenpilotTestCase
 
 VisionState = custom.LongitudinalPlanSP.SmartCruiseControl.VisionState
 
@@ -105,7 +106,7 @@ def generate_controlsState():
   return controls_state
 
 
-class TestSmartCruiseControlVision:
+class TestSmartCruiseControlVision(OpenpilotTestCase):
 
   def setup_method(self):
     self.params = Params()
@@ -145,19 +146,11 @@ class TestSmartCruiseControlVision:
       self.scc_v.update(self.sm, True, False, 0., 0., 0.)
     assert self.scc_v.state == VisionState.enabled
 
-  @pytest.mark.parametrize(
-    "case, should_enter",
-    [
+  @parameterized.expand([
       ("p97_just_above_threshold", True),
       ("single_spike_filtered", False),
       ("persistent_high_values", True),
-    ],
-    ids=[
-      "p97>threshold_enters",
-      "single_spike_max_large_but_p97_below_threshold",
-      "high_values_persist_trigger_entering",
-    ],
-  )
+    ], names=["case", "should_enter"])
   def test_max_pred_lat_acc_uses_p97_and_threshold(self, case, should_enter):
     n = len(ModelConstants.T_IDXS)
     th = float(_ENTERING_PRED_LAT_ACC_TH)

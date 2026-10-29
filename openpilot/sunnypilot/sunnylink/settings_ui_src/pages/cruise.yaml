@@ -11,19 +11,6 @@ sections:
   title: ''
   description: ''
   items:
-  - key: ExperimentalMode
-    widget: toggle
-    title: Experimental Mode
-    enablement:
-    - $ref: '#/macros/longitudinal'
-  - key: DynamicExperimentalControl
-    widget: toggle
-    title: Dynamic Experimental Control
-    description: Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.
-    visibility:
-    - $ref: '#/macros/longitudinal'
-    enablement:
-    - $ref: '#/macros/longitudinal'
   - key: DisengageOnAccelerator
     widget: toggle
     title: Disengage Cruise on Accelerator Pedal

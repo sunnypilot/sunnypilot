@@ -3,7 +3,6 @@ import http.server
 import os
 import threading
 import time
-import pytest
 
 from functools import wraps
 
@@ -23,16 +22,16 @@ def set_params_enabled():
   params.put_bool("OpenpilotEnabledToggle", True, block=True)
 
   # valid calib
-  msg = messaging.new_message('liveCalibration')
-  msg.liveCalibration.validBlocks = 20
-  msg.liveCalibration.rpyCalib = [0.0, 0.0, 0.0]
+  msg = messaging.new_message('extrinsicsCalibration')
+  msg.extrinsicsCalibration.validBlocks = 20
+  msg.extrinsicsCalibration.rpyCalib = [0.0, 0.0, 0.0]
   params.put("CalibrationParams", msg.to_bytes(), block=True)
 
 def release_only(f):
   @wraps(f)
   def wrap(self, *args, **kwargs):
     if "RELEASE" not in os.environ:
-      pytest.skip("This test is only for release branches")
+      self.skipTest("This test is only for release branches")
     f(self, *args, **kwargs)
   return wrap
 
@@ -106,17 +105,6 @@ def with_processes(processes, init_time=0, ignore_stopped=None):
   return wrapper
 
 
-def noop(*args, **kwargs):
-  pass
-
-
-def read_segment_list(segment_list_path):
-  with open(segment_list_path) as f:
-    seg_list = f.read().splitlines()
-
-  return [(platform[2:], segment) for platform, segment in zip(seg_list[::2], seg_list[1::2], strict=True)]
-
-
 @contextlib.contextmanager
 def http_server_context(handler, setup=None):
   host = '127.0.0.1'
@@ -134,32 +122,3 @@ def http_server_context(handler, setup=None):
     server.shutdown()
     server.server_close()
     t.join()
-
-
-def with_http_server(func, handler=http.server.BaseHTTPRequestHandler, setup=None):
-  @wraps(func)
-  def inner(*args, **kwargs):
-    with http_server_context(handler, setup) as (host, port):
-      return func(*args, f"http://{host}:{port}", **kwargs)
-  return inner
-
-
-def DirectoryHttpServer(directory) -> type[http.server.SimpleHTTPRequestHandler]:
-  # creates an http server that serves files from directory
-  class Handler(http.server.SimpleHTTPRequestHandler):
-    API_NO_RESPONSE = False
-    API_BAD_RESPONSE = False
-
-    def do_GET(self):
-      if self.API_NO_RESPONSE:
-        return
-
-      if self.API_BAD_RESPONSE:
-        self.send_response(500, "")
-        return
-      super().do_GET()
-
-    def __init__(self, *args, **kwargs):
-      super().__init__(*args, directory=str(directory), **kwargs)
-
-  return Handler

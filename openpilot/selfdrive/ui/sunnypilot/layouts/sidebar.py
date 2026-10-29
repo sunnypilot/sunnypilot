@@ -4,11 +4,14 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
+
 import pyray as rl
 import time
 from dataclasses import dataclass
-from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr_noop
 
 
@@ -17,6 +20,9 @@ METRIC_HEIGHT = 126
 METRIC_MARGIN = 30
 METRIC_START_Y = 300
 HOME_BTN = rl.Rectangle(60, 860, 180, 180)
+
+CHESTNUT_ICON_WIDTH = 180
+CHESTNUT_ICON_HEIGHT = 133
 
 
 # Color scheme
@@ -53,6 +59,9 @@ class MetricData:
 class SidebarSP:
   def __init__(self):
     self._sunnylink_status = MetricData(tr_noop("SUNNYLINK"), tr_noop("OFFLINE"), Colors.WARNING)
+    self._chestnut_green_img = gui_app.texture("icons_mici/chestnut_green.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
+    self._chestnut_default_img = gui_app.texture("icons_mici/chestnut.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
+    self._chestnut_orange_img = gui_app.texture("icons_mici/chestnut_orange.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
 
   def _update_sunnylink_status(self):
     if not ui_state.params.get_bool("SunnylinkEnabled"):
@@ -77,6 +86,24 @@ class SidebarSP:
       status, color = (tr_noop("OFFLINE"), Colors.DANGER)
 
     self._sunnylink_status.update(tr_noop("SUNNYLINK"), status, color)
+
+  def _get_home_icon(self, default_img: rl.Texture) -> tuple[rl.Texture, rl.Vector2, float]:
+    default_pos = rl.Vector2(HOME_BTN.x, HOME_BTN.y)
+    state = ui_state.chestnut_state
+    if state == ChestnutState.DISCONNECTED:
+      return default_img, default_pos, 1.0
+
+    if state == ChestnutState.LOADING:
+      icon = self._chestnut_default_img
+      opacity = 0.35 + 0.65 * (0.5 - 0.5 * math.cos(rl.get_time() * 6.0))
+    elif state in (ChestnutState.UNCOMPILED, ChestnutState.FAILED):
+      icon, opacity = self._chestnut_orange_img, 1.0
+    else:
+      icon, opacity = self._chestnut_green_img, 1.0
+
+    x = HOME_BTN.x + (HOME_BTN.width - icon.width) / 2
+    y = HOME_BTN.y + (HOME_BTN.height - icon.height) / 2
+    return icon, rl.Vector2(x, y), opacity
 
   def _draw_metrics_w_sunnylink(self, rect: rl.Rectangle, _temp, _panda, _connect):
     metrics = [_temp, _panda, _connect, self._sunnylink_status]

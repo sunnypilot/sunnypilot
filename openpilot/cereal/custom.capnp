@@ -69,6 +69,8 @@ struct LeadData {
 struct SelfdriveStateSP @0x81c2f05a394cf4af {
   mads @0 :ModularAssistiveDrivingSystem;
   intelligentCruiseButtonManagement @1 :IntelligentCruiseButtonManagement;
+  buttonsPressed @2 :UInt16;
+  buttonsReleaseToggle @3 :UInt16;
 
   enum AudibleAlert {
     none @0;
@@ -129,18 +131,28 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
     downloaded @2;
     cached @3;
     failed @4;
+    verifying @5;
   }
 
   struct DownloadProgress {
     status @0 :DownloadStatus;
     progress @1 :Float32;
     eta @2 :UInt32;
+    speed @3 :Float32;
+    canceling @4 :Bool;
+    resuming @5 :Bool;
+  }
+
+  struct Chunk {
+    fileName @0 :Text;
+    sha256 @1 :Text;
   }
 
   struct Artifact {
     fileName @0 :Text;
     downloadUri @1 :DownloadUri;
     downloadProgress @2 :DownloadProgress;
+    chunks @3 :List(Chunk);
   }
 
   struct Model {
@@ -155,6 +167,7 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
       policy @3;
       offPolicy @4;
       onPolicy @5;
+      chunked @6;
     }
   }
 
@@ -186,7 +199,6 @@ struct ModelManagerSP @0xaedffd8f31e7b55d {
 }
 
 struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
-  dec @0 :DynamicExperimentalControl;
   longitudinalPlanSource @1 :LongitudinalPlanSource;
   smartCruiseControl @2 :SmartCruiseControl;
   speedLimit @3 :SpeedLimit;
@@ -195,7 +207,11 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
 
-  struct DynamicExperimentalControl {
+  deprecated :group {
+    dec @0 :DynamicExperimentalControlDEPRECATED;
+  }
+
+  struct DynamicExperimentalControlDEPRECATED {
     state @0 :DynamicExperimentalControlState;
     enabled @1 :Bool;
     active @2 :Bool;
@@ -332,7 +348,7 @@ struct OnroadEventSP @0xda96579883444c35 {
     silentParkBrake @11;
     controlsMismatchLateral @12;
     hyundaiRadarTracksConfirmed @13;
-    experimentalModeSwitched @14;
+    experimentalModeSwitchedDEPRECATED @14;
     wrongCarModeAlertOnly @15;
     pedalPressedAlertOnly @16;
     laneTurnLeft @17;
@@ -342,6 +358,8 @@ struct OnroadEventSP @0xda96579883444c35 {
     speedLimitChanged @21;
     speedLimitPending @22;
     e2eChime @23;
+    laneChangeRoadEdge @24;
+    bigModelReady @25;
   }
 }
 
@@ -448,6 +466,15 @@ struct LiveMapDataSP @0xf416ec09499d9d19 {
 
 struct ModelDataV2SP @0xa1680744031fdb2d {
   laneTurnDirection @0 :TurnDirection;
+  leftLaneChangeEdgeBlock @1 :Bool;
+  rightLaneChangeEdgeBlock @2 :Bool;
+  blendfulCurvature @3 :Float32;
+  blendfulTrust @4 :Float32;
+  modelCurvature @5 :Float32;
+  blendfulGoingAround @6 :Bool;
+  blendfulLeftProb @7 :Float32;
+  blendfulRightProb @8 :Float32;
+  blendfulLaneWidth @9 :Float32;
 
   enum TurnDirection {
     none @0;

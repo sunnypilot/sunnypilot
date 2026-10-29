@@ -7,7 +7,7 @@
 
 #include "common/util.h"
 #include "common/yuv.h"
-#include "tools/replay/py_downloader.h"
+#include "tools/replay/py_tools.h"
 #include "tools/replay/util.h"
 #include "common/hardware/hw.h"
 
@@ -42,7 +42,7 @@ struct DecoderManager {
     std::unique_ptr<VideoDecoder> decoder;
     #ifndef __APPLE__
     if (!Hardware::PC() && hw_decoder) {
-      decoder = std::make_unique<QcomVideoDecoder>();
+      decoder = std::make_unique<V4LVideoDecoder>();
     } else
     #endif
     {
@@ -75,7 +75,7 @@ FrameReader::~FrameReader() {
 bool FrameReader::load(CameraType type, const std::string &url, bool no_hw_decoder, std::atomic<bool> *abort, bool local_cache) {
   std::string local_file_path;
   if (url.find("https://") == 0 || url.find("http://") == 0) {
-    local_file_path = PyDownloader::download(url, local_cache, abort);
+    local_file_path = PyTools::download(url, local_cache, abort);
     if (local_file_path.empty()) return false;
   } else {
     local_file_path = url;
@@ -269,18 +269,18 @@ bool FFmpegVideoDecoder::copyBuffer(AVFrame *f, VisionBuf *buf) {
 }
 
 #ifndef __APPLE__
-bool QcomVideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
+bool V4LVideoDecoder::open(AVCodecParameters *codecpar, bool hw_decoder) {
   if (codecpar->codec_id != AV_CODEC_ID_HEVC) {
     rError("Hardware decoder only supports HEVC codec");
     return false;
   }
   width = codecpar->width;
   height = codecpar->height;
-  msm_vidc.init(VIDEO_DEVICE, width, height, V4L2_PIX_FMT_HEVC);
+  v4l_decoder.init(V4LDecoder::DEVICE, width, height, V4L2_PIX_FMT_HEVC);
   return true;
 }
 
-bool QcomVideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
+bool V4LVideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
   int from_idx = idx;
   if (idx != reader->prev_idx + 1) {
     // seeking to the nearest key frame
@@ -301,10 +301,10 @@ bool QcomVideoDecoder::decode(FrameReader *reader, int idx, VisionBuf *buf) {
   reader->prev_idx = idx;
   bool result = false;
   AVPacket pkt;
-  msm_vidc.avctx = reader->input_ctx;
+  v4l_decoder.avctx = reader->input_ctx;
   for (int i = from_idx; i <= idx; ++i) {
     if (av_read_frame(reader->input_ctx, &pkt) == 0) {
-      result = msm_vidc.decodeFrame(&pkt, buf) && (i == idx);
+      result = v4l_decoder.decodeFrame(&pkt, buf) && (i == idx);
       av_packet_unref(&pkt);
     }
   }

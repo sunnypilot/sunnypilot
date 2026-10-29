@@ -160,7 +160,7 @@ class ActualLateralAccelElement(LateralControlElement):
     controls_state = sm['controlsState']
     curvature = controls_state.curvature
     v_ego = sm['carState'].vEgo
-    roll = sm['liveParameters'].roll if sm.valid['liveParameters'] else 0.0
+    roll = sm['vehicleParameters'].roll if sm.valid['vehicleParameters'] else 0.0
     lat_active = sm['carControl'].latActive
     steer_override = sm['carState'].steeringPressed
 
@@ -179,7 +179,7 @@ class DesiredLateralAccelElement(LateralControlElement):
     controls_state = sm['controlsState']
     desired_curvature = controls_state.desiredCurvature
     v_ego = sm['carState'].vEgo
-    roll = sm['liveParameters'].roll if sm.valid['liveParameters'] else 0.0
+    roll = sm['vehicleParameters'].roll if sm.valid['vehicleParameters'] else 0.0
     lat_active = sm['carControl'].latActive
     steer_override = sm['carState'].steeringPressed
 
@@ -250,9 +250,9 @@ class FrictionCoefficientElement:
     if ui_state.enforce_torque_control and ui_state.custom_torque_params and ui_state.torque_override_enabled:
       return UiElement(f"{ui_state.torque_override_friction:.3f}", "FRIC.", self.unit, rl.WHITE)
 
-    ltp = sm['liveTorqueParameters']
+    ltp = sm['lateralTorqueParameters']
     value = f"{ltp.frictionCoefficientFiltered:.3f}"
-    color = rl.Color(0, 255, 0, 255) if ltp.liveValid else rl.WHITE
+    color = rl.Color(0, 255, 0, 255) if ltp.valid else rl.WHITE
     return UiElement(value, "FRIC.", self.unit, color)
 
 
@@ -264,9 +264,9 @@ class LatAccelFactorElement:
     if ui_state.enforce_torque_control and ui_state.custom_torque_params and ui_state.torque_override_enabled:
       return UiElement(f"{ui_state.torque_override_lat_accel_factor:.3f}", "L.A.F.", self.unit, rl.WHITE)
 
-    ltp = sm['liveTorqueParameters']
+    ltp = sm['lateralTorqueParameters']
     value = f"{ltp.latAccelFactorFiltered:.3f}"
-    color = rl.Color(0, 255, 0, 255) if ltp.liveValid else rl.WHITE
+    color = rl.Color(0, 255, 0, 255) if ltp.valid else rl.WHITE
     return UiElement(value, "L.A.F.", self.unit, color)
 
 

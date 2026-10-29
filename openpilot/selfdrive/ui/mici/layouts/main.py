@@ -13,6 +13,7 @@ from openpilot.system.ui.lib.application import gui_app
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings import SettingsLayoutSP as SettingsLayout
+  from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP as MiciHomeLayout
 
 ONROAD_DELAY = 2.5  # seconds
 
@@ -21,7 +22,7 @@ class MiciMainLayout(Scroller):
   def __init__(self):
     super().__init__(snap_items=True, spacing=0, pad=0, scroll_indicator=False, edge_shadows=False)
 
-    self._pm = messaging.PubMaster(['bookmarkButton'])
+    self._pm = messaging.PubMaster(['bookmarkButton', 'userBookmark'])
 
     self._prev_onroad = False
     self._prev_standstill = False
@@ -63,17 +64,22 @@ class MiciMainLayout(Scroller):
     if not self._onboarding_window.completed:
       gui_app.push_widget(self._onboarding_window)
 
+    # initialize correct onroad layout
+    self._on_body_changed()
+
   @property
   def _onroad_layout(self) -> Widget:
     # For scroll_to
     return self._body_onroad_layout if ui_state.is_body else self._car_onroad_layout
 
   def _setup_callbacks(self):
+    self._alerts_layout.set_enabled(lambda: self.enabled)
+    self._alerts_layout.set_pairing_callback(self._settings_layout.show_pairing)
     self._home_layout.set_callbacks(
       on_settings=lambda: gui_app.push_widget(self._settings_layout),
       on_alerts=lambda: self._scroll_to(self._alerts_layout),
       alert_count_callback=self._alerts_layout.active_alerts,
-      max_severity_callback=self._alerts_layout.max_severity,
+      alert_icon_callback=self._alerts_layout.highest_severity_icon,
     )
     for layout in (self._car_onroad_layout, self._body_onroad_layout):
       layout.set_click_callback(lambda: self._scroll_to(self._home_layout))
@@ -142,9 +148,9 @@ class MiciMainLayout(Scroller):
       self._scroll_to(self._home_layout)
 
   def _on_bookmark_clicked(self):
-    user_bookmark = messaging.new_message('bookmarkButton')
-    user_bookmark.valid = True
-    self._pm.send('bookmarkButton', user_bookmark)
+    for service in ('bookmarkButton', 'userBookmark'):
+      msg = messaging.new_message(service, valid=True)
+      self._pm.send(service, msg)
 
   def _on_body_changed(self):
     self._car_onroad_layout.set_visible(not ui_state.is_body)

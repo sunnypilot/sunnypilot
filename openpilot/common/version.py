@@ -16,6 +16,15 @@ MASTER_SP_BRANCHES = ['master']
 RELEASE_BRANCHES = ['release-tizi-staging', 'release-mici-staging', 'release-tizi', 'release-mici', 'nightly']
 TESTED_BRANCHES = RELEASE_BRANCHES + ['devel-staging', 'nightly-dev'] + RELEASE_SP_BRANCHES + TESTED_SP_BRANCHES
 
+CHESTNUT_BRANCHES = {
+  "staging": "staging-chestnut",
+  "dev": "dev-chestnut",
+  "release-mici": "release-chestnut",
+  "release-tizi": "release-chestnut",
+  "release-mici-staging": "release-chestnut-staging",
+  "release-tizi-staging": "release-chestnut-staging",
+}
+
 SP_BRANCH_MIGRATIONS = {
   ("tici", "staging-c3-new"): "staging-tici",
   ("tici", "dev-c3-new"): "staging-tici",

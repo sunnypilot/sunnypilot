@@ -1,13 +1,16 @@
 import os
-import hypothesis.strategies as st
-from hypothesis import Phase, given, settings
+
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.parameterized import parameterized
+from openpilot.common.fuzzy import capnp_random_dict, fuzzy_test
 
 from openpilot.cereal import custom
 from opendbc.car.structs import car
 from opendbc.car import DT_CTRL
+from opendbc.car.car_helpers import interfaces
+from opendbc.car.fingerprints import FW_VERSIONS
+from opendbc.car.fw_versions import FW_QUERY_CONFIGS
 from opendbc.car.structs import CarParams
-from opendbc.car.tests.test_car_interfaces import get_fuzzy_car_interface
 from opendbc.car.mock.values import CAR as MOCK
 from opendbc.car.values import PLATFORMS
 from openpilot.selfdrive.car.helpers import convert_carControlSP
@@ -15,28 +18,41 @@ from openpilot.selfdrive.controls.lib.latcontrol_angle import LatControlAngle
 from openpilot.selfdrive.controls.lib.latcontrol_pid import LatControlPID
 from openpilot.selfdrive.controls.lib.latcontrol_torque import LatControlTorque
 from openpilot.selfdrive.controls.lib.longcontrol import LongControl
-from openpilot.selfdrive.test.fuzzy_generation import FuzzyGenerator
 
 from openpilot.sunnypilot.selfdrive.car import interfaces as sunnypilot_interfaces
 
 MAX_EXAMPLES = int(os.environ.get('MAX_EXAMPLES', '60'))
+ALL_ECUS = tuple(sorted({ecu for ecus in FW_VERSIONS.values() for ecu in ecus} |
+                        {ecu for config in FW_QUERY_CONFIGS.values() for ecu in config.extra_ecus}))
+ALL_REQUESTS = tuple(sorted({tuple(request.request) for config in FW_QUERY_CONFIGS.values() for request in config.requests}))
+DLC_TO_LEN = (0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64)
 
 
-class TestCarInterfaces:
-  # FIXME: Due to the lists used in carParams, Phase.target is very slow and will cause
-  #  many generated examples to overrun when max_examples > ~20, don't use it
-  @parameterized.expand([(car,) for car in sorted(PLATFORMS)] + [MOCK.MOCK])
-  @settings(max_examples=MAX_EXAMPLES, deadline=None,
-            phases=(Phase.reuse, Phase.generate, Phase.shrink))
-  @given(data=st.data())
-  def test_car_interfaces(self, car_name, data):
-    car_interface = get_fuzzy_car_interface(car_name, data.draw)
+class TestCarInterfaces(OpenpilotTestCase):
+  @parameterized.expand([(car,) for car in sorted(PLATFORMS)] + [MOCK.MOCK], ids=lambda car_name: car_name)
+  @fuzzy_test(max_examples=60)
+  def test_car_interfaces(self, car_name, fuzzy):
+    fingerprint = dict(fuzzy.list(lambda: (fuzzy.integer(0, 0x800), fuzzy.choice(DLC_TO_LEN))))
+    fingerprints = dict.fromkeys(range(7), fingerprint)
+
+    def generate_car_fw():
+      ecu, address, sub_address = fuzzy.choice(ALL_ECUS)
+      return CarParams.CarFw(ecu=ecu, address=address, subAddress=sub_address or 0, request=fuzzy.choice(ALL_REQUESTS))
+
+    CarInterface = interfaces[car_name]
+    car_fw = fuzzy.list(generate_car_fw)
+    alpha_long = fuzzy.boolean()
+    car_params = CarInterface.get_params(car_name, fingerprints, car_fw,
+                                         alpha_long=alpha_long, is_release=False, docs=False)
+    car_params_sp = CarInterface.get_params_sp(car_params, car_name, fingerprints, car_fw,
+                                               alpha_long=alpha_long, is_release_sp=False, docs=False)
+    car_interface = CarInterface(car_params, car_params_sp)
     car_params = car_interface.CP.as_reader()
     car_params_sp = car_interface.CP_SP
     sunnypilot_interfaces.setup_interfaces(car_interface)
 
-    cc_msg = FuzzyGenerator.get_random_msg(data.draw, car.CarControl, real_floats=True)
-    cc_sp_msg = FuzzyGenerator.get_random_msg(data.draw, custom.CarControlSP, real_floats=True)
+    cc_msg = capnp_random_dict(fuzzy, car.CarControl.schema, real_floats=True)
+    cc_sp_msg = capnp_random_dict(fuzzy, custom.CarControlSP.schema, real_floats=True)
     # Run car interface
     now_nanos = 0
     CC = car.CarControl.new_message(**cc_msg)
@@ -59,8 +75,6 @@ class TestCarInterfaces:
       now_nanos += DT_CTRL * 1e9  # 10ms
 
     # Test controller initialization
-    # TODO: wait until card refactor is merged to run controller a few times,
-    #  hypothesis also slows down significantly with just one more message draw
     LongControl(car_params, car_params_sp)
     if car_params.steerControlType == CarParams.SteerControlType.angle:
       LatControlAngle(car_params, car_params_sp, car_interface, DT_CTRL)

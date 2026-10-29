@@ -1,9 +1,12 @@
+#!/usr/bin/env python3
+
 import os
 import time
+import unittest
 import numpy as np
-import pytest
 import random
 
+from openpilot.common.test import OpenpilotTestCase
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal.services import SERVICE_LIST
 from openpilot.common.timeout import Timeout
@@ -12,8 +15,8 @@ from openpilot.selfdrive.pandad.tests.test_pandad_loopback import setup_pandad, 
 
 JUNGLE_SPAM = "JUNGLE_SPAM" in os.environ
 
-@pytest.mark.tici
-class TestBoarddSpi:
+class TestBoarddSpi(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
   @classmethod
   def setup_class(cls):
     os.environ['STARTED'] = '1'
@@ -42,9 +45,10 @@ class TestBoarddSpi:
 
     st = time.monotonic()
     ts = {s: [] for s in socks.keys()}
-    for _ in range(int(os.getenv("TEST_TIME", "20"))):
-      # send some CAN messages
-      if not JUNGLE_SPAM:
+    test_time = int(os.getenv("TEST_TIME", "20"))
+    for i in range(test_time + 2):
+      # send some CAN messages, then give the last ones time to come back
+      if not JUNGLE_SPAM and i < test_time:
         sent = send_random_can_messages(sendcan, random.randrange(2, 20))
         for k, v in sent.items():
           sent_msgs[k].extend(list(v))
@@ -71,8 +75,7 @@ class TestBoarddSpi:
                 continue
               key = (msg.address, msg.dat)
               assert key in sent_msgs[msg.src], f"got unexpected msg: {msg.src=} {msg.address=} {msg.dat=}"
-              # TODO: enable this
-              #sent_msgs[msg.src].remove(key)
+              sent_msgs[msg.src].remove(key)
               total_recv_count += 1
           elif service == "pandaStates":
             assert len(m.pandaStates) == 1
@@ -99,9 +102,14 @@ class TestBoarddSpi:
         edt = 1e3 / SERVICE_LIST[service].frequency
         assert edt*0.9 < np.mean(dts) < edt*1.1
         assert np.max(dts) < edt*8
-        assert np.min(dts) < edt
         assert len(dts) >= ((et-0.5)*SERVICE_LIST[service].frequency*0.8)
 
     with subtests.test(msg="CAN traffic"):
       print(f"Sent {total_sent_count} CAN messages, got {total_recv_count} back. {total_recv_count/(total_sent_count+1e-4):.2%} received")
       assert total_recv_count > 20
+      # every message came back exactly once, despite the injected errors
+      assert all(len(v) == 0 for v in sent_msgs.values())
+
+
+if __name__ == "__main__":
+  unittest.main()

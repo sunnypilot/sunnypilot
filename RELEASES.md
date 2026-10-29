@@ -1,6 +1,24 @@
-Version 0.11.2 (2026-06-15)
+Version 0.11.3 (2026-XX-XX)
 ========================
+* Autospeed
+  * On supported cars, openpilot will intelligently decide what speed to drive based on the scene, including:
+    * stopping at red lights, and going at green lights
+    * slowing down for curves
+    * adjusting speed based on surrounding traffic
+  * This behavior was previously available with openpilot's "Experimental mode", but is now out of beta and always enabled
+  * With openpilot deciding which speed to drive, the car's cruise speed is treated as a maximum speed openpilot will not exceed
 
+Version 0.11.2 (2026-10-14)
+=======================
+* New driving model
+  * Big model with 880M parameters
+* Support for big models running on an external GPU
+* Live stream cameras from comma connect
+* Generate dashcam clips from comma connect
+* Remote comma body control from comma connect
+* New alert sounds
+* CUPRA Born 2021-2023 support thanks to DaHansi!
+* Volkswagen ID.4 2021-2025 support thanks to DaHansi!
 
 Version 0.11.1 (2026-05-18)
 ========================

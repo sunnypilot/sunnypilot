@@ -1,6 +1,5 @@
 import os
 import subprocess
-import pytest
 import time
 import numpy as np
 from collections import namedtuple, defaultdict
@@ -12,6 +11,7 @@ from openpilot.common.gpio import get_irqs_for_action
 from openpilot.common.timeout import Timeout
 from openpilot.common.hardware import HARDWARE
 from openpilot.system.manager.process_config import managed_processes
+from openpilot.common.test import OpenpilotTestCase
 
 BMX = {
   ('bmx055', 'acceleration'),
@@ -103,8 +103,9 @@ def read_sensor_events(duration_sec):
 
   return {k: v for k, v in events.items() if len(v) > 0}
 
-@pytest.mark.tici
-class TestSensord:
+class TestSensord(OpenpilotTestCase):
+  COMMA_HARDWARE_TEST = True
+
   @classmethod
   def setup_class(cls):
     # enable LSM self test

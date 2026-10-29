@@ -324,6 +324,32 @@
               },
               "items": [
                 {
+                  "key": "LateralJerkTorqueController",
+                  "widget": "toggle",
+                  "title": "Lateral Jerk Torque Controller",
+                  "description": "Looks ahead at planned steering to reduce sudden corrections, so the wheel moves more smoothly through turns. Works with Self-Tune and custom tuning. Thanks to @twilsonco for the implementation.",
+                  "visibility": [
+                    {
+                      "type": "not",
+                      "condition": {
+                        "type": "capability",
+                        "field": "steer_control_type",
+                        "equals": "angle"
+                      }
+                    }
+                  ],
+                  "enablement": [
+                    {
+                      "type": "offroad_only"
+                    },
+                    {
+                      "type": "param",
+                      "key": "NeuralNetworkLateralControl",
+                      "equals": false
+                    }
+                  ]
+                },
+                {
                   "key": "LiveTorqueParamsToggle",
                   "widget": "toggle",
                   "title": "Self-Tune",
@@ -520,6 +546,12 @@
               ]
             },
             {
+              "key": "RoadEdgeLaneChangeEnabled",
+              "widget": "toggle",
+              "title": "Block Lane Change: Road Edge Detection",
+              "description": "Blocks lane change when the model sees a road edge on the side you signal."
+            },
+            {
               "key": "AutoLaneChangeBsmDelay",
               "widget": "toggle",
               "title": "Auto Lane Change: Delay with Blind Spot",
@@ -527,7 +559,7 @@
               "enablement": [
                 {
                   "type": "capability",
-                  "field": "enable_bsm",
+                  "field": "has_bsm",
                   "equals": true
                 },
                 {
@@ -555,38 +587,6 @@
           "title": "",
           "description": "",
           "items": [
-            {
-              "key": "ExperimentalMode",
-              "widget": "toggle",
-              "title": "Experimental Mode",
-              "enablement": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ]
-            },
-            {
-              "key": "DynamicExperimentalControl",
-              "widget": "toggle",
-              "title": "Dynamic Experimental Control",
-              "description": "Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.",
-              "visibility": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ],
-              "enablement": [
-                {
-                  "type": "capability",
-                  "field": "has_longitudinal_control",
-                  "equals": true
-                }
-              ]
-            },
             {
               "key": "DisengageOnAccelerator",
               "widget": "toggle",
@@ -1260,6 +1260,67 @@
                   "label": "2 m"
                 }
               ]
+            },
+            {
+              "key": "ScreenSaverEnabled",
+              "widget": "toggle",
+              "title": "Screen Saver",
+              "description": "Show a screen saver when the device is offroad and idle, instead of turning the screen off."
+            },
+            {
+              "key": "ScreenSaverTimeout",
+              "widget": "multiple_button",
+              "title": "Screen Saver Duration",
+              "description": "How long the screen saver runs before the screen turns off.",
+              "options": [
+                {
+                  "value": 60,
+                  "label": "1 m"
+                },
+                {
+                  "value": 120,
+                  "label": "2 m"
+                },
+                {
+                  "value": 180,
+                  "label": "3 m"
+                },
+                {
+                  "value": 240,
+                  "label": "4 m"
+                },
+                {
+                  "value": 300,
+                  "label": "5 m"
+                },
+                {
+                  "value": 360,
+                  "label": "6 m"
+                },
+                {
+                  "value": 420,
+                  "label": "7 m"
+                },
+                {
+                  "value": 480,
+                  "label": "8 m"
+                },
+                {
+                  "value": 540,
+                  "label": "9 m"
+                },
+                {
+                  "value": 600,
+                  "label": "10 m"
+                }
+              ],
+              "enablement": [
+                {
+                  "type": "param",
+                  "key": "ScreenSaverEnabled",
+                  "equals": true
+                }
+              ]
             }
           ]
         }
@@ -1760,6 +1821,27 @@
               ]
             },
             {
+              "key": "NavigationEnabled",
+              "widget": "toggle",
+              "title": "Navigation (Alpha)",
+              "description": "Turn-by-turn navigation with a route map. Set a destination from comma connect.",
+              "visibility": [
+                {
+                  "type": "capability",
+                  "field": "device_type",
+                  "equals": "mici"
+                },
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "is_sp_release",
+                    "equals": true
+                  }
+                }
+              ]
+            },
+            {
               "key": "ShowDebugInfo",
               "widget": "toggle",
               "title": "UI Debug Mode"
@@ -1939,8 +2021,21 @@
         {
           "id": "model_behavior",
           "title": "Model Behavior",
-          "description": "Lane desire and lead-vehicle awareness tuning",
+          "description": "Lane desire, Blendful lane centering, and lead-vehicle awareness tuning",
           "items": [
+            {
+              "key": "Blendful",
+              "widget": "toggle",
+              "title": "Blendful (Alpha)",
+              "description": "Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear. Yields around obstacles. Not available with the Default model.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "custom_model_active",
+                  "equals": true
+                }
+              ]
+            },
             {
               "key": "LaneTurnDesire",
               "widget": "toggle",
@@ -2036,6 +2131,11 @@
                 {
                   "type": "param",
                   "key": "EnforceTorqueControl",
+                  "equals": false
+                },
+                {
+                  "type": "param",
+                  "key": "LateralJerkTorqueController",
                   "equals": false
                 }
               ]
@@ -2161,6 +2261,42 @@
               "type": "offroad_only"
             }
           ]
+        },
+        {
+          "key": "TeslaMadsScreenButton",
+          "widget": "multiple_button",
+          "title": "MADS Screen Activation",
+          "description": "Use a multi-finger press on the infotainment screen to toggle MADS. This allows the use of full MADS functionality when enabled. Selecting a higher finger count may reduce accidental activations. Note: Setting this to Off will reset your MADS settings to default.",
+          "options": [
+            {
+              "value": 0,
+              "label": "Off"
+            },
+            {
+              "value": 1,
+              "label": "3-Finger"
+            },
+            {
+              "value": 2,
+              "label": "4-Finger"
+            },
+            {
+              "value": 3,
+              "label": "5-Finger"
+            }
+          ],
+          "visibility": [
+            {
+              "type": "capability",
+              "field": "tesla_has_vehicle_bus",
+              "equals": true
+            }
+          ],
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
         }
       ]
     },
@@ -2199,6 +2335,33 @@
               "type": "param",
               "key": "ToyotaEnforceStockLongitudinal",
               "equals": false
+            }
+          ]
+        },
+        {
+          "key": "ToyotaTSS2Smooth",
+          "widget": "toggle",
+          "needs_onroad_cycle": true,
+          "title": "TSS2 Smooth Longitudinal (Alpha)",
+          "description": "Enable smoother longitudinal control for TSS2 vehicles. Uses a custom speed-dependent integral gain curve for smoother traffic driving.",
+          "enablement": [
+            {
+              "type": "not_engaged"
+            },
+            {
+              "type": "capability",
+              "field": "has_longitudinal_control",
+              "equals": true
+            },
+            {
+              "type": "param",
+              "key": "ToyotaEnforceStockLongitudinal",
+              "equals": false
+            },
+            {
+              "type": "capability",
+              "field": "toyota_tss2",
+              "equals": true
             }
           ]
         }

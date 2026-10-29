@@ -1,10 +1,10 @@
 import math
 import numpy as np
-import qrcode
 import pyray as rl
 from collections.abc import Callable
 from openpilot.common.filter_simple import FirstOrderFilter
-from openpilot.system.ui.lib.application import FontWeight, gui_app
+from openpilot.common.qrcode import make_texture
+from openpilot.system.ui.lib.application import FontWeight, gui_app, TextAlignment
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import SmallCircleIconButton
 from openpilot.system.ui.widgets.scroller import NavScroller, Scroller
@@ -17,11 +17,11 @@ from openpilot.common.version import sunnylink_consent_version, sunnylink_consen
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationCircleButton
 from openpilot.selfdrive.ui.mici.onroad.driver_state import DriverStateRenderer
-from openpilot.selfdrive.ui.mici.onroad.driver_camera_dialog import BaseDriverCameraDialog
+from openpilot.selfdrive.ui.mici.onroad.cabin_camera_dialog import BaseCabinCameraDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 
 
-class DriverCameraSetupDialog(BaseDriverCameraDialog):
+class DriverCameraSetupDialog(BaseCabinCameraDialog):
   def __init__(self):
     super().__init__()
     self.driver_state_renderer = DriverStateRenderer(inset=True)
@@ -35,7 +35,7 @@ class DriverCameraSetupDialog(BaseDriverCameraDialog):
 
     if not self._camera_view.frame:
       gui_label(rect, tr("camera starting"), font_size=64, font_weight=FontWeight.BOLD,
-                alignment=rl.GuiTextAlignment.TEXT_ALIGN_CENTER)
+                alignment=TextAlignment.CENTER)
       rl.end_scissor_mode()
       return
 
@@ -282,25 +282,7 @@ class QRCodeWidget(Widget):
     super().__init__()
     self.set_rect(rl.Rectangle(0, 0, size, size))
     self._size = size
-    self._qr_texture: rl.Texture | None = None
-    self._generate_qr(url)
-
-  def _generate_qr(self, url: str):
-    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_L, box_size=10, border=0)
-    qr.add_data(url)
-    qr.make(fit=True)
-
-    pil_img = qr.make_image(fill_color="white", back_color="black").convert('RGBA')
-    img_array = np.array(pil_img, dtype=np.uint8)
-
-    rl_image = rl.Image()
-    rl_image.data = rl.ffi.cast("void *", img_array.ctypes.data)
-    rl_image.width = pil_img.width
-    rl_image.height = pil_img.height
-    rl_image.mipmaps = 1
-    rl_image.format = rl.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8
-
-    self._qr_texture = rl.load_texture_from_image(rl_image)
+    self._qr_texture = make_texture(url, inverted=True)
 
   def _render(self, _):
     if self._qr_texture:

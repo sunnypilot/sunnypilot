@@ -21,8 +21,15 @@ from typing import Any
 from openpilot.system.webrtc.helpers import StreamRequestBody
 from openpilot.system.webrtc.schema import generate_field
 from openpilot.common.params import Params
+from openpilot.common.swaglog import cloudlog
 from openpilot.cereal import messaging, log
 
+SESSION_TIMEOUT_SECONDS = 300
+
+
+# ice candidate parser for logging
+def _ice_candidates(sdp: str) -> list[str]:
+  return [line.removeprefix("a=") for line in sdp.splitlines() if line.startswith("a=candidate:")]
 
 # socket trick: route lookup for 8.8.8.8 (nothing is sent or actually connected to)
 # return the source interfaces IP which is the default interface of the device
@@ -220,7 +227,7 @@ class LivestreamBitrateController(AsyncTaskRunner):
 class StreamSession:
   shared_pub_master = DynamicPubMaster([])
 
-  def __init__(self, body: StreamRequestBody, debug_mode: bool = False):
+  def __init__(self, body: StreamRequestBody):
     from openpilot.system.webrtc.device.video import LiveStreamVideoStreamTrack
     from teleoprtc.builder import WebRTCAnswerBuilder
 
@@ -229,9 +236,14 @@ class StreamSession:
     builder = WebRTCAnswerBuilder(body.sdp, bind_address=_default_route_ip())
 
     self.enabled = body.enabled
-    self.video_track = LiveStreamVideoStreamTrack(body.init_camera, self.enabled)
-    builder.add_video_stream(body.init_camera, self.video_track)
+    self.video_tracks = []
+    for camera in body.cameras:
+      track = LiveStreamVideoStreamTrack(camera, self.enabled)
+      self.video_tracks.append(track)
+      builder.add_video_stream(camera, track)
     self.stream = builder.stream()
+
+    self.is_body = "testJoystick" in body.bridge_services_in
 
     self.incoming_bridge: CerealIncomingMessageProxy | None = None
     self.incoming_bridge_services = body.bridge_services_in
@@ -247,9 +259,9 @@ class StreamSession:
     self._cleanup_lock = asyncio.Lock()
     self._cleanup_done = False
     self.logger = logging.getLogger("webrtcd")
-    self.logger.info(
-      "New stream session (%s), init camera %s, video enabled %s, incoming services %s, outgoing services %s",
-      self.identifier, body.init_camera, body.enabled, body.bridge_services_in, body.bridge_services_out,
+    cloudlog.warning(
+      "New stream session (%s), video cameras %s, video enabled %s, incoming services %s, outgoing services %s",
+      self.identifier, [t.id for t in self.video_tracks], body.enabled, body.bridge_services_in, body.bridge_services_out,
     )
 
   def start(self):
@@ -274,14 +286,17 @@ class StreamSession:
 
         match msg_type:
           case "livestreamCameraSwitch":
-            self.video_track.switch_camera(payload["data"]["camera"])
+            # only needed for 1 track stream
+            if len(self.video_tracks) == 1:
+              self.video_tracks[0].switch_camera(payload["data"]["camera"])
           case "livestreamSettings":
             if self.bitrate_controller is not None:
               self.bitrate_controller.set_quality(payload["data"]["quality"])
           case "livestreamVideoEnable":
             enabled = payload["data"]["enabled"]
             self.enabled = enabled
-            self.video_track.enable(enabled)
+            for track in self.video_tracks:
+              track.enable(enabled)
             if self.outgoing_bridge is not None:
               self.outgoing_bridge.enable(enabled)
             if self.bitrate_controller is not None:
@@ -294,22 +309,38 @@ class StreamSession:
             }})
             self.stream.get_messaging_channel().send(pong)
           case "enableTimingSei":
-            if hasattr(self.video_track, 'timing_sei_enabled'):
-              self.video_track.timing_sei_enabled = bool(payload["data"]["enabled"])
+            for track in self.video_tracks:
+              track.timing_sei_enabled = bool(payload["data"]["enabled"])
           case _:
-            if payload.get("type") not in self.incoming_bridge_services:
+            if msg_type not in self.incoming_bridge_services:
               return
             if self.incoming_bridge is not None:
               self.incoming_bridge.send(message)
     except Exception:
       self.logger.exception("Cereal incoming proxy failure")
 
+  async def run_normal_session(self):
+    try:
+      await asyncio.wait_for(self.stream.wait_for_disconnection(), timeout=SESSION_TIMEOUT_SECONDS)
+    except TimeoutError:
+      self.logger.warning("Stream session (%s) timed out after %d s", self.identifier, SESSION_TIMEOUT_SECONDS)
+      try:
+        self.stream.get_messaging_channel().send(json.dumps({"type": "disconnect", "data": "Session timed out"}))
+      except Exception:
+        pass
+
+  async def run_body_session(self):
+    await self.stream.wait_for_disconnection()
+
   async def run(self):
     try:
       self.params.put("LivestreamRequestKeyframe", True)
+
+      # avoid datachannel race by adding messange_handler immediately
+      self.stream.set_message_handler(self.message_handler)
+
       await asyncio.wait_for(self.stream.wait_for_connection(), timeout=15)
       if self.stream.has_messaging_channel():
-        self.stream.set_message_handler(self.message_handler)
         if self.incoming_bridge is not None:
           await self.shared_pub_master.add_services_if_needed(self.incoming_bridge_services)
         if self.outgoing_bridge is not None:
@@ -319,11 +350,18 @@ class StreamSession:
       if self.bitrate_controller is not None:
         self.bitrate_controller.start()
 
-      self.logger.info("Stream session (%s) connected", self.identifier)
-      await self.stream.wait_for_disconnection()
-      self.logger.info("Stream session (%s) ended", self.identifier)
+      with cloudlog.ctx(session_id=self.identifier):
+        cloudlog.warning("webrtcd.session.connected")
+      if self.is_body:
+        await self.run_body_session()
+      else:
+        await self.run_normal_session()
+      with cloudlog.ctx(session_id=self.identifier):
+        cloudlog.warning("webrtcd.session.ended")
     except Exception:
       self.logger.exception("Stream session failure")
+      with cloudlog.ctx(session_id=self.identifier):
+        cloudlog.exception("webrtcd.session.exception")
     finally:
       await self.post_run_cleanup()
 
@@ -337,17 +375,16 @@ class StreamSession:
         await self.bitrate_controller.stop()
       if self.outgoing_bridge is not None:
         await self.outgoing_bridge.stop()
-      if self.video_track is not None:
-        self.video_track.stop()
-        self.video_track = None
+      for track in self.video_tracks:
+        track.stop()
+      self.video_tracks.clear()
       await self.stream.stop()
 
 
 class ServerState:
-  def __init__(self, debug: bool):
+  def __init__(self):
     self.streams: dict[str, StreamSession] = {}
     self.stream_lock = asyncio.Lock()
-    self.debug = debug
     self.teardown: asyncio.TimerHandle | None = None
 
 
@@ -371,8 +408,11 @@ def _text_response(text: str, status: int = 200) -> tuple[int, bytes, str]:
   return (status, text.encode(), "text/plain; charset=utf-8")
 
 
-async def handle_get_stream(state: ServerState, raw_body: bytes) -> tuple[int, bytes, str]:
-  stream_dict, debug_mode = state.streams, state.debug
+async def handle_get_stream(state: ServerState, raw_body: bytes, content_type: str) -> tuple[int, bytes, str]:
+  if content_type != "application/json":
+    return _json_response({"error": "unsupported media type"}, status=415)
+
+  stream_dict = state.streams
   body = StreamRequestBody(**json.loads(raw_body))
 
   async with state.stream_lock:
@@ -391,19 +431,29 @@ async def handle_get_stream(state: ServerState, raw_body: bytes) -> tuple[int, b
       await s.stop()
       stream_dict.pop(sid, None)
 
-    session = StreamSession(body, debug_mode)
+    session = StreamSession(body)
     stream_dict[session.identifier] = session
     try:
       answer = await asyncio.wait_for(session.get_answer(), timeout=30)
+      cloudlog.event(
+        "webrtcd.session.ice_candidates",
+        session_id=session.identifier,
+        offer_candidates=_ice_candidates(body.sdp),
+        answer_candidates=_ice_candidates(answer.sdp),
+      )
     except TimeoutError:
       await session.stop()
       stream_dict.pop(session.identifier, None)
       logging.getLogger("webrtcd").exception("Timed out creating stream answer")
+      with cloudlog.ctx(session_id=session.identifier):
+        cloudlog.warning("webrtcd.session.answer_timeout")
       raise
     except Exception:
       await session.stop()
       stream_dict.pop(session.identifier, None)
       logging.getLogger("webrtcd").exception("Failed to create stream answer")
+      with cloudlog.ctx(session_id=session.identifier):
+        cloudlog.exception("webrtcd.session.answer_exception")
       raise
     session.start()
 
@@ -484,7 +534,7 @@ class WebrtcdHandler(BaseHTTPRequestHandler):
         services = parse_qs(parsed.query).get("services", [""])[0]
         result = self._run(handle_get_schema(self.server.state, services))
       elif parsed.path == "/stream":
-        result = self._run(handle_get_stream(self.server.state, self._read_body()))
+        result = self._run(handle_get_stream(self.server.state, self._read_body(), self.headers.get_content_type()))
       else:  # /notify
         try:
           payload = json.loads(self._read_body())
@@ -539,23 +589,23 @@ async def _shutdown(server: WebrtcdHTTPServer, state: ServerState, loop: asyncio
   loop.stop()
 
 
-def prewarm_stream_session_imports(debug_mode: bool = False) -> None:
+def prewarm_stream_session_imports() -> None:
   from openpilot.system.webrtc.device.video import LiveStreamVideoStreamTrack
   from teleoprtc.builder import WebRTCAnswerBuilder
   assert LiveStreamVideoStreamTrack
   assert WebRTCAnswerBuilder
 
 
-def webrtcd_thread(host: str, port: int, debug: bool):
-  logging.basicConfig(level=logging.CRITICAL, handlers=[logging.StreamHandler()])
+def webrtcd_thread(host: str, port: int):
+  logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler()])
   prewarm_start = time.monotonic()
-  prewarm_stream_session_imports(debug)
+  prewarm_stream_session_imports()
   prewarm_end = time.monotonic()
   logging.getLogger("webrtcd").info(f"webrtc prewarm finished in {(prewarm_end - prewarm_start) * 1000} ms")
 
   loop = asyncio.new_event_loop()
   asyncio.set_event_loop(loop)
-  state = ServerState(debug)
+  state = ServerState()
 
   server = WebrtcdHTTPServer((host, port), WebrtcdHandler)
   server.state = state
@@ -587,12 +637,11 @@ def webrtcd_thread(host: str, port: int, debug: bool):
 
 def main():
   parser = argparse.ArgumentParser(description="WebRTC daemon")
-  parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to listen on")
+  parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to listen on")
   parser.add_argument("--port", type=int, default=5001, help="Port to listen on")
-  parser.add_argument("--debug", action="store_true", help="Enable debug mode")
   args = parser.parse_args()
 
-  webrtcd_thread(args.host, args.port, args.debug)
+  webrtcd_thread(args.host, args.port)
 
 
 if __name__=="__main__":

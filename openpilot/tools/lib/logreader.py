@@ -22,6 +22,8 @@ from openpilot.tools.lib.file_sources import comma_api_source, internal_source, 
 from openpilot.tools.lib.route import SegmentRange, FileName
 from openpilot.tools.lib.log_time_series import msgs_to_time_series
 
+from openpilot.sunnypilot.tools.lib.sunnypilot_car_segments import sunnypilot_car_segments_source
+
 LogMessage = type[capnp._DynamicStructReader]
 LogIterable = Iterable[LogMessage]
 RawLogIterable = Iterable[bytes]
@@ -246,7 +248,7 @@ class LogReader:
   def __init__(self, identifier: str | list[str], default_mode: ReadMode = ReadMode.RLOG,
                sources: list[Source] | None = None, sort_by_time=False, only_union_types=False):
     if sources is None:
-      sources = [internal_source, comma_api_source, openpilotci_source, comma_car_segments_source]
+      sources = [internal_source, comma_api_source, openpilotci_source, comma_car_segments_source, sunnypilot_car_segments_source]
 
     self.default_mode = default_mode
     self.sources = sources

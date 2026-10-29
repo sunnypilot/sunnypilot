@@ -14,7 +14,8 @@ from opendbc.sunnypilot.car.lateral_ext import get_friction as get_friction_in_t
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.params import Params
 from openpilot.selfdrive.modeld.constants import ModelConstants
-from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import LatControlTorqueExtBase, sign
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_ext_base import sign
+from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_jerk_aware import LatControlTorqueJerkAware
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import MOCK_MODEL_PATH
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.model import NNTorqueModel
 
@@ -31,17 +32,18 @@ def roll_pitch_adjust(roll, pitch):
   return roll * math.cos(pitch)
 
 
-class NeuralNetworkLateralControl(LatControlTorqueExtBase):
+class NeuralNetworkLateralControl(LatControlTorqueJerkAware):
   def __init__(self, lac_torque, CP, CP_SP, CI):
     super().__init__(lac_torque, CP, CP_SP, CI)
     self.params = Params()
     self.enabled = self.params.get_bool("NeuralNetworkLateralControl")
-    self.has_nn_model = CP_SP.neuralNetworkLateralControl.model.path != MOCK_MODEL_PATH
+    model_path = CP_SP.neuralNetworkLateralControl.model.path
+    self.has_nn_model = model_path not in (MOCK_MODEL_PATH, '')
 
     # NN model takes current v_ego, lateral_accel, lat accel/jerk error, roll, and past/future/planned data
     # of lat accel and roll
     # Past value is computed using previous desired lat accel and observed roll
-    self.model = NNTorqueModel(CP_SP.neuralNetworkLateralControl.model.path)
+    self.model = NNTorqueModel(model_path) if self.has_nn_model else None
 
     self.pitch = FirstOrderFilter(0.0, 0.5, 0.01)
     self.pitch_last = 0.0
@@ -64,6 +66,7 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
     return self.enabled and self.model_valid and self.has_nn_model
 
   def update_limits(self):
+    super().update_limits()
     if not self._nnlc_enabled:
       return
 
@@ -83,13 +86,6 @@ class NeuralNetworkLateralControl(LatControlTorqueExtBase):
                                                                                CS.vEgo, CS.aEgo), self.torque_params, gravity_adjusted=True)
     self._ff += get_friction_in_torque_space(self._desired_lateral_accel - self._actual_lateral_accel, self._lateral_accel_deadzone,
                                              FRICTION_THRESHOLD, self.torque_params)
-
-  def update_output_torque(self, CS):
-    freeze_integrator = self._steer_limited_by_safety or CS.steeringPressed or CS.vEgo < 5
-    self._output_torque = self._pid.update(self._pid_log.error,
-                                           feedforward=self._ff,
-                                           speed=CS.vEgo,
-                                           freeze_integrator=freeze_integrator)
 
   def update_neural_network_feedforward(self, CS, params, calibrated_pose) -> None:
     if not self._nnlc_enabled:

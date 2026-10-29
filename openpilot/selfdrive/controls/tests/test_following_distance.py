@@ -1,5 +1,5 @@
-import pytest
 import itertools
+from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.parameterized import parameterized_class
 
 from openpilot.cereal import log
@@ -13,7 +13,7 @@ def desired_follow_distance(v_ego, v_lead, t_follow=None):
     t_follow = get_T_FOLLOW()
   return get_safe_obstacle_distance(v_ego, t_follow) - get_stopped_equivalence_factor(v_lead)
 
-def run_following_distance_simulation(v_lead, t_end=100.0, e2e=False, personality=0):
+def run_following_distance_simulation(v_lead, t_end=100.0, personality=0):
   man = Maneuver(
     '',
     duration=t_end,
@@ -22,7 +22,6 @@ def run_following_distance_simulation(v_lead, t_end=100.0, e2e=False, personalit
     initial_distance_lead=100,
     speed_lead_values=[v_lead],
     breakpoints=[0.],
-    e2e=e2e,
     personality=personality,
   )
   valid, output = man.evaluate()
@@ -30,17 +29,16 @@ def run_following_distance_simulation(v_lead, t_end=100.0, e2e=False, personalit
   return output[-1,2] - output[-1,1]
 
 
-@parameterized_class(("e2e", "personality", "speed"), itertools.product(
-                      [True, False], # e2e
+@parameterized_class(("personality", "speed"), itertools.product(
                       [log.LongitudinalPersonality.relaxed, # personality
                        log.LongitudinalPersonality.standard,
                        log.LongitudinalPersonality.aggressive],
                       [0,10,35])) # speed
-class TestFollowingDistance:
+class TestFollowingDistance(OpenpilotTestCase):
   def test_following_distance(self):
     v_lead = float(self.speed)
-    simulation_steady_state = run_following_distance_simulation(v_lead, e2e=self.e2e, personality=self.personality)
+    simulation_steady_state = run_following_distance_simulation(v_lead, personality=self.personality)
     correct_steady_state = desired_follow_distance(v_lead, v_lead, get_T_FOLLOW(self.personality))
-    err_ratio = 0.2 if self.e2e else 0.1
     abs_err_margin = 0.5 if v_lead > 0.0 else 1.15
-    assert simulation_steady_state == pytest.approx(correct_steady_state, abs=err_ratio * correct_steady_state + abs_err_margin)
+    self.assertAlmostEqual(simulation_steady_state, correct_steady_state,
+                           delta=0.2 * correct_steady_state + abs_err_margin)

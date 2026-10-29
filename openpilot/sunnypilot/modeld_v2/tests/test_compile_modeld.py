@@ -5,13 +5,16 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import unittest
+
 import numpy as np
-import pytest
+from openpilot.common.parameterized import parameterized
 
 from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key
+from openpilot.common.test import OpenpilotTestCase
 
 
-class TestDeriveFrameSkip:
+class TestDeriveFrameSkip(OpenpilotTestCase):
   def test_non20hz_supercombo(self):
     vision = {}
     policy = {'features_buffer': (1, 99, 512), 'desire': (1, 100, 8)}
@@ -31,21 +34,21 @@ class TestDeriveFrameSkip:
     assert derive_frame_skip({}, {}) == 1
 
 
-class TestFrameSkipBufferLengthEquivalence:
-  @pytest.mark.parametrize("frame_skip,expected_buffer_length", [
+class TestFrameSkipBufferLengthEquivalence(OpenpilotTestCase):
+  @parameterized.expand([
     (1, 2),
     (4, 5),
-  ])
+  ], names=["frame_skip", "expected_buffer_length"])
   def test_img_buffer_size_matches_warp_buffer_length(self, frame_skip, expected_buffer_length):
     n_frames = 2
     img_buf_dim0 = frame_skip * (n_frames - 1) + 1
     assert img_buf_dim0 == expected_buffer_length, \
       f"frame_skip={frame_skip}: img_buf[0]={img_buf_dim0}, expected {expected_buffer_length}"
 
-  @pytest.mark.parametrize("is_20hz,expected_frame_skip,expected_buffer_length", [
+  @parameterized.expand([
     (False, 1, 2),
     (True, 4, 5),
-  ])
+  ], names=["is_20hz", "expected_frame_skip", "expected_buffer_length"])
   def test_is_20hz_to_frame_skip_to_buffer_length(self, is_20hz, expected_frame_skip, expected_buffer_length):
     if is_20hz:
       policy_shapes = {'features_buffer': (1, 24, 512)}
@@ -59,7 +62,7 @@ class TestFrameSkipBufferLengthEquivalence:
     assert img_buf_dim0 == expected_buffer_length
 
 
-class TestTemporalSamplingEquivalence:
+class TestTemporalSamplingEquivalence(OpenpilotTestCase):
   def test_non20hz_desire_sampling_identity(self):
     buf = np.random.default_rng(0).standard_normal((100, 1, 8)).astype(np.float32)
     frame_skip = 1
@@ -94,12 +97,12 @@ class TestTemporalSamplingEquivalence:
     np.testing.assert_array_equal(sampled, buf[:, 0, :])
 
 
-class TestTemporalIdxEquivalence:
-  @pytest.mark.parametrize("mode,desire_shape,fb_shape,frame_skip", [
+class TestTemporalIdxEquivalence(OpenpilotTestCase):
+  @parameterized.expand([
     ('non20hz', (1, 100, 8), (1, 99, 512), 1),
     ('20hz', (1, 25, 8), (1, 24, 512), 4),
     ('split', (1, 25, 8), (1, 25, 512), 4),
-  ])
+  ], names=["mode", "desire_shape", "fb_shape", "frame_skip"])
   def test_features_buffer_idx_equivalence(self, mode, desire_shape, fb_shape, frame_skip):
     history = fb_shape[1]
 
@@ -118,11 +121,11 @@ class TestTemporalIdxEquivalence:
     assert len(modelstate_idxs) == fb_shape[1], \
       f"{mode}: ModelState idx count {len(modelstate_idxs)} != input shape {fb_shape[1]}"
 
-  @pytest.mark.parametrize("mode,desire_shape,fb_shape,frame_skip", [
+  @parameterized.expand([
     ('non20hz', (1, 100, 8), (1, 99, 512), 1),
     ('20hz', (1, 25, 8), (1, 24, 512), 4),
     ('split', (1, 25, 8), (1, 25, 512), 4),
-  ])
+  ], names=["mode", "desire_shape", "fb_shape", "frame_skip"])
   def test_desire_idx_equivalence(self, mode, desire_shape, fb_shape, frame_skip):
     history = desire_shape[1]
 
@@ -132,7 +135,7 @@ class TestTemporalIdxEquivalence:
       f"{mode}: compile desire samples {compile_sampled_count} != model input {history}"
 
 
-class TestDetectDesireKey:
+class TestDetectDesireKey(OpenpilotTestCase):
   def test_finds_desire(self):
     shapes = {'features_buffer': (1, 99, 512), 'desire': (1, 100, 8), 'traffic_convention': (1, 2)}
     assert _detect_desire_key(shapes) == 'desire'
@@ -146,7 +149,7 @@ class TestDetectDesireKey:
     assert _detect_desire_key(shapes) is None
 
 
-class TestOutputSlicePreservation:
+class TestOutputSlicePreservation(OpenpilotTestCase):
   def test_vision_hidden_state_slice_used_for_features(self):
     mock_slices = {'hidden_state': slice(0, 512), 'plan': slice(512, 1024)}
     features_slice = mock_slices['hidden_state']
@@ -159,3 +162,89 @@ class TestOutputSlicePreservation:
     policy_slices = {'plan': slice(0, 495), 'meta': slice(495, 550)}
     assert set(vision_slices.keys()) & set(policy_slices.keys()) == set(), \
       "vision and policy slices should not overlap in keys"
+
+
+class Test4DFeaturesBuffer(OpenpilotTestCase):
+  def test_get_policy_npy_shapes_4d(self):
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes
+    input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 32, 512),  # compare 4d to 3d for regression
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2)
+    }
+    shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=True)
+    assert shapes['prev_feat'] == (1, 16384)
+    assert sizes == [8, 2, 2, 16384]
+
+  def test_get_policy_npy_shapes_3d(self):
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes
+    input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 512),
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2)
+    }
+    shapes, sizes = get_policy_npy_shapes(input_shapes, is_supercombo=True)
+    assert shapes['prev_feat'] == (1, 512)
+    assert sizes == [8, 2, 2, 512]
+
+
+class TestStockCompileModeldEquivalence(OpenpilotTestCase):
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
+  def test_get_policy_npy_shapes_matches_stock(self):
+    from openpilot.selfdrive.modeld.compile_modeld import get_policy_npy_shapes as stock_get_policy_npy_shapes
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes as sunny_get_policy_npy_shapes
+
+    stock_input_shapes = {
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 512), # see below comment
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2),
+    }
+
+    stock_shapes, stock_sizes = stock_get_policy_npy_shapes(stock_input_shapes)
+    sunny_shapes, sunny_sizes = sunny_get_policy_npy_shapes(stock_input_shapes, is_supercombo=True)
+
+    assert sunny_shapes == stock_shapes
+    assert sunny_sizes == stock_sizes
+    assert sunny_shapes['prev_feat'] == (1, 512)
+
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
+  def test_make_input_queues_full_stock_equivalence(self):
+    from openpilot.selfdrive.modeld.compile_modeld import make_input_queues as stock_make_input_queues
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues as sunny_make_supercombo_input_queues
+    input_shapes = {
+      'img': (1, 12, 128, 256),
+      'desire_pulse': (1, 25, 8),
+      'features_buffer': (1, 24, 32, 512),
+      'traffic_convention': (1, 2),
+      'action_t': (1, 2),
+    }
+    frame_skip = 4
+
+    stock_queues, stock_npy, _frame_views = stock_make_input_queues(input_shapes, frame_skip, device='NPY', frame_copy_size=49152)
+    sunny_queues, sunny_npy = sunny_make_supercombo_input_queues(input_shapes, frame_skip, device='NPY')
+    # sunnypilot split pipeline has tfm/big_tfm as queues; packed_npy_inputs size differs (different frame packing)
+    assert set(stock_queues.keys()) <= set(sunny_queues.keys())
+    for key in stock_queues:
+      if key == 'packed_npy_inputs':
+        continue
+      assert sunny_queues[key].shape == stock_queues[key].shape, \
+        f"Queue shape mismatch for {key}: sunny {sunny_queues[key].shape} != stock {stock_queues[key].shape}"
+    assert set(stock_npy.keys()) <= set(sunny_npy.keys())
+    for key in stock_npy:
+      assert sunny_npy[key].shape == stock_npy[key].shape, \
+        f"Numpy array shape mismatch for {key}: sunny {sunny_npy[key].shape} != stock {stock_npy[key].shape}"
+
+  @unittest.skip("upstream removed make_warp_input_queues — warp merged into run_model")
+  def test_make_warp_queues_stock_equivalence(self):
+    from openpilot.selfdrive.modeld.compile_modeld import make_warp_input_queues as stock_make_warp_queues
+    from openpilot.sunnypilot.modeld_v2.compile_modeld import make_warp_queues as sunny_make_warp_queues
+    stock_vision_shapes = {'img': (1, 12, 128, 256)}  # for now?
+    stock_queues, stock_npy = stock_make_warp_queues(stock_vision_shapes, frame_skip=4, device='NPY')
+    sunny_queues, sunny_npy = sunny_make_warp_queues(device='NPY')
+
+    assert set(sunny_npy.keys()) == set(stock_npy.keys()) == {'tfm', 'big_tfm'}
+    for key in sunny_npy:
+      assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)

@@ -14,7 +14,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.common.filter_simple import FirstOrderFilter
 
 # TODO: arc_bar_pts doesn't consider rounded end caps part of the angle span
-TORQUE_ANGLE_SPAN = 12.7
+TORQUE_ANGLE_SPAN = 12.7  # degrees on the default 476 px camera view; narrower views beside the navigation panel scale down
 
 DEBUG = False
 
@@ -168,7 +168,7 @@ class TorqueBar(Widget):
     if ui_state.sm['controlsState'].lateralControlState.which() in ('angleState', 'curvatureState'):
       controls_state = ui_state.sm['controlsState']
       car_state = ui_state.sm['carState']
-      live_parameters = ui_state.sm['liveParameters']
+      vehicle_parameters = ui_state.sm['vehicleParameters']
       car_control = ui_state.sm['carControl']
 
       # Include lateral accel error in estimated torque utilization
@@ -178,7 +178,7 @@ class TorqueBar(Widget):
 
       # Include road roll in estimated torque utilization
       # Roll is less accurate near standstill, so reduce its effect at low speed
-      roll_compensation = live_parameters.roll * ACCELERATION_DUE_TO_GRAVITY * np.interp(car_state.vEgo, [5, 15], [0.0, 1.0])
+      roll_compensation = vehicle_parameters.roll * ACCELERATION_DUE_TO_GRAVITY * np.interp(car_state.vEgo, [5, 15], [0.0, 1.0])
       lateral_acceleration = actual_lateral_accel - roll_compensation
       max_lateral_acceleration = ui_state.CP.maxLateralAccel if ui_state.CP else DEFAULT_MAX_LAT_ACCEL
 
@@ -208,7 +208,7 @@ class TorqueBar(Widget):
     # draw curved line polygon torque bar
     torque_line_radius = 1200 * self._scale
     top_angle = -90
-    torque_bg_angle_span = self._torque_line_alpha_filter.x * TORQUE_ANGLE_SPAN
+    torque_bg_angle_span = self._torque_line_alpha_filter.x * TORQUE_ANGLE_SPAN * min(1.0, rect.width / (476 * self._scale))
     torque_start_angle = top_angle - torque_bg_angle_span / 2
     torque_end_angle = top_angle + torque_bg_angle_span / 2
     # centerline radius & center (you already have these values)
