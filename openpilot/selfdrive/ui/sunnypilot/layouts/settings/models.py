@@ -102,10 +102,9 @@ class ModelsLayout(Widget):
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
-    self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"),
-                                          tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear." +
-                                             " Yields around obstacles. Not available with the Default model."),
-                                          param="Blendful")
+    self._blendful_desc = tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear." +
+                             " Yields around obstacles. Not available with the Default model.")
+    self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"), self._blendful_desc, param="Blendful")
 
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
                                         tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
@@ -336,6 +335,12 @@ class ModelsLayout(Widget):
     else:
       self.blendful_toggle.action_item.set_state(False)
       self.blendful_toggle.action_item.set_enabled(False)
+
+    blendful_desc = self._blendful_desc if blendful_allowed else \
+      f"<b>{tr('Select a non-Default model to use Blendful.')}</b><br><br>{self._blendful_desc}"
+    if self.blendful_toggle.description != blendful_desc:
+      self.blendful_toggle.set_description(blendful_desc)
+      self.blendful_toggle.show_description(not blendful_allowed)
 
     self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
