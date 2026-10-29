@@ -17,6 +17,7 @@ from openpilot.sunnypilot.sunnylink.capabilities import (
   CAPABILITY_DEFAULTS,
   CAPABILITY_FIELDS,
   CAPABILITY_LABELS,
+  CAR_CAPABILITY_FIELDS,
   PROTOCOL_VERSION,
   generate_capabilities,
 )
@@ -75,6 +76,12 @@ class TestOpaquePerBrandFlags(OpenpilotTestCase):
   def test_hyundai_alpha_long_available_default_false(self, caps):
     assert caps["hyundai_alpha_long_available"] is False
 
+  def test_toyota_tss2_field_present(self):
+    assert "toyota_tss2" in CAPABILITY_FIELDS
+
+  def test_toyota_tss2_default_false(self, caps):
+    assert caps["toyota_tss2"] is False
+
 
 class TestCapabilitiesShape(OpenpilotTestCase):
   def test_all_fields_present(self, caps):
@@ -84,6 +91,10 @@ class TestCapabilitiesShape(OpenpilotTestCase):
   def test_all_fields_have_labels(self):
     for field in CAPABILITY_FIELDS:
       assert field in CAPABILITY_LABELS, f"CAPABILITY_LABELS missing {field}"
+
+  def test_car_fields_are_capabilities(self):
+    assert set(CAR_CAPABILITY_FIELDS) <= set(CAPABILITY_FIELDS)
+    assert "custom_model_active" not in CAR_CAPABILITY_FIELDS
 
   def test_string_defaults_are_strings(self, caps):
     assert isinstance(caps["brand"], str)
