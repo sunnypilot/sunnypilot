@@ -9,6 +9,7 @@ from enum import Enum
 from openpilot.cereal import messaging, log, custom
 from opendbc.car.structs import car
 from opendbc.sunnypilot.car.interfaces import has_bsm
+from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.display import OnroadBrightness
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_active_source
@@ -33,6 +34,7 @@ class UIStateSP:
     self.params = Params()
     self.CP_SP: custom.CarParamsSP | None = None
     self.has_icbm: bool = False
+    self.has_custom_button: bool = False
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
@@ -160,6 +162,8 @@ class UIStateSP:
     if CP_SP_bytes is not None:
       self.CP_SP = messaging.log_from_bytes(CP_SP_bytes, custom.CarParamsSP)
       self.has_icbm = self.CP_SP.intelligentCruiseButtonManagementAvailable and self.params.get_bool("IntelligentCruiseButtonManagement")
+      # flagsSP bits are per brand
+      self.has_custom_button = self.CP is not None and self.CP.brand == "hyundai" and bool(self.CP_SP.flags & HyundaiFlagsSP.HAS_CUSTOM_BUTTON)
 
     self._enforce_constraints()
     source = get_active_source(chestnut=self.chestnut_present, chestnut_active=self.chestnut_active,

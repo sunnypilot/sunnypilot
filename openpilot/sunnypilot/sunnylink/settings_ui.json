@@ -2175,10 +2175,10 @@
       "description": "",
       "items": [
         {
-          "key": "CustomButtonAction",
+          "key": "HyundaiCustomButtonAction",
           "widget": "multiple_button",
           "title": "Steering Custom Button",
-          "description": "Choose the openpilot action for the steering wheel custom/star button. OEM functionality is unchanged.",
+          "description": "Choose the sunnypilot action for the steering wheel custom/star button.",
           "options": [
             {
               "value": 0,
@@ -2191,6 +2191,13 @@
             {
               "value": 3,
               "label": "Cycle UI"
+            }
+          ],
+          "visibility": [
+            {
+              "type": "capability",
+              "field": "hyundai_has_custom_button",
+              "equals": true
             }
           ]
         },
