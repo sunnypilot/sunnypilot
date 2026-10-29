@@ -7,22 +7,18 @@ See the LICENSE.md file in the root directory for more details.
 
 import hashlib
 import os
-import pickle
-from pathlib import Path
 import numpy as np
 
 from openpilot.cereal import custom
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.models.constants import Meta, MetaSimPose, MetaTombRaider
 from openpilot.common.hardware.hw import Paths
 from openpilot.selfdrive.modeld.helpers import chestnut_present
 
 # SET ME TO THE EXACT JSON VERSION WE SET IN SUNNYPILOT_MODELS REPO
-REQUIRED_JSON_VERSION = 18
+REQUIRED_JSON_VERSION = 21
 
 CUSTOM_MODEL_PATH = Paths.model_root()
-METADATA_PATH = Path(__file__).parent / '../models/supercombo_metadata.pkl'
 ModelManager = custom.ModelManagerSP
 
 ACTIVE_BUNDLE_KEYS = {
@@ -33,9 +29,8 @@ _LAST_VALIDATED_RAW: dict[str, dict | None] = {}
 
 
 def _compute_hash(file_path: str) -> str | None:
-  from openpilot.common.file_chunker import open_file_chunked
   try:
-    with open_file_chunked(file_path) as file:
+    with open(file_path, 'rb') as file:
       return hashlib.file_digest(file, "sha256").hexdigest().lower()
   except FileNotFoundError:
     return None
@@ -62,20 +57,11 @@ def is_bundle_version_compatible(bundle: dict) -> bool:
 
 def _bundle_artifacts(bundle: custom.ModelManagerSP.ModelBundle) -> list[tuple[str, str]]:
   artifacts = []
-  from openpilot.common.file_chunker import get_chunk_name
   for model in getattr(bundle, 'models', []) or []:
-    for artifact in (getattr(model, 'artifact', None),):
-      if artifact and getattr(artifact, 'fileName', None):
-        if len(artifact.chunks) > 0:
-          for i, chunk in enumerate(artifact.chunks):
-            chunk_name = get_chunk_name(artifact.fileName, i, len(artifact.chunks))
-            if getattr(chunk, 'sha256', None):
-              artifacts.append((chunk_name, chunk.sha256))
-        else:
-          if getattr(artifact, 'downloadUri', None):
-            sha256 = getattr(artifact.downloadUri, 'sha256', None)
-            if sha256:
-              artifacts.append((artifact.fileName, sha256))
+    artifact = getattr(model, 'artifact', None)
+    if artifact and getattr(artifact, 'fileName', None) and getattr(artifact, 'downloadUri', None):
+      if sha256 := getattr(artifact.downloadUri, 'sha256', None):
+        artifacts.append((artifact.fileName, sha256))
   return artifacts
 
 
@@ -199,33 +185,6 @@ def _get_model():
     drive_model = next(model for model in bundle.models if model.type == ModelManager.Model.Type.supercombo)
     return drive_model
   return None
-
-
-def load_metadata():
-  metadata_path = METADATA_PATH
-
-  with open(metadata_path, 'rb') as f:
-    return pickle.load(f)
-
-
-def prepare_inputs(model_metadata: dict) -> dict[str, np.ndarray]:
-  return {
-    key: np.zeros(shape, dtype=np.float32).flatten()
-    for key, shape in model_metadata['input_shapes'].items()
-    if 'img' not in key
-  }
-
-
-def load_meta_constants(model_metadata: dict):
-  """ Loads the appropriate meta model class based on key shapes"""
-  if 'sim_pose' in model_metadata['input_shapes']:
-    return MetaSimPose
-
-  meta_slice = model_metadata['output_slices']['meta']
-  if (meta_slice.start, meta_slice.stop, meta_slice.step) == (5868, 5921, None):
-    return MetaTombRaider
-
-  return Meta
 
 
 # The following method(s) are modeld helper methods

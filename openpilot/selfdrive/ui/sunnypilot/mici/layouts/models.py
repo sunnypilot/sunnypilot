@@ -4,15 +4,18 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
-                                                           default_model_name, model_info, queued_name)
+                                                           default_model_name, model_cache_size_mb, model_info, queued_name,
+                                                           refresh_in_progress, refresh_model_list)
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -81,10 +84,18 @@ class ModelsLayoutMici(NavScroller):
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
 
+    self.refresh_btn = BigButton(tr("refresh models"))
+    self.refresh_btn.set_click_callback(self._refresh_models)
+    self._refresh_start: float | None = None
+
     self.cancel_download_btn = BigButton(tr("cancel download"))
     self.cancel_download_btn.set_click_callback(lambda: ui_state.params.remove("ModelManager_DownloadRef"))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn]
+    self.clear_cache_btn = BigButton(tr("clear cache"), value=f"{model_cache_size_mb():.1f} MB")
+    self.clear_cache_btn.set_click_callback(self._confirm_clear_cache)
+    self._cache_size_time = 0.0
+
+    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn]
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -162,6 +173,15 @@ class ModelsLayoutMici(NavScroller):
     ui_state.params.remove(ACTIVE_BUNDLE_KEYS[source])
     self._pop_to_main()
 
+  def _confirm_clear_cache(self):
+    icon = gui_app.texture("icons_mici/settings/network/new/trash.png", 54, 64)
+    gui_app.push_widget(BigConfirmationDialog(f"{tr('slide to')}\n{tr('clear cache')}", icon,
+                                              lambda: ui_state.params.put_bool("ModelManager_ClearCache", True), red=True))
+
+  def _refresh_models(self):
+    refresh_model_list()
+    self._refresh_start = time.monotonic()
+
   def _select_folder(self, folder_name):
     source = self._selection_source
     if source is None:  # folders are only reachable after picking a hardware
@@ -205,6 +225,21 @@ class ModelsLayoutMici(NavScroller):
       device.set_override_interactive_timeout(None)
     self._was_downloading = is_downloading
 
+    # manager is offroad-only, so an onroad clear would never be serviced
+    clearing = ui_state.params.get_bool("ModelManager_ClearCache")
+    self.clear_cache_btn.set_enabled(ui_state.is_offroad() and not is_downloading and not clearing)
+    if clearing:
+      self.clear_cache_btn.set_value(tr("clearing..."))
+      self._cache_size_time = 0.0  # refresh the size as soon as clearing finishes
+    elif (now := time.monotonic()) - self._cache_size_time > 0.5:
+      self._cache_size_time = now
+      self.clear_cache_btn.set_value(f"{model_cache_size_mb():.1f} MB")
+
+    # manager is offroad-only, so a refresh queued onroad would never be serviced
+    refreshing = refresh_in_progress(self._refresh_start)
+    self.refresh_btn.set_enabled(ui_state.is_offroad() and not is_downloading and not refreshing)
+    self.refresh_btn.set_value(tr("fetching...") if refreshing else "")
+
     self.current_model_info.current_model_header.set_text(tr("active model"))
     active_text, info_header, info_text = _model_info()
     self.current_model_info.current_model_text.set_text(active_text)
@@ -216,11 +251,13 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.info_text.set_text(tr("download failed"))
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
-      self.cancel_download_btn.set_visible(True)
+      self.cancel_download_btn.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
       device.set_override_interactive_timeout(5)
       progress = 0.0
       count = 0
       verifying = False
+      canceling = False
+      speed = 0.0
       for model in manager.selectedBundle.models:
         count += 1
         p = model.artifact.downloadProgress
@@ -228,11 +265,14 @@ class ModelsLayoutMici(NavScroller):
                         custom.ModelManagerSP.DownloadStatus.verifying):
           progress += p.progress
           verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
+          canceling = canceling or p.canceling
+          speed = max(speed, p.speed)  # only one file downloads at a time, so the non-zero speed is the live one
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      self.current_model_info.current_model_header.set_text(tr("verifying") if verifying else tr("downloading"))
+      header = tr("canceling...") if canceling else tr("verifying") if verifying else tr("downloading")
+      self.current_model_info.current_model_header.set_text(header)
       self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
       name_text = manager.selectedBundle.internalName.lower()
@@ -241,7 +281,10 @@ class ModelsLayoutMici(NavScroller):
       self.current_model_info.current_model_text.set_text(name_text)
       self.current_model_info.info_header.set_text(tr("progress") + self._download_progress)
       self.current_model_info.info_header._shimmer = True
-      self.current_model_info.info_text.set_text(f"{progress/count:.2f}%")
+      progress_text = f"{progress/count:.2f}%"
+      if not verifying and not canceling:
+        progress_text += f"  |  {speed / 1024 ** 2:.1f} MB/s" if speed > 0 else "  |  --.- MB/s"
+      self.current_model_info.info_text.set_text(progress_text)
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloaded:
       self.current_model_info.info_header.set_text(tr("downloaded"))

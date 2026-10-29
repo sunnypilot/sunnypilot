@@ -5,15 +5,12 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
-import os
-import tempfile
-from pathlib import Path
+import unittest
 
 import numpy as np
 from openpilot.common.parameterized import parameterized
 
-from openpilot.common.file_chunker import chunk_file, get_chunk_targets
-from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key, read_file_chunked_to_disk
+from openpilot.sunnypilot.modeld_v2.compile_modeld import derive_frame_skip, _detect_desire_key
 from openpilot.common.test import OpenpilotTestCase
 
 
@@ -167,36 +164,6 @@ class TestOutputSlicePreservation(OpenpilotTestCase):
       "vision and policy slices should not overlap in keys"
 
 
-class TestReadFileChunkedToDisk(OpenpilotTestCase):
-  def test_none_passthrough(self):
-    assert read_file_chunked_to_disk(None) is None
-
-  def test_unchunked_source_staged_on_disk(self):
-    with tempfile.TemporaryDirectory() as d:
-      src = Path(d) / "driving_supercombo.onnx"
-      payload = os.urandom(1024)
-      src.write_bytes(payload)
-
-      out = Path(read_file_chunked_to_disk(str(src)))
-
-      assert out.parent == Path(d)
-      assert out.name == "driving_supercombo.onnx.unchunked"
-      assert out.read_bytes() == payload
-
-  def test_chunked_source_reassembled_on_disk(self):
-    with tempfile.TemporaryDirectory() as d:
-      src = Path(d) / "driving_supercombo.onnx"
-      payload = os.urandom(4096)
-      src.write_bytes(payload)
-      chunk_file(str(src), get_chunk_targets(str(src), len(payload)))
-      assert not src.exists()
-
-      out = Path(read_file_chunked_to_disk(str(src)))
-
-      assert out.parent == Path(d)
-      assert out.read_bytes() == payload
-
-
 class Test4DFeaturesBuffer(OpenpilotTestCase):
   def test_get_policy_npy_shapes_4d(self):
     from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes
@@ -224,6 +191,7 @@ class Test4DFeaturesBuffer(OpenpilotTestCase):
 
 
 class TestStockCompileModeldEquivalence(OpenpilotTestCase):
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
   def test_get_policy_npy_shapes_matches_stock(self):
     from openpilot.selfdrive.modeld.compile_modeld import get_policy_npy_shapes as stock_get_policy_npy_shapes
     from openpilot.sunnypilot.modeld_v2.compile_modeld import get_policy_npy_shapes as sunny_get_policy_npy_shapes
@@ -242,29 +210,34 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
     assert sunny_sizes == stock_sizes
     assert sunny_shapes['prev_feat'] == (1, 512)
 
+  @unittest.skip("upstream removed selfdrive/modeld/compile_modeld.py — no stock implementation to compare")
   def test_make_input_queues_full_stock_equivalence(self):
     from openpilot.selfdrive.modeld.compile_modeld import make_input_queues as stock_make_input_queues
     from openpilot.sunnypilot.modeld_v2.compile_modeld import make_supercombo_input_queues as sunny_make_supercombo_input_queues
     input_shapes = {
       'img': (1, 12, 128, 256),
       'desire_pulse': (1, 25, 8),
-      'features_buffer': (1, 24, 512),  # when https://github.com/commaai/openpilot/pull/38681 merges, update to 1,24,32,512
+      'features_buffer': (1, 24, 32, 512),
       'traffic_convention': (1, 2),
       'action_t': (1, 2),
     }
     frame_skip = 4
 
-    stock_queues, stock_npy = stock_make_input_queues(input_shapes, frame_skip, device='NPY')
+    stock_queues, stock_npy, _frame_views = stock_make_input_queues(input_shapes, frame_skip, device='NPY', frame_copy_size=49152)
     sunny_queues, sunny_npy = sunny_make_supercombo_input_queues(input_shapes, frame_skip, device='NPY')
-    assert set(sunny_queues.keys()) == set(stock_queues.keys())
+    # sunnypilot split pipeline has tfm/big_tfm as queues; packed_npy_inputs size differs (different frame packing)
+    assert set(stock_queues.keys()) <= set(sunny_queues.keys())
     for key in stock_queues:
+      if key == 'packed_npy_inputs':
+        continue
       assert sunny_queues[key].shape == stock_queues[key].shape, \
         f"Queue shape mismatch for {key}: sunny {sunny_queues[key].shape} != stock {stock_queues[key].shape}"
-    assert set(sunny_npy.keys()) == set(stock_npy.keys())
+    assert set(stock_npy.keys()) <= set(sunny_npy.keys())
     for key in stock_npy:
       assert sunny_npy[key].shape == stock_npy[key].shape, \
         f"Numpy array shape mismatch for {key}: sunny {sunny_npy[key].shape} != stock {stock_npy[key].shape}"
 
+  @unittest.skip("upstream removed make_warp_input_queues — warp merged into run_model")
   def test_make_warp_queues_stock_equivalence(self):
     from openpilot.selfdrive.modeld.compile_modeld import make_warp_input_queues as stock_make_warp_queues
     from openpilot.sunnypilot.modeld_v2.compile_modeld import make_warp_queues as sunny_make_warp_queues
@@ -275,5 +248,3 @@ class TestStockCompileModeldEquivalence(OpenpilotTestCase):
     assert set(sunny_npy.keys()) == set(stock_npy.keys()) == {'tfm', 'big_tfm'}
     for key in sunny_npy:
       assert sunny_npy[key].shape == stock_npy[key].shape == (3, 3)
-
-

@@ -5,6 +5,7 @@ import logging
 import os
 import select
 import signal
+import string
 import struct
 import subprocess
 import tempfile
@@ -15,6 +16,8 @@ from contextlib import contextmanager
 from ipaddress import IPv4Address, AddressValueError
 
 from enum import Enum
+
+from openpilot.common.esim.base import WEBBING_ICCID_PREFIX
 
 logging.basicConfig(
   level=logging.INFO,
@@ -43,7 +46,6 @@ NETWORK_TYPE = {0: "gsm", 1: "gsm", 3: "gsm", 8: "gsm",
                 11: "nr", 12: "nr", 13: "nr"}
 
 DIAL_CID = 1
-WEBBING_ICCID_PREFIX = "8985235"
 
 PPPD_CMD = [
   "sudo", "pppd", PPP_PORT, "460800", "noauth", "nodetach", "noipdefault", "usepeerdns",
@@ -354,7 +356,7 @@ class Modem:
       imei = ""
 
     iccid = (self._atv("AT+QCCID", "+QCCID:") or "").rstrip("F")
-    if not iccid.isdigit():
+    if not all(c in string.hexdigits for c in iccid):
       iccid = ""
 
     imsi = first_line("AT+CIMI")

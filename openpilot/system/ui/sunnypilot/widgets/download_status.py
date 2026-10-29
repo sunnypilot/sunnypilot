@@ -9,6 +9,8 @@ import math
 import numpy as np
 import pyray as rl
 
+from openpilot.system.ui.lib.application import TextAlignment, TextAlignmentVertical
+
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
@@ -55,17 +57,17 @@ class DownloadStatusAction(ItemAction):
     self.icon: str | None = None
     self.icon_color: rl.Color | None = None
     self._font = gui_app.font(FontWeight.NORMAL)
-    # raw progress arrives in steps, one per 128KB chunk the manager publishes
+    # raw progress arrives in steps, one per progress report from the manager
     self._progress = FirstOrderFilter(0.0, 0.5, 1 / gui_app.target_fps)
     # integrated per frame; (t * speed) % span jumps whenever the fill width changes
     self._sweep = 0.0
 
     self._name_label = UnifiedLabel("", font_size=FONT_SIZE, font_weight=FontWeight.NORMAL, text_color=TEXT_COLOR,
-                                    alignment=rl.GuiTextAlignment.TEXT_ALIGN_LEFT,
-                                    alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+                                    alignment=TextAlignment.LEFT,
+                                    alignment_vertical=TextAlignmentVertical.MIDDLE)
     self._percent_label = UnifiedLabel("", font_size=FONT_SIZE, font_weight=FontWeight.NORMAL, text_color=TEXT_COLOR,
-                                       alignment=rl.GuiTextAlignment.TEXT_ALIGN_RIGHT,
-                                       alignment_vertical=rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE)
+                                       alignment=TextAlignment.RIGHT,
+                                       alignment_vertical=TextAlignmentVertical.MIDDLE)
 
   def update(self, name, downloading=False, progress=0.0, status_text="", text_color=rl.GRAY, icon=None, icon_color=None, segments=None):
     self.segments = segments
