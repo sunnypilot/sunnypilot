@@ -2021,8 +2021,21 @@
         {
           "id": "model_behavior",
           "title": "Model Behavior",
-          "description": "Lane desire and lead-vehicle awareness tuning",
+          "description": "Lane desire, Blendful lane centering, and lead-vehicle awareness tuning",
           "items": [
+            {
+              "key": "Blendful",
+              "widget": "toggle",
+              "title": "Blendful (Alpha)",
+              "description": "Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear. Yields around obstacles. Not available with the Default model.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "custom_model_active",
+                  "equals": true
+                }
+              ]
+            },
             {
               "key": "LaneTurnDesire",
               "widget": "toggle",
