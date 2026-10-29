@@ -85,6 +85,10 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
     params.remove("SmartCruiseControlVision")
     params.remove("SmartCruiseControlMap")
 
+  if not CP.openpilotLongitudinalControl:
+    cloudlog.warning("openpilot Longitudinal Control not available, cleaning up params")
+    params.remove("SetSpeedAssist")
+
   set_speed_limit_assist_availability(CP, CP_SP, params)
 
 

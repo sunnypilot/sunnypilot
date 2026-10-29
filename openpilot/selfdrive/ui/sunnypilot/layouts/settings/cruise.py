@@ -57,6 +57,12 @@ class CruiseLayout(Widget):
       description=tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
       param="SmartCruiseControlMap")
 
+    self.set_speed_assist_toggle = toggle_item_sp(
+      title=tr("Set Speed Assist"),
+      description=tr("Accelerate up to the set speed, or the personality's following distance behind a lead, " +
+                     "when the driving model would drive slower. The model still decides when to slow down."),
+      param="SetSpeedAssist")
+
     self.custom_acc_toggle = toggle_item_sp(
       title=tr("Custom ACC Speed Increments"),
       description="",
@@ -86,6 +92,7 @@ class CruiseLayout(Widget):
       self.icbm_toggle,
       self.scc_v_toggle,
       self.scc_m_toggle,
+      self.set_speed_assist_toggle,
       self.custom_acc_toggle,
       self.custom_acc_short_increment,
       self.custom_acc_long_increment,
@@ -147,6 +154,8 @@ class CruiseLayout(Widget):
         self.custom_acc_toggle.action_item.set_enabled(False)
         self.scc_v_toggle.action_item.set_enabled(False)
         self.scc_m_toggle.action_item.set_enabled(False)
+
+      self.set_speed_assist_toggle.action_item.set_enabled(has_long)
 
     else:
       has_icbm = has_long = False

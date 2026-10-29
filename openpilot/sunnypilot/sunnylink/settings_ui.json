@@ -621,6 +621,19 @@
               ]
             },
             {
+              "key": "SetSpeedAssist",
+              "widget": "toggle",
+              "title": "Set Speed Assist",
+              "description": "Accelerate up to the set speed, or the personality's following distance behind a lead, when the driving model would drive slower. The model still decides when to slow down.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",
