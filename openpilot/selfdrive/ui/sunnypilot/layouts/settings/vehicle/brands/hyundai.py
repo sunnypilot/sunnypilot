@@ -4,7 +4,6 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from openpilot.selfdrive.ui.sunnypilot.custom_button import CustomButtonAction
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.vehicle.brands.base import BrandSettings
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
@@ -22,21 +21,16 @@ class HyundaiSettings(BrandSettings):
                                                             button_width=300, callback=self._on_tuning_selected,
                                                             param="HyundaiLongitudinalTuning", inline=False)
 
-    # option values are not contiguous, so map button index <-> param value here instead of param=
-    self.custom_button_values = [CustomButtonAction.NONE, CustomButtonAction.BOOKMARK, CustomButtonAction.CYCLE_UI]
     custom_button_texts = [tr("None"), tr("Bookmark"), tr("Cycle UI")]
     self.custom_button_item = multiple_button_item_sp(tr("Steering Custom Button"),
                                                       tr("Choose the sunnypilot action for the steering wheel custom/star button."),
-                                                      custom_button_texts, button_width=300, callback=self._on_custom_button_selected,
-                                                      inline=False)
+                                                      custom_button_texts, button_width=300,
+                                                      param="HyundaiCustomButtonAction", inline=False)
     self.items = [self.custom_button_item, self.longitudinal_tuning_item]
 
   @staticmethod
   def _on_tuning_selected(index):
     ui_state.params.put("HyundaiLongitudinalTuning", index)
-
-  def _on_custom_button_selected(self, index):
-    ui_state.params.put("HyundaiCustomButtonAction", int(self.custom_button_values[index]))
 
   def update_settings(self):
     self.alpha_long_available = False
@@ -70,8 +64,6 @@ class HyundaiSettings(BrandSettings):
     self.longitudinal_tuning_item.action_item.set_selected_button(tuning_param)
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
 
-    custom_button_value = ui_state.params.get("HyundaiCustomButtonAction", return_default=True)
-    if custom_button_value in self.custom_button_values:
-      self.custom_button_item.action_item.set_selected_button(self.custom_button_values.index(custom_button_value))
+    self.custom_button_item.action_item.set_selected_button(ui_state.params.get("HyundaiCustomButtonAction", return_default=True))
     self.custom_button_item.show_description(True)
     self.custom_button_item.set_visible(ui_state.has_custom_button)

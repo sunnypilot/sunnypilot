@@ -16,7 +16,7 @@ ALT_BUTTON_2_BIT = int(car.CarState.ButtonEvent.Type.altButton2)
 class CustomButtonAction(IntEnum):
   NONE = 0
   BOOKMARK = 1
-  CYCLE_UI = 3
+  CYCLE_UI = 2
 
 
 class CustomButton:
@@ -34,6 +34,5 @@ class CustomButton:
     released = self._prev_toggle is not None and (self._prev_toggle ^ toggle) >> ALT_BUTTON_2_BIT & 1
     self._prev_toggle = toggle
 
-    # unknown values (e.g. a removed option) map to no callback
     if released and (callback := self._callbacks.get(ui_state.params.get("HyundaiCustomButtonAction", return_default=True))):
       callback()

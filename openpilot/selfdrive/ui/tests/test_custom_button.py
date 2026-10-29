@@ -31,11 +31,8 @@ class TestCustomButton(OpenpilotTestCase):
       assert sum(cb.call_count for cb in callbacks.values()) == 2
 
 
-  def test_no_action_when_unavailable_or_unknown(self, monkeypatch):
+  def test_no_action_when_unavailable(self, monkeypatch):
     callback = Mock()
-    state = make_ui_state(monkeypatch, 2)  # removed option value
-    run(CustomButton({CustomButtonAction.BOOKMARK: callback}), state, [0, 1 << ALT_BUTTON_2_BIT])
-
     state = make_ui_state(monkeypatch, CustomButtonAction.BOOKMARK, has_custom_button=False)
     run(CustomButton({CustomButtonAction.BOOKMARK: callback}), state, [0, 1 << ALT_BUTTON_2_BIT])
 

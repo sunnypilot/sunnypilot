@@ -19,7 +19,7 @@ sections:
       label: None
     - value: 1
       label: Bookmark
-    - value: 3
+    - value: 2
       label: Cycle UI
     visibility:
     - type: capability
