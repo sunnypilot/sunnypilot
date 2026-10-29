@@ -65,6 +65,7 @@ class UIStateSP:
     self.enforce_torque_control: bool = False
     self.custom_torque_params: bool = False
     self.torque_override_enabled: bool = False
+    self.follow_distance_accel_boost: bool = False
     self._sp_initialized: bool = False
 
   def update(self) -> None:
@@ -188,6 +189,7 @@ class UIStateSP:
     self.enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
     self.custom_torque_params = self.params.get_bool("CustomTorqueParams")
     self.torque_override_enabled = self.params.get_bool("TorqueParamsOverrideEnabled")
+    self.follow_distance_accel_boost = self.params.get_bool("FollowDistanceAccelBoost")
     self.torque_override_lat_accel_factor = float(self.params.get("TorqueParamsOverrideLatAccelFactor", return_default=True))
     self.torque_override_friction = float(self.params.get("TorqueParamsOverrideFriction", return_default=True))
     self.true_v_ego_ui = self.params.get_bool("TrueVEgoUI")
@@ -241,6 +243,10 @@ class UIStateSP:
     else:
       self.params.remove("IntelligentCruiseButtonManagement")
       self.has_icbm = False
+
+    # Extra boost needs sunnypilot longitudinal control; ICBM alone is not enough
+    if not has_long:
+      self.params.remove("FollowDistanceAccelBoost")
 
     # Cruise features requiring longitudinal or ICBM
     if not (has_long or self.has_icbm):
