@@ -248,6 +248,10 @@ class UIStateSP:
       self.params.remove("SmartCruiseControlVision")
       self.params.remove("SmartCruiseControlMap")
 
+    # Cruise features requiring longitudinal
+    if not has_long:
+      self.params.remove("SetSpeedAssist")
+
 
 class DeviceSP:
   def __init__(self):

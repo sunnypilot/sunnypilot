@@ -206,6 +206,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   aTarget @5 :Float32;
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
+  setSpeedAssist @8 :SetSpeedAssist;
 
   deprecated :group {
     dec @0 :DynamicExperimentalControlDEPRECATED;
@@ -311,6 +312,13 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   struct E2eAlerts {
     greenLightAlert @0 :Bool;
     leadDepartAlert @1 :Bool;
+  }
+
+  struct SetSpeedAssist {
+    active @0 :Bool;
+    lift @1 :Float32;  # m/s^2 added to the e2e candidate
+    gain @2 :Float32;
+    fade @3 :Float32;
   }
 }
 
