@@ -20,7 +20,13 @@ class HyundaiSettings(BrandSettings):
     self.longitudinal_tuning_item = multiple_button_item_sp(tr("Custom Longitudinal Tuning"), "", tuning_texts,
                                                             button_width=300, callback=self._on_tuning_selected,
                                                             param="HyundaiLongitudinalTuning", inline=False)
-    self.items = [self.longitudinal_tuning_item]
+
+    custom_button_texts = [tr("None"), tr("Bookmark"), tr("Cycle UI")]
+    self.custom_button_item = multiple_button_item_sp(tr("Steering Custom Button"),
+                                                      tr("Choose the sunnypilot action for the steering wheel custom/star button."),
+                                                      custom_button_texts, button_width=300,
+                                                      param="HyundaiCustomButtonAction", inline=False)
+    self.items = [self.custom_button_item, self.longitudinal_tuning_item]
 
   @staticmethod
   def _on_tuning_selected(index):
@@ -57,3 +63,7 @@ class HyundaiSettings(BrandSettings):
     self.longitudinal_tuning_item.show_description(True)
     self.longitudinal_tuning_item.action_item.set_selected_button(tuning_param)
     self.longitudinal_tuning_item.set_visible(self.alpha_long_available)
+
+    self.custom_button_item.action_item.set_selected_button(ui_state.params.get("HyundaiCustomButtonAction", return_default=True))
+    self.custom_button_item.show_description(True)
+    self.custom_button_item.set_visible(ui_state.has_custom_button)

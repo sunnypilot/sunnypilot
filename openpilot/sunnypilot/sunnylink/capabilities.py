@@ -11,6 +11,7 @@ from opendbc.car.structs import car
 from opendbc.car.hyundai.values import CAR as HYUNDAI_CAR, UNSUPPORTED_LONGITUDINAL_CAR
 from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
 from opendbc.car.toyota.values import CAR as TOYOTA_CAR, ToyotaFlags
+from opendbc.sunnypilot.car.hyundai.values import HyundaiFlagsSP
 from opendbc.sunnypilot.car.interfaces import has_bsm
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
 from openpilot.common.params import Params
@@ -44,6 +45,7 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "hyundai_has_custom_button",
   "toyota_tss2",
   "custom_model_active",
 )
@@ -68,6 +70,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "hyundai_has_custom_button": "Hyundai steering wheel custom button",
   "toyota_tss2": "Toyota TSS2 platform",
   "custom_model_active": "Non-Default model selected",
 }
@@ -192,6 +195,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
       caps["icbm_available"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable)
       caps["has_icbm"] = bool(CP_SP.intelligentCruiseButtonManagementAvailable) and params.get_bool("IntelligentCruiseButtonManagement")
       caps["tesla_has_vehicle_bus"] = bool(CP_SP.flags & TeslaFlagsSP.HAS_VEHICLE_BUS)
+      caps["hyundai_has_custom_button"] = caps["brand"] == "hyundai" and bool(CP_SP.flags & HyundaiFlagsSP.HAS_CUSTOM_BUTTON)
     except Exception:
       cloudlog.exception("capabilities: failed to deserialize CarParamsSPPersistent")
 
