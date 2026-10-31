@@ -102,7 +102,7 @@ class ModelState(ModelStateBase):
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
-    self.MIN_LAT_CONTROL_SPEED = 0.3
+    self.MIN_LAT_CONTROL_SPEED = 0.6
     self.PLANPLUS_CONTROL: float = 1.0
     self.chestnut = chestnut
 
@@ -242,7 +242,7 @@ class ModelState(ModelStateBase):
       desired_curvature = get_curvature_from_output(model_output, curvature_plan, v_ego, lat_action_t, self.mlsim)
     else:
       desired_accel = model_output['action'][0, 1]
-      desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
+      desired_curvature = model_output['action'][0, 0] / (max(2.5, v_ego))**2
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
