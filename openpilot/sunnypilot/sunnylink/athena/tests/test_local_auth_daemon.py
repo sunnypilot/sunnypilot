@@ -238,7 +238,7 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     declared = PARAMS_KEYS_H.read_text()
     for key in (local_auth_daemon.LOCAL_APPS_KEY, local_auth_daemon.LOCAL_APPS_META_KEY,
                 local_auth_daemon.PAIRING_REQUEST_KEY, local_auth_daemon.PAIRING_QR_KEY,
-                local_auth_daemon.REVOKE_KEY, local_auth_daemon.REVOKE_ALL_KEY):
+                local_auth_daemon.REVOKE_KEY):
       self.assertTrue(f'"{key}"' in declared)
 
   def test_read_registry_ignores_a_value_that_is_not_the_registry(self):
@@ -447,10 +447,10 @@ class TestRevokeRequests(OpenpilotTestCase):
     cleared: list[int] = []
     with mock.patch.object(local_auth_daemon, "revoke_all", side_effect=lambda: cleared.append(1) or 3):
       local_auth_daemon.request_revoke_all()
-      self.assertTrue(self.store.values[local_auth_daemon.REVOKE_ALL_KEY])
+      self.assertEqual(local_auth_daemon.REVOKE_ALL, self.store.values[local_auth_daemon.REVOKE_KEY])
       self.assertTrue(local_auth_daemon.service_revoke_requests())
     # Consumed, so a later tick does not revoke a phone the user pairs afterwards.
-    self.assertNotIn(local_auth_daemon.REVOKE_ALL_KEY, self.store.values)
+    self.assertNotIn(local_auth_daemon.REVOKE_KEY, self.store.values)
     self.assertEqual(1, len(cleared))
     self.assertFalse(local_auth_daemon.service_revoke_requests())
 
@@ -458,9 +458,9 @@ class TestRevokeRequests(OpenpilotTestCase):
     with mock.patch.object(local_auth_daemon, "revoke_all", side_effect=RuntimeError("boom")):
       local_auth_daemon.request_revoke_all()
       self.assertFalse(local_auth_daemon.service_revoke_requests())
-    self.assertNotIn(local_auth_daemon.REVOKE_ALL_KEY, self.store.values)
+    self.assertNotIn(local_auth_daemon.REVOKE_KEY, self.store.values)
 
-  def test_revoke_all_takes_precedence_over_a_single_request(self):
+  def test_revoke_all_request_overwrites_a_single_request(self):
     calls: list[str] = []
     with mock.patch.object(local_auth_daemon, "revoke_all", side_effect=lambda: calls.append("all") or 2), \
          mock.patch.object(local_auth_daemon, "revoke_local_app", side_effect=lambda key: calls.append(key) or True):
@@ -470,7 +470,6 @@ class TestRevokeRequests(OpenpilotTestCase):
     # One action, and no leftover request that could revoke a phone paired afterwards.
     self.assertEqual(["all"], calls)
     self.assertNotIn(local_auth_daemon.REVOKE_KEY, self.store.values)
-    self.assertNotIn(local_auth_daemon.REVOKE_ALL_KEY, self.store.values)
 
 
 class TestRevokeAllThroughTheAuthority(OpenpilotTestCase):

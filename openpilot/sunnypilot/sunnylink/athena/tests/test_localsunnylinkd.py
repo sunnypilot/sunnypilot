@@ -111,28 +111,38 @@ class _CallingSession(_FakeSession):
 
 
 class _FakeDiscovery:
-  def __init__(self, endpoints: Iterable[str] = (), recent: Iterable[str] | None = None):
+  def __init__(self, endpoints: Iterable[str] = (), recent: Iterable[str] | None = None,
+               app_ids: dict[str, str] | None = None):
     self._endpoints: list[str] = list(endpoints)
     # What the shorter backoff window returns; None means "same as the dial window".
     self._recent: list[str] | None = None if recent is None else list(recent)
+    self._app_ids: dict[str, str] = dict(app_ids or {})
 
   def fresh_endpoints(self, max_age_s=None):
     if max_age_s is not None and self._recent is not None:
       return list(self._recent)
     return list(self._endpoints)
 
+  def fresh_peers(self, max_age_s=None):
+    return [(e, self._app_ids.get(e, "grant-key")) for e in self.fresh_endpoints(max_age_s)]
+
 
 class _Daemon(localsunnylinkd.LocalSunnylinkd):
   """A local daemon with scripted trust state, so target selection is testable in isolation."""
 
-  def __init__(self, endpoints=(), enrolled=True, discovery=None, **params):
-    fake_discovery = discovery if discovery is not None else _FakeDiscovery(endpoints)
+  def __init__(self, endpoints=(), enrolled=True, discovery=None, known=("grant-key",),
+               app_ids=None, **params):
+    fake_discovery = discovery if discovery is not None else _FakeDiscovery(endpoints, app_ids=app_ids)
     super().__init__(params=cast(Params, _FakeParams(**params)),
                      discovery=cast(LocalDiscovery, fake_discovery))
     self._enrolled = enrolled
+    self._known = set(known)
 
   def enrolled(self):
     return self._enrolled
+
+  def known_app_ids(self):
+    return set(self._known)
 
 
 def _challenge(phone_key_id: str) -> str:
@@ -267,9 +277,14 @@ class TestLocalTargets(OpenpilotTestCase):
     self.assertEqual(endpoint, daemon.pick_target())
 
   def test_a_pending_enrollment_is_dialed_even_before_any_grant(self):
-    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"])
-    with mock.patch.object(local_auth_daemon, "pending_enrollment", lambda: {"app_id": "pending"}):
-      self.assertEqual("wss://10.0.0.7:8443", daemon.pick_target())
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], known=("pending",),
+                     app_ids={"ws://10.0.0.7:8443": "pending"})
+    self.assertEqual("wss://10.0.0.7:8443", daemon.pick_target())
+
+  def test_a_beacon_from_an_unknown_phone_is_never_dialed(self):
+    daemon = _Daemon(endpoints=["ws://10.0.0.9:8443"],
+                     app_ids={"ws://10.0.0.9:8443": "stranger"})
+    self.assertIsNone(daemon.pick_target())
 
   def test_the_local_switch_gates_the_process(self):
     running = _Daemon(SunnylinkEnabled=True, SunnylinkLocalEnabled=True)
@@ -499,38 +514,19 @@ class TestCloudCommandClaim(OpenpilotTestCase):
 
 
 class TestLocalDiscovery(OpenpilotTestCase):
-  """Beacon handling: the status line the settings screen shows while pairing."""
+  BEACON = b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}'
 
   def test_fresh_beacons_are_recorded(self):
-    discovery = LocalDiscovery(write_interval_s=0)
-    discovery._handle(b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}', "10.0.0.7")
+    discovery = LocalDiscovery()
+    discovery._handle(self.BEACON, "10.0.0.7")
     discovery._handle(b'not a beacon', "10.0.0.8")
     self.assertEqual(["ws://10.0.0.7:8443"], discovery.fresh_endpoints())
     self.assertEqual([], discovery.fresh_endpoints(max_age_s=-1))
 
-  def test_an_open_window_counts_as_a_live_pairing_window(self):
-    from openpilot.sunnypilot.sunnylink.athena.local_discovery import latest_discovered_app
-    window = [False]
-    discovery = LocalDiscovery(write_interval_s=0, pairing_window_cb=lambda: window[0])
-    beacon = b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}'
-
-    discovery._handle(beacon, "10.0.0.7")
-    self.assertIsNone(latest_discovered_app(discovery.params))
-
-    window[0] = True
-    discovery._handle(beacon, "10.0.0.7")
-    discovered = latest_discovered_app(discovery.params)
-    self.assertIsNotNone(discovered)
-    assert isinstance(discovered, tuple)
-    self.assertEqual("ws://10.0.0.7:8443", discovered[0])
-
-  def test_a_failing_window_callback_never_breaks_discovery(self):
-    def boom() -> bool:
-      raise RuntimeError("params unavailable")
-
-    discovery = LocalDiscovery(write_interval_s=0, pairing_window_cb=boom)
-    discovery._handle(b'SUNNYLINK1 {"v":1,"role":"app","app_id":"phone-1","ws_port":8443}', "10.0.0.7")
-    self.assertEqual(["ws://10.0.0.7:8443"], discovery.fresh_endpoints())
+  def test_fresh_peers_carry_the_announcing_app_id(self):
+    discovery = LocalDiscovery()
+    discovery._handle(self.BEACON, "10.0.0.7")
+    self.assertEqual([("ws://10.0.0.7:8443", "phone-1")], discovery.fresh_peers())
 
 
 class TestEnrollmentTransportValue(OpenpilotTestCase):

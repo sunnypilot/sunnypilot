@@ -22,7 +22,6 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
   request_revoke,
   request_revoke_all,
 )
-from openpilot.sunnypilot.sunnylink.athena.local_discovery import discovered_status
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.local_pairing import LocalPairingWindow
@@ -82,8 +81,6 @@ class SunnylinkLayoutMici(NavScroller):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
-    self._local_toggle = BigToggle(text=tr("local connections"), initial_state=False,
-                                   toggle_callback=self._local_connections_callback)
     self._mobile_app_btn = BigButton(tr("sunnylink local"), "")
     self._mobile_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalAppsPanelMici()))
 
@@ -92,7 +89,6 @@ class SunnylinkLayoutMici(NavScroller):
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
-      self._local_toggle,
       self._mobile_app_btn,
       self._backup_btn,
       self._restore_btn,
@@ -127,10 +123,7 @@ class SunnylinkLayoutMici(NavScroller):
     else:
       self._sunnylink_pair_button.set_text(tr("pair"))
 
-    local_enabled = ui_state.params.get_bool("SunnylinkLocalEnabled")
-    self._local_toggle.set_visible(self._sunnylink_enabled)
-    self._local_toggle.set_checked(local_enabled)
-    self._mobile_app_btn.set_visible(self._sunnylink_enabled and local_enabled)
+    self._mobile_app_btn.set_visible(self._sunnylink_enabled)
 
   def show_event(self):
     super().show_event()
@@ -169,11 +162,6 @@ class SunnylinkLayoutMici(NavScroller):
   @staticmethod
   def _sunnylink_uploader_callback(state: bool):
     ui_state.params.put_bool("EnableSunnylinkUploader", state)
-
-  @staticmethod
-  def _local_connections_callback(state: bool):
-    ui_state.params.put_bool("SunnylinkLocalEnabled", state)
-    ui_state.update_params()
 
   def _handle_backup_restore_btn(self, restore: bool = False):
     lbl = tr("slide to restore") if restore else tr("slide to backup")
@@ -288,6 +276,10 @@ class LocalAppsPanelMici(NavScroller):
     super().__init__()
     self._rows_cache: list[LocalAppRow] = []
 
+    self._local_toggle = BigToggle(text=tr("local connections"),
+                                   initial_state=ui_state.params.get_bool("SunnylinkLocalEnabled"),
+                                   toggle_callback=self._local_toggle_callback)
+
     self._pair_app_btn = BigButton(tr("pair app"), "")
     self._pair_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalPairingDialogMici()))
 
@@ -300,10 +292,16 @@ class LocalAppsPanelMici(NavScroller):
       btn.set_click_callback(partial(self._confirm_unpair_row, i))
       self._local_app_btns.append(btn)
 
-    self._scroller.add_widgets([self._pair_app_btn, self._revoke_all_btn, *self._local_app_btns])
+    self._scroller.add_widgets([self._local_toggle, self._pair_app_btn, self._revoke_all_btn, *self._local_app_btns])
+
+  @staticmethod
+  def _local_toggle_callback(state: bool):
+    ui_state.params.put_bool("SunnylinkLocalEnabled", state)
+    ui_state.update_params()
 
   def _update_state(self):
     super()._update_state()
+    self._local_toggle.set_checked(ui_state.params.get_bool("SunnylinkLocalEnabled"))
     self._rows_cache = app_rows()
     self._revoke_all_btn.set_visible(bool(self._rows_cache))
     for i, btn in enumerate(self._local_app_btns):
@@ -364,9 +362,8 @@ class LocalPairingDialogMici(BigDialogBase):
       rl.draw_texture_pro(texture, source, rl.Rectangle(rect.x + pad, rect.y + pad, qr_size, qr_size),
                           rl.Vector2(0, 0), 0, rl.WHITE)
 
-    status = discovered_status()
-    self._hint.set_text(status or tr("scan this code in the sunnylink app"))
-    self._hint.set_text_color(rl.Color(0, 255, 0, 255) if status else rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)))
+    self._hint.set_text(tr("scan this code in the sunnylink app"))
+    self._hint.set_text_color(rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)))
     self._hint.set_max_width(int(rect.x + rect.width - pad - (rect.x + pad + qr_size + 20)))
     self._hint.set_position(int(rect.x + pad + qr_size + 20), rect.y + pad)
     self._hint.render()

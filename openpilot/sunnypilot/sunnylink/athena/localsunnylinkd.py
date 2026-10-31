@@ -40,16 +40,13 @@ BACKOFF_FORGET_S = 12.0
 class LocalSunnylinkd(Sunnylinkd):
   def __init__(self, params=None, discovery: LocalDiscovery | None = None):
     super().__init__(params)
-    self.discovery = discovery if discovery is not None else LocalDiscovery(pairing_window_cb=self.pairing_window_open)
+    self.discovery = discovery if discovery is not None else LocalDiscovery()
     self.backoffs: dict[str, float] = {}
     self.failures: dict[str, int] = {}
     self.stop_event = threading.Event()
 
   def enrolled(self) -> bool:
     return bool(local_auth_daemon.grants()) or local_auth_daemon.pending_enrollment() is not None
-
-  def pairing_window_open(self) -> bool:
-    return local_auth_daemon.read_pairing_qr() is not None
 
   def saveParams(self, params_to_update: dict[str, str], compression: bool = False) -> None:
     allowed = {k: v for k, v in params_to_update.items() if not is_local_param(k)}
@@ -87,14 +84,25 @@ class LocalSunnylinkd(Sunnylinkd):
       except Exception:
         cloudlog.exception("sunnylinkd.local.tick_failed")
 
+  def known_app_ids(self) -> set[str]:
+    ids = {g["app_id"] for g in local_auth_daemon.grants()}
+    pending = local_auth_daemon.pending_enrollment()
+    if pending is not None:
+      ids.add(pending["app_id"])
+    return ids
+
   def pick_target(self) -> str | None:
     if not self.enrolled():
       return None
+    known = self.known_app_ids()
     self.forget_absent_endpoints(set(pinned_endpoints(self.discovery.fresh_endpoints(BACKOFF_FORGET_S))))
     now = time.monotonic()
-    for endpoint in pinned_endpoints(self.discovery.fresh_endpoints()):
-      if self.backoffs.get(endpoint, 0.0) <= now:
-        return endpoint
+    for endpoint, app_id in self.discovery.fresh_peers():
+      if app_id not in known:
+        continue
+      pinned = pinned_endpoint(endpoint)
+      if pinned is not None and self.backoffs.get(pinned, 0.0) <= now:
+        return pinned
     return None
 
   def forget_absent_endpoints(self, present: set[str]) -> None:

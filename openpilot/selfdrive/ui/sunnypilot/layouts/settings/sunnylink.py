@@ -18,7 +18,6 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
   request_revoke,
   request_revoke_all,
 )
-from openpilot.sunnypilot.sunnylink.athena.local_discovery import discovered_status
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment, TextAlignmentVertical
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.wrap_text import wrap_text
@@ -34,7 +33,6 @@ from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
 
 _LOCAL_DISCOVERED_COLOR = rl.Color(170, 170, 170, 255)
-_LOCAL_ACTIVE_COLOR = rl.Color(0, 255, 0, 255)
 
 
 class SunnylinkHeader(Widget):
@@ -159,7 +157,6 @@ class SunnylinkLayout(Widget):
     self._restore_in_progress = False
     self._backup_in_progress = False
     self._sunnylink_enabled = ui_state.params.get("SunnylinkEnabled")
-    self._local_enabled = ui_state.params.get_bool("SunnylinkLocalEnabled")
 
     items = self._initialize_items()
     self._scroller = Scroller(items, line_separator=False, spacing=0)
@@ -207,14 +204,6 @@ class SunnylinkLayout(Widget):
     self._backup_btn.set_button_style(ButtonStyle.NORMAL)
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
 
-    self._local_connections_toggle = toggle_item_sp(
-      title=tr("Enable local connections"),
-      description=tr("Let the sunnylink mobile app connect to this device over Wi-Fi. ") +
-                  tr("Turn this off to stop the local daemon and keep sunnylink itself running."),
-      param="SunnylinkLocalEnabled",
-    )
-    self._local_connections_toggle.set_visible(lambda: self._sunnylink_enabled)
-
     self._mobile_app_btn = button_item_sp(
       title=tr("Sunnylink Local Connections"),
       button_text=tr("CONFIGURE"),
@@ -222,7 +211,7 @@ class SunnylinkLayout(Widget):
                   tr("or unpair existing ones."),
       callback=self._open_local_apps,
     )
-    self._mobile_app_btn.set_visible(lambda: self._sunnylink_enabled and self._local_enabled)
+    self._mobile_app_btn.set_visible(lambda: self._sunnylink_enabled)
 
     items = [
       SunnylinkHeader(),
@@ -233,8 +222,6 @@ class SunnylinkLayout(Widget):
       self._sponsor_btn,
       LineSeparator(),
       self._pair_btn,
-      LineSeparator(),
-      self._local_connections_toggle,
       LineSeparator(),
       self._mobile_app_btn,
       LineSeparator(),
@@ -374,7 +361,6 @@ class SunnylinkLayout(Widget):
   def _update_state(self):
     super()._update_state()
     self._sunnylink_enabled = ui_state.params.get_bool("SunnylinkEnabled")
-    self._local_enabled = ui_state.params.get_bool("SunnylinkLocalEnabled")
     self._sunnylink_toggle.set_right_value(tr("Dongle ID") + ": " + self._get_sunnylink_dongle_id())
     self._sunnylink_toggle.action_item.set_enabled(not ui_state.is_onroad())
     self._sunnylink_toggle.action_item.set_state(self._sunnylink_enabled)
@@ -417,6 +403,13 @@ class SunnylinkLocalAppLayout(Widget):
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(gui_app.pop_widget)
 
+    self._local_connections_toggle = toggle_item_sp(
+      title=tr("Enable local connections"),
+      description=tr("Let the sunnylink mobile app connect to this device over Wi-Fi. ") +
+                  tr("Turn this off to stop the local daemon and keep sunnylink itself running."),
+      param="SunnylinkLocalEnabled",
+    )
+
     self._pair_app_btn = button_item_sp(
       title=tr("Pair App"),
       button_text=tr("SCAN"),
@@ -449,7 +442,8 @@ class SunnylinkLocalAppLayout(Widget):
       self._local_app_rows.append(row)
       self._local_app_seps.append(sep)
 
-    items = [self._pair_app_btn, LineSeparator(), self._revoke_all_btn, LineSeparator()]
+    items = [self._local_connections_toggle, LineSeparator(),
+             self._pair_app_btn, LineSeparator(), self._revoke_all_btn, LineSeparator()]
     for row, sep in zip(self._local_app_rows, self._local_app_seps, strict=True):
       items.extend((row, sep))
     self._scroller = Scroller(items, line_separator=False, spacing=0)
@@ -566,9 +560,8 @@ class SunnylinkLocalPairingDialog(Widget):
       rl.draw_text_ex(hint_font, "\n".join(wrapped), rl.Vector2(content_rect.x, y), 38, 0.0, rl.BLACK)
       y += len(wrapped) * 38 + 14
 
-    status = discovered_status()
-    rl.draw_text_ex(hint_font, status or tr("Waiting for the phone…"), rl.Vector2(content_rect.x, y + 10), 40, 0.0,
-                    _LOCAL_ACTIVE_COLOR if status else _LOCAL_DISCOVERED_COLOR)
+    rl.draw_text_ex(hint_font, tr("Waiting for the phone…"), rl.Vector2(content_rect.x, y + 10), 40, 0.0,
+                    _LOCAL_DISCOVERED_COLOR)
     return -1
 
   def __del__(self):

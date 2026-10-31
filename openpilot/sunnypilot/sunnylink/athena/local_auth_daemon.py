@@ -24,7 +24,7 @@ from openpilot.sunnypilot.sunnylink.athena.local_state import (
   LOCAL_APPS_META_KEY,
   PAIRING_QR_KEY,
   PAIRING_REQUEST_KEY,
-  REVOKE_ALL_KEY,
+  REVOKE_ALL,
   REVOKE_KEY,
 )
 
@@ -266,16 +266,6 @@ def _take(params: Params, key: str) -> str | None:
   return value if isinstance(value, str) and value else None
 
 
-def _take_flag(params: Params, key: str) -> bool:
-  try:
-    value = bool(params.get_bool(key))
-    params.remove(key)
-  except Exception:
-    cloudlog.exception("sunnylinkd.local_auth.flag_unreadable")
-    return False
-  return value
-
-
 def claim_cloud_commands(params: Params | None = None) -> None:
   params = params or _params
   for key, apply in ((CLOUD_ENROLL_KEY, cloud_enroll), (CLOUD_REVOKE_KEY, cloud_revoke)):
@@ -328,22 +318,19 @@ def request_revoke(app_key_id: str, params: Params | None = None) -> None:
 
 
 def request_revoke_all(params: Params | None = None) -> None:
-  _put(params or _params, REVOKE_ALL_KEY, True)
+  _put(params or _params, REVOKE_KEY, REVOKE_ALL)
 
 
 def service_revoke_requests(params: Params | None = None) -> bool:
   params = params or _params
-
-  if _take_flag(params, REVOKE_ALL_KEY):
-    removed = _run("revoke_all", revoke_all)
-    _put(params, REVOKE_KEY, None)
-    if removed:
-      cloudlog.event("sunnylinkd.local_auth.grants_revoked", count=removed)
-    return bool(removed)
-
   app_key_id = _take(params, REVOKE_KEY)
   if not app_key_id:
     return False
+  if app_key_id == REVOKE_ALL:
+    removed = _run("revoke_all", revoke_all)
+    if removed:
+      cloudlog.event("sunnylinkd.local_auth.grants_revoked", count=removed)
+    return bool(removed)
   revoked = bool(_run("revoke", lambda: revoke_local_app(app_key_id)))
   if revoked:
     cloudlog.event("sunnylinkd.local_auth.grant_revoked", app_id=app_key_id)
