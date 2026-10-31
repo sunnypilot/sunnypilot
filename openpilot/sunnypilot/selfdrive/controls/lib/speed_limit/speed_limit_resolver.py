@@ -142,9 +142,11 @@ class SpeedLimitResolver:
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
-    if 0. < next_speed_limit < self.v_ego:
-      adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
+    # From the current limit too, so the switch holds once the car has slowed below the limit ahead
+    v_start = max(self.v_ego, speed_limit)
+    if 0. < next_speed_limit < v_start:
+      adapt_time = (next_speed_limit - v_start) / LIMIT_ADAPT_ACC
+      adapt_distance = v_start * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit

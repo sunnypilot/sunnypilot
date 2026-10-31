@@ -147,11 +147,13 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     assert resolver.distance_solutions[SpeedLimitSource.map] == 0.
 
   @parameterized.expand([
-    (300., 0., 80., 0.),  # beyond the braking distance: still the current limit
-    (50., 0., 50., 50.),  # within it: the lower limit ahead, with its distance
-    (50., 1., 50., 50. - 80 * CV.KPH_TO_MS),  # less the distance driven since the map data was received
-  ], names=["ahead_distance", "map_data_age", "limit_kph", "distance"])
-  def test_map_data_lower_limit_ahead(self, resolver_class, ahead_distance, map_data_age, limit_kph, distance, mocker):
+    (80., 300., 0., 80., 0.),  # beyond the braking distance: still the current limit
+    (80., 50., 0., 50., 50.),  # within it: the lower limit ahead, with its distance
+    (80., 50., 1., 50., 50. - 80 * CV.KPH_TO_MS),  # less the distance driven since the map data was received
+    (45., 50., 0., 50., 50.),  # already slower than the limit ahead: it holds
+    (45., 300., 0., 80., 0.),  # but not before the braking distance from the current limit
+  ], names=["v_kph", "ahead_distance", "map_data_age", "limit_kph", "distance"])
+  def test_map_data_lower_limit_ahead(self, resolver_class, v_kph, ahead_distance, map_data_age, limit_kph, distance, mocker):
     resolver = resolver_class()
     resolver.policy = Policy.map_data_only
     sm_mock = setup_sm_mock(mocker)
@@ -162,7 +164,7 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
     live_map_data.speedLimitAheadDistance = ahead_distance
     sm_mock.recv_time['liveMapDataSP'] = time.monotonic() - map_data_age
 
-    resolver.update(80 * CV.KPH_TO_MS, sm_mock)
+    resolver.update(v_kph * CV.KPH_TO_MS, sm_mock)
     assert resolver.source == SpeedLimitSource.map
     assert resolver.speed_limit == pytest.approx(limit_kph * CV.KPH_TO_MS)
     assert resolver.distance == pytest.approx(distance, abs=0.1)
