@@ -13,7 +13,7 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth import MAX_GRANTS
 
 
 def grant(app_id: str, app_name: str = "Phone") -> dict[str, str]:
-  return {"app_id": app_id, "app_name": app_name, "public_key": "x", "key_id": app_id, "revision": "r"}
+  return {"app_id": app_id, "app_name": app_name, "public_key": "x"}
 
 
 class TestLocalAppRows(OpenpilotTestCase):

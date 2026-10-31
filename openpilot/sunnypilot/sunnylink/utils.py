@@ -17,8 +17,7 @@ def get_sunnylink_status(params=None) -> tuple[bool, bool, bool]:
 
 
 def sunnylink_ready(params=None) -> bool:
-  """Enabled and (cloud-registered or locally paired), and not on a temporary
-  fault. Local pairing makes never-registered devices usable over the LAN."""
+  """Enabled, registered or locally paired, and not on temporary fault."""
   params = params or Params()
   is_sunnylink_enabled, is_registered, is_on_temporary_fault = get_sunnylink_status(params)
   return is_sunnylink_enabled and (is_registered or is_locally_paired(params)) and not is_on_temporary_fault
@@ -30,8 +29,7 @@ def use_sunnylink_uploader(params) -> bool:
 
 
 def sunnylink_need_register(params=None) -> bool:
-  """Enabled, unregistered, and not locally paired — a locally paired device
-  works without cloud registration and must not be blocked."""
+  """Enabled, unregistered, and not locally paired."""
   params = params or Params()
   is_sunnylink_enabled, is_registered, is_on_temporary_fault = get_sunnylink_status(params)
   return is_sunnylink_enabled and not is_registered and not is_locally_paired(params) and not is_on_temporary_fault

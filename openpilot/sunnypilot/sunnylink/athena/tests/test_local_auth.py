@@ -56,7 +56,7 @@ class TestLocalAuth(OpenpilotTestCase):
 
   def committed(self):
     grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    return self.authority.confirm(grant, grant.key_id)
+    return self.authority.confirm(grant, grant.app_id)
 
   def test_qr_is_public_fresh_metadata_not_a_capability(self):
     """The code names one device and one window; it carries no key, no signature and no secret."""
@@ -94,14 +94,14 @@ class TestLocalAuth(OpenpilotTestCase):
   def test_device_authenticates_itself_to_the_phone_challenge(self):
     grant = self.committed()
     challenge = encode64(bytes(32))
-    proof = self.authority.authenticate_device(grant.key_id, challenge)
+    proof = self.authority.authenticate_device(grant.app_id, challenge)
     self.assertEqual(proof["device_key_id"], self.authority.device_key_id)
-    self.assertEqual(proof["phone_key_id"], grant.key_id)
+    self.assertEqual(proof["phone_key_id"], grant.app_id)
     expected = statement("authenticate-device", "cloud-device", "comma-device",
-                         self.authority.device_key_id, grant.key_id, challenge)
+                         self.authority.device_key_id, grant.app_id, challenge)
     self.device_key.public_key().verify(decode64(proof["signature"]), expected, ec.ECDSA(hashes.SHA256()))
     with self.assertRaises(AuthorizationError):
-      self.authority.authenticate_device(grant.key_id, encode64(bytes(31)))
+      self.authority.authenticate_device(grant.app_id, encode64(bytes(31)))
 
   def test_local_origin_cannot_enroll_even_with_correct_qr_and_key(self):
     with self.assertRaises(AuthorizationError):
@@ -113,11 +113,11 @@ class TestLocalAuth(OpenpilotTestCase):
     grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
     self.assertEqual(self.writes, [])
     with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.key_id)
+      self.authority.session(grant, grant.app_id)
     with self.assertRaises(AuthorizationError):
       self.authority.confirm(grant, key_id(self.device_key.public_key()))
     self.assertEqual(self.writes, [])
-    self.authority.confirm(grant, grant.key_id)
+    self.authority.confirm(grant, grant.app_id)
     self.assertEqual(len(self.writes), 1)
 
   def test_same_key_retries_are_idempotent_but_competing_scanner_cannot_replace_key(self):
@@ -128,13 +128,13 @@ class TestLocalAuth(OpenpilotTestCase):
     self.assertEqual(self.authority.pending, grant)
 
   def test_a_late_enrollment_lands_inside_its_delivery_grace(self):
-    """The cloud is store-and-forward: the enrollment for the code the user scanned reaches the
-    device after that code has left its screen, and it still has to enroll and still has to be
-    committable over the pinned dial. Every step below used to fail silently."""
+    """The cloud is store-and-forward, so an enrollment for the code the user scanned can reach the
+    device after that code has left its screen. It still has to enroll, and still has to be
+    committable over the pinned dial."""
     grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
     self.authority.expire()               # the code left the screen …
     self.now = PAIRING_TTL_S + 1          # … and its scannable lifetime ended
-    self.assertEqual(self.authority.confirm(grant, grant.key_id), grant)
+    self.assertEqual(self.authority.confirm(grant, grant.app_id), grant)
     self.assertEqual(len(self.writes), 1)
 
   def test_an_enrollment_past_the_delivery_grace_is_refused(self):
@@ -153,7 +153,7 @@ class TestLocalAuth(OpenpilotTestCase):
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(), Origin.CLOUD)
     with self.assertRaises(AuthorizationError):
-      self.authority.confirm(grant, grant.key_id)
+      self.authority.confirm(grant, grant.app_id)
     self.assertEqual(self.writes, [])
 
   def test_cancel_and_restart_invalidate_an_old_enrollment(self):
@@ -161,7 +161,7 @@ class TestLocalAuth(OpenpilotTestCase):
     grant = self.authority.enroll(raw, Origin.CLOUD)
     self.authority.cancel()
     with self.assertRaises(AuthorizationError):
-      self.authority.confirm(grant, grant.key_id)
+      self.authority.confirm(grant, grant.app_id)
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(raw, Origin.CLOUD)
     restarted = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append)
@@ -212,15 +212,15 @@ class TestLocalAuth(OpenpilotTestCase):
     grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
     with mock.patch.object(self.authority, "persist", side_effect=OSError("disk full")):
       with self.assertRaises(OSError):
-        self.authority.confirm(grant, grant.key_id)
+        self.authority.confirm(grant, grant.app_id)
     self.assertEqual(self.authority.grants, {})
     with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.key_id)
+      self.authority.session(grant, grant.app_id)
 
   def test_grants_reload_but_corrupt_and_duplicate_registry_fail_closed(self):
     grant = self.committed()
     restarted = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, self.writes[-1])
-    self.assertEqual(restarted.grants, {grant.key_id: grant})
+    self.assertEqual(restarted.grants, {grant.app_id: grant})
     corrupt = grant.to_dict() | {"key_id": "wrong"}
     for storage in ([{"app_id": "unknown", "endpoint": "ws://127.0.0.1"}], {"v": 1, "grants": [grant.to_dict()]},
                     {"v": 2, "grants": [corrupt]}, {"v": 2, "grants": [grant.to_dict(), grant.to_dict()]}):
@@ -228,26 +228,26 @@ class TestLocalAuth(OpenpilotTestCase):
 
   def test_revocation_and_closed_session_prevent_handler_execution(self):
     grant = self.committed()
-    session = self.authority.session(grant, grant.key_id)
+    session = self.authority.session(grant, grant.app_id)
     handler = mock.Mock(return_value="ok")
     self.assertEqual(session.invoke("getParams", handler), "ok")
-    self.authority.revoke(grant.key_id)
+    self.authority.revoke(grant.app_id)
     with self.assertRaises(AuthorizationError):
       session.invoke("saveParams", handler)
     self.assertEqual(handler.call_count, 1)
     with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.key_id)
+      self.authority.session(grant, grant.app_id)
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(), Origin.CLOUD)
 
-  def test_wrong_peer_revision_and_denied_methods_cannot_dispatch(self):
+  def test_a_grant_that_is_not_the_enrolled_one_cannot_dispatch(self):
     grant = self.committed()
     handler = mock.Mock()
     with self.assertRaises(AuthorizationError):
       self.authority.session(grant, "wrong")
     with self.assertRaises(AuthorizationError):
-      self.authority.session(replace(grant, revision=encode64(b"x" * 32)), grant.key_id)
-    session = self.authority.session(grant, grant.key_id)
+      self.authority.session(replace(grant, app_name="other"), grant.app_id)
+    session = self.authority.session(grant, grant.app_id)
     for method in ("startLocalProxy", "pairLocalApp", "uploadFileToUrl", "startStream", "setNavDestination", "unknown"):
       with self.assertRaises(AuthorizationError):
         session.invoke(method, handler)
@@ -256,13 +256,11 @@ class TestLocalAuth(OpenpilotTestCase):
       session.invoke("getMessage", handler)
     handler.assert_not_called()
 
-  def test_same_installation_key_can_enroll_multiple_devices(self):
+  def test_same_installation_key_can_enroll_on_another_device(self):
     original = self.committed()
     self.authority = LocalAuthority("second-cloud-device", "second-comma-device", self.device_key, self.writes.append, clock=lambda: self.now)
     self.qr = self.authority.arm()
-    second = self.committed()
-    self.assertEqual(original.key_id, second.key_id)
-    self.assertNotEqual(original.revision, second.revision)
+    self.assertEqual(original, self.committed())
 
   def test_canonical_encoding_and_field_limits(self):
     for value in ("", "Zg==", "Zh", "a", "💥", 123, "Z g", "Zg\n"):

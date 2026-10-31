@@ -92,7 +92,7 @@ class _FakeSession:
 
   def __init__(self, key_id: str = "grant-key"):
     self.calls: list[str] = []
-    self.grant = SimpleNamespace(key_id=key_id, app_id=key_id)
+    self.grant = SimpleNamespace(app_id=key_id)
     self.closed = False
 
   def invoke(self, method, handler, *args, **kwargs):
@@ -115,22 +115,11 @@ class _FakeDiscovery:
     self._endpoints: list[str] = list(endpoints)
     # What the shorter backoff window returns; None means "same as the dial window".
     self._recent: list[str] | None = None if recent is None else list(recent)
-    self.latest = None
-    self.seen: float | None = None
 
   def fresh_endpoints(self, max_age_s=None):
     if max_age_s is not None and self._recent is not None:
       return list(self._recent)
     return list(self._endpoints)
-
-  def latest_endpoint(self):
-    return self.latest
-
-  def last_seen_ago(self):
-    return self.seen
-
-  def latest_app_id(self):
-    return "phone-1"
 
 
 class _Daemon(localsunnylinkd.LocalSunnylinkd):
@@ -360,20 +349,20 @@ class TestLocalDial(OpenpilotTestCase):
                                 cast(LocalAuthority, authority), "pinned-key")
 
   def test_the_dial_confirms_a_pending_enrollment_before_serving(self):
-    pending = SimpleNamespace(key_id="pending-key", app_id="app-1")
-    grant = SimpleNamespace(key_id="pending-key", app_id="app-1")
+    pending = SimpleNamespace(app_id="pending-key")
+    grant = SimpleNamespace(app_id="pending-key")
     authority = SimpleNamespace(lock=threading.RLock(), pending=pending, grants={},
                                 authenticate_device=lambda phone, challenge: {"phone_key_id": phone,
                                                                               "challenge": challenge})
     session = _FakeSession("pending-key")
     confirmed: list[str] = []
-    ws = _FakeWs([_challenge(pending.key_id)])
+    ws = _FakeWs([_challenge(pending.app_id)])
 
     def confirm(key_id):
       confirmed.append(key_id)
       authority.grants[key_id] = grant
       authority.pending = None
-      return {"app_id": grant.app_id, "app_name": "phone", "revision": "r"}
+      return {"app_id": grant.app_id, "app_name": "phone"}
 
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
     with mock.patch.object(authority, "session", lambda g, peer: session, create=True), \
@@ -449,7 +438,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
 
     self.assertIsNotNone(self.authority.pending)
     self.assertEqual("Test phone", self.authority.pending.app_name)
-    self.assertEqual(key_id(self.app_key.public_key()), self.authority.pending.key_id)
+    self.assertEqual(key_id(self.app_key.public_key()), self.authority.pending.app_id)
     # Staged, not yet authorized, and never replayable.
     self.assertEqual([], self.persisted)
     self.assertNotIn(ENROLL, params)
@@ -463,11 +452,11 @@ class TestCloudCommandClaim(OpenpilotTestCase):
 
   def test_a_revocation_drops_the_phones_own_grant(self):
     committed = self.authority.enroll(_enrollment_json(self.authority, self.app_key), origin=Origin.CLOUD)
-    self.authority.confirm(committed, committed.key_id)
+    self.authority.confirm(committed, committed.app_id)
 
-    proof = statement("revoke", self.authority.cloud_device_id, self.authority.comma_device_id, committed.key_id)
+    proof = statement("revoke", self.authority.cloud_device_id, self.authority.comma_device_id, committed.app_id)
     revocation = json.dumps({"v": 2, "cloud_device_id": self.authority.cloud_device_id,
-                             "comma_device_id": self.authority.comma_device_id, "key_id": committed.key_id,
+                             "comma_device_id": self.authority.comma_device_id, "key_id": committed.app_id,
                              "signature": encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))})
     params = _FakeParams({REVOKE: revocation})
     local_auth_daemon.claim_cloud_commands(cast(Params, params))

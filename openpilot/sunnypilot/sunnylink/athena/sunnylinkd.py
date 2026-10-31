@@ -105,22 +105,14 @@ def sunny_log_handler(end_event: threading.Event, comma_prime_cellular_end_event
 
 
 class Sunnylinkd:
-  """The cloud half of sunnylink: the athena connection that serves the settings RPCs.
+  """Cloud connection serving the settings RPCs."""
 
-  The LAN half is `localsunnylinkd.LocalSunnylinkd`, which subclasses this and overrides only the
-  RPCs and helpers it changes. Every method here is shared, and none of them may read or write a
-  param the local side owns.
-  """
-
-  # What this daemon serves over the wire. `startLocalProxy` is deliberately absent: the athena
-  # jsonrpc workers install it on the dispatcher themselves, with the event this daemon owns.
   RPC_METHODS = ("toggleLogUpload", "getParamsAllKeys", "getParamsMetadata", "getParams", "saveParams")
 
   def __init__(self, params: Params | None = None):
     self.params = params or Params()
 
   def methods(self) -> dict[str, Callable[..., object]]:
-    """The RPC surface this daemon serves, keyed by wire method name."""
     return {name: getattr(self, name) for name in self.RPC_METHODS}
 
   def handle_long_poll(self, ws: WebSocket, exit_event: threading.Event | None) -> None:
@@ -184,12 +176,6 @@ class Sunnylinkd:
     return [key for key in keys if not is_local_param(key)]
 
   def getParamsMetadata(self) -> str:
-    """Return settings_ui.json + live capabilities as gzip-compressed, base64-encoded string.
-
-    Reads settings_ui.json, injects live capabilities from CarParams, compresses,
-    and returns. Single RPC for the frontend to get the complete settings UI and
-    runtime capabilities.
-    """
     try:
       schema = generate_schema()
       schema["capabilities"] = generate_capabilities()
@@ -245,7 +231,6 @@ class Sunnylinkd:
 
   def saveParams(self, params_to_update: dict[str, str], compression: bool = False) -> None:
     for key, value in params_to_update.items():
-      # disallow modifications to blocked parameters, and to anything the local side owns
       if key in BLOCKED_PARAMS or not cloud_may_write(key):
         cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
         continue
@@ -275,7 +260,6 @@ class Sunnylinkd:
 
 
 def log_connection_error(e: Exception) -> None:
-  """Report a failed connection the way stock sunnylinkd.main did; shared with localsunnylinkd."""
   if isinstance(e, (ConnectionError, TimeoutError, WebSocketException)):
     cloudlog.warning(f"sunnylinkd.main.{type(e).__name__}")
   elif isinstance(e, OSError):

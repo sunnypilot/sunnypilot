@@ -113,9 +113,8 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     return self.store.values[local_auth_daemon.LOCAL_APPS_KEY]
 
   def test_a_late_cloud_enrollment_from_an_expired_code_still_enrolls(self):
-    """The path an app's push actually takes: the gateway stored the settings-write, the local
-    half claims it on a later tick, and by then the scanned code has left the device screen. This
-    is what used to be dropped with only a log line, leaving the app waiting forever."""
+    """The path an app's push takes: the gateway stores the settings-write, the local half claims it
+    on a later tick, and by then the scanned code has left the device screen."""
     authority = local_auth_daemon.get_authority()
     raw = self.enrollment(authority)          # the app scanned the armed code
     authority.expire()                        # the code stops being displayed …
@@ -125,7 +124,7 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
 
     pending = local_auth_daemon.pending_enrollment()
     assert pending is not None, "the late enrollment was not staged"
-    self.assertEqual(key_id(self.app_key.public_key()), pending["key_id"])
+    self.assertEqual(key_id(self.app_key.public_key()), pending["app_id"])
     self.assertEqual("Test phone", pending["app_name"])
     # Claimed exactly once, whether or not it validated.
     self.assertIsNone(self.store.get(local_auth_daemon.CLOUD_ENROLL_KEY))
@@ -231,10 +230,10 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     self.assertEqual(1, len(self.registry()["grants"]))
 
   def test_registry_key_is_declared_in_params_keys(self):
-    """Every param this adapter stores must be registered, or Params raises UnknownKeyName.
+    """Every param this adapter stores has to be declared, or Params raises UnknownKeyName.
 
-    That failure is not cosmetic: get_authority() is on the daemon's connection path, so an
-    undeclared key used to take sunnylinkd (and the cloud link with it) down.
+    get_authority() sits on the daemon's connection path, so an undeclared key would take
+    sunnylinkd down with the cloud link.
     """
     declared = PARAMS_KEYS_H.read_text()
     for key in (local_auth_daemon.LOCAL_APPS_KEY, local_auth_daemon.LOCAL_APPS_META_KEY,
@@ -269,10 +268,9 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
 class TestRegistryThroughRealParams(OpenpilotTestCase):
   """The same round trip against the real Params/libparams, in a temporary params directory.
 
-  The double above pins the logic; this proves the actual C library stores and returns the
-  registry the way the module expects (JSON-typed param: a dict in, the same dict out), which is
-  where the persistence bug lived. It needs `libparams_c` built from a `params_keys.h` that
-  declares `SunnylinkLocalApps`.
+  The double above pins the logic; this proves the C library stores and returns the registry the
+  way the module expects (JSON-typed param: a dict in, the same dict out). It needs `libparams_c`
+  built from a `params_keys.h` that declares `SunnylinkLocalApps`.
   """
 
   def setup_method(self):
@@ -313,7 +311,7 @@ class TestRegistryThroughRealParams(OpenpilotTestCase):
     summary = local_auth_daemon.cloud_enroll(json.dumps(data))
     local_auth_daemon.confirm_enrollment_tls(summary["app_id"])
 
-    # A daemon restart is what used to lose every grant.
+    # A restart has to reload the same grants.
     local_auth_daemon.reset_authority()
     grants = local_auth_daemon.grants()
     self.assertEqual(1, len(grants))
@@ -394,8 +392,7 @@ class TestGrantedAppsView(OpenpilotTestCase):
     self.store.values[local_auth_daemon.LOCAL_APPS_KEY] = {"v": 2, "grants": grants}
 
   def test_lists_app_id_and_name_without_building_the_authority(self):
-    self.write_registry([{"app_id": "key-a", "app_name": "Nayan's phone", "public_key": "x", "key_id": "key-a",
-                          "revision": "r"}])
+    self.write_registry([{"app_id": "key-a", "app_name": "Nayan's phone", "public_key": "x"}])
     with mock.patch.object(local_auth_daemon, "_build_authority",
                            side_effect=AssertionError("the UI must not load the identity key")):
       rows = local_auth_daemon.read_granted_apps()
@@ -496,7 +493,7 @@ class TestRevokeAllThroughTheAuthority(OpenpilotTestCase):
 
   def test_revoke_all_writes_once_and_empties_the_registry(self):
     for key in ("key-a", "key-b"):
-      self.authority.grants[key] = Grant(key, "spki", key, "Phone", "rev")
+      self.authority.grants[key] = Grant(key, "spki", "Phone")
     self.assertEqual(2, self.authority.revoke_all())
     self.assertEqual({}, self.authority.grants)
     # One write for the whole action, and the persisted document is an empty registry.
