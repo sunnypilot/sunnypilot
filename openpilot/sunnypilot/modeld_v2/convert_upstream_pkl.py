@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import argparse
 import dataclasses
+import inspect
 import itertools
 import mmap
 import re
@@ -45,6 +46,11 @@ def _address(v):
   return _root(v.src[0]), add + start, size
 
 
+def _buffer(u):
+  from tinygrad.uop.ops import Ops
+  return u.buffer if u.op is Ops.BUFFER else getattr(u.arg, "buffer", None)
+
+
 def _patched(buf, topo) -> tuple[bytearray, dict]:
   from tinygrad.uop.ops import Ops
   blob, rows = bytearray(buf.max_numel() * buf.dtype.itemsize), {}
@@ -72,7 +78,7 @@ def _evaluate(u, env):
     table, index = _root(u.src[0].src[0]), _evaluate(u.src[0].src[1], env)
     return struct.unpack_from(u.dtype.fmt, table.arg, index * u.dtype.itemsize)[0] if table.op is Ops.BINARY and index is not None else None
   if u.op in GroupOp.ALU and None not in (values := [_evaluate(x, env) for x in u.src]):
-    return exec_alu(u.op, u.dtype, values, False)
+    return exec_alu(u.op, u.dtype, values, *([False] if "truncate_output" in inspect.signature(exec_alu).parameters else []))
   return None
 
 
@@ -112,7 +118,7 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
   from tinygrad.uop.ops import Ops
   submit = jit.captured._linear.src[0].without_after
   kernels, topo = submit.arg.aux.kernels, list(jit.captured._linear.toposort(enter_calls=True))
-  allocs = {str(u.tag): u for u in topo if u.op is Ops.ALLOC and u.tag is not None}
+  allocs = {str(name): u for u in topo if u.op is Ops.ALLOC and (name := getattr(u, "tag", None) or u.arg.name) is not None}
   (commands, patched), kernargs = _patched(allocs["cmdbuf_compute_0"], topo), allocs["kernargs_compute_0"]
   argument_words, pokes = _patched(kernargs, topo)[1], _input_pokes(submit, kernargs)
   sh = {name: getattr(amd_gpu, f"reg{name}") + amd_gpu.GC_BASE__INST0_SEG0 - pm4.PACKET3_SET_SH_REG_START
@@ -158,7 +164,7 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
         args.append({"input": pokes[slot][0]})
       elif slot in argument_words:
         base, at, nbytes = _address(argument_words[slot])
-        args.append({"buffer": buffers.setdefault(base, len(buffers)), "offset": at, "nbytes": nbytes or base.arg.buffer.nbytes, "dtype": u8})
+        args.append({"buffer": buffers.setdefault(base, len(buffers)), "offset": at, "nbytes": nbytes or base.max_numel() * base.dtype.itemsize, "dtype": u8})
     outs, ins = kernel[6]
     calls.append({"kind": "program", "name": re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]), "lib": programs[image_alloc], "target": dataclasses.asdict(target),
                   "signature": [[f"data{i}", i, u8, [a.get("nbytes", 1)]] for i, a in enumerate(args)], "global_size": grid, "local_size": local,
@@ -166,12 +172,13 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
     needs_init |= {args[i]["buffer"] for i in ins if "buffer" in args[i] and args[i]["buffer"] not in written}
     written |= {args[i]["buffer"] for i in outs if "buffer" in args[i]}
 
+  assert all(_buffer(b) is not None for b, i in buffers.items() if i in needs_init), "a kernel reads a scratch before any kernel writes it"
   names = list(jit.captured.expected_names)
   inputs = [{"slot": slot, "name": names[slot] if slot < len(names) else None, "dtype": repr(u.dtype), "numel": int(u.max_numel()), "device": u.device}
             for slot, u in enumerate(_prepare_jit_inputs((), kwargs)[0])]
   header = {"input_names": names, "calls": calls, "returns": {"kind": "NoneType", "tensors": []}, "inputs": inputs,
-            "buffers": [{"nbytes": b.arg.buffer.nbytes, "device": b.arg.buffer.device, "dtype": u8}
-                        | ({"init": blob.add(b.arg.buffer.ensure_allocated().as_memoryview())} if i in needs_init else {}) for b, i in buffers.items()],
+            "buffers": [{"nbytes": bb.nbytes if (bb := _buffer(b)) else b.max_numel() * b.dtype.itemsize, "device": bb.device if bb else b.device, "dtype": u8}
+                        | ({"init": blob.add(bb.ensure_allocated().as_memoryview())} if i in needs_init else {}) for b, i in buffers.items()],
             "check": {"inputs": [[path, store(array), device] for path, array, device in frame["inputs"]],
                       "outputs": [store(array) for array in frame["outputs"]], "output_container": frame["output_container"]}}
   with sink:

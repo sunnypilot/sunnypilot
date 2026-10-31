@@ -63,3 +63,7 @@ macros:
   release_branches_hide:
     - type: not
       condition: {type: capability, field: is_sp_release, equals: true}
+
+  # Gate for custom model features based on active source.
+  custom_model:
+    - { type: capability, field: custom_model_active, equals: true }

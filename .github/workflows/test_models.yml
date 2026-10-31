@@ -3,9 +3,62 @@ on:
   pull_request:
     paths:
       - 'tinygrad_repo'
+      - 'openpilot/sunnypilot/modeld_v2/**'
   workflow_dispatch:
 
+env:
+  CI: 1
+  GIT_CONFIG_COUNT: 1
+  GIT_CONFIG_KEY_0: lfs.fetchexclude
+  GIT_CONFIG_VALUE_0: openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl
+
 jobs:
+  plain-artifact:
+    name: Plain artifact round trip and pickle converter
+    runs-on: ubuntu-24.04
+    env:
+      PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
+      TINYGRAD_TESTS: 1
+    steps:
+      - uses: actions/checkout@v7
+      - run: ./tools/op.sh setup
+      - name: Build openpilot
+        run: scons -j$(nproc)
+      - name: Compile, load, cache and fuse a model with the pinned tinygrad
+        env:
+          DEV: CPU
+        run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_plain_artifact.py
+      - name: Install LLVM 20 and ROCm comgr for the amd mock, as tinygrad_repo/.github/actions/setup-tinygrad does
+        run: |
+          . /etc/os-release
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+          echo "deb http://apt.llvm.org/$VERSION_CODENAME/ llvm-toolchain-$VERSION_CODENAME-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo mkdir -p /etc/apt/keyrings
+          curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.1 $VERSION_CODENAME main" | sudo tee /etc/apt/sources.list.d/rocm.list
+          printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/rocm-pin-600
+          sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends libllvm20 clang-20 lld-20 comgr
+          printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf && sudo ldconfig
+          echo "/usr/lib/llvm-20/bin" >> "$GITHUB_PATH"
+      - name: Convert a pickled USB+AMD jit and replay it under tinygrad's amd mock
+        env:
+          DEV: MOCKUSB+AMD
+          CHECK_OOB: 0
+          GMMU: 0
+        run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_convert_upstream_pkl.py
+      - name: Where tinygrad moved, for the helper or failure point named above
+        if: failure() && github.event_name == 'pull_request'
+        run: |
+          git fetch -q --depth=1 origin "${{ github.base_ref }}"
+          old=$(git rev-parse "origin/${{ github.base_ref }}:tinygrad_repo") new=$(git rev-parse HEAD:tinygrad_repo)
+          git -C tinygrad_repo fetch -q origin "$old" || true
+          echo "tinygrad_repo $old -> $new, in what helpers.py and plain_artifact_compiler.py read:"
+          git -C tinygrad_repo diff "$old" "$new" -- tinygrad/uop/ops.py tinygrad/engine/jit.py tinygrad/engine/realize.py tinygrad/device.py \
+            tinygrad/helpers.py tinygrad/dtype.py tinygrad/renderer/__init__.py
+          echo "and in what convert_upstream_pkl.py decodes:"
+          git -C tinygrad_repo diff --stat "$old" "$new" -- tinygrad/runtime/autogen/am/pm4_nv.py tinygrad/runtime/autogen/amd_gpu.py
+          git -C tinygrad_repo diff "$old" "$new" -- tinygrad/runtime/support/hcq2.py tinygrad/runtime/support/usb.py tinygrad/runtime/ops_amd.py
+
   generate-matrix:
     runs-on: ubuntu-latest
     outputs:

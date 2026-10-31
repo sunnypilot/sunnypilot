@@ -102,13 +102,18 @@ class ModelsLayout(Widget):
 
     self.lagd_toggle = toggle_item_sp(tr("Live Learning Steer Delay"), "", param="LagdToggle")
 
+    self._blendful_desc = tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when lane lines are clear." +
+                             " Yields around obstacles. Not available with the Default model.")
+    self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"), self._blendful_desc, param="Blendful")
+
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
                                         tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
     self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
-                  self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control, self.camera_offset]
+                  self.blendful_toggle, self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control,
+                  self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
@@ -235,13 +240,17 @@ class ModelsLayout(Widget):
     progress = sum(p.progress for p in progresses) / len(progresses)
     ds = custom.ModelManagerSP.DownloadStatus
 
+    if any(p.canceling for p in progresses):
+      return {"name": name, "downloading": True, "progress": progress, "status_text": tr("canceling...")}
     if ds.failed in statuses:
       # close.png is authored black and a tint cannot lift it, hence close2
       return {"name": name, "status_text": tr("download failed"), "text_color": rl.RED, "icon": "icons/close2.png"}
     if ds.verifying in statuses:
       return {"name": name, "downloading": True, "progress": progress, "status_text": tr("verifying")}
     if ds.downloading in statuses:
-      return {"name": name, "downloading": True, "progress": progress}
+      speed = max((p.speed for p in progresses), default=0.0)
+      status_text = f"{speed / 1024 ** 2:.1f} MB/s" if speed > 0 else "--.- MB/s"
+      return {"name": name, "downloading": True, "progress": progress, "status_text": status_text}
     if statuses <= {ds.downloaded, ds.cached}:
       return {"name": name, "text_color": ON_COLOR, "icon": "icons/checkmark.png"}
     # circled_slash is authored grey; tinting it again only darkens it
@@ -318,6 +327,21 @@ class ModelsLayout(Widget):
     self.lane_turn_desire_toggle.action_item.set_state(turn_desire)
     self.lane_turn_value_control.set_visible(turn_desire and advanced_controls)
     self.lagd_toggle.action_item.set_state(live_delay)
+
+    blendful_allowed = ui_state.active_runner_tinygrad
+    if blendful_allowed:
+      self.blendful_toggle.action_item.set_state(ui_state.params.get_bool("Blendful"))
+      self.blendful_toggle.action_item.set_enabled(True)
+    else:
+      self.blendful_toggle.action_item.set_state(False)
+      self.blendful_toggle.action_item.set_enabled(False)
+
+    blendful_desc = self._blendful_desc if blendful_allowed else \
+      f"<b>{tr('Select a non-Default model to use Blendful.')}</b><br><br>{self._blendful_desc}"
+    if self.blendful_toggle.description != blendful_desc:
+      self.blendful_toggle.set_description(blendful_desc)
+      self.blendful_toggle.show_description(not blendful_allowed)
+
     self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
     if self.lane_turn_value_control.action_item is not None and self.lane_turn_value_control.action_item.value_change_step != new_step:

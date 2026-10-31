@@ -7,7 +7,10 @@ See the LICENSE.md file in the root directory for more details.
 
 import asyncio
 import os
+import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from openpilot.common.params import Params
@@ -22,10 +25,99 @@ from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_
 
 # (connect, read) seconds. read is per-request inactivity, not a total cap
 DOWNLOAD_TIMEOUT = (30, 30)
+# HuggingFace throttles each connection to ~1-2 MB/s but not the connection count; 12 saturates the device link
+MAX_CONCURRENT_PIECES = 12
+PIECE_SIZE = 8 * 1024 * 1024
+PIECE_ATTEMPTS = 3
+PIECE_BACKOFF = 1.0  # seconds, growing linearly: waits 1 s then 2 s between a piece's three attempts
+TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
+REPORT_INTERVAL = 0.5  # seconds between progress publications
+# byte ranges count encoded bytes but iter_content yields decoded ones, so ask for an unencoded body
+NO_COMPRESSION = {"Accept-Encoding": "identity"}
+SPEED_SMOOTHING = 0.7  # weight of the previous speed sample in the published speed
+SPEED_FLOOR = 0.05 * 1024 ** 2  # bytes/s; anything slower would only display as 0.0 MB/s, so it reads as no rate
 
 
 class DownloadCancelled(Exception):
   pass
+
+
+def _is_transient(e: BaseException) -> bool:
+  if isinstance(e, requests.HTTPError):
+    return e.response is not None and e.response.status_code in TRANSIENT_HTTP_STATUS
+  return isinstance(e, (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError))
+
+
+class _Progress:
+  def __init__(self):
+    self._bytes = 0
+    self._lock = threading.Lock()
+
+  def add_bytes(self, n: int) -> None:
+    with self._lock:
+      self._bytes += n
+
+  def snapshot(self) -> int:
+    with self._lock:
+      return self._bytes
+
+
+def _piece_ranges(total: int, piece_size: int) -> list[tuple[int, int]]:
+  return [(start, min(start + piece_size, total)) for start in range(0, total, piece_size)]
+
+
+def _prepare_target(path: str, total: int) -> None:
+  with open(path, "wb") as f:
+    f.truncate(total)
+
+
+def _content_range_total(response: requests.Response) -> int | None:
+  if response.status_code != 206:
+    return None
+  match = re.fullmatch(r"bytes \d+-\d+/(\d+)", response.headers.get("Content-Range", ""))
+  return int(match.group(1)) if match else None
+
+
+def _probe_size(url: str) -> tuple[int, bool]:
+  with requests.get(url, headers={**NO_COMPRESSION, "Range": "bytes=0-0"}, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
+    response.raise_for_status()
+    total = _content_range_total(response)
+    if total is not None:
+      return total, True
+    return int(response.headers.get("Content-Length", 0)), False
+
+
+def _fetch_piece(url: str, path: str, index: int, start: int, end: int | None, progress: _Progress,
+                 cancel: threading.Event, block_size: int) -> None:
+  headers = {**NO_COMPRESSION, "Range": f"bytes={start}-{end - 1}"} if end is not None else NO_COMPRESSION
+  label = f"{os.path.basename(path)} piece {index}"
+  for attempt in range(PIECE_ATTEMPTS):
+    written = 0
+    try:
+      with requests.get(url, headers=headers, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:
+        response.raise_for_status()
+        if end is not None and response.status_code != 206:
+          raise ValueError(f"server ignored byte range for {label}")
+        with open(path, "r+b") as f:
+          f.seek(start)
+          for block in response.iter_content(chunk_size=block_size):
+            if cancel.is_set():
+              raise DownloadCancelled("Download cancelled")
+            f.write(block)
+            written += len(block)
+            progress.add_bytes(len(block))
+          if end is None:
+            f.truncate()  # unknown length: the body defines the file size
+          if end is not None and written != end - start:
+            raise requests.exceptions.ConnectionError(f"short read: {written} of {end - start} bytes")
+      return
+    except requests.RequestException as e:
+      progress.add_bytes(-written)  # the piece restarts from scratch
+      if not _is_transient(e) or attempt == PIECE_ATTEMPTS - 1:
+        raise
+      cloudlog.warning(f"retrying {label} after {type(e).__name__}: {e}")
+      if cancel.wait(PIECE_BACKOFF * (1 + attempt)):
+        raise DownloadCancelled("Download cancelled") from None
 
 
 class ModelManagerSP:
@@ -41,7 +133,7 @@ class ModelManagerSP:
     self.source_models: dict[str, list[custom.ModelManagerSP.ModelBundle]] = {}
     self.selected_bundle: custom.ModelManagerSP.ModelBundle = None
     self.active_bundle: custom.ModelManagerSP.ModelBundle = get_active_bundle(self.params, chestnut=self.chestnut_present)
-    self._chunk_size = 128 * 1000  # 128 KB chunks
+    self._block_size = 128 * 1000  # 128 KB network read blocks
     self._download_start_times: dict[str, float] = {}  # Track start time per model
     self._download_ref: bytes | str | None = None
 
@@ -56,7 +148,6 @@ class ModelManagerSP:
     self._download_ref = None
 
   def _sync_artifact_progress(self, source_artifact) -> None:
-    """Mirror download progress to all artifacts sharing the same filename in the selected bundle."""
     if not self.selected_bundle:
       return
     for model in self.selected_bundle.models:
@@ -65,9 +156,9 @@ class ModelManagerSP:
         artifact.downloadProgress.status = source_artifact.downloadProgress.status
         artifact.downloadProgress.progress = source_artifact.downloadProgress.progress
         artifact.downloadProgress.eta = source_artifact.downloadProgress.eta
+        artifact.downloadProgress.speed = source_artifact.downloadProgress.speed
 
   def _calculate_eta(self, filename: str, progress: float) -> int:
-    """Calculate ETA based on elapsed time and current progress"""
     if filename not in self._download_start_times or progress <= 0:
       return 60  # Default ETA for new downloads
 
@@ -75,39 +166,74 @@ class ModelManagerSP:
     if elapsed_time <= 0:
       return 60
 
-    # If we're at X% after Y seconds, we can estimate total time as (Y / X) * 100
     total_estimated_time = (elapsed_time / progress) * 100
     eta = total_estimated_time - elapsed_time
-
     return max(1, int(eta))  # Return at least 1 second if download is ongoing
 
-  async def _download_file(self, url: str, path: str, model) -> None:
-    """Downloads a file with progress tracking"""
-    self._download_start_times[model.fileName] = time.monotonic()
+  def _set_progress(self, artifact, status, progress: float, eta: int = 0, speed: float = 0.0) -> None:
+    artifact.downloadProgress.status = status
+    artifact.downloadProgress.progress = progress
+    artifact.downloadProgress.eta = eta
+    artifact.downloadProgress.speed = speed
+    self._sync_artifact_progress(artifact)
+    self._report_status()
 
-    with requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT) as response:  # noqa: ASYNC210
-      response.raise_for_status()
-      total_size = int(response.headers.get("content-length", 0))
-      bytes_downloaded = 0
+  def _publish_progress(self, artifact, done_bytes: int, total: int, speed: float) -> None:
+    # held at 99 until the file passes its hash check
+    progress = min(99.0, done_bytes / total * 100) if total > 0 else 0.0
+    if speed > 0 and total > 0:
+      eta = max(1, int((total - done_bytes) / speed))
+    else:
+      eta = self._calculate_eta(artifact.fileName, progress)
+    self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, progress, eta, speed)
 
-      with open(path, 'wb') as f:  # noqa: ASYNC230
-        for chunk in response.iter_content(chunk_size=self._chunk_size):  # type: bytes
-          f.write(chunk)
-          bytes_downloaded += len(chunk)
+  async def _report_until_done(self, tasks: list[asyncio.Future], artifact, progress: _Progress, total: int,
+                               started: tuple[int, float]) -> None:
+    pending = set(tasks)
+    last_bytes, last_time = started
+    speed = 0.0
+    while pending:
+      done, pending = await asyncio.wait(pending, timeout=REPORT_INTERVAL)
+      for task in done:
+        task.result()  # re-raises a worker failure
+      if self._download_interrupted():
+        raise DownloadCancelled("Download cancelled")
+      now = time.monotonic()
+      done_bytes = progress.snapshot()
+      if (dt := now - last_time) > 0:
+        instant = max(0.0, (done_bytes - last_bytes) / dt)  # bytes/s this tick; clamped since retried pieces can lower the byte count
+        speed = instant if speed == 0 else SPEED_SMOOTHING * speed + (1 - SPEED_SMOOTHING) * instant
+        if speed < SPEED_FLOOR:  # a stall decays toward 0 without reaching it, and a near-0 speed overflows the eta
+          speed = 0.0
+      last_time, last_bytes = now, done_bytes
+      self._publish_progress(artifact, done_bytes, total, speed)
 
-          if self._download_interrupted():
-            raise DownloadCancelled("Download cancelled")
+  async def _download_file(self, url: str, path: str, artifact) -> None:
+    self._download_start_times[artifact.fileName] = time.monotonic()
+    loop = asyncio.get_running_loop()
 
-          if total_size > 0:
-            progress = (bytes_downloaded / total_size) * 100
-            model.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloading
-            model.downloadProgress.progress = progress
-            model.downloadProgress.eta = self._calculate_eta(model.fileName, progress)
-            self._sync_artifact_progress(model)
-            self._report_status()
+    total, ranged = await loop.run_in_executor(None, _probe_size, url)
+    pieces: list[tuple[int, int | None]] = list(_piece_ranges(total, PIECE_SIZE)) if ranged else [(0, None)]
+    await loop.run_in_executor(None, _prepare_target, path, total)
+    progress = _Progress()
+    cancel = threading.Event()
+    started = progress.snapshot(), time.monotonic()  # before any worker can land bytes
 
-    # Clean up start time after download completes
-    del self._download_start_times[model.fileName]
+    with ThreadPoolExecutor(max_workers=MAX_CONCURRENT_PIECES) as pool:
+      tasks = [loop.run_in_executor(pool, _fetch_piece, url, path, i, start, end, progress, cancel, self._block_size)
+               for i, (start, end) in enumerate(pieces)]
+      try:
+        await self._report_until_done(tasks, artifact, progress, total, started)
+      except BaseException as e:
+        cancel.set()
+        if isinstance(e, DownloadCancelled):
+          artifact.downloadProgress.canceling = True
+          self._set_progress(artifact, custom.ModelManagerSP.DownloadStatus.downloading, artifact.downloadProgress.progress)
+        for task in tasks:
+          task.cancel()  # drops queued pieces; running ones see the event at their next block
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
+    del self._download_start_times[artifact.fileName]
 
   async def _process_artifact(self, artifact, destination_path: str) -> None:
     if not artifact.downloadUri.uri:
@@ -119,33 +245,31 @@ class ModelManagerSP:
     expected_hash = artifact.downloadUri.sha256
     filename = artifact.fileName
     full_path = os.path.join(destination_path, filename)
+    status = custom.ModelManagerSP.DownloadStatus
+    artifact.downloadProgress.canceling = False
 
     try:
+      self._set_progress(artifact, status.verifying, 0)
       if await verify_file(full_path, expected_hash):
-        artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
-        artifact.downloadProgress.progress = 100
-        artifact.downloadProgress.eta = 0
-        self._sync_artifact_progress(artifact)
-        self._report_status()
+        self._set_progress(artifact, status.cached, 100)
         return
 
+      self._set_progress(artifact, status.downloading, 0)
       await self._download_file(url, full_path, artifact)
+      self._set_progress(artifact, status.verifying, 99)
       if not await verify_file(full_path, expected_hash):
         raise ValueError(f"Hash validation failed for {filename}")
 
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.downloaded
-      artifact.downloadProgress.progress = 100
-      artifact.downloadProgress.eta = 0
-      self._sync_artifact_progress(artifact)
-      self._report_status()
+      self._set_progress(artifact, status.downloaded, 100)
 
     except DownloadCancelled:
       self._download_start_times.pop(artifact.fileName, None)
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
+      artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
-        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+        self.selected_bundle.status = status.failed
       self._report_status()
       raise
 
@@ -153,11 +277,12 @@ class ModelManagerSP:
       cloudlog.error(f"Error downloading {filename}: {str(e)}")
       if os.path.isfile(full_path):  # noqa: ASYNC240
         os.remove(full_path)
-      artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.failed
+      artifact.downloadProgress.status = status.failed
       artifact.downloadProgress.eta = 0
+      artifact.downloadProgress.speed = 0
       self._sync_artifact_progress(artifact)
       if self.selected_bundle:
-        self.selected_bundle.status = custom.ModelManagerSP.DownloadStatus.failed
+        self.selected_bundle.status = status.failed
       self._report_status()
       self._download_start_times.pop(artifact.fileName, None)
       raise
@@ -197,6 +322,7 @@ class ModelManagerSP:
           artifact.downloadProgress.status = custom.ModelManagerSP.DownloadStatus.cached
           artifact.downloadProgress.progress = 100
           artifact.downloadProgress.eta = 0
+          artifact.downloadProgress.speed = 0
         else:
           seen_artifacts.add(artifact.fileName)
           await self._process_artifact(artifact, destination_path)
@@ -272,12 +398,7 @@ class ModelManagerSP:
         rk.keep_time()
 
   def clear_model_cache(self) -> None:
-    """
-    Clears the model cache directory of all files except those in the active model bundle.
-    """
-
-    # Get list of files used by both slots' selected bundles (either may become
-    # the truly active bundle depending on hardware availability)
+    """ Clears the model cache directory of all files except those in the active model bundle."""
     active_files = []
     for source in ACTIVE_BUNDLE_KEYS:
       if selected_bundle := get_selected_bundle(self.params, source):
@@ -285,7 +406,6 @@ class ModelManagerSP:
           if model.artifact.fileName:
             active_files.append(model.artifact.fileName)
 
-    # Remove all files except active ones
     model_dir = Paths.model_root()
     try:
       for filename in os.listdir(model_dir):

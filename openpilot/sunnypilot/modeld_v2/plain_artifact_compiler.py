@@ -23,7 +23,7 @@ def record_kernel_linear():
   recorded, hcq_compile, compile_linear = [], realize.hcq_compile, jit.compile_linear
 
   def recording_compile_linear(*args, **kwargs):
-    with mock.patch.object(realize, "hcq_compile", lambda linear, *a, **k: (recorded.append(linear), hcq_compile(linear, *a, **k))[1]):
+    with mock.patch.object(realize, "hcq_compile", lambda linear, *a, **k: (linear.src and recorded.append(linear), hcq_compile(linear, *a, **k))[1]):
       return compile_linear(*args, **kwargs)
 
   with mock.patch.object(jit, "compile_linear", recording_compile_linear):
@@ -36,6 +36,18 @@ def capture_frame(jit, kwargs: dict, output_container: str | None = None):
   result = jit(**kwargs)
   outputs = kwargs[output_container].values() if output_container else flatten(result)
   return {"inputs": inputs, "outputs": [tensor.numpy().copy() for tensor in outputs], "output_container": output_container}, result
+
+
+def kernel_signature(ast, elf) -> list:
+  from tinygrad.dtype import AddrSpace
+  if hasattr(ast, "kernel_params"):
+    if any(p.arg.addrspace is AddrSpace.ALU for p in ast.kernel_params):
+      raise ValueError(f"{elf.name} takes a variable, which plain artifacts don't support")
+    compact = {slot: i for i, slot in enumerate(ast.arg.globals)}
+    return [[p.arg.name, compact[p.arg.slot], repr(p.dtype), [int(x) for x in p._shape]] for p in ast.kernel_params]
+  if not all(isinstance(slot, int) for _, slot, _, _ in elf.signature):
+    raise ValueError("TinyELF.signature lost its slots and this tinygrad has no UOp.kernel_params: update kernel_signature")
+  return [[name, slot, repr(dtype), [int(x) for x in shape]] for name, slot, dtype, shape in elf.signature]
 
 
 def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, memoryview]:
@@ -51,6 +63,12 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
     if uop.op is Ops.PARAM:
       input_specs.setdefault(uop.arg.slot, {"dtype": repr(uop.dtype), "numel": int(uop.max_numel()), "device": uop.device})
       return {"input": uop.arg.slot}
+    root, offset = uop, 0
+    while root.op in (Ops.AFTER, Ops.BITCAST, Ops.SHRINK):
+      offset, root = offset + (root.src[1].arg * root.src[0].dtype.itemsize if root.op is Ops.SHRINK else 0), root.src[0]
+    if root.op is Ops.ALLOC:
+      base = bases.setdefault(id(root), (len(bases), root, root.dtype))
+      return {"buffer": base[0], "offset": offset, "nbytes": int(uop.max_numel()) * uop.dtype.itemsize, "dtype": repr(uop.dtype)}
     buffer = uop.buffer
     root = buffer._base if buffer._base is not None else buffer
     base = bases.setdefault(id(root), (len(bases), root, uop.base.dtype if buffer._base is None else uop.dtype))
@@ -63,7 +81,7 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
       elf, info = ast.to_elf(), ast.arg
       global_size, local_size = info.launch_dims({})
       calls.append({"kind": "program", "name": elf.name, "lib": blob.add(bytes(elf.lib)), "target": dataclasses.asdict(elf.target),
-                    "signature": [[name, slot, repr(dtype), [int(x) for x in shape]] for name, slot, dtype, shape in elf.signature],
+                    "signature": kernel_signature(ast, elf),
                     "global_size": [int(x) for x in global_size], "local_size": [int(x) for x in local_size],
                     "globals": list(info.globals), "outs": list(info.outs), "ins": list(info.ins), "args": arguments})
       outs, ins = info.outs, info.ins
@@ -77,7 +95,9 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
 
   ret = jit.captured.ret
   returns = {"kind": type(ret).__name__, "tensors": [describe(t.uop.base) | {"shape": [int(x) for x in t.shape]} for t in flatten(ret)]}
-  buffers = [{"nbytes": base.nbytes, "device": base.device, "dtype": repr(dtype)}
+  from tinygrad.device import Buffer
+  assert not [base for index, base, _ in bases.values() if index in needs_init and not isinstance(base, Buffer)], "a kernel reads a scratch before writing it"
+  buffers = [{"nbytes": base.nbytes if isinstance(base, Buffer) else int(base.max_numel()) * dtype.itemsize, "device": base.device, "dtype": repr(dtype)}
              | ({"init": blob.add(base.as_memoryview())} if index in needs_init else {}) for index, base, dtype in bases.values()]
   names = list(jit.captured.expected_names)
   if check is not None:

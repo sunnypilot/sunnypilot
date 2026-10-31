@@ -33,7 +33,7 @@ from openpilot.sunnypilot.models.model_name import DEFAULT_MODEL, DEFAULT_BIG_MO
 from openpilot.sunnypilot.selfdrive.car.sync_sunnylink_params import update_car_list_param
 from openpilot.sunnypilot.sunnylink.api import SunnylinkApi
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, get_param_as_byte, save_param_from_base64_encoded_string
-from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities, CAPABILITY_LABELS
+from openpilot.sunnypilot.sunnylink.capabilities import generate_capabilities, CAPABILITY_LABELS, CAR_CAPABILITY_FIELDS
 from openpilot.sunnypilot.sunnylink.tools.generate_settings_schema import generate_schema
 from openpilot.sunnypilot.sunnylink.athena.local_params import cloud_may_write, is_local_param
 
@@ -194,6 +194,7 @@ class Sunnylinkd:
       schema = generate_schema()
       schema["capabilities"] = generate_capabilities()
       schema["capability_labels"] = CAPABILITY_LABELS
+      schema["car_capability_fields"] = CAR_CAPABILITY_FIELDS
       schema["default_model"] = DEFAULT_MODEL
       schema["default_big_model"] = DEFAULT_BIG_MODEL
       schema["chestnut_active"] = self.params.get_bool("ChestnutActive")
