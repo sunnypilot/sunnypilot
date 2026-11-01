@@ -4,8 +4,10 @@ from openpilot.common.parameterized import parameterized
 from openpilot.common.test import OpenpilotTestCase
 
 from openpilot.selfdrive.controls.lib.desire_helper import DesireHelper, LaneChangeState, LaneChangeDirection
-from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN
+from openpilot.sunnypilot.selfdrive.controls.lib.lane_turn_desire import LaneTurnController, LANE_CHANGE_SPEED_MIN, MODEL_TURN_PROB, \
+  DESIRE_PRED_WIDTH, model_turn_probs
 from openpilot.sunnypilot.selfdrive.controls.lib.auto_lane_change import AutoLaneChangeMode
+from openpilot.sunnypilot.selfdrive.controls.lib import lane_turn_desire
 
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
@@ -25,6 +27,7 @@ class TestLaneTurnDesire(OpenpilotTestCase):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
+    controller.wait_for_turn = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = TurnDirection.none
     controller.update_lane_turn(blindspot_left, blindspot_right, left_blinker, right_blinker, v_ego)
@@ -34,6 +37,7 @@ class TestLaneTurnDesire(OpenpilotTestCase):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = False
+    controller.wait_for_turn = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = TurnDirection.none
     controller.update_lane_turn(False, False, True, False, 7)
@@ -43,6 +47,7 @@ class TestLaneTurnDesire(OpenpilotTestCase):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
+    controller.wait_for_turn = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = TurnDirection.none
     # left turn desire
@@ -64,6 +69,7 @@ class TestLaneTurnDesire(OpenpilotTestCase):
     dh = DesireHelper()
     controller = LaneTurnController(dh)
     controller.enabled = True
+    controller.wait_for_turn = False
     controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
     controller.turn_direction = TurnDirection.none
     controller.update_lane_turn(False, True, True, False, v_ego)
@@ -84,6 +90,7 @@ class DummyCarState:
 
 
 def set_lane_turn_params():
+  lane_turn_desire.WAIT_FOR_TURN = False  # these cases cover the immediate turn desire
   params = Params()
   params.put("LaneTurnDesire", True)
   params.put("LaneTurnValue", 20.0)
@@ -166,3 +173,80 @@ class TestDesireHelperIntegration(OpenpilotTestCase):
       dh.update(carstate, True, 1.0, left_edge_detected=False, right_edge_detected=True)
     assert dh.lane_change_state == LaneChangeState.laneChangeStarting
     assert dh.desire == log.Desire.laneChangeLeft
+
+
+def make_wait_controller():
+  controller = LaneTurnController(DesireHelper())
+  controller.enabled = True
+  controller.wait_for_turn = True
+  controller.lane_turn_value = LANE_CHANGE_SPEED_MIN
+  return controller
+
+
+class TestWaitForTurn(OpenpilotTestCase):
+  def test_blinker_only_arms(self):
+    controller = make_wait_controller()
+    for _ in range(20):
+      controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  @parameterized.expand([
+    ("stopped", {"v_ego": 0.2}),
+    ("nudge", {"steering_pressed": True, "steering_torque": 1.5}),
+    ("model", {"turn_probs": (MODEL_TURN_PROB, 0.)}),
+  ])
+  def test_trigger_fires_and_latches(self, _, trigger):
+    controller = make_wait_controller()
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+    args = {"v_ego": 6} | trigger
+    controller.update_lane_turn(False, False, True, False, args.pop('v_ego'), **args)
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+    # stays on after the trigger goes away, so the model sees a single pulse
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+
+  @parameterized.expand([
+    ("nudge_wrong_way", {"steering_pressed": True, "steering_torque": 1.5}),
+    ("model_other_side", {"turn_probs": (0.9, 0.)}),
+    ("model_low", {"turn_probs": (0., MODEL_TURN_PROB - 0.01)}),
+  ])
+  def test_wrong_side_triggers_ignored(self, _, trigger):
+    controller = make_wait_controller()
+    for _ in range(5):
+      controller.update_lane_turn(False, False, False, True, 6, **trigger)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  def test_blinker_off_rearms(self):
+    controller = make_wait_controller()
+    controller.update_lane_turn(False, False, True, False, 0.)
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+    controller.update_lane_turn(False, False, False, False, 6)
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  def test_model_turn_probs(self):
+    pred = [0.] * (DESIRE_PRED_WIDTH * 4)
+    pred[DESIRE_PRED_WIDTH + 1] = 0.6  # turnLeft, second horizon
+    pred[2] = 0.2  # turnRight, first horizon
+    pred[DESIRE_PRED_WIDTH * 3 + 2] = 0.9  # turnRight, beyond the horizons checked
+    assert model_turn_probs(pred) == (0.6, 0.2)
+    assert model_turn_probs(None) == (0., 0.)
+
+
+class TestWaitForTurnDesireHelper(OpenpilotTestCase):
+  def test_model_prediction_releases_turn(self):
+    params = Params()
+    params.put("LaneTurnDesire", True)
+    lane_turn_desire.WAIT_FOR_TURN = True
+    params.put("LaneTurnValue", 20.0)
+    dh = DesireHelper()
+    carstate = DummyCarState(vEgo=5, leftBlinker=True)
+    pred = [0.] * (DESIRE_PRED_WIDTH * 4)
+    for _ in range(10):
+      dh.update(carstate, True, 0., desire_prediction=pred)
+    assert dh.desire == log.Desire.none
+
+    pred[log.Desire.turnLeft] = 0.9
+    dh.update(carstate, True, 0., desire_prediction=pred)
+    assert dh.desire == log.Desire.turnLeft
