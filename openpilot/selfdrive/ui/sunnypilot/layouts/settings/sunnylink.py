@@ -4,6 +4,8 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import pyray as rl
 from functools import partial
 from openpilot.cereal import custom
@@ -14,26 +16,21 @@ from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.sunnypilot.sunnylink.athena.local_app_rows import MAX_LOCAL_APP_ROWS, LocalAppRow
 from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
   app_rows,
-  clear_pairing_params,
+  pending_enrollment,
   request_revoke,
   request_revoke_all,
 )
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment, TextAlignmentVertical
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.lib.wrap_text import wrap_text
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, button_item_sp, toggle_item_sp
-from openpilot.system.ui.sunnypilot.widgets.local_pairing import LocalPairingWindow
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets import Widget, DialogResult
-from openpilot.system.ui.widgets.button import ButtonStyle, Button, IconButton
+from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.list_view import dual_button_item
 from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
-
-_LOCAL_DISCOVERED_COLOR = rl.Color(170, 170, 170, 255)
-
 
 class SunnylinkHeader(Widget):
   def __init__(self):
@@ -340,8 +337,6 @@ class SunnylinkLayout(Widget):
       gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
-      if not state:
-        clear_pairing_params()
       self._update_description(state)
 
   def _update_description(self, state: bool):
@@ -396,9 +391,15 @@ class SunnylinkLayout(Widget):
 
 class SunnylinkLocalAppLayout(Widget):
 
+  # How long a requested unpair may stay visible before the UI calls it stuck: the local
+  # daemon's tick services requests about once a second, so anything older was never claimed.
+  _REVOKE_STUCK_S = 4.0
+
   def __init__(self):
     super().__init__()
     self._rows_cache: list[LocalAppRow] = []
+    self._pending_revokes: dict[str, float] = {}
+    self._pending_revoke_all: float | None = None
 
     self._back_button = NavButton(tr("Back"))
     self._back_button.set_click_callback(gui_app.pop_widget)
@@ -410,14 +411,6 @@ class SunnylinkLocalAppLayout(Widget):
       param="SunnylinkLocalEnabled",
     )
 
-    self._pair_app_btn = button_item_sp(
-      title=tr("Pair App"),
-      button_text=tr("SCAN"),
-      description=tr("Show a QR code the sunnylink app scans to enroll this phone's key. ") +
-                  tr("The app must be signed in, and the code expires after 2 minutes."),
-      callback=self._show_pairing_dialog,
-    )
-
     self._revoke_all_btn = button_item_sp(
       title=tr("Unpair all phones"),
       button_text=tr("REVOKE ALL"),
@@ -427,13 +420,15 @@ class SunnylinkLocalAppLayout(Widget):
     )
     self._revoke_all_btn.set_visible(lambda: bool(self._rows_cache))
 
+    self._revoke_status = SunnylinkDescriptionItem()
+    self._revoke_status.set_visible(False)
+
     self._local_app_rows: list[ListItemSP] = []
     self._local_app_seps: list[LineSeparator] = []
     for i in range(MAX_LOCAL_APP_ROWS):
       row = button_item_sp(
         title=lambda i=i: self._row_title(i),
         button_text=tr("UNPAIR"),
-        description=lambda i=i: self._row_subtitle(i),
         callback=partial(self._unpair_row, i),
       )
       sep = LineSeparator()
@@ -443,7 +438,7 @@ class SunnylinkLocalAppLayout(Widget):
       self._local_app_seps.append(sep)
 
     items = [self._local_connections_toggle, LineSeparator(),
-             self._pair_app_btn, LineSeparator(), self._revoke_all_btn, LineSeparator()]
+             self._revoke_status, LineSeparator(), self._revoke_all_btn, LineSeparator()]
     for row, sep in zip(self._local_app_rows, self._local_app_seps, strict=True):
       items.extend((row, sep))
     self._scroller = Scroller(items, line_separator=False, spacing=0)
@@ -454,19 +449,19 @@ class SunnylinkLocalAppLayout(Widget):
   def _row_title(self, i: int) -> str:
     return self._rows_cache[i].title if i < len(self._rows_cache) else ""
 
-  def _row_subtitle(self, i: int) -> str:
-    return self._rows_cache[i].subtitle if i < len(self._rows_cache) else ""
-
-  def _show_pairing_dialog(self):
-    gui_app.push_widget(SunnylinkLocalPairingDialog())
-
   def _revoke_all(self):
     dialog = ConfirmDialog(
       text=tr("Revoke all phones?") + " " + tr("They will need to pair again from the app."),
       confirm_text=tr("Revoke all"),
-      callback=lambda _result: request_revoke_all(),
+      callback=self._on_revoke_all_confirmed,
     )
     gui_app.push_widget(dialog)
+
+  def _on_revoke_all_confirmed(self, result: int):
+    if result != DialogResult.CONFIRM:
+      return
+    self._pending_revoke_all = time.monotonic()
+    request_revoke_all()
 
   def _unpair_row(self, index: int):
     if index >= len(self._rows_cache):
@@ -475,13 +470,42 @@ class SunnylinkLocalAppLayout(Widget):
     dialog = ConfirmDialog(
       text=tr("Unpair") + f" {row.title}? " + tr("You will need to enroll this phone again from the app."),
       confirm_text=tr("Unpair"),
-      callback=lambda _result: request_revoke(row.app_id),
+      callback=partial(self._on_unpair_confirmed, row.app_id),
     )
     gui_app.push_widget(dialog)
+
+  def _on_unpair_confirmed(self, app_id: str, result: int):
+    if result != DialogResult.CONFIRM:
+      return
+    self._pending_revokes[app_id] = time.monotonic()
+    request_revoke(app_id)
 
   def _update_state(self):
     super()._update_state()
     self._rows_cache = app_rows()
+    self._update_revoke_status()
+
+  def _update_revoke_status(self) -> None:
+    now = time.monotonic()
+    present = {row.app_id for row in self._rows_cache}
+    stuck = [app_id for app_id, asked in self._pending_revokes.items()
+             if app_id in present and now - asked >= self._REVOKE_STUCK_S]
+    self._pending_revokes = {a: t for a, t in self._pending_revokes.items() if a in present}
+    revoke_all_stuck = (self._pending_revoke_all is not None and bool(present)
+                        and now - self._pending_revoke_all >= self._REVOKE_STUCK_S)
+    if not present:
+      self._pending_revoke_all = None
+    pending = pending_enrollment()
+    if stuck or revoke_all_stuck:
+      self._revoke_status.set_color(rl.Color(255, 165, 0, 255))
+      self._revoke_status.set_text(tr("Still paired — the local daemon may not be running."))
+      self._revoke_status.set_visible(True)
+    elif pending is not None:
+      self._revoke_status.set_color(rl.WHITE)
+      self._revoke_status.set_text(tr("Enrollment pending — waiting for the phone to connect…"))
+      self._revoke_status.set_visible(True)
+    else:
+      self._revoke_status.set_visible(False)
 
   def _render(self, rect):
     self._back_button.set_position(self._rect.x, self._rect.y + 20)
@@ -498,71 +522,3 @@ class SunnylinkLocalAppLayout(Widget):
     super().hide_event()
     self._scroller.hide_event()
 
-
-class SunnylinkLocalPairingDialog(Widget):
-
-  def __init__(self):
-    super().__init__()
-    self._window = LocalPairingWindow()
-    self._close_btn = IconButton(gui_app.texture("icons/close.png", 80, 80))
-    self._close_btn.set_click_callback(self._cancel)
-
-  def _cancel(self) -> None:
-    self._window.cancel()
-    gui_app.pop_widget()
-
-  def _update_state(self):
-    if self._window.ended():
-      gui_app.pop_widget()
-
-  def _render(self, rect) -> int:
-    rl.clear_background(rl.Color(224, 224, 224, 255))
-    texture = self._window.texture()
-
-    margin = 70
-    content_rect = rl.Rectangle(rect.x + margin, rect.y + margin,
-                                rect.width - 2 * margin, rect.height - 2 * margin)
-    y = content_rect.y
-
-    close_size = 80
-    pad = 20
-    close_rect = rl.Rectangle(content_rect.x - pad, y - pad, close_size + pad * 2, close_size + pad * 2)
-    self._close_btn.render(close_rect)
-    y += close_size + 40
-
-    # The layout the cloud pairing dialog uses: the QR takes half the width and the full height,
-    # 900px here, which is 31 px per module for the compact 29-module pointer.
-    left_width = int(content_rect.width * 0.5 - 15)
-    right_width = int(content_rect.width // 2 - 20)
-
-    title_font = gui_app.font(FontWeight.NORMAL)
-    title_wrapped = wrap_text(title_font, tr("Pair with mobile app"), 70, left_width)
-    rl.draw_text_ex(title_font, "\n".join(title_wrapped), rl.Vector2(content_rect.x, y), 70, 0.0, rl.BLACK)
-    y += len(title_wrapped) * 70 + 40
-
-    qr_size = int(min(right_width, content_rect.height) - 40)
-    qr_rect = rl.Rectangle(content_rect.x + left_width + 40 + (right_width - qr_size) / 2,
-                           content_rect.y, qr_size, qr_size)
-    card = rl.Rectangle(qr_rect.x - 10, qr_rect.y - 10, qr_rect.width + 20, qr_rect.height + 20)
-    rl.draw_rectangle_rounded(card, 0.05, 10, rl.WHITE)
-    if texture is not None:
-      source = rl.Rectangle(0, 0, texture.width, texture.height)
-      rl.draw_texture_pro(texture, source, qr_rect, rl.Vector2(0, 0), 0, rl.WHITE)
-
-    hint_font = gui_app.font(FontWeight.NORMAL)
-    hints = [
-      tr("In the sunnylink app, open Local Connectivity → Pair a device."),
-      tr("Sign in to the same sunnypilot account on both."),
-      tr("The code expires after 2 minutes."),
-    ] if texture is not None else [tr("Preparing a secure pairing code…")]
-    for hint in hints:
-      wrapped = wrap_text(hint_font, hint, 38, left_width)
-      rl.draw_text_ex(hint_font, "\n".join(wrapped), rl.Vector2(content_rect.x, y), 38, 0.0, rl.BLACK)
-      y += len(wrapped) * 38 + 14
-
-    rl.draw_text_ex(hint_font, tr("Waiting for the phone…"), rl.Vector2(content_rect.x, y + 10), 40, 0.0,
-                    _LOCAL_DISCOVERED_COLOR)
-    return -1
-
-  def __del__(self):
-    self._window.release()

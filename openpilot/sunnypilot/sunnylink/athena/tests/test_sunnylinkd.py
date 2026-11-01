@@ -15,7 +15,7 @@ from openpilot.sunnypilot.sunnylink.athena import sunnylinkd
 from openpilot.sunnypilot.sunnylink.athena.local_params import ENROLL, REVOKE
 
 # The local daemon owns this payload's contents; to the cloud transport it is one opaque value.
-ENROLLMENT_JSON = '{"v":2,"purpose":"sunnylink-local-enroll"}'
+ENROLLMENT_JSON = '{"v":3,"purpose":"sunnylink-local-enroll"}'
 
 
 class TestCloudRpcSurface(OpenpilotTestCase):
@@ -76,8 +76,6 @@ class TestCloudRpcSurface(OpenpilotTestCase):
     self.daemon.saveParams({
       "SunnylinkLocalApps": "attacker registry",
       "SunnylinkLocalAppsMeta": "attacker metadata",
-      "SunnylinkLocalPairingRequest": "1",
-      "SunnylinkLocalPairingQr": "attacker qr",
       "SunnylinkLocalRevoke": "attacker revoke request",
       "SunnylinkLocalFutureKey": "attacker key",
       "_sec_SunnylinkLocalFuture": "attacker secret",
@@ -90,7 +88,6 @@ class TestCloudRpcSurface(OpenpilotTestCase):
 
   def test_getParams_never_exposes_local_parameters(self):
     response = self.daemon.getParams(["SunnylinkLocalApps", "SunnylinkLocalAppsMeta",
-                                      "SunnylinkLocalPairingRequest", "SunnylinkLocalPairingQr",
                                       "SunnylinkLocalRevoke", ENROLL, REVOKE])
     self.assertEqual(response, {"params": "[]"})
 
@@ -100,7 +97,7 @@ class TestCloudRpcSurface(OpenpilotTestCase):
 
   def test_getParamsAllKeys_excludes_local_params(self):
     keys = self.daemon.getParamsAllKeys()
-    for key in ("SunnylinkLocalApps", "SunnylinkLocalAppsMeta", "SunnylinkLocalPairingQr",
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalAppsMeta", "SunnylinkLocalRevoke",
                 "SunnylinkLocalEnabled", ENROLL, REVOKE):
       self.assertNotIn(key, keys)
     self.assertTrue("SpeedLimitValueOffset" in keys)

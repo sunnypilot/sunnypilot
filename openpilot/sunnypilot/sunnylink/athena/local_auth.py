@@ -1,4 +1,12 @@
-"""Local trust: keys, grants, pairing window, pinned TLS dial."""
+"""Local trust: keys, grants, cloud enrollment, pinned TLS dial.
+
+Pairing is automatic: the app pushes a self-signed enrollment for this phone's
+key through the existing authenticated cloud settings-write transport (the same
+channel all settings writes already trust). The device stages it and commits
+the grant only after the phone's key proves itself over pinned TLS on the LAN.
+There is no code, window, or presence check: account write access authorizes
+enrollment, and the paired-devices list on this screen is the audit trail.
+"""
 from __future__ import annotations
 
 import base64
@@ -10,7 +18,6 @@ import socket
 import ssl
 import threading
 import ipaddress
-import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import Enum
@@ -23,22 +30,11 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 
-VERSION = 2
+VERSION = 3
 AUTHENTICATE_PURPOSE = "sunnylink-local-authenticate"
-PAIRING_TTL_S = 120
-# Late cloud deliveries still land after the code leaves the screen.
-PAIRING_DELIVERY_GRACE_S = 600
-MAX_RECENT_SESSIONS = 3
 MAX_ENROLL_BYTES = 4096
 MAX_GRANTS = 8
 
-# QR frame (whole QR is its base64url): "SLEN" | version | len(cloud id) | cloud id | session | ttl.
-# Unsigned to fit the 536x240 panel at 29 modules. The nonce is minted by the device and the
-# identity proof happens over pinned TLS, so a signature on the QR adds nothing.
-QR_MAGIC = b"SLEN"
-QR_VERSION = 4
-QR_SESSION_BYTES = 16
-MAX_QR_FRAME_BYTES = 256
 LOCAL_METHODS = frozenset({"getParams", "getParamsAllKeys", "getParamsMetadata", "getMessage", "saveParams",
                            "updateLocalAppAlias", "unpairLocalApp"})
 _TOKEN = re.compile(r"[A-Za-z0-9_-]+\Z")
@@ -86,41 +82,6 @@ def key_id(key: ec.EllipticCurvePublicKey | rsa.RSAPublicKey) -> str:
   """App id is the hash of its key."""
   raw = key.public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
   return encode64(hashlib.sha256(raw).digest())
-
-
-@dataclass(frozen=True)
-class QrPayload:
-  cloud_device_id: str
-  session: bytes
-  ttl_s: int
-
-
-def qr_frame(cloud_device_id: str, session: bytes, ttl_s: int) -> bytes:
-  if len(session) != QR_SESSION_BYTES:
-    raise AuthorizationError("invalid qr session")
-  if not 0 < ttl_s < 256:
-    raise AuthorizationError("invalid qr ttl")
-  encoded = text_field(cloud_device_id).encode("utf-8")
-  if not 0 < len(encoded) < 256:
-    raise AuthorizationError("invalid cloud device id")
-  return QR_MAGIC + bytes([QR_VERSION, len(encoded)]) + encoded + session + bytes([ttl_s])
-
-
-def decode_qr(raw: str) -> QrPayload:
-  """Parse a scanned QR."""
-  frame = decode64(raw, max_bytes=MAX_QR_FRAME_BYTES)
-  header = len(QR_MAGIC) + 2
-  if len(frame) < header + 1 + QR_SESSION_BYTES + 1 or not frame.startswith(QR_MAGIC):
-    raise AuthorizationError("invalid qr")
-  version, id_length = frame[len(QR_MAGIC)], frame[len(QR_MAGIC) + 1]
-  if version != QR_VERSION or id_length == 0 or len(frame) != header + id_length + QR_SESSION_BYTES + 1:
-    raise AuthorizationError("invalid qr")
-  try:
-    cloud_device_id = text_field(frame[header:header + id_length].decode("utf-8"))
-  except UnicodeDecodeError as e:
-    raise AuthorizationError("invalid qr") from e
-  session_start = header + id_length
-  return QrPayload(cloud_device_id, frame[session_start:session_start + QR_SESSION_BYTES], frame[-1])
 
 
 def text_field(value: Any, maximum: int = 128) -> str:
@@ -174,79 +135,25 @@ class Grant:
     return {"app_id": self.app_id, "public_key": self.public_key, "app_name": self.app_name}
 
 
-@dataclass(frozen=True)
-class Window:
-  nonce: str
-  # How long the code is on the device screen and can be scanned.
-  deadline: float
-  # [deadline] plus [PAIRING_DELIVERY_GRACE_S]: how long an enrollment for this code may still
-  # arrive through the cloud after the code itself can no longer be scanned.
-  usable_until: float
-  qr: str
-
-
 class LocalAuthority:
   """All trust changes go through here."""
 
   def __init__(self, cloud_device_id: str, comma_device_id: str, device_private_key: ec.EllipticCurvePrivateKey | rsa.RSAPrivateKey,
-               persist: Callable[[dict[str, Any]], None], registry: Any = None, clock: Callable[[], float] = time.monotonic):
+               persist: Callable[[dict[str, Any]], None], registry: Any = None):
     self.cloud_device_id = text_field(cloud_device_id)
     self.comma_device_id = text_field(comma_device_id)
     self.device_key = device_private_key
     self.device_key_id = key_id(device_private_key.public_key())
     self.persist = persist
-    self.clock = clock
     self.lock = threading.RLock()
-    self.window: Window | None = None
-    self.recent: list[Window] = []
     self.pending: Grant | None = None
-    self.pending_session: str | None = None
     self.grants = _load_grants(registry)
-
-  def arm(self) -> str:
-    with self.lock:
-      session = secrets.token_bytes(QR_SESSION_BYTES)
-      qr = encode64(qr_frame(self.cloud_device_id, session, PAIRING_TTL_S))
-      now = self.clock()
-      self.window = Window(encode64(session), now + PAIRING_TTL_S, now + PAIRING_TTL_S + PAIRING_DELIVERY_GRACE_S, qr)
-      self._remember(self.window)
-      self.pending = self.pending_session = None
-      return qr
-
-  def _remember(self, window: Window) -> None:
-    now = self.clock()
-    kept = [w for w in self.recent if w.nonce != window.nonce and now < w.usable_until]
-    self.recent = (kept + [window])[-MAX_RECENT_SESSIONS:]
-
-  def cancel(self) -> None:
-    with self.lock:
-      self.window = None
-      self.recent = []
-      self.pending = self.pending_session = None
-
-  def expire(self) -> None:
-    with self.lock:
-      self.window = None
-
-  def prune_sessions(self) -> None:
-    with self.lock:
-      now = self.clock()
-      self.recent = [w for w in self.recent if now < w.usable_until]
-
-  def _fresh(self, nonce: str) -> None:
-    with self.lock:
-      candidates = ([self.window] if self.window is not None else []) + self.recent
-    now = self.clock()
-    if not any(w is not None and now < w.usable_until and secrets.compare_digest(w.nonce, nonce) for w in candidates):
-      # The only trace of an enrollment that named a code this device no longer honors. "Expired"
-      # is what tells a user to scan a fresh code rather than retry the same one.
-      raise AuthorizationError("pairing code expired")
 
   def enroll(self, raw: str, origin: Origin) -> Grant:
     if origin is not Origin.CLOUD:
       raise AuthorizationError("cloud authorization required")
     data = parse_object(raw)
-    required = {"v", "cloud_device_id", "comma_device_id", "device_key_id", "pairing_session", "public_key", "key_id", "app_name", "signature"}
+    required = {"v", "cloud_device_id", "comma_device_id", "device_key_id", "public_key", "key_id", "app_name", "signature"}
     if set(data) != required or type(data["v"]) is not int or data["v"] != VERSION:
       raise AuthorizationError("invalid enrollment")
     if (data["cloud_device_id"], data["comma_device_id"], data["device_key_id"]) != \
@@ -257,25 +164,25 @@ class LocalAuthority:
     app_id = key_id(key)
     if data["key_id"] != app_id:
       raise AuthorizationError("wrong key")
-    nonce = text_field(data["pairing_session"], 43)
-    if len(decode64(nonce, max_bytes=32)) != QR_SESSION_BYTES:
-      raise AuthorizationError("invalid nonce")
     name = text_field(data["app_name"], 80)
-    signed = statement("enroll", self.cloud_device_id, self.comma_device_id, self.device_key_id, nonce, public, app_id, name)
+    signed = statement("enroll", self.cloud_device_id, self.comma_device_id, self.device_key_id, public, app_id, name)
     try:
       key.verify(decode64(data["signature"], max_bytes=72), signed, ec.ECDSA(hashes.SHA256()))
     except InvalidSignature as e:
       raise AuthorizationError("invalid proof") from e
     with self.lock:
-      self._fresh(nonce)
+      stored = self.grants.get(app_id)
+      if stored is not None:
+        if stored.public_key != public:
+          raise AuthorizationError("key mismatch")
+        return stored
       if self.pending is not None:
         if (self.pending.public_key, self.pending.app_name) != (public, name):
-          raise AuthorizationError("window already bound")
+          raise AuthorizationError("enrollment in progress")
         return self.pending
-      if app_id not in self.grants and len(self.grants) >= MAX_GRANTS:
+      if len(self.grants) >= MAX_GRANTS:
         raise AuthorizationError("grant limit")
       self.pending = Grant(app_id, public, name)
-      self.pending_session = nonce
       return self.pending
 
   def confirm(self, grant: Grant, tls_peer_key_id: str) -> Grant:
@@ -284,13 +191,10 @@ class LocalAuthority:
         raise AuthorizationError("wrong TLS peer")
       if self.pending != grant:
         raise AuthorizationError("no pending enrollment")
-      if self.pending_session is None:
-        raise AuthorizationError("window closed")
-      self._fresh(self.pending_session)
       updated = self.grants | {grant.app_id: grant}
       self.persist(_registry(updated))
       self.grants = updated
-      self.cancel()
+      self.pending = None
       return grant
 
   def authenticate_device(self, phone_key_id: str, challenge: str) -> dict[str, str]:
@@ -341,12 +245,13 @@ class LocalAuthority:
         return 0
       self.persist(_registry({}))
       self.grants = {}
+      self.pending = None
       return removed
 
   def revoke(self, app_id: str) -> bool:
     with self.lock:
       if self.pending is not None and self.pending.app_id == app_id:
-        self.cancel()
+        self.pending = None
       if app_id not in self.grants:
         return False
       updated = {k: g for k, g in self.grants.items() if k != app_id}

@@ -4,13 +4,15 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import pyray as rl
 from functools import partial
 
 from openpilot.cereal import custom
 from openpilot.common.version import sunnylink_consent_version, sunnylink_consent_declined
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog, BigDialogBase
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -18,13 +20,11 @@ from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
 from openpilot.sunnypilot.sunnylink.athena.local_app_rows import MAX_LOCAL_APP_ROWS, LocalAppRow
 from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
   app_rows,
-  clear_pairing_params,
   request_revoke,
   request_revoke_all,
 )
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.local_pairing import LocalPairingWindow
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
@@ -154,8 +154,6 @@ class SunnylinkLayoutMici(NavScroller):
       gui_app.push_widget(sl_terms_dlg)
     else:
       ui_state.params.put_bool("SunnylinkEnabled", state)
-      if not state:
-        clear_pairing_params()
 
     ui_state.update_params()
 
@@ -272,16 +270,19 @@ class SunnylinkPairBigButton(BigButton):
 
 class LocalAppsPanelMici(NavScroller):
 
+  # How long a requested unpair may stay visible before the UI calls it stuck: the local
+  # daemon's tick services requests about once a second, so anything older was never claimed.
+  _REVOKE_STUCK_S = 4.0
+
   def __init__(self):
     super().__init__()
     self._rows_cache: list[LocalAppRow] = []
+    self._pending_revokes: dict[str, float] = {}
+    self._pending_revoke_all: float | None = None
 
     self._local_toggle = BigToggle(text=tr("local connections"),
                                    initial_state=ui_state.params.get_bool("SunnylinkLocalEnabled"),
                                    toggle_callback=self._local_toggle_callback)
-
-    self._pair_app_btn = BigButton(tr("pair app"), "")
-    self._pair_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalPairingDialogMici()))
 
     self._revoke_all_btn = BigButton(tr("revoke all phones"), "")
     self._revoke_all_btn.set_click_callback(self._confirm_revoke_all)
@@ -292,7 +293,7 @@ class LocalAppsPanelMici(NavScroller):
       btn.set_click_callback(partial(self._confirm_unpair_row, i))
       self._local_app_btns.append(btn)
 
-    self._scroller.add_widgets([self._local_toggle, self._pair_app_btn, self._revoke_all_btn, *self._local_app_btns])
+    self._scroller.add_widgets([self._local_toggle, self._revoke_all_btn, *self._local_app_btns])
 
   @staticmethod
   def _local_toggle_callback(state: bool):
@@ -304,21 +305,41 @@ class LocalAppsPanelMici(NavScroller):
     self._local_toggle.set_checked(ui_state.params.get_bool("SunnylinkLocalEnabled"))
     self._rows_cache = app_rows()
     self._revoke_all_btn.set_visible(bool(self._rows_cache))
+    now = time.monotonic()
+    present = {row.app_id for row in self._rows_cache}
+    self._pending_revokes = {a: t for a, t in self._pending_revokes.items() if a in present}
+    if not present:
+      self._pending_revoke_all = None
+    stuck_all = (self._pending_revoke_all is not None and bool(present)
+                 and now - self._pending_revoke_all >= self._REVOKE_STUCK_S)
     for i, btn in enumerate(self._local_app_btns):
       btn.set_visible(i < len(self._rows_cache))
       if i < len(self._rows_cache):
-        btn.set_text(self._rows_cache[i].title)
-        btn.set_value(self._rows_cache[i].subtitle)
+        row = self._rows_cache[i]
+        btn.set_text(row.title)
+        asked = self._pending_revokes.get(row.app_id)
+        if (asked is not None and now - asked >= self._REVOKE_STUCK_S) or stuck_all:
+          btn.set_value(tr("still paired — retry?"))
+        else:
+          btn.set_value("")
+    if stuck_all:
+      self._revoke_all_btn.set_value(tr("still paired — retry?"))
+    else:
+      self._revoke_all_btn.set_value("")
 
   def _confirm_revoke_all(self):
     icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
     dlg = BigConfirmationDialog(
       tr("revoke all phones"),
       icon,
-      confirm_callback=request_revoke_all,
+      confirm_callback=self._on_revoke_all_confirmed,
       red=True,
     )
     gui_app.push_widget(dlg)
+
+  def _on_revoke_all_confirmed(self):
+    self._pending_revoke_all = time.monotonic()
+    request_revoke_all()
 
   def _confirm_unpair_row(self, index: int):
     if index >= len(self._rows_cache):
@@ -327,46 +348,12 @@ class LocalAppsPanelMici(NavScroller):
     dlg = BigConfirmationDialog(
       tr("slide to unpair"),
       gui_app.texture("icons_mici/settings/device/update.png", 64, 64),
-      confirm_callback=lambda: request_revoke(row.app_id),
+      confirm_callback=partial(self._on_unpair_confirmed, row.app_id),
       red=True,
     )
     gui_app.push_widget(dlg)
 
+  def _on_unpair_confirmed(self, app_id: str):
+    self._pending_revokes[app_id] = time.monotonic()
+    request_revoke(app_id)
 
-class LocalPairingDialogMici(BigDialogBase):
-
-  def __init__(self):
-    super().__init__()
-    self._window = LocalPairingWindow()
-    self.set_back_callback(self._window.cancel)
-    # One label doubles as the instruction and the live status: 240px of height leaves no room for
-    # a title, an instruction and a status line beside a full-height QR.
-    self._hint = UnifiedLabel(tr("scan this code in the sunnylink app"), font_size=26,
-                              text_color=rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)), line_height=0.9)
-
-  def _update_state(self):
-    super()._update_state()
-    if not self.is_dismissing and self._window.ended():
-      self.dismiss()
-
-  def _render(self, _):
-    texture = self._window.texture()
-
-    rect = self._rect
-    # The QR takes the full height, as on the cloud pairing dialog and the only size the code can
-    # be scanned at here. The quiet zone the scanner needs is inside the texture.
-    pad = 4
-    qr_size = int(rect.height - 2 * pad)
-    if texture is not None:
-      source = rl.Rectangle(0, 0, texture.width, texture.height)
-      rl.draw_texture_pro(texture, source, rl.Rectangle(rect.x + pad, rect.y + pad, qr_size, qr_size),
-                          rl.Vector2(0, 0), 0, rl.WHITE)
-
-    self._hint.set_text(tr("scan this code in the sunnylink app"))
-    self._hint.set_text_color(rl.Color(255, 255, 255, int(255 * 0.9 * 0.65)))
-    self._hint.set_max_width(int(rect.x + rect.width - pad - (rect.x + pad + qr_size + 20)))
-    self._hint.set_position(int(rect.x + pad + qr_size + 20), rect.y + pad)
-    self._hint.render()
-
-  def __del__(self):
-    self._window.release()

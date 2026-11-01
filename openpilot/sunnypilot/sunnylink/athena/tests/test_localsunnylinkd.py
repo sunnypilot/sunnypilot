@@ -25,6 +25,7 @@ from openpilot.system.athena import rpc as rpc_module
 from openpilot.sunnypilot.sunnylink.athena import local_auth_daemon, localsunnylinkd, sunnylinkd
 from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   AUTHENTICATE_PURPOSE,
+  VERSION,
   AuthorizationError,
   AuthorizedSession,
   LocalAuthority,
@@ -38,7 +39,7 @@ from openpilot.sunnypilot.sunnylink.athena.local_params import ENROLL, REVOKE, c
 
 CHALLENGE = "A" * 43  # base64url of 32 zero bytes: the canonical challenge shape
 
-ENROLLMENT_TRANSPORT_VALUE = "eyJ2IjoyfQ=="  # base64 of {"v":2}
+ENROLLMENT_TRANSPORT_VALUE = "eyJ2IjozfQ=="  # base64 of {"v":3}
 
 
 class _FakeParams(dict):
@@ -126,6 +127,12 @@ class _FakeDiscovery:
   def fresh_peers(self, max_age_s=None):
     return [(e, self._app_ids.get(e, "grant-key")) for e in self.fresh_endpoints(max_age_s)]
 
+  def start(self):
+    pass
+
+  def stop(self):
+    pass
+
 
 class _Daemon(localsunnylinkd.LocalSunnylinkd):
   """A local daemon with scripted trust state, so target selection is testable in isolation."""
@@ -146,7 +153,7 @@ class _Daemon(localsunnylinkd.LocalSunnylinkd):
 
 
 def _challenge(phone_key_id: str) -> str:
-  return json.dumps({"v": 2, "purpose": AUTHENTICATE_PURPOSE, "phone_key_id": phone_key_id, "challenge": CHALLENGE})
+  return json.dumps({"v": VERSION, "purpose": AUTHENTICATE_PURPOSE, "phone_key_id": phone_key_id, "challenge": CHALLENGE})
 
 
 def _authority():
@@ -157,14 +164,24 @@ def _authority():
 def _enrollment_json(authority: LocalAuthority, app_key: ec.EllipticCurvePrivateKey, name="Test phone") -> str:
   public = encode64(app_key.public_key().public_bytes(
     serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))
-  data = {"v": 2, "cloud_device_id": authority.cloud_device_id, "comma_device_id": authority.comma_device_id,
-          "device_key_id": authority.device_key_id, "pairing_session": authority.window.nonce, "public_key": public,
+  data = {"v": VERSION, "cloud_device_id": authority.cloud_device_id, "comma_device_id": authority.comma_device_id,
+          "device_key_id": authority.device_key_id, "public_key": public,
           "key_id": key_id(app_key.public_key()), "app_name": name}
-  signed_fields = ("cloud_device_id", "comma_device_id", "device_key_id", "pairing_session",
+  signed_fields = ("cloud_device_id", "comma_device_id", "device_key_id",
                    "public_key", "key_id", "app_name")
   proof = statement("enroll", *(str(data[field]) for field in signed_fields))
   data["signature"] = encode64(app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
   return json.dumps(data)
+
+
+def _await(condition, timeout=5.0, description="condition") -> bool:
+  """Bounded polling: a failure fails fast instead of hanging the suite."""
+  deadline = time.monotonic() + timeout
+  while time.monotonic() < deadline:
+    if condition():
+      return True
+    time.sleep(0.01)
+  return False
 
 
 class TestLocalTargets(OpenpilotTestCase):
@@ -199,6 +216,21 @@ class TestLocalTargets(OpenpilotTestCase):
     self.assertGreater(first, 0)
     self.assertLessEqual(last, localsunnylinkd.ENDPOINT_BACKOFF_MAX_S)
     self.assertEqual(9, daemon.failures[endpoint])
+
+  def test_a_failed_local_dial_leaves_the_cloud_links_state_alone(self):
+    """LastSunnylinkPingTime is the CLOUD link's heartbeat, not ours to clear.
+
+    The sidebar reads it for ONLINE/ERROR/OFFLINE. A local dial failing (the phone switched local
+    connections off, walked away, went to sleep) says nothing about the cloud connection, which
+    keeps running in sunnylinkd; wiping the timestamp made the car claim it was offline until the
+    next cloud ping, which is exactly the "device is in an error state" after the switch.
+    """
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], LastSunnylinkPingTime=12345)
+    with mock.patch.object(daemon, "dial", side_effect=AuthorizationError("refused")):
+      daemon.serve("wss://10.0.0.7:8443", None)
+
+    self.assertEqual(12345, daemon.params.get("LastSunnylinkPingTime"))
+    self.assertEqual(1, daemon.failures["wss://10.0.0.7:8443"])
 
   def test_the_first_failed_dial_waits_only_one_tick(self):
     """One missed dial is worth a tick, not a beacon interval: nothing else re-dials before then."""
@@ -280,6 +312,70 @@ class TestLocalTargets(OpenpilotTestCase):
     daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], known=("pending",),
                      app_ids={"ws://10.0.0.7:8443": "pending"})
     self.assertEqual("wss://10.0.0.7:8443", daemon.pick_target())
+
+  def test_a_second_phone_is_dialed_while_the_first_holds_a_session(self):
+    """The second-pairing bug: one long-lived session used to block every other phone.
+
+    A phone keeps its session for as long as its app is open, so the old dial loop sat inside the
+    first phone's session and never looked at the second. Pairing the Android phone next to an
+    already-paired iPhone therefore never happened, and its app waited on "registration sent".
+    """
+    discovery = _FakeDiscovery(["ws://10.0.0.7:8443", "ws://10.0.0.8:8443"],
+                               app_ids={"ws://10.0.0.7:8443": "iphone", "ws://10.0.0.8:8443": "android"})
+    daemon = _Daemon(discovery=discovery, known=("iphone", "android"))
+    first, second = "wss://10.0.0.7:8443", "wss://10.0.0.8:8443"
+    holding = threading.Event()
+    with mock.patch.object(daemon, "dial", lambda endpoint, exit_event: holding.wait(10)):
+      self.assertTrue(daemon.start_session(first, None))
+      self.assertTrue(daemon.has_session(first))
+
+      # The first phone's session is live: the second is STILL a target and still gets served.
+      self.assertEqual([second], daemon.pick_targets())
+      self.assertTrue(daemon.start_session(second, None))
+      self.assertTrue(daemon.has_session(second))
+      self.assertFalse(daemon.start_session(second, None), "one session per phone")
+      holding.set()
+    self.assertTrue(_await(lambda: not daemon._workers, description="session threads to exit"))
+
+  def test_the_phone_that_is_still_pairing_is_dialed_first(self):
+    """A phone being paired must not queue behind phones that are already paired."""
+    discovery = _FakeDiscovery(["ws://10.0.0.7:8443", "ws://10.0.0.8:8443"],
+                               app_ids={"ws://10.0.0.7:8443": "iphone", "ws://10.0.0.8:8443": "android"})
+    daemon = _Daemon(discovery=discovery, known=("iphone", "android"))
+
+    with mock.patch.object(local_auth_daemon, "pending_enrollment",
+                           return_value={"app_id": "android"}):
+      self.assertEqual(["wss://10.0.0.8:8443", "wss://10.0.0.7:8443"], daemon.pick_targets())
+
+  def test_the_run_loop_serves_every_known_phone_at_once(self):
+    """End to end: both phones are dialed while neither has hung up."""
+    discovery = _FakeDiscovery(["ws://10.0.0.7:8443", "ws://10.0.0.8:8443"],
+                               app_ids={"ws://10.0.0.7:8443": "iphone", "ws://10.0.0.8:8443": "android"})
+    daemon = _Daemon(discovery=discovery, known=("iphone", "android"),
+                     SunnylinkEnabled=True, SunnylinkLocalEnabled=True)
+    holding = threading.Event()
+    dialed: list[str] = []
+
+    def fake_dial(endpoint, exit_event):
+      dialed.append(endpoint)
+      holding.wait(10)
+
+    stop = threading.Event()
+    with mock.patch.object(daemon, "dial", fake_dial), \
+         mock.patch.object(local_auth_daemon, "service_revoke_requests", lambda *a, **k: False), \
+         mock.patch.object(local_auth_daemon, "claim_cloud_commands", lambda *a, **k: None), \
+         mock.patch.object(localsunnylinkd, "TICK_INTERVAL_S", 0.01):
+      loop = threading.Thread(target=daemon.run, args=(stop,), daemon=True)
+      loop.start()
+      both = {"wss://10.0.0.7:8443", "wss://10.0.0.8:8443"}
+      self.assertTrue(_await(lambda: both <= set(dialed), description="both phones to be dialed"))
+      stop.set()
+      holding.set()
+      loop.join(5)
+
+    # Both were dialed while the other was still connected; a redial after the sessions ended is
+    # expected, so only the set of phones matters.
+    self.assertEqual(both, set(dialed))
 
   def test_a_beacon_from_an_unknown_phone_is_never_dialed(self):
     daemon = _Daemon(endpoints=["ws://10.0.0.9:8443"],
@@ -442,7 +538,6 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.app_key = ec.generate_private_key(ec.SECP256R1())
     self.persisted: list[dict] = []
     self.authority = LocalAuthority("cloud-device", "comma-device", self.device_key, persist=self.persisted.append)
-    self.authority.arm()
     patcher = mock.patch.object(local_auth_daemon, "get_authority", lambda: self.authority)
     patcher.start()
     self.addCleanup(patcher.stop)
@@ -470,7 +565,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.authority.confirm(committed, committed.app_id)
 
     proof = statement("revoke", self.authority.cloud_device_id, self.authority.comma_device_id, committed.app_id)
-    revocation = json.dumps({"v": 2, "cloud_device_id": self.authority.cloud_device_id,
+    revocation = json.dumps({"v": VERSION, "cloud_device_id": self.authority.cloud_device_id,
                              "comma_device_id": self.authority.comma_device_id, "key_id": committed.app_id,
                              "signature": encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))})
     params = _FakeParams({REVOKE: revocation})
@@ -501,7 +596,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.assertEqual(b"", params.get(ENROLL) or b"")
 
   def test_local_param_policy(self):
-    for key in ("SunnylinkLocalApps", "SunnylinkLocalPairingQr", "SunnylinkLocalNewTrustKey", "_sec_anything"):
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalNewTrustKey", "_sec_anything"):
       self.assertTrue(is_local_param(key))
     self.assertFalse(is_local_param("SpeedLimitOffset"))
 
@@ -509,7 +604,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     self.assertTrue(cloud_may_write(ENROLL))
     self.assertTrue(cloud_may_write(REVOKE))
     self.assertTrue(cloud_may_write("SpeedLimitOffset"))
-    for key in ("SunnylinkLocalApps", "SunnylinkLocalPairingRequest", "SunnylinkLocalRevoke", "_sec_x"):
+    for key in ("SunnylinkLocalApps", "SunnylinkLocalRevoke", "_sec_x"):
       self.assertFalse(cloud_may_write(key))
 
 
@@ -533,4 +628,4 @@ class TestEnrollmentTransportValue(OpenpilotTestCase):
   """The exact bytes the app pushes, kept in step with the mobile constant."""
 
   def test_the_transport_value_is_standard_base64(self):
-    self.assertEqual('{"v":2}', base64.b64decode(ENROLLMENT_TRANSPORT_VALUE).decode())
+    self.assertEqual('{"v":3}', base64.b64decode(ENROLLMENT_TRANSPORT_VALUE).decode())

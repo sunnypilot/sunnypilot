@@ -35,6 +35,7 @@ TICK_INTERVAL_S = 1.0
 ENDPOINT_BACKOFF_S = float(TICK_INTERVAL_S)
 ENDPOINT_BACKOFF_MAX_S = 60.0
 BACKOFF_FORGET_S = 12.0
+MAX_LOCAL_SESSIONS = 8
 
 
 class LocalSunnylinkd(Sunnylinkd):
@@ -43,7 +44,10 @@ class LocalSunnylinkd(Sunnylinkd):
     self.discovery = discovery if discovery is not None else LocalDiscovery()
     self.backoffs: dict[str, float] = {}
     self.failures: dict[str, int] = {}
+    self._last_unknown_beacons: set[str] = set()
     self.stop_event = threading.Event()
+    self._state_lock = threading.Lock()
+    self._workers: dict[str, threading.Thread] = {}
 
   def enrolled(self) -> bool:
     return bool(local_auth_daemon.grants()) or local_auth_daemon.pending_enrollment() is not None
@@ -65,20 +69,16 @@ class LocalSunnylinkd(Sunnylinkd):
 
     try:
       while (exit_event is None or not exit_event.is_set()) and self.serviceable():
-        endpoint = self.pick_target()
-        if endpoint is None:
-          time.sleep(TICK_INTERVAL_S)
-        else:
-          self.serve(endpoint, exit_event)
+        for endpoint in self.pick_targets():
+          self.start_session(endpoint, exit_event)
+        time.sleep(TICK_INTERVAL_S)
     finally:
       self.stop_event.set()
       self.discovery.stop()
-      local_auth_daemon.clear_pairing_window()
 
   def _tick_loop(self) -> None:
     while not self.stop_event.wait(TICK_INTERVAL_S) and self.serviceable():
       try:
-        local_auth_daemon.service_pairing_window()
         local_auth_daemon.service_revoke_requests()
         local_auth_daemon.claim_cloud_commands()
       except Exception:
@@ -91,44 +91,118 @@ class LocalSunnylinkd(Sunnylinkd):
       ids.add(pending["app_id"])
     return ids
 
-  def pick_target(self) -> str | None:
+  def pick_targets(self) -> list[str]:
+    """Every endpoint worth dialing right now, a phone that is still PAIRING ahead of the rest.
+
+    A car knows more than one phone (an iPhone and an Android side by side is the normal case)
+    and each of them is an independent session, so "the next target" is a list rather than one
+    address. The pending enrollment goes first: that is the phone whose app is showing
+    "registration sent", and it must not queue behind phones that are already paired.
+    """
     if not self.enrolled():
-      return None
+      return []
     known = self.known_app_ids()
+    pending = local_auth_daemon.pending_enrollment()
+    pending_app_id = pending["app_id"] if pending is not None else None
     self.forget_absent_endpoints(set(pinned_endpoints(self.discovery.fresh_endpoints(BACKOFF_FORGET_S))))
     now = time.monotonic()
+    pairing: list[str] = []
+    others: list[str] = []
+    unknown: list[str] = []
     for endpoint, app_id in self.discovery.fresh_peers():
       if app_id not in known:
+        unknown.append(app_id)
         continue
       pinned = pinned_endpoint(endpoint)
-      if pinned is not None and self.backoffs.get(pinned, 0.0) <= now:
-        return pinned
-    return None
+      if pinned is None or self.is_backed_off(pinned, now) or self.has_session(pinned):
+        continue
+      (pairing if app_id == pending_app_id else others).append(pinned)
+    if unknown:
+      seen = {a[:8] for a in unknown}
+      if seen != self._last_unknown_beacons:
+        self._last_unknown_beacons = seen
+        cloudlog.debug(f"sunnylinkd.local.no_known_peer beacons={len(unknown)} unknown={sorted(seen)}")
+    else:
+      self._last_unknown_beacons = set()
+    return pairing + others
+
+  def pick_target(self) -> str | None:
+    targets = self.pick_targets()
+    return targets[0] if targets else None
+
+  def is_backed_off(self, endpoint: str, now: float) -> bool:
+    with self._state_lock:
+      return self.backoffs.get(endpoint, 0.0) > now
+
+  def has_session(self, endpoint: str) -> bool:
+    with self._state_lock:
+      worker = self._workers.get(endpoint)
+      return worker is not None and worker.is_alive()
+
+  def start_session(self, endpoint: str, exit_event: threading.Event | None) -> bool:
+    """Serve [endpoint] on its own thread, unless one is already serving it.
+
+    Sessions are long-lived: the phone keeps the connection for as long as its app is open so
+    its reads can be answered over the LAN. They therefore cannot share the dial loop, or the
+    first phone to connect is the only phone that ever will be.
+    """
+    with self._state_lock:
+      existing = self._workers.get(endpoint)
+      if existing is not None and existing.is_alive():
+        return False
+      if len(self._workers) >= MAX_LOCAL_SESSIONS:
+        cloudlog.warning("sunnylinkd.local.sessions.saturated")
+        return False
+      worker = threading.Thread(
+        target=self._session_thread,
+        args=(endpoint, exit_event),
+        name=f"localsunnylinkd_session_{endpoint}",
+        daemon=True,
+      )
+      self._workers[endpoint] = worker
+    worker.start()
+    return True
+
+  def _session_thread(self, endpoint: str, exit_event: threading.Event | None) -> None:
+    try:
+      self.serve(endpoint, exit_event)
+    except Exception:
+      cloudlog.exception("sunnylinkd.local.session_thread_failed")
+    finally:
+      with self._state_lock:
+        if self._workers.get(endpoint) is threading.current_thread():
+          del self._workers[endpoint]
 
   def forget_absent_endpoints(self, present: set[str]) -> None:
-    for endpoint in [k for k in self.backoffs if k not in present]:
-      self.backoffs.pop(endpoint, None)
-      self.failures.pop(endpoint, None)
+    with self._state_lock:
+      for endpoint in [k for k in self.backoffs if k not in present]:
+        self.backoffs.pop(endpoint, None)
+        self.failures.pop(endpoint, None)
 
   def _note_failure(self, endpoint: str) -> None:
-    failures = self.failures.get(endpoint, 0) + 1
-    self.failures[endpoint] = failures
-    self.backoffs[endpoint] = time.monotonic() + min(ENDPOINT_BACKOFF_S * (2 ** (failures - 1)), ENDPOINT_BACKOFF_MAX_S)
+    with self._state_lock:
+      failures = self.failures.get(endpoint, 0) + 1
+      self.failures[endpoint] = failures
+      self.backoffs[endpoint] = time.monotonic() + min(ENDPOINT_BACKOFF_S * (2 ** (failures - 1)), ENDPOINT_BACKOFF_MAX_S)
 
   def _note_success(self, endpoint: str) -> None:
-    self.backoffs.pop(endpoint, None)
-    self.failures.pop(endpoint, None)
+    with self._state_lock:
+      self.backoffs.pop(endpoint, None)
+      self.failures.pop(endpoint, None)
 
   def serve(self, endpoint: str, exit_event: threading.Event | None) -> None:
     try:
       self.dial(endpoint, exit_event)
     except Exception as e:
       self._note_failure(endpoint)
-      self.params.remove("LastSunnylinkPingTime")
+      # LastSunnylinkPingTime belongs to the CLOUD link: sunnylinkd's pong handler and SunnylinkApi
+      # own it, and the sidebar reads it to decide ONLINE/ERROR/OFFLINE. Clearing it here on a
+      # failed LOCAL dial made a perfectly healthy cloud connection read as offline on the device
+      # for as long as the next cloud ping took — which is what switching local mode off on the
+      # phone looked like from the car.
       log_connection_error(e)
       return
     self._note_success(endpoint)
-    time.sleep(TICK_INTERVAL_S)
 
   def serve_rpc(self, ws: WebSocket, methods: dict[str, Callable[..., object]],
                 exit_event: threading.Event | None = None) -> None:
@@ -169,6 +243,7 @@ class LocalSunnylinkd(Sunnylinkd):
     ws: WebSocket | None = None
     matched: str | None = None
     last_error: Exception | None = None
+    cloudlog.debug(f"sunnylinkd.local.dial {endpoint} candidates={len(candidates)}")
     for key_id in candidates:
       try:
         ws = connect_pinned(endpoint, key_id)
@@ -187,7 +262,7 @@ class LocalSunnylinkd(Sunnylinkd):
           local_auth_daemon.confirm_enrollment_tls(matched)
         except Exception:
           cloudlog.exception("sunnylinkd.local.confirm_failed")
-          local_auth_daemon.cancel_local_pairing()
+          local_auth_daemon.clear_pending_enrollment()
           raise
       with authority.lock:
         grant = authority.grants.get(matched)

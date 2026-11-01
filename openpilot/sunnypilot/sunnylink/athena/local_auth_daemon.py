@@ -22,8 +22,6 @@ from openpilot.sunnypilot.sunnylink.athena.local_params import ENROLL as CLOUD_E
 from openpilot.sunnypilot.sunnylink.athena.local_state import (
   LOCAL_APPS_KEY,
   LOCAL_APPS_META_KEY,
-  PAIRING_QR_KEY,
-  PAIRING_REQUEST_KEY,
   REVOKE_ALL,
   REVOKE_KEY,
 )
@@ -106,82 +104,6 @@ def reset_authority() -> None:
   global _authority
   with _authority_lock:
     _authority = None
-
-
-def arm_local_pairing() -> str | None:
-  authority = get_authority()
-  return _run("arm", authority.arm) if authority is not None else None
-
-
-def cancel_local_pairing() -> None:
-  authority = get_authority()
-  if authority is not None:
-    authority.cancel()
-
-
-def read_pairing_qr(params: Params | None = None) -> str | None:
-  value = _get(params or _params, PAIRING_QR_KEY)
-  return value if isinstance(value, str) and value else None
-
-
-def clear_pairing_params(params: Params | None = None) -> None:
-  params = params or _params
-  _put(params, PAIRING_REQUEST_KEY, None)
-  _put(params, PAIRING_QR_KEY, None)
-
-
-def clear_pairing_window(params: Params | None = None) -> None:
-  clear_pairing_params(params)
-  cancel_local_pairing()
-
-
-def service_pairing_window(params: Params | None = None) -> str | None:
-  params = params or _params
-  try:
-    return _service_pairing_window(params)
-  except Exception:
-    cloudlog.exception("sunnylinkd.local_auth.pairing_window_failed")
-    return read_pairing_qr(params)
-
-
-def _service_pairing_window(params: Params) -> str | None:
-  requested = bool(params.get_bool(PAIRING_REQUEST_KEY))
-  authority = get_authority()
-  if authority is None:
-    _put(params, PAIRING_REQUEST_KEY, None)
-    _put(params, PAIRING_QR_KEY, None)
-    return None
-
-  with authority.lock:
-    window = authority.window
-  live = window.qr if window is not None and authority.clock() < window.deadline else None
-  published = read_pairing_qr(params)
-
-  if live is not None:
-    if published is None:
-      cancel_local_pairing()
-      cloudlog.event("sunnylinkd.local_auth.window_cancelled")
-      return None
-    if published != live:
-      _put(params, PAIRING_QR_KEY, live)
-    return live
-
-  if window is not None:
-    authority.expire()
-    cloudlog.event("sunnylinkd.local_auth.window_expired")
-  authority.prune_sessions()
-
-  if not requested:
-    if published is not None:
-      _put(params, PAIRING_QR_KEY, None)
-    return None
-
-  qr = arm_local_pairing()
-  _put(params, PAIRING_REQUEST_KEY, None)
-  _put(params, PAIRING_QR_KEY, qr)
-  if qr is not None:
-    cloudlog.event("sunnylinkd.local_auth.window_armed")
-  return qr
 
 
 def _meta_write(apps: dict[str, Any]) -> None:
@@ -281,6 +203,13 @@ def claim_cloud_commands(params: Params | None = None) -> None:
       cloudlog.exception(f"sunnylinkd.local_auth.{key}_failed")
       continue
     cloudlog.event(f"sunnylinkd.local_auth.{key}_accepted", app_name=summary.get("app_name"))
+
+
+def clear_pending_enrollment() -> None:
+  authority = get_authority()
+  if authority is not None:
+    with authority.lock:
+      authority.pending = None
 
 
 def confirm_enrollment_tls(grant_key_id: str) -> dict[str, Any]:

@@ -1,386 +1,428 @@
-import base64
-import hashlib
+"""Q: what does the device need to remember so that a later dial proves the phone is still the same installation?
+
+A grant — the phone's public key, pinned at enrollment — plus nothing that expires. There is no
+session nonce and no scan ceremony: enrollment is a self-signed statement the app pushes over the
+existing cloud settings-write transport (the app already knows the exact list of the user's devices
+from the signed-in cloud device lookup, so it enrolls each one it has never enrolled — on login,
+and again for newly-seen-online devices on manual refresh). The grant commits only when that phone
+proves possession of the private key on a pinned-TLS dial. Manual Pair is just the same idempotent
+push. An explicit unpair anywhere drops the grant, so the next dial re-authenticates from scratch.
+The device remembers grants, not refusals: a phone-side skip list stops the same install from
+re-enrolling an unpaired phone, but a fresh install has no memory of it.
+
+This file pins that contract: staging is not authority (only a stored grant opens a session), the
+TLS peer match is the commit, and the phone's own signature is the only thing that can enroll or
+un-enroll it.
+"""
 import json
-import socket
-import ssl
-import tempfile
-import threading
-from pathlib import Path
-from dataclasses import replace
-from datetime import UTC, datetime, timedelta
 from unittest import mock
 
-from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
-from cryptography.x509.oid import NameOID
+from cryptography.hazmat.primitives.asymmetric import ec
 
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.sunnylink.athena.local_auth import (
-  PAIRING_DELIVERY_GRACE_S, PAIRING_TTL_S, QR_SESSION_BYTES, AuthorizationError, Grant, LocalAuthority, Origin,
-  connect_pinned, decode64, decode_qr, encode64, key_id, parse_object, qr_frame, statement, verify_tls_peer,
+  AuthorizationError,
+  Grant,
+  LocalAuthority,
+  Origin,
+  decode64,
+  encode64,
+  key_id,
+  statement,
+  MAX_GRANTS,
+  VERSION,
 )
 
-# The fields an enrollment signs, in the order the statement joins them.
-ENROLL_FIELDS = ("cloud_device_id", "comma_device_id", "device_key_id", "pairing_session",
+# The fields an enrollment carries. The signature binds them in this order.
+ENROLL_FIELDS = ("cloud_device_id", "comma_device_id", "device_key_id",
                  "public_key", "key_id", "app_name")
 
-# A refused pin makes the connector hang up mid-handshake, so the server side of a real socket
-# sees the abort as one of these depending on whether it was reading or writing when the peer
-# went away. That race is not the property under test — the assertions that count are that the
-# client refused before any HTTP request and that the server received nothing (see below).
-ABORTED_CONNECTION_ERRORS = (BrokenPipeError, ConnectionResetError, ConnectionAbortedError,
-                             ssl.SSLEOFError, ssl.SSLError)
+
+def _spki(key) -> str:
+  return encode64(key.public_key().public_bytes(
+    serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))
 
 
-class TestLocalAuth(OpenpilotTestCase):
+class TestV3Enrollment(OpenpilotTestCase):
   def setup_method(self):
-    self.now = 10.0
     self.device_key = ec.generate_private_key(ec.SECP256R1())
     self.app_key = ec.generate_private_key(ec.SECP256R1())
-    self.writes = []
-    self.authority = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, clock=lambda: self.now)
-    self.qr = self.authority.arm()
+    self.writes: list[dict] = []
+    self.authority = LocalAuthority("cloud-device", "comma-device",
+                                    self.device_key, self.writes.append)
+    self.app_id = key_id(self.app_key.public_key())
 
-  def enrollment(self, app_key=None, **changes):
-    app_key = app_key or self.app_key
-    public = encode64(app_key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))
-    data = {"v": 2, "cloud_device_id": self.authority.cloud_device_id, "comma_device_id": self.authority.comma_device_id,
-            "device_key_id": self.authority.device_key_id,
-            "pairing_session": encode64(decode_qr(self.qr).session),
-            "public_key": public, "key_id": key_id(app_key.public_key()), "app_name": "Test phone"}
-    data.update(changes)
+  def enrollment(self, authority=None, key=None, **overrides) -> str:
+    authority = authority or self.authority
+    key = key or self.app_key
+    public = _spki(key)
+    data = {"v": VERSION, "cloud_device_id": authority.cloud_device_id,
+            "comma_device_id": authority.comma_device_id, "device_key_id": authority.device_key_id,
+            "public_key": public, "key_id": key_id(key.public_key()), "app_name": "Test phone"}
+    data.update(overrides)
     proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
-    data["signature"] = encode64(app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
+    data["signature"] = encode64(key.sign(proof, ec.ECDSA(hashes.SHA256())))
     return json.dumps(data)
 
-  def committed(self):
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    return self.authority.confirm(grant, grant.app_id)
+  def committed(self, raw=None, authority=None):
+    authority = authority or self.authority
+    grant = authority.enroll(raw or self.enrollment(), Origin.CLOUD)
+    return authority.confirm(grant, grant.app_id)
 
-  def test_qr_is_public_fresh_metadata_not_a_capability(self):
-    """The code names one device and one window; it carries no key, no signature and no secret."""
-    self.assertEqual(len(self.qr.split(".")), 1)
-    frame = decode64(self.qr)
-    payload = decode_qr(self.qr)
-    self.assertEqual(payload.cloud_device_id, self.authority.cloud_device_id)
-    self.assertEqual(payload.session, decode64(self.authority.window.nonce))
-    self.assertEqual(len(payload.session), QR_SESSION_BYTES)
-    self.assertEqual(payload.ttl_s, 120)
-    # Framing is exact: no padding, no extra field, no room for a key id or a signature.
-    self.assertEqual(frame, qr_frame(self.authority.cloud_device_id, payload.session, 120))
-    self.assertEqual(len(frame), len("SLEN") + 2 + len(self.authority.cloud_device_id) + QR_SESSION_BYTES + 1)
-    # Freshness is per window: re-arming publishes a different session.
-    self.assertNotEqual(decode_qr(self.authority.arm()).session, payload.session)
-
-  def test_the_code_is_readable_off_a_240px_panel_whatever_the_identity_key_is(self):
-    """An RSA identity key is what a real device has, and a device signature made the code 77
-    modules — 2.73 px/module on the mici panel, which is not scannable. Both key types mint the
-    same code now, and the identity key is still what proves the device to the phone."""
-    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    authority = LocalAuthority("cloud-device", "comma-device", key, self.writes.append)
-    qr = authority.arm()
-    self.assertEqual(len(qr), len(self.qr))
-    payload = decode_qr(qr)
-    self.assertEqual(payload.cloud_device_id, "cloud-device")
-    self.assertEqual(payload.ttl_s, PAIRING_TTL_S)
-    challenge = encode64(bytes(32))
-    proof = authority.authenticate_device("phone-key", challenge)
-    self.assertEqual(proof["device_key_id"], authority.device_key_id)
-    expected = statement("authenticate-device", "cloud-device", "comma-device",
-                         authority.device_key_id, "phone-key", challenge)
-    key.public_key().verify(decode64(proof["signature"]), expected, padding.PKCS1v15(), hashes.SHA256())
-
-  def test_device_authenticates_itself_to_the_phone_challenge(self):
-    grant = self.committed()
-    challenge = encode64(bytes(32))
-    proof = self.authority.authenticate_device(grant.app_id, challenge)
-    self.assertEqual(proof["device_key_id"], self.authority.device_key_id)
-    self.assertEqual(proof["phone_key_id"], grant.app_id)
-    expected = statement("authenticate-device", "cloud-device", "comma-device",
-                         self.authority.device_key_id, grant.app_id, challenge)
-    self.device_key.public_key().verify(decode64(proof["signature"]), expected, ec.ECDSA(hashes.SHA256()))
+  def assert_session_denied(self, authority, grant, peer):
     with self.assertRaises(AuthorizationError):
-      self.authority.authenticate_device(grant.app_id, encode64(bytes(31)))
+      authority.session(grant, peer)
 
-  def test_local_origin_cannot_enroll_even_with_correct_qr_and_key(self):
+  def test_a_staged_enrollment_is_not_yet_authorized(self):
+    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
+    self.assertEqual(self.app_id, grant.app_id)
+    self.assert_session_denied(self.authority, grant, grant.app_id)
+    # Nothing durable either: the grant does not exist until the TLS dial.
+    self.assertEqual([], self.writes)
+    self.assertIsNotNone(self.authority.pending)
+
+  def test_confirming_without_a_matching_enrollment_refuses(self):
+    stranger = Grant("no-such-phone", _spki(self.app_key), "Nobody")
+    with self.assertRaises(AuthorizationError):
+      self.authority.confirm(stranger, stranger.app_id)
+
+  def test_the_grant_commits_only_after_the_tls_dial(self):
+    grant = self.committed()
+    session = self.authority.session(grant, grant.app_id)
+    self.assertEqual("ok", session.invoke("getParams", lambda: "ok"))
+    self.assertEqual([{"v": VERSION, "grants": [grant.to_dict()]}], self.writes)
+
+  def test_confirming_with_the_wrong_tls_peer_refuses(self):
+    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
+    with self.assertRaises(AuthorizationError):
+      self.authority.confirm(grant, grant.app_id + "-other")
+    self.assert_session_denied(self.authority, grant, grant.app_id)
+
+  def test_enrolling_over_the_local_lan_is_impossible(self):
+    """The staged path is cloud-only: a phone on the LAN cannot enroll itself mid-session."""
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(), Origin.LOCAL)
-    self.assertEqual(self.writes, [])
     self.assertIsNone(self.authority.pending)
 
-  def test_pending_grant_is_not_authorized_and_requires_tls_proof(self):
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    self.assertEqual(self.writes, [])
-    with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.app_id)
-    with self.assertRaises(AuthorizationError):
-      self.authority.confirm(grant, key_id(self.device_key.public_key()))
-    self.assertEqual(self.writes, [])
-    self.authority.confirm(grant, grant.app_id)
-    self.assertEqual(len(self.writes), 1)
+  def test_there_is_no_pairing_window_to_arm(self):
+    """Pairing needs no on-screen step anymore: the authority has no window surface at all."""
+    for name in ("arm", "window", "recent", "expire", "prune"):
+      self.assertFalse(hasattr(self.authority, name), name)
 
-  def test_same_key_retries_are_idempotent_but_competing_scanner_cannot_replace_key(self):
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    self.assertEqual(grant, self.authority.enroll(self.enrollment(), Origin.CLOUD))
+  def test_a_v2_enrollment_is_rejected(self):
+    """The QR-era payload shape is not valid anymore: legacy code was replaced, not kept."""
+    data = json.loads(self.enrollment())
+    data["v"] = 2
     with self.assertRaises(AuthorizationError):
-      self.authority.enroll(self.enrollment(ec.generate_private_key(ec.SECP256R1())), Origin.CLOUD)
-    self.assertEqual(self.authority.pending, grant)
+      self.authority.enroll(json.dumps(data), Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-  def test_a_late_enrollment_lands_inside_its_delivery_grace(self):
-    """The cloud is store-and-forward, so an enrollment for the code the user scanned can reach the
-    device after that code has left its screen. It still has to enroll, and still has to be
-    committable over the pinned dial."""
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    self.authority.expire()               # the code left the screen …
-    self.now = PAIRING_TTL_S + 1          # … and its scannable lifetime ended
-    self.assertEqual(self.authority.confirm(grant, grant.app_id), grant)
-    self.assertEqual(len(self.writes), 1)
-
-  def test_an_enrollment_past_the_delivery_grace_is_refused(self):
-    self.authority.expire()
-    window = self.authority.recent[-1]
-    self.assertEqual(window.usable_until, window.deadline + PAIRING_DELIVERY_GRACE_S)
-    self.now = window.usable_until + 1
+  def test_a_pairing_session_field_is_rejected(self):
+    data = json.loads(self.enrollment())
+    data["pairing_session"] = "some-old-nonce"
     with self.assertRaises(AuthorizationError):
-      self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    self.assertEqual(self.writes, [])
+      self.authority.enroll(json.dumps(data), Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-  def test_cancelling_a_window_refuses_an_in_flight_enrollment(self):
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    self.authority.expire()
-    self.authority.cancel()
-    with self.assertRaises(AuthorizationError):
-      self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    with self.assertRaises(AuthorizationError):
-      self.authority.confirm(grant, grant.app_id)
-    self.assertEqual(self.writes, [])
-
-  def test_cancel_and_restart_invalidate_an_old_enrollment(self):
-    raw = self.enrollment()
-    grant = self.authority.enroll(raw, Origin.CLOUD)
-    self.authority.cancel()
-    with self.assertRaises(AuthorizationError):
-      self.authority.confirm(grant, grant.app_id)
-    with self.assertRaises(AuthorizationError):
-      self.authority.enroll(raw, Origin.CLOUD)
-    restarted = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append)
-    with self.assertRaises(AuthorizationError):
-      restarted.enroll(raw, Origin.CLOUD)
-    self.assertEqual(self.writes, [])
-
-  def test_a_rearm_keeps_the_previous_code_in_flight(self):
-    """A user who retries gets a fresh code. The enrollment for the code they scanned first can
-    still be on its way through the cloud, so a re-arm must not invalidate it."""
-    raw = self.enrollment()
-    self.assertIsNotNone(self.authority.enroll(raw, Origin.CLOUD))
-    self.authority.expire()
-    self.authority.arm()
-    self.assertEqual(self.authority.enroll(raw, Origin.CLOUD), self.authority.pending)
-
-  def test_the_enrollment_nonce_is_the_code_session_and_nothing_else(self):
-    """The window mints a 16-byte session, so that is the only nonce an enrollment may name. Both
-    payloads below carry a valid signature over the altered field, so the refusal is this rule."""
-    for wrong in (encode64(b"x" * 32), encode64(b"x" * 8)):
-      with self.subTest(nonce=wrong), self.assertRaises(AuthorizationError):
-        self.authority.enroll(self.enrollment(pairing_session=wrong), Origin.CLOUD)
-    self.assertEqual(self.writes, [])
-
-  def test_signature_binds_all_enrollment_fields(self):
-    for field, value in (("app_name", "Other phone"), ("key_id", "other"), ("device_key_id", "other"), ("comma_device_id", "other"),
-                         ("cloud_device_id", "other"), ("pairing_session", encode64(b"x" * QR_SESSION_BYTES))):
-      with self.subTest(field=field):
-        data = json.loads(self.enrollment())
-        data[field] = value
-        with self.assertRaises(AuthorizationError):
-          self.authority.enroll(json.dumps(data), Origin.CLOUD)
-    self.assertEqual(self.writes, [])
-
-  def test_bad_versions_fields_keys_and_messages_rejected(self):
-    for change in ({"v": True}, {"v": 1}, {"extra": "bad"}, {"public_key": "garbage"}, {"signature": "garbage"},
-                   {"app_name": "bad\nname"}, {"app_name": "x" * 81}):
-      with self.subTest(change=change):
-        data = json.loads(self.enrollment())
-        data.update(change)
-        with self.assertRaises((AuthorizationError, ValueError)):
-          self.authority.enroll(json.dumps(data), Origin.CLOUD)
-    for raw in ('{"v":2,"v":2}', '[]', 'null', 'x' * 4097):
+  def test_a_malformed_envelope_is_rejected(self):
+    for raw in ("not json", "[1, 2]", json.dumps({"v": VERSION, "v2": VERSION}),
+                "x" * 4097, json.dumps({"v": "3"}), json.dumps({"v": True})):
       with self.assertRaises(AuthorizationError):
-        parse_object(raw)
+        self.authority.enroll(raw, Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-  def test_persistence_failure_never_publishes_grant(self):
-    grant = self.authority.enroll(self.enrollment(), Origin.CLOUD)
-    with mock.patch.object(self.authority, "persist", side_effect=OSError("disk full")):
-      with self.assertRaises(OSError):
-        self.authority.confirm(grant, grant.app_id)
-    self.assertEqual(self.authority.grants, {})
+  def test_the_device_ignores_a_request_that_does_not_name_it(self):
+    """A push meant for another car stages nothing here."""
     with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.app_id)
+      self.authority.enroll(self.enrollment(comma_device_id="some-other-car"), Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-  def test_grants_reload_but_corrupt_and_duplicate_registry_fail_closed(self):
-    grant = self.committed()
-    restarted = LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, self.writes[-1])
-    self.assertEqual(restarted.grants, {grant.app_id: grant})
-    corrupt = grant.to_dict() | {"key_id": "wrong"}
-    for storage in ([{"app_id": "unknown", "endpoint": "ws://127.0.0.1"}], {"v": 1, "grants": [grant.to_dict()]},
-                    {"v": 2, "grants": [corrupt]}, {"v": 2, "grants": [grant.to_dict(), grant.to_dict()]}):
-      self.assertEqual(LocalAuthority("cloud-device", "comma-device", self.device_key, self.writes.append, storage).grants, {})
-
-  def test_revocation_and_closed_session_prevent_handler_execution(self):
-    grant = self.committed()
-    session = self.authority.session(grant, grant.app_id)
-    handler = mock.Mock(return_value="ok")
-    self.assertEqual(session.invoke("getParams", handler), "ok")
-    self.authority.revoke(grant.app_id)
+  def test_an_enrollment_cannot_be_replayed_against_another_car(self):
+    other = LocalAuthority("cloud-other", "comma-other",
+                           ec.generate_private_key(ec.SECP256R1()), lambda registry: None)
     with self.assertRaises(AuthorizationError):
-      session.invoke("saveParams", handler)
-    self.assertEqual(handler.call_count, 1)
-    with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, grant.app_id)
-    with self.assertRaises(AuthorizationError):
-      self.authority.enroll(self.enrollment(), Origin.CLOUD)
-
-  def test_a_grant_that_is_not_the_enrolled_one_cannot_dispatch(self):
-    grant = self.committed()
-    handler = mock.Mock()
-    with self.assertRaises(AuthorizationError):
-      self.authority.session(grant, "wrong")
-    with self.assertRaises(AuthorizationError):
-      self.authority.session(replace(grant, app_name="other"), grant.app_id)
-    session = self.authority.session(grant, grant.app_id)
-    for method in ("startLocalProxy", "pairLocalApp", "uploadFileToUrl", "startStream", "setNavDestination", "unknown"):
-      with self.assertRaises(AuthorizationError):
-        session.invoke(method, handler)
-    session.close()
-    with self.assertRaises(AuthorizationError):
-      session.invoke("getMessage", handler)
-    handler.assert_not_called()
+      other.enroll(self.enrollment(), Origin.CLOUD)
+    self.assertIsNone(other.pending)
 
   def test_same_installation_key_can_enroll_on_another_device(self):
-    original = self.committed()
-    self.authority = LocalAuthority("second-cloud-device", "second-comma-device", self.device_key, self.writes.append, clock=lambda: self.now)
-    self.qr = self.authority.arm()
-    self.assertEqual(original, self.committed())
+    """One phone, two cars: the same installation key enrolls independently on each device."""
+    other = LocalAuthority("cloud-other", "comma-other",
+                           ec.generate_private_key(ec.SECP256R1()), lambda registry: None)
+    grant = self.committed(self.enrollment(authority=other), authority=other)
+    other.session(grant, grant.app_id)
+    # …and that enrollment grants nothing on this car.
+    self.assert_session_denied(self.authority, grant, grant.app_id)
 
-  def test_canonical_encoding_and_field_limits(self):
-    for value in ("", "Zg==", "Zh", "a", "💥", 123, "Z g", "Zg\n"):
-      with self.assertRaises(AuthorizationError):
-        decode64(value)
-    self.assertEqual(decode64("Zg"), b"f")
+  def test_idempotent_reenroll_returns_the_stored_grant(self):
+    """Manual Pair on an already-paired phone is the same push: no duplicate, no new write."""
+    grant = self.committed()
+    again = self.authority.enroll(self.enrollment(), Origin.CLOUD)
+    self.assertEqual(grant, again)
+    self.assertEqual(1, len(self.writes))
+    self.authority.session(again, again.app_id)
+
+  def test_a_second_pending_enrollment_is_refused(self):
+    self.authority.enroll(self.enrollment(), Origin.CLOUD)
+    other_key = ec.generate_private_key(ec.SECP256R1())
     with self.assertRaises(AuthorizationError):
-      Grant.from_dict({})
+      self.authority.enroll(self.enrollment(key=other_key), Origin.CLOUD)
+    # The first phone's enrollment is undisturbed and still committable.
+    self.assertEqual(self.app_id, self.authority.pending.app_id)
 
-  def test_pinned_connector_rejects_downgrade_and_invalid_endpoints_before_dial(self):
-    with mock.patch("openpilot.sunnypilot.sunnylink.athena.local_auth.socket.create_connection") as dial:
-      for endpoint in ("ws://192.168.1.2:8443", "wss://host.example:8443", "wss://user:pass@192.168.1.2:8443",
-                       "wss://0.0.0.0:8443", "wss://224.0.0.1:8443", "wss://192.168.1.2:8443/path",
-                       "wss://192.168.1.2:8443?token=secret", "wss://192.168.1.2:99999"):
-        with self.subTest(endpoint=endpoint), self.assertRaises(AuthorizationError):
-          connect_pinned(endpoint, key_id(self.app_key.public_key()))
-      dial.assert_not_called()
-
-  def test_wrong_tls_pin_closes_socket_before_websocket_upgrade(self):
-    base = "openpilot.sunnypilot.sunnylink.athena.local_auth."
-    with mock.patch(base + "socket.create_connection"), mock.patch(base + "ssl.SSLContext") as context, \
-         mock.patch(base + "verify_tls_peer", side_effect=AuthorizationError("wrong key")), mock.patch(base + "create_connection") as upgrade:
-      transport = context.return_value.wrap_socket.return_value
-      transport.getpeercert.return_value = b"certificate"
+  def test_a_signature_that_covers_anything_else_is_rejected(self):
+    """The signature binds every field: changing anything after signing voids the enrollment."""
+    for field in ENROLL_FIELDS:
+      raw = json.loads(self.enrollment())
+      raw[field] = "tampered"
       with self.assertRaises(AuthorizationError):
-        connect_pinned("wss://192.168.1.2:8443", key_id(self.app_key.public_key()))
-      transport.close.assert_called_once()
-      upgrade.assert_not_called()
+        self.authority.enroll(json.dumps(raw), Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-  def test_real_tls_connector_pins_before_http_and_requires_tls13(self):
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "test phone")])
-    now = datetime.now(UTC)
-    certificate = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(self.app_key.public_key())
-                   .serial_number(x509.random_serial_number()).not_valid_before(now - timedelta(minutes=1))
-                   .not_valid_after(now + timedelta(days=1)).sign(self.app_key, hashes.SHA256()))
-    with tempfile.TemporaryDirectory() as temporary:
-      cert_path = Path(temporary) / "certificate.pem"
-      key_path = Path(temporary) / "private.pem"
-      cert_path.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
-      key_path.write_bytes(self.app_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
-                                                    serialization.NoEncryption()))
-      context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-      context.minimum_version = ssl.TLSVersion.TLSv1_3
-      context.load_cert_chain(str(cert_path), str(key_path))
-      for valid in (True, False):
-        with self.subTest(valid=valid), socket.socket() as listener:
-          listener.bind(("127.0.0.1", 0))
-          listener.listen(1)
-          listener.settimeout(5)
-          received = []
-          errors = []
+  def test_staging_a_second_phone_does_not_disturb_the_first(self):
+    first = self.committed()
+    other_key = ec.generate_private_key(ec.SECP256R1())
+    second = self.authority.enroll(self.enrollment(key=other_key), Origin.CLOUD)
+    self.authority.session(first, first.app_id)
+    self.assert_session_denied(self.authority, second, second.app_id)
+    self.authority.confirm(second, second.app_id)
+    self.authority.session(second, second.app_id)
 
-          # Every loop-scoped name is bound as a default argument: this runs on another thread
-          # while the enclosing loop moves on to the next case.
-          def serve(listener=listener, received=received, errors=errors, valid=valid):
-            try:
-              incoming, _ = listener.accept()
-              with incoming, context.wrap_socket(incoming, server_side=True) as tls:
-                tls.settimeout(5)
-                self.assertEqual(tls.version(), "TLSv1.3")
-                request = b""
-                while b"\r\n\r\n" not in request:
-                  piece = tls.recv(4096)
-                  if not piece:
-                    break
-                  request += piece
-                received.append(request)
-                if not request:
-                  return
-                headers = dict(line.split(": ", 1) for line in request.decode().split("\r\n")[1:] if ": " in line)
-                accept = base64.b64encode(hashlib.sha1((headers["Sec-WebSocket-Key"] +
-                                                       "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()).decode()
-                tls.sendall(("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
-                             f"Sec-WebSocket-Accept: {accept}\r\nSec-WebSocket-Protocol: sunnylink-local\r\n\r\n").encode())
-                tls.recv(4096)  # Client close frame.
-            except ABORTED_CONNECTION_ERRORS as e:
-              # Expected only when the client is the one that refuses: an error here in the
-              # valid case is a real failure.
-              if valid:
-                errors.append(e)
-            except Exception as e:
-              errors.append(e)
+  def test_grants_stop_at_the_limit(self):
+    for _ in range(MAX_GRANTS):
+      key = ec.generate_private_key(ec.SECP256R1())
+      grant = self.authority.enroll(self.enrollment(key=key), Origin.CLOUD)
+      self.authority.confirm(grant, grant.app_id)
+    extra = ec.generate_private_key(ec.SECP256R1())
+    with self.assertRaises(AuthorizationError):
+      self.authority.enroll(self.enrollment(key=extra), Origin.CLOUD)
+    self.assertIsNone(self.authority.pending)
 
-          thread = threading.Thread(target=serve)
-          thread.start()
-          try:
-            endpoint = f"wss://127.0.0.1:{listener.getsockname()[1]}"
-            if valid:
-              client = connect_pinned(endpoint, key_id(self.app_key.public_key()), timeout_s=5)
-              self.assertEqual(client.sock.version(), "TLSv1.3")
-              client.close(timeout=1)
-            else:
-              with self.assertRaises(AuthorizationError):
-                connect_pinned(endpoint, key_id(self.device_key.public_key()), timeout_s=5)
-          finally:
-            thread.join(timeout=6)
-          self.assertFalse(thread.is_alive())
-          # An abort other than the client's own refusal is a failure in both cases.
-          self.assertEqual(errors, [])
-          if valid:
-            # The accepted path is strict: the handshake completes, exactly one request arrives
-            # and it carries no credential header.
-            self.assertEqual(len(received), 1)
-            self.assertTrue(b"GET / HTTP/1.1" in received[0])
-            self.assertNotIn(b"Authorization", received[0])
-          else:
-            # Refusing the pin races the server's own handshake, so the server either lost the
-            # connection inside `wrap_socket` (nothing recorded) or saw a socket the client
-            # closed without a request (one empty record). The property that matters is the same
-            # in both: not one byte of HTTP reached the server.
-            self.assertLessEqual(len(received), 1)
-            self.assertEqual([piece for piece in received if piece], [])
+  def test_the_statement_can_be_read_backwards_from_the_wire(self):
+    proof = statement("enroll", "cloud", "comma", "device-key", "key", "key-id", "Name")
+    self.assertEqual(b"sunnylink-local\nenroll\ncloud\ncomma\ndevice-key\nkey\nkey-id\nName\n", proof)
 
-  def test_tls_pin_checks_key_not_name(self):
-    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "sunnylink mobile")])
-    now = datetime.now(UTC)
-    cert = (x509.CertificateBuilder().subject_name(name).issuer_name(name).public_key(self.app_key.public_key())
-            .serial_number(x509.random_serial_number()).not_valid_before(now - timedelta(minutes=1)).not_valid_after(now + timedelta(days=1))
-            .sign(self.app_key, hashes.SHA256()).public_bytes(serialization.Encoding.DER))
-    self.assertEqual(verify_tls_peer(cert, key_id(self.app_key.public_key())), key_id(self.app_key.public_key()))
-    for bad, expected in ((cert, key_id(self.device_key.public_key())), (b"garbage", key_id(self.app_key.public_key()))):
-      with self.assertRaises(AuthorizationError):
-        verify_tls_peer(bad, expected)
+
+class TestAuthorizedSession(OpenpilotTestCase):
+  def setup_method(self):
+    self.device_key = ec.generate_private_key(ec.SECP256R1())
+    self.app_key = ec.generate_private_key(ec.SECP256R1())
+    self.writes: list[dict] = []
+    self.authority = LocalAuthority("cloud-device", "comma-device",
+                                    self.device_key, self.writes.append)
+    self.app_id = key_id(self.app_key.public_key())
+    grant = self.authority.enroll(self._enrollment(), Origin.CLOUD)
+    self.grant = self.authority.confirm(grant, grant.app_id)
+
+  def _enrollment(self) -> str:
+    public = _spki(self.app_key)
+    data = {"v": VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+            "device_key_id": self.authority.device_key_id, "public_key": public,
+            "key_id": self.app_id, "app_name": "Test phone"}
+    proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
+    data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
+    return json.dumps(data)
+
+  def test_a_stranger_is_not_authorized(self):
+    stranger = Grant("no-such-phone", _spki(self.app_key), "Nobody")
+    with self.assertRaises(AuthorizationError):
+      self.authority.session(stranger, stranger.app_id)
+
+  def test_a_known_installation_but_unknown_dial_is_not_authorized(self):
+    with self.assertRaises(AuthorizationError):
+      self.authority.session(self.grant, self.app_id + "-other")
+
+  def test_a_second_car_does_not_share_this_cars_grants(self):
+    other = LocalAuthority("cloud-other", "comma-other",
+                           ec.generate_private_key(ec.SECP256R1()), lambda registry: None)
+    with self.assertRaises(AuthorizationError):
+      other.session(self.grant, self.app_id)
+
+  def test_a_wrong_key_for_a_paired_app_id_is_not_authorized(self):
+    impostor = Grant(self.app_id, _spki(ec.generate_private_key(ec.SECP256R1())), "Test phone")
+    with self.assertRaises(AuthorizationError):
+      self.authority.session(impostor, self.app_id)
+
+  def test_an_unpaired_installation_is_not_authorized(self):
+    self.authority.revoke(self.app_id)
+    with self.assertRaises(AuthorizationError):
+      self.authority.session(self.grant, self.app_id)
+
+  def test_a_restarted_authority_keeps_its_grants(self):
+    restarted = LocalAuthority("cloud-device", "comma-device",
+                               self.device_key, lambda registry: None, registry=self.writes[-1])
+    session = restarted.session(self.grant, self.app_id)
+    self.assertEqual("ok", session.invoke("getParams", lambda: "ok"))
+
+  def test_a_closed_session_refuses_calls(self):
+    session = self.authority.session(self.grant, self.app_id)
+    session.close()
+    with self.assertRaises(AuthorizationError):
+      session.invoke("getParams", lambda: "ok")
+
+  def test_a_method_outside_the_local_surface_is_refused(self):
+    session = self.authority.session(self.grant, self.app_id)
+    with self.assertRaises(AuthorizationError):
+      session.invoke("startLocalProxy", mock.Mock())
+
+  def test_revoking_mid_session_kills_the_session(self):
+    session = self.authority.session(self.grant, self.app_id)
+    self.authority.revoke(self.app_id)
+    with self.assertRaises(AuthorizationError):
+      session.invoke("getParams", mock.Mock())
+
+
+class TestGrantPersistence(OpenpilotTestCase):
+  def setup_method(self):
+    self.device_key = ec.generate_private_key(ec.SECP256R1())
+    self.app_key = ec.generate_private_key(ec.SECP256R1())
+    self.writes: list[dict] = []
+
+  def _committed(self, authority=None):
+    authority = authority or LocalAuthority(
+      "cloud-device", "comma-device", self.device_key, self.writes.append)
+    public = _spki(self.app_key)
+    data = {"v": VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+            "device_key_id": authority.device_key_id, "public_key": public,
+            "key_id": key_id(self.app_key.public_key()), "app_name": "Test phone"}
+    proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
+    data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
+    grant = authority.enroll(json.dumps(data), Origin.CLOUD)
+    return authority.confirm(grant, grant.app_id)
+
+  def test_grants_reload_from_the_persisted_document(self):
+    grant = self._committed()
+    restarted = LocalAuthority("cloud-device", "comma-device",
+                               self.device_key, lambda registry: None, registry=self.writes[-1])
+    session = restarted.session(grant, grant.app_id)
+    self.assertEqual("ok", session.invoke("getParams", lambda: "ok"))
+
+  def test_a_registry_with_the_wrong_shape_is_ignored(self):
+    key = _spki(self.app_key)
+    entry = {"app_id": key_id(self.app_key.public_key()), "public_key": key, "app_name": "A"}
+    bad_registries = [
+      None, [], "registry", {"v": VERSION}, {"v": 999, "grants": []},
+      {"v": VERSION, "grants": [{"app_id": "x"}]},
+      {"v": VERSION, "grants": [{"app_id": "x", "public_key": "!!!", "app_name": "A"}]},
+      {"v": VERSION, "grants": "not-a-list"},
+      {"v": VERSION, "grants": [entry], "extra": True},
+      {"v": VERSION, "grants": [dict(entry, app_id="somebody-else")]},
+      {"v": VERSION, "grants": [entry, dict(entry)]},
+    ]
+    for bad in bad_registries:
+      restarted = LocalAuthority("cloud-device", "comma-device", self.device_key,
+                                 lambda registry: None, registry=bad)
+      self.assertEqual({}, restarted.grants, bad)
+
+  def test_more_grants_than_fit_are_ignored(self):
+    entries = []
+    for _ in range(MAX_GRANTS + 1):
+      key = ec.generate_private_key(ec.SECP256R1())
+      public = _spki(key)
+      entries.append({"app_id": key_id(key.public_key()), "public_key": public, "app_name": "A"})
+    restarted = LocalAuthority("cloud-device", "comma-device", self.device_key,
+                               lambda registry: None,
+                               registry={"v": VERSION, "grants": entries})
+    self.assertEqual({}, restarted.grants)
+
+
+class TestRevocation(OpenpilotTestCase):
+  def setup_method(self):
+    self.device_key = ec.generate_private_key(ec.SECP256R1())
+    self.app_key = ec.generate_private_key(ec.SECP256R1())
+    self.writes: list[dict] = []
+    self.authority = LocalAuthority("cloud-device", "comma-device",
+                                    self.device_key, self.writes.append)
+    self.app_id = key_id(self.app_key.public_key())
+    proof = statement("revoke", "cloud-device", "comma-device", self.app_id)
+    self.revocation = json.dumps({"v": VERSION, "cloud_device_id": "cloud-device",
+                                  "comma_device_id": "comma-device", "key_id": self.app_id,
+                                  "signature": encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))})
+    public = _spki(self.app_key)
+    data = {"v": VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+            "device_key_id": self.authority.device_key_id, "public_key": public,
+            "key_id": self.app_id, "app_name": "Test phone"}
+    proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
+    data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
+    grant = self.authority.enroll(json.dumps(data), Origin.CLOUD)
+    self.grant = self.authority.confirm(grant, grant.app_id)
+
+  def test_an_installation_can_revoke_itself(self):
+    self.assertEqual(self.app_id, self.authority.revoke_by_self_proof(self.revocation, Origin.CLOUD))
+    with self.assertRaises(AuthorizationError):
+      self.authority.session(self.grant, self.app_id)
+    self.assertEqual({}, self.authority.grants)
+
+  def test_a_revoked_installation_can_enroll_again(self):
+    """Unpair is not a ban: the next auto-enroll push stages again, the next dial commits."""
+    self.authority.revoke_by_self_proof(self.revocation, Origin.CLOUD)
+    public = _spki(self.app_key)
+    data = {"v": VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+            "device_key_id": self.authority.device_key_id, "public_key": public,
+            "key_id": self.app_id, "app_name": "Test phone"}
+    proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
+    data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
+    grant = self.authority.enroll(json.dumps(data), Origin.CLOUD)
+    self.authority.confirm(grant, grant.app_id)
+    self.authority.session(grant, grant.app_id)
+
+  def test_revoking_over_the_local_lan_is_impossible(self):
+    with self.assertRaises(AuthorizationError):
+      self.authority.revoke_by_self_proof(self.revocation, Origin.LOCAL)
+    self.authority.session(self.grant, self.app_id)
+
+  def test_cloud_revocations_for_other_devices_are_ignored(self):
+    payload = json.loads(self.revocation)
+    payload["comma_device_id"] = "some-other-car"
+    with self.assertRaises(AuthorizationError):
+      self.authority.revoke_by_self_proof(json.dumps(payload), Origin.CLOUD)
+    self.authority.session(self.grant, self.app_id)
+
+  def test_revoking_an_unknown_key_is_a_noop(self):
+    other_key = ec.generate_private_key(ec.SECP256R1())
+    other_id = key_id(other_key.public_key())
+    proof = statement("revoke", "cloud-device", "comma-device", other_id)
+    raw = json.dumps({"v": VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+                      "key_id": other_id,
+                      "signature": encode64(other_key.sign(proof, ec.ECDSA(hashes.SHA256())))})
+    self.assertEqual(other_id, self.authority.revoke_by_self_proof(raw, Origin.CLOUD))
+    self.assertEqual(1, len(self.authority.grants))
+
+  def test_a_forged_proof_for_an_enrolled_key_is_refused(self):
+    forged = json.loads(self.revocation)
+    forged["signature"] = encode64(ec.generate_private_key(ec.SECP256R1()).sign(
+      statement("revoke", "cloud-device", "comma-device", self.app_id), ec.ECDSA(hashes.SHA256())))
+    with self.assertRaises(AuthorizationError):
+      self.authority.revoke_by_self_proof(json.dumps(forged), Origin.CLOUD)
+    self.authority.session(self.grant, self.app_id)
+
+  def test_a_revocation_is_not_an_enrollment(self):
+    with self.assertRaises(AuthorizationError):
+      self.authority.enroll(self.revocation, Origin.CLOUD)
+
+
+class TestDeviceProof(OpenpilotTestCase):
+  """The device proves itself to the dialing phone: it answers the phone's challenge."""
+
+  def setup_method(self):
+    self.device_key = ec.generate_private_key(ec.SECP256R1())
+    self.authority = LocalAuthority("cloud-device", "comma-device",
+                                    self.device_key, lambda registry: None)
+
+  def test_the_device_signs_the_phones_challenge(self):
+    from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
+    challenge = encode64(b"\x00" * 32)
+    proof = self.authority.authenticate_device("phone-key", challenge)
+    self.assertEqual("cloud-device", proof["cloud_device_id"])
+    self.assertEqual("comma-device", proof["comma_device_id"])
+    self.assertEqual("phone-key", proof["phone_key_id"])
+    expected = statement("authenticate-device", "cloud-device", "comma-device",
+                         self.authority.device_key_id, "phone-key", challenge)
+    self.device_key.public_key().verify(
+      decode64(proof["signature"]), expected, ECDSA(hashes.SHA256()))
+
+  def test_a_short_challenge_is_refused(self):
+    with self.assertRaises(AuthorizationError):
+      self.authority.authenticate_device("phone-key", encode64(b"\x00" * 31))
+    with self.assertRaises(AuthorizationError):
+      self.authority.authenticate_device("phone-key", "!!!")

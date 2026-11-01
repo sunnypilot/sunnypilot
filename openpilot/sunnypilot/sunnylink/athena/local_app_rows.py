@@ -60,5 +60,5 @@ def build_local_app_rows(grants: list[dict[str, str]],
     entry = entries.get(app_id)
     entry = entry if isinstance(entry, Mapping) else None
     rows.append(LocalAppRow(app_id, _title(app_id, grant, entry),
-                            f"secure · {short_key(app_id)} · {last_seen_text(entry, now)}"))
+                            f"{last_seen_text(entry, now)}"))
   return rows[:MAX_LOCAL_APP_ROWS]

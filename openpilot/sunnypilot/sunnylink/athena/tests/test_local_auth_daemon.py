@@ -20,6 +20,7 @@ from openpilot.sunnypilot.sunnylink.athena.local_auth import (
   encode64,
   key_id,
   statement,
+  VERSION as REGISTRY_VERSION,
 )
 
 # `<repo>/openpilot/common/params_keys.h` from this file.
@@ -27,7 +28,7 @@ PARAMS_KEYS_H = Path(__file__).resolve().parents[4] / "common" / "params_keys.h"
 
 # The fields an enrollment signs, in the order the statement joins them.
 ENROLL_FIELDS = ("cloud_device_id", "comma_device_id", "device_key_id",
-                 "pairing_session", "public_key", "key_id", "app_name")
+                 "public_key", "key_id", "app_name")
 
 
 class _ParamsStore:
@@ -84,12 +85,10 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
       self.addCleanup(patcher.stop)
 
   def enrollment(self, authority) -> str:
-    authority.arm()
     public = encode64(self.app_key.public_key().public_bytes(
       serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))
-    nonce = authority.window.nonce
-    data = {"v": 2, "cloud_device_id": authority.cloud_device_id, "comma_device_id": authority.comma_device_id,
-            "device_key_id": authority.device_key_id, "pairing_session": nonce,
+    data = {"v": REGISTRY_VERSION, "cloud_device_id": authority.cloud_device_id,
+            "comma_device_id": authority.comma_device_id, "device_key_id": authority.device_key_id,
             "public_key": public, "key_id": key_id(self.app_key.public_key()), "app_name": "Test phone"}
     proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
     data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
@@ -105,20 +104,19 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     key = app_key or self.app_key
     app_id = key_id(key.public_key())
     proof = statement("revoke", authority.cloud_device_id, authority.comma_device_id, app_id)
-    return json.dumps({"v": 2, "cloud_device_id": authority.cloud_device_id,
+    return json.dumps({"v": REGISTRY_VERSION, "cloud_device_id": authority.cloud_device_id,
                        "comma_device_id": authority.comma_device_id, "key_id": app_id,
                        "signature": encode64(key.sign(proof, ec.ECDSA(hashes.SHA256())))})
 
   def registry(self) -> dict[str, Any]:
     return self.store.values[local_auth_daemon.LOCAL_APPS_KEY]
 
-  def test_a_late_cloud_enrollment_from_an_expired_code_still_enrolls(self):
-    """The path an app's push takes: the gateway stores the settings-write, the local half claims it
-    on a later tick, and by then the scanned code has left the device screen."""
+  def test_a_cloud_enrollment_claimed_on_a_later_tick_stages(self):
+    """The path an app's push takes: the gateway stores the settings-write and the local half
+    claims it on a later tick. There is no code on any screen — claiming works whenever the
+    push arrives."""
     authority = local_auth_daemon.get_authority()
-    raw = self.enrollment(authority)          # the app scanned the armed code
-    authority.expire()                        # the code stops being displayed …
-    self.store.put(local_auth_daemon.CLOUD_ENROLL_KEY, raw)
+    self.store.put(local_auth_daemon.CLOUD_ENROLL_KEY, self.enrollment(authority))
 
     local_auth_daemon.claim_cloud_commands(cast(Params, self.store))
 
@@ -129,19 +127,6 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     # Claimed exactly once, whether or not it validated.
     self.assertIsNone(self.store.get(local_auth_daemon.CLOUD_ENROLL_KEY))
 
-  def test_a_cloud_enrollment_for_a_code_past_its_grace_is_refused(self):
-    authority = local_auth_daemon.get_authority()
-    raw = self.enrollment(authority)
-    window = authority.recent[-1]
-    authority.expire()
-    self.store.put(local_auth_daemon.CLOUD_ENROLL_KEY, raw)
-
-    with mock.patch.object(authority, "clock", lambda: window.usable_until + 1):
-      local_auth_daemon.claim_cloud_commands(cast(Params, self.store))
-
-    self.assertIsNone(local_auth_daemon.pending_enrollment())
-    self.assertIsNone(self.store.get(local_auth_daemon.CLOUD_ENROLL_KEY))
-
   def test_cloud_enroll_stages_and_tls_confirm_persists(self):
     summary = local_auth_daemon.cloud_enroll(self.enrollment(local_auth_daemon.get_authority()))
     # Staged: nothing durable until the TLS peer proves possession.
@@ -149,7 +134,7 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     committed = local_auth_daemon.confirm_enrollment_tls(summary["app_id"])
     self.assertEqual(summary["app_id"], committed["app_id"])
     registry = self.registry()
-    self.assertEqual(2, registry["v"])
+    self.assertEqual(REGISTRY_VERSION, registry["v"])
     self.assertEqual(1, len(registry["grants"]))
     self.assertEqual(summary["app_id"], registry["grants"][0]["app_id"])
 
@@ -237,7 +222,6 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     """
     declared = PARAMS_KEYS_H.read_text()
     for key in (local_auth_daemon.LOCAL_APPS_KEY, local_auth_daemon.LOCAL_APPS_META_KEY,
-                local_auth_daemon.PAIRING_REQUEST_KEY, local_auth_daemon.PAIRING_QR_KEY,
                 local_auth_daemon.REVOKE_KEY):
       self.assertTrue(f'"{key}"' in declared)
 
@@ -260,7 +244,6 @@ class TestLocalAuthDaemon(OpenpilotTestCase):
     with mock.patch.object(local_auth_daemon.BaseApi, "get_key_pair", return_value=(None, None, None)):
       local_auth_daemon.reset_authority()
       self.assertIsNone(local_auth_daemon.get_authority())
-      self.assertIsNone(local_auth_daemon.arm_local_pairing())
       with self.assertRaises(AuthorizationError):
         local_auth_daemon.cloud_enroll("{}")
 
@@ -297,13 +280,11 @@ class TestRegistryThroughRealParams(OpenpilotTestCase):
   def test_grant_survives_a_write_and_reload_through_libparams(self):
     authority = local_auth_daemon.get_authority()
     self.assertIsNotNone(authority)
-    authority.arm()
-    nonce = authority.window.nonce
     public = encode64(self.app_key.public_key().public_bytes(
       serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo))
     app_id = key_id(self.app_key.public_key())
-    data = {"v": 2, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
-            "device_key_id": authority.device_key_id, "pairing_session": nonce, "public_key": public,
+    data = {"v": REGISTRY_VERSION, "cloud_device_id": "cloud-device", "comma_device_id": "comma-device",
+            "device_key_id": authority.device_key_id, "public_key": public,
             "key_id": app_id, "app_name": "Test phone"}
     proof = statement("enroll", *(str(data[field]) for field in ENROLL_FIELDS))
     data["signature"] = encode64(self.app_key.sign(proof, ec.ECDSA(hashes.SHA256())))
@@ -389,7 +370,7 @@ class TestGrantedAppsView(OpenpilotTestCase):
     self.addCleanup(patcher.stop)
 
   def write_registry(self, grants: list[Any]) -> None:
-    self.store.values[local_auth_daemon.LOCAL_APPS_KEY] = {"v": 2, "grants": grants}
+    self.store.values[local_auth_daemon.LOCAL_APPS_KEY] = {"v": REGISTRY_VERSION, "grants": grants}
 
   def test_lists_app_id_and_name_without_building_the_authority(self):
     self.write_registry([{"app_id": "key-a", "app_name": "Nayan's phone", "public_key": "x"}])
@@ -496,27 +477,8 @@ class TestRevokeAllThroughTheAuthority(OpenpilotTestCase):
     self.assertEqual(2, self.authority.revoke_all())
     self.assertEqual({}, self.authority.grants)
     # One write for the whole action, and the persisted document is an empty registry.
-    self.assertEqual([{"v": 2, "grants": []}], self.writes)
+    self.assertEqual([{"v": REGISTRY_VERSION, "grants": []}], self.writes)
 
   def test_revoke_all_with_nothing_enrolled_writes_nothing(self):
     self.assertEqual(0, self.authority.revoke_all())
     self.assertEqual([], self.writes)
-
-
-class TestPairingWindowParams(OpenpilotTestCase):
-  def setup_method(self):
-    self.store = _ParamsStore()
-    patcher = mock.patch.object(local_auth_daemon, "_params", self.store)
-    patcher.start()
-    self.addCleanup(patcher.stop)
-
-  def test_clear_pairing_params_does_not_touch_the_authority(self):
-    """The UI's cancel is params-only: that process has no window to cancel, and building an
-    authority there would load the device identity key for nothing."""
-    self.store.values[local_auth_daemon.PAIRING_REQUEST_KEY] = True
-    self.store.values[local_auth_daemon.PAIRING_QR_KEY] = "qr"
-    with mock.patch.object(local_auth_daemon, "get_authority",
-                           side_effect=AssertionError("must not build an authority")):
-      local_auth_daemon.clear_pairing_params(cast(Params, self.store))
-    self.assertNotIn(local_auth_daemon.PAIRING_REQUEST_KEY, self.store.values)
-    self.assertNotIn(local_auth_daemon.PAIRING_QR_KEY, self.store.values)

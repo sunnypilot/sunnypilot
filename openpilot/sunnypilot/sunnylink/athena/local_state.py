@@ -11,8 +11,6 @@ BEACON_PREFIX = "SUNNYLINK1"
 LOCAL_APPS_KEY = "SunnylinkLocalApps"
 LOCAL_APPS_META_KEY = "SunnylinkLocalAppsMeta"
 
-PAIRING_REQUEST_KEY = "SunnylinkLocalPairingRequest"
-PAIRING_QR_KEY = "SunnylinkLocalPairingQr"
 REVOKE_KEY = "SunnylinkLocalRevoke"
 # Value of REVOKE_KEY that drops every grant instead of one.
 REVOKE_ALL = "ALL"
