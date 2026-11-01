@@ -7,8 +7,6 @@ See the LICENSE.md file in the root directory for more details.
 import random
 import time
 
-import pytest
-
 from openpilot.common.constants import CV
 from openpilot.common.parameterized import parameterized
 
@@ -166,5 +164,5 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
 
     resolver.update(v_kph * CV.KPH_TO_MS, sm_mock)
     assert resolver.source == SpeedLimitSource.map
-    assert resolver.speed_limit == pytest.approx(limit_kph * CV.KPH_TO_MS)
-    assert resolver.distance == pytest.approx(distance, abs=0.1)
+    self.assertAlmostEqual(resolver.speed_limit, limit_kph * CV.KPH_TO_MS, places=5)
+    self.assertAlmostEqual(resolver.distance, distance, delta=0.1)
