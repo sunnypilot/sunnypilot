@@ -2,6 +2,7 @@
 import numpy as np
 
 import openpilot.cereal.messaging as messaging
+from openpilot.cereal import log
 from opendbc.car.interfaces import ACCEL_MIN, ACCEL_MAX
 from openpilot.common.constants import CV
 from openpilot.common.filter_simple import FirstOrderFilter
@@ -20,6 +21,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import Lon
 J_CRUISE_VALS = [1.6, 1.2, 0.8, 0.6]
 J_CRUISE_BP = [0., 10.0, 25., 40.]
 A_CRUISE_MIN = -0.5
+AGGRESSIVE_LEAD_ONLY_DIST = 40.  # m
 CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 
 
@@ -114,6 +116,10 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     candidates = [(output_a_target_mpc, self.mpc.source, output_should_stop_mpc),
                   (self.a_cruise, LongitudinalPlanSource.cruise, cruise_should_stop),
                   (output_a_target_e2e, LongitudinalPlanSource.e2e, output_should_stop_e2e)]
+    # aggressive: with a close radar lead, follow it like stock SCC instead of the model's larger stop gap
+    lead = sm['radarState'].leadOne
+    if sm['selfdriveState'].personality == log.LongitudinalPersonality.aggressive and lead.radar and lead.dRel < AGGRESSIVE_LEAD_ONLY_DIST:
+      candidates.pop()
 
     output_a_target, self.mpc.source, _ = min(candidates, key=lambda c: c[0])
     self.output_should_stop = any(should_stop for _, _, should_stop in candidates)

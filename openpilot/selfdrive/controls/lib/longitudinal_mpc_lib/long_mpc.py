@@ -57,6 +57,12 @@ COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 6.0
 MIN_X_LEAD_FACTOR = 0.5
 
+# aggressive matches stock Hyundai SCC closest setting: 2.4 m stopped, 14.8 m @ 14, 20.2 m @ 17.8, 25.2 m @ 21.3 m/s
+# the MPC settles ~1.1 m short of its target at standstill, so 3.5 m stops at ~2.4 m
+AGGRESSIVE_STOP_DISTANCE = 3.5
+AGGRESSIVE_T_FOLLOW_BP = [0., 14., 16., 18., 20., 21.3, 30.]
+AGGRESSIVE_T_FOLLOW_V = [0.82, 0.82, 0.87, 0.94, 0.97, 1.02, 1.08]
+
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
     return 1.0
@@ -309,6 +315,11 @@ class LongitudinalMpc:
 
   def update(self, radarstate, personality=log.LongitudinalPersonality.standard):
     t_follow = get_T_FOLLOW(personality)
+    stop_distance_offset = 0.
+    if personality == log.LongitudinalPersonality.aggressive:
+      t_follow = float(np.interp(self.x0[1], AGGRESSIVE_T_FOLLOW_BP, AGGRESSIVE_T_FOLLOW_V))
+      # STOP_DISTANCE is compiled into the solver, so move the lead forward instead
+      stop_distance_offset = STOP_DISTANCE - AGGRESSIVE_STOP_DISTANCE
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)
@@ -316,8 +327,8 @@ class LongitudinalMpc:
     # To estimate a safe distance from a moving lead, we calculate how much stopping
     # distance that lead needs as a minimum. We can add that to the current distance
     # and then treat that as a stopped car/obstacle at this new distance.
-    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1])
-    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1])
+    lead_0_obstacle = lead_xv_0[:,0] + get_stopped_equivalence_factor(lead_xv_0[:,1]) + stop_distance_offset
+    lead_1_obstacle = lead_xv_1[:,0] + get_stopped_equivalence_factor(lead_xv_1[:,1]) + stop_distance_offset
 
     x_obstacles = np.column_stack([lead_0_obstacle, lead_1_obstacle])
     self.source = MPC_SOURCES[np.argmin(x_obstacles[0])]
