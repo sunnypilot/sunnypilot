@@ -394,7 +394,7 @@ struct CarControlSP @0xa5cd762cd951a455 {
   laneChange @7 :LaneChange;
   driverMonitoring @8 :DriverMonitoring;
   leadFollowing @9 :Bool;
-  blendfulEnabled @10 :Bool;
+  blendfulEnabledDEPRECATED @10 :Bool;
   blendfulTrust @11 :Float32;
 
   struct SmartCruiseControl {
