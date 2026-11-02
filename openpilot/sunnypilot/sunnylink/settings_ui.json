@@ -1349,7 +1349,17 @@
               "key": "TorqueBar",
               "widget": "toggle",
               "title": "Steering Arc",
-              "description": "Display steering arc on the driving screen when lateral control is enabled."
+              "description": "Display steering arc on the driving screen when lateral control is enabled.",
+              "visibility": [
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "device_type",
+                    "equals": "mici"
+                  }
+                }
+              ]
             },
             {
               "key": "ShowTurnSignals",
