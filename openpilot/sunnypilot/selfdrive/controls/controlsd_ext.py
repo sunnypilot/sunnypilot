@@ -126,8 +126,10 @@ class ControlsExt(ModelStateBase):
     CC_SP.driverMonitoring.alertLevel = dm.alertLevel.raw
     CC_SP.driverMonitoring.visionPolicy = dm.activePolicy == 'vision'
 
-    # Planner following a lead
-    CC_SP.leadFollowing = str(sm['longitudinalPlan'].longitudinalPlanSource) in ('lead0', 'lead1', 'lead2')
+    # Planner following a lead, the model path (e2e) wins often while following so count it when there is a lead
+    long_plan = sm['longitudinalPlan']
+    CC_SP.leadFollowing = str(long_plan.longitudinalPlanSource) in ('lead0', 'lead1', 'lead2') or \
+                          (str(long_plan.longitudinalPlanSource) == 'e2e' and long_plan.hasLead)
 
     # Blendful lane centering
     CC_SP.blendfulEnabled = self.blendful_enabled
