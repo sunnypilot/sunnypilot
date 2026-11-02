@@ -26,6 +26,7 @@ def model_turn_probs(desire_prediction) -> tuple[float, float]:
   """Highest predicted (turnLeft, turnRight) probability over the soonest horizons of modelV2.meta.desirePrediction."""
   if desire_prediction is None or len(desire_prediction) < DESIRE_PRED_WIDTH * MODEL_TURN_HORIZONS:
     return 0., 0.
+  desire_prediction = list(desire_prediction)  # a capnp list can't be sliced
   rows = [desire_prediction[h * DESIRE_PRED_WIDTH:(h + 1) * DESIRE_PRED_WIDTH] for h in range(MODEL_TURN_HORIZONS)]
   return max(r[1] for r in rows), max(r[2] for r in rows)
 

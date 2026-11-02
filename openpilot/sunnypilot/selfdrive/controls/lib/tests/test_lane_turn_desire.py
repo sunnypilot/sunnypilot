@@ -233,6 +233,14 @@ class TestWaitForTurn(OpenpilotTestCase):
     assert model_turn_probs(pred) == (0.6, 0.2)
     assert model_turn_probs(None) == (0., 0.)
 
+  def test_model_turn_probs_capnp(self):
+    # modeld passes modelV2.meta.desirePrediction, a capnp list, which can't be sliced
+    msg = log.ModelDataV2.new_message()
+    pred = [0.] * (DESIRE_PRED_WIDTH * 4)
+    pred[1] = 0.5
+    msg.meta.desirePrediction = pred
+    assert model_turn_probs(msg.meta.desirePrediction) == (0.5, 0.)
+
 
 class TestWaitForTurnDesireHelper(OpenpilotTestCase):
   def test_model_prediction_releases_turn(self):
