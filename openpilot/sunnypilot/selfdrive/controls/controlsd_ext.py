@@ -26,12 +26,13 @@ class ControlsExt(ModelStateBase):
     self.params = params
     self._param_update_time: float = 0.0
     self.blinker_pause_lateral = BlinkerPauseLateral()
+    self.blendful_enabled = self.params.get_bool("Blendful")
 
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'longitudinalPlanSP']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'longitudinalPlanSP', 'modelDataV2SP']
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
@@ -50,6 +51,7 @@ class ControlsExt(ModelStateBase):
   def get_params_sp(self, sm: messaging.SubMaster) -> None:
     if time.monotonic() - self._param_update_time > PARAMS_UPDATE_PERIOD:
       self.blinker_pause_lateral.get_params()
+      self.blendful_enabled = self.params.get_bool("Blendful")
 
       if self.CP.lateralTuning.which() == 'torque':
         self.lat_delay = get_lat_delay(self.params, sm["lateralDelay"].lateralDelay)
@@ -126,6 +128,10 @@ class ControlsExt(ModelStateBase):
 
     # Planner following a lead
     CC_SP.leadFollowing = str(sm['longitudinalPlan'].longitudinalPlanSource) in ('lead0', 'lead1', 'lead2')
+
+    # Blendful lane centering
+    CC_SP.blendfulEnabled = self.blendful_enabled
+    CC_SP.blendfulTrust = float(sm['modelDataV2SP'].blendfulTrust)
 
     return CC_SP
 

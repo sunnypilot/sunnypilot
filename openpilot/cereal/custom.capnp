@@ -394,6 +394,8 @@ struct CarControlSP @0xa5cd762cd951a455 {
   laneChange @7 :LaneChange;
   driverMonitoring @8 :DriverMonitoring;
   leadFollowing @9 :Bool;  # longitudinal planner is following a lead
+  blendfulEnabled @10 :Bool;  # Blendful lane centering toggle
+  blendfulTrust @11 :Float32;  # how much Blendful leans on the lane lines, 0 = not blending
 
   struct SmartCruiseControl {
     visionState @0 :LongitudinalPlanSP.SmartCruiseControl.VisionState;
