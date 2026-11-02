@@ -7,6 +7,8 @@ See the LICENSE.md file in the root directory for more details.
 import time
 import pyray as rl
 
+from opendbc.car.structs import car
+
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.onroad.augmented_road_view import BORDER_COLORS
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
@@ -19,6 +21,8 @@ AUTO_DISMISS = 20.
 FADE_IN, FADE_OUT = 0.35, 0.3
 LAT = (UIStatus.ENGAGED, UIStatus.LAT_ONLY)
 LONG = (UIStatus.ENGAGED, UIStatus.LONG_ONLY)
+GEAR = car.CarState.GearShifter
+FORWARD = (GEAR.drive, GEAR.sport, GEAR.low, GEAR.brake, GEAR.eco, GEAR.manumatic)
 
 
 class TripTracker:
@@ -32,10 +36,11 @@ class TripTracker:
     self._t = None
     self._status = None
 
-  def update(self):
+  def update(self, driving: bool):
     now = time.monotonic()
-    if not ui_state.started:
+    if not driving:
       self._t = None
+      self._status = None
       return
     dt = 0. if self._t is None else min(now - self._t, 0.5)
     self._t = now
@@ -59,20 +64,27 @@ class TripSummary:
   def __init__(self):
     self._trip = TripTracker()
     self._dialog: TripSummaryDialog | None = None
-    self._started = False
+    self._gear = None
+    self._drove = False
     gui_app.add_nav_stack_tick(self._tick)
 
   def _tick(self):
-    self._trip.update()
-    if ui_state.started == self._started:
+    gear = ui_state.sm["carState"].gearShifter if ui_state.started else None
+    self._trip.update(gear not in (None, GEAR.park))
+    self._drove |= gear in FORWARD
+    if gear == self._gear:
       return
-    self._started = ui_state.started
+    self._gear = gear
 
-    self._pop()
-    if not ui_state.started and not ui_state.is_body and self._trip.total() >= MIN_DISTANCE:
+    if gear not in (None, GEAR.park):
+      self._pop()
+    elif gear == GEAR.park and self._drove and ui_state.trip_summary and not ui_state.is_body and self._trip.total() >= MIN_DISTANCE:
       self._dialog = TripSummaryDialog(self._trip, gui_app.get_active_widget(), self._pop)
       gui_app.push_widget(self._dialog)
-    self._trip.reset()
+    if gear is None:
+      self._trip.reset()
+    if gear in (None, GEAR.park):
+      self._drove = False
 
   def _pop(self):
     if self._dialog is not None and gui_app.get_active_widget() is self._dialog:
@@ -172,7 +184,7 @@ class TripSummaryDialog(Widget):
 
     y += (90 + 70) * k
 
-    size = int(70 * k)
+    size = int(90 * k)
     parts = []
     for i, (value, unit) in enumerate(self._details):
       if i:
@@ -182,7 +194,7 @@ class TripSummaryDialog(Widget):
     lx = x + (w - sum(widths)) / 2
     for (text, font, color), tw in zip(parts, widths, strict=True):
       if color is None:
-        rl.draw_circle(int(lx + tw / 2), int(y + 40 * k), 7 * k, _fade(rl.Color(110, 110, 110, 255), a))
+        rl.draw_circle(int(lx + tw / 2), int(y + size * 0.6), 12 * k, _fade(rl.Color(110, 110, 110, 255), a))
       else:
         rl.draw_text_ex(font, text, rl.Vector2(lx, y), size, 0, _fade(color, a))
       lx += tw
