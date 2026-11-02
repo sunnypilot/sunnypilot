@@ -75,16 +75,18 @@ def use_copyparty(started, params, CP: car.CarParams) -> bool:
   return bool(params.get_bool("EnableCopyparty"))
 
 def localsunnylinkd_enabled(started, params, CP: car.CarParams) -> bool:
-  return params.get_bool("SunnylinkEnabled") and not params.get_bool("SunnylinkTempFault") \
-     and params.get_bool("SunnylinkLocalEnabled")
+  return params.get_bool("SunnylinkEnabled") and params.get_bool("SunnylinkLocalEnabled")
 
 def sunnylink_ready_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for sunnylink_ready to match the process manager signature."""
   return sunnylink_ready(params)
 
 def sunnylink_need_register_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for sunnylink_need_register to match the process manager signature."""
   return sunnylink_need_register(params)
 
 def use_sunnylink_uploader_shim(started, params, CP: car.CarParams) -> bool:
+  """Shim for use_sunnylink_uploader to match the process manager signature."""
   return use_sunnylink_uploader(params)
 
 def is_tinygrad_model(started, params, CP: car.CarParams) -> bool:
