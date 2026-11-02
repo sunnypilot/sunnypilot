@@ -389,6 +389,45 @@ struct CarControlSP @0xa5cd762cd951a455 {
   leadOne @2 :LeadData;
   leadTwo @3 :LeadData;
   intelligentCruiseButtonManagement @4 :IntelligentCruiseButtonManagement;
+  smartCruiseControl @5 :SmartCruiseControl;
+  speedLimit @6 :SpeedLimit;
+  laneChange @7 :LaneChange;
+  driverMonitoring @8 :DriverMonitoring;
+  leadFollowing @9 :Bool;  # longitudinal planner is following a lead
+
+  struct SmartCruiseControl {
+    visionState @0 :LongitudinalPlanSP.SmartCruiseControl.VisionState;
+    mapState @1 :LongitudinalPlanSP.SmartCruiseControl.MapState;
+  }
+
+  struct SpeedLimit {
+    assistState @0 :LongitudinalPlanSP.SpeedLimit.AssistState;
+    speedLimitFinalLast @1 :Float32;
+  }
+
+  struct DriverMonitoring {
+    alertLevel @0 :UInt8;  # log.DriverMonitoringState.AlertLevel: 0 none, 1-3 escalating
+    visionPolicy @1 :Bool;  # true: driver camera sees the face, false: wheel touch fallback
+  }
+
+  # same values as log.LaneChangeState / log.LaneChangeDirection
+  struct LaneChange {
+    state @0 :State;
+    direction @1 :Direction;
+
+    enum State {
+      off @0;
+      preLaneChange @1;
+      laneChangeStarting @2;
+      laneChangeFinishing @3;
+    }
+
+    enum Direction {
+      none @0;
+      left @1;
+      right @2;
+    }
+  }
 
   struct Param {
     key @0 :Text;
