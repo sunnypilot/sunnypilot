@@ -102,7 +102,7 @@ class ModelState(ModelStateBase):
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
-    self.MIN_LAT_CONTROL_SPEED = 1.6
+    self.MIN_LAT_CONTROL_SPEED = 0.3
     self.PLANPLUS_CONTROL: float = 1.0
     self.chestnut = chestnut
 

@@ -191,7 +191,6 @@ class TestWaitForTurn(OpenpilotTestCase):
     assert controller.get_turn_direction() == TurnDirection.none
 
   @parameterized.expand([
-    ("stopped", {"v_ego": 0.2}),
     ("nudge", {"steering_pressed": True, "steering_torque": 1.5}),
     ("model", {"turn_probs": (MODEL_TURN_PROB, 0.)}),
   ])
@@ -206,6 +205,14 @@ class TestWaitForTurn(OpenpilotTestCase):
     controller.update_lane_turn(False, False, True, False, 6)
     assert controller.get_turn_direction() == TurnDirection.turnLeft
 
+  @parameterized.expand([(-0.05,), (0.,), (0.2,), (0.49,)])
+  def test_stopped_speed_alone_does_not_trigger(self, v_ego):
+    for left_blinker in (True, False):
+      controller = make_wait_controller()
+      for _ in range(20):
+        controller.update_lane_turn(False, False, left_blinker, not left_blinker, v_ego)
+      assert controller.get_turn_direction() == TurnDirection.none
+
   @parameterized.expand([
     ("nudge_wrong_way", {"steering_pressed": True, "steering_torque": 1.5}),
     ("model_other_side", {"turn_probs": (0.9, 0.)}),
@@ -219,7 +226,7 @@ class TestWaitForTurn(OpenpilotTestCase):
 
   def test_blinker_off_rearms(self):
     controller = make_wait_controller()
-    controller.update_lane_turn(False, False, True, False, 0.)
+    controller.update_lane_turn(False, False, True, False, 0., turn_probs=(MODEL_TURN_PROB, 0.))
     assert controller.get_turn_direction() == TurnDirection.turnLeft
     controller.update_lane_turn(False, False, False, False, 6)
     controller.update_lane_turn(False, False, True, False, 6)
