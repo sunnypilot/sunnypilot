@@ -393,9 +393,9 @@ struct CarControlSP @0xa5cd762cd951a455 {
   speedLimit @6 :SpeedLimit;
   laneChange @7 :LaneChange;
   driverMonitoring @8 :DriverMonitoring;
-  leadFollowing @9 :Bool;  # longitudinal planner is following a lead
-  blendfulEnabled @10 :Bool;  # Blendful lane centering toggle
-  blendfulTrust @11 :Float32;  # how much Blendful leans on the lane lines, 0 = not blending
+  leadFollowing @9 :Bool;
+  blendfulEnabled @10 :Bool;
+  blendfulTrust @11 :Float32;
 
   struct SmartCruiseControl {
     visionState @0 :LongitudinalPlanSP.SmartCruiseControl.VisionState;
@@ -408,11 +408,10 @@ struct CarControlSP @0xa5cd762cd951a455 {
   }
 
   struct DriverMonitoring {
-    alertLevel @0 :UInt8;  # log.DriverMonitoringState.AlertLevel: 0 none, 1-3 escalating
-    visionPolicy @1 :Bool;  # true: driver camera sees the face, false: wheel touch fallback
+    alertLevel @0 :UInt8;
+    visionPolicy @1 :Bool;
   }
 
-  # same values as log.LaneChangeState / log.LaneChangeDirection
   struct LaneChange {
     state @0 :State;
     direction @1 :Direction;
