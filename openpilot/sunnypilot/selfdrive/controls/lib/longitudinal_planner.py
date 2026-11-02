@@ -10,7 +10,7 @@ from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
-from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist
+from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist, approach_accel
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -66,7 +66,8 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, a_mpc: float, a_cruise: float, reset_state: bool) -> float:
-    return self.set_speed_assist.update(sm, a_model, min(a_mpc, a_cruise), reset_state)
+    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target))
+    return self.set_speed_assist.update(sm, a_model, a_floor, reset_state)
 
   def update(self, sm: messaging.SubMaster) -> None:
     self.events_sp.clear()

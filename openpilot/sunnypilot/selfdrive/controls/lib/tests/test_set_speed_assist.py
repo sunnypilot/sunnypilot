@@ -112,6 +112,13 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     assert assist.lift == 0.
 
 
+  def test_approach_closes_small_gaps_gently(self):
+    assert all(np.diff(ssa.APPROACH_GAP_FRACTION) > 0) and ssa.APPROACH_GAP_FRACTION[-1] == 1.
+    for v, ceiling in zip(ssa.APPROACH_BP, ssa.APPROACH_V, strict=True):
+      assert np.isclose(ssa.approach_accel(v, v + 10.), ceiling)
+      assert np.isclose(ssa.approach_accel(v, v), ssa.APPROACH_GAP_FRACTION[0] * ceiling)
+
+
 class FakeSubMaster(dict):
   def all_checks(self, service_list=None):
     return True
@@ -155,9 +162,11 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
 
   def test_on_drives_to_the_set_speed(self, mocker):
     p = planner(mocker, True)
-    assert p.a_cruise > 1.
-    assert np.isclose(p.output_a_target, p.a_cruise)
-    assert np.isclose(p.set_speed_assist.lift, p.a_cruise)
+    # toward the set speed at a production ACC's pace, not the cruise planner's
+    approach = ssa.approach_accel(V_EGO, p.output_v_target)
+    assert p.a_cruise > 1. > approach
+    assert np.isclose(p.output_a_target, approach)
+    assert np.isclose(p.set_speed_assist.lift, approach)
 
     pm = mocker.MagicMock()
     p.publish_longitudinal_plan_sp(planner_sm(), pm)

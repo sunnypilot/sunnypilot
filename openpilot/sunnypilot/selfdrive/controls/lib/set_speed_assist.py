@@ -21,6 +21,18 @@ FULL_SPEED = 8.  # m/s. Full assist from this speed up.
 GAIN_BP = [-0.3, -0.1]  # Model accel over which the assist fades out as the model slows down.
 FADE_LAT_ACC_BP = [0.6, 1.0]  # Lat acc of the sharpest bend ahead over which the assist fades out.
 LIFT_FALL = 2.4  # m/s^3. Fast, so the assist never holds off the model's braking.
+# The floor closes on the target speed at a production ACC's pace: a CX-5's stock MRCC accel with no
+# lead, its p99 by speed, scaled by the shortfall (between its p50 and p90). The cruise planner asks
+# 1 m/s^2 per m/s of shortfall up to 2.0, which on a stepped automatic downshifts at every small gap.
+APPROACH_BP = [0., 4., 9., 14., 18., 25.]  # m/s
+APPROACH_V = [1.5, 1.75, 1.45, 1.05, 0.85, 0.65]  # m/s^2
+APPROACH_GAP_BP = [0., 1., 3., 5., 10.]  # m/s under the target speed
+APPROACH_GAP_FRACTION = [0.38, 0.47, 0.57, 0.72, 1.]
+
+
+def approach_accel(v_ego: float, v_target: float) -> float:
+  """The most the floor asks while closing on v_target."""
+  return float(np.interp(v_ego, APPROACH_BP, APPROACH_V) * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
 
 
 class SetSpeedAssist:
@@ -43,7 +55,7 @@ class SetSpeedAssist:
     self.lift = 0.
 
   def update(self, sm: messaging.SubMaster, a_model: float, a_floor: float, reset_state: bool) -> float:
-    """Return the model's accel plus the assist. a_floor is the lower of the lead and cruise accels."""
+    """Return the model's accel plus the assist. a_floor is the lower of the lead and cruise accels and the approach pace."""
     self.frame += 1
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SetSpeedAssist")
