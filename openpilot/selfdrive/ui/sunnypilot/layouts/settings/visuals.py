@@ -72,6 +72,11 @@ class VisualsLayout(Widget):
            "It is the driver's responsibility to observe their environment and make decisions accordingly."),
         None,
       ),
+      "TripSummary": (
+        lambda: tr("Trip Summary"),
+        tr("Show a summary of distance and engagement when you shift into park after a drive."),
+        None,
+      ),
       "TrueVEgoUI": (
         lambda: tr("Speedometer: Always Display True Speed"),
         tr("For applicable vehicles, always display the true vehicle current speed from wheel speed sensors."),
