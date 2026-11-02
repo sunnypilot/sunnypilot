@@ -16,7 +16,6 @@ from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 
-MIN_DISTANCE = 160.
 AUTO_DISMISS = 20.
 FADE_IN, FADE_OUT = 0.35, 0.3
 LAT = (UIStatus.ENGAGED, UIStatus.LAT_ONLY)
@@ -78,7 +77,7 @@ class TripSummary:
 
     if gear not in (None, GEAR.park):
       self._pop()
-    elif gear == GEAR.park and self._drove and ui_state.trip_summary and not ui_state.is_body and self._trip.total() >= MIN_DISTANCE:
+    elif gear == GEAR.park and self._drove and ui_state.trip_summary and not ui_state.is_body and self._trip.total() > 0.:
       self._dialog = TripSummaryDialog(self._trip, gui_app.get_active_widget(), self._pop)
       gui_app.push_widget(self._dialog)
     if gear is None:
