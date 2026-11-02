@@ -162,7 +162,7 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
 
   def test_on_drives_to_the_set_speed(self, mocker):
     p = planner(mocker, True)
-    # toward the set speed at a production ACC's pace, not the cruise planner's
+    # capped at the approach pace, below the cruise planner's
     approach = ssa.approach_accel(V_EGO, p.output_v_target)
     assert p.a_cruise > 1. > approach
     assert np.isclose(p.output_a_target, approach)
