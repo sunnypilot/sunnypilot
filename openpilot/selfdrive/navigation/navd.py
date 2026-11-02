@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import os
+import re
+from pathlib import Path
 
 import numpy as np
 import requests
@@ -17,6 +19,26 @@ MANEUVER_TRANSITION_THRESHOLD = 10
 REROUTE_COUNTER_MIN = 3
 ROUTE_RESEND_PERIOD = 10  # updates (seconds); a restarted mapsd gets the route within this
 RECOMPUTE_HOLD = 10  # updates (seconds) between route requests
+MAPBOX_TOKEN_PATH = Path('/data/navigation/mapbox_token')
+
+
+def get_mapbox_token():
+  token = os.environ.get('MAPBOX_TOKEN')
+  if token is not None:
+    return token
+  try:
+    token = MAPBOX_TOKEN_PATH.read_text().strip()
+  except FileNotFoundError:
+    return None
+  except (OSError, UnicodeError) as error:
+    cloudlog.event('navd.mapbox_token_unavailable', error_type=type(error).__name__, error=True)
+    return None
+  if not token:
+    return None
+  if re.fullmatch(r'pk\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', token) is None:
+    cloudlog.event('navd.mapbox_token_invalid', error=True)
+    return None
+  return token
 
 
 def set_banner(instruction, banners, distance_to_maneuver):
@@ -50,7 +72,10 @@ class RouteEngine:
     self.recompute_hold = 0
     self.reroute_counter = 0
 
-    self.mapbox_token = os.environ.get("MAPBOX_TOKEN")
+    self.configure_routing(get_mapbox_token())
+
+  def configure_routing(self, token):
+    self.mapbox_token = token
     self.api = Api(self.params.get("DongleId")) if self.mapbox_token is None else None
     self.mapbox_host = "https://api.mapbox.com" if self.mapbox_token is not None else API_HOST.rstrip('/') + '/v1/nav'
 
@@ -86,8 +111,14 @@ class RouteEngine:
     if not gps_ok and self.step_idx is not None:
       return
 
+    token = get_mapbox_token()
+    routing_changed = token != self.mapbox_token
+    if routing_changed:
+      self.configure_routing(token)
+      self.recompute_hold = 0
+
     self.recompute_hold -= 1
-    if (self.should_recompute() or new_destination != self.nav_destination) and self.recompute_hold <= 0:
+    if (routing_changed or self.should_recompute() or new_destination != self.nav_destination) and self.recompute_hold <= 0:
       self.recompute_hold = RECOMPUTE_HOLD
       self.calculate_route(new_destination)
       self.reroute_counter = 0
@@ -119,10 +150,10 @@ class RouteEngine:
 
     coords_str = ';'.join(f'{lon},{lat}' for lon, lat in (self.last_position, destination))
     url = self.mapbox_host + '/directions/v5/mapbox/driving-traffic/' + coords_str
+    status_code = None
     try:
       resp = requests.get(url, params=params, timeout=10)
-      if resp.status_code != 200:
-        cloudlog.event("API request failed", status_code=resp.status_code, text=resp.text, error=True)
+      status_code = resp.status_code
       resp.raise_for_status()
 
       r = resp.json()
@@ -134,8 +165,11 @@ class RouteEngine:
         cloudlog.warning("Got empty route response")
         self.clear_route()
 
-    except requests.exceptions.RequestException:
-      cloudlog.exception("failed to get route")
+    except requests.exceptions.RequestException as error:
+      # HTTP errors and response bodies can contain the URL, including access_token.
+      if error.response is not None:
+        status_code = error.response.status_code
+      cloudlog.event('navd.route_request_failed', status_code=status_code, error_type=type(error).__name__, error=True)
       self.clear_route()
 
   def send_instruction(self):

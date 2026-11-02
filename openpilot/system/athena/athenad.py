@@ -224,7 +224,7 @@ def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None) -> Non
       data = recv_queue.get(timeout=1)
       msg = loads(data)
       if is_call(msg):
-        cloudlog.event("athena.jsonrpc_handler.call_method", data=data)
+        cloudlog.event("athena.jsonrpc_handler.call_method", method=msg.get("method"))
         send_queue_push(handle(msg, dispatcher), SEND_PRIORITY_HIGH)
       elif is_response(msg):
         log_recv_queue.put_nowait(data)
@@ -706,6 +706,36 @@ def cancelUpload(upload_id: str | list[str]) -> dict[str, int | str]:
 
   cancelled_uploads.update(cancelled_ids)
   return {"success": 1}
+
+MAPBOX_TOKEN_PATH = "/data/navigation/mapbox_token"
+
+
+@dispatcher.add_method
+def setMapboxToken(token: str) -> dict[str, int | str]:
+  if not isinstance(token, str) or len(token) > 4096 or re.fullmatch(r"pk\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+", token) is None:
+    return {"success": 0, "error": "Invalid public Mapbox token"}
+
+  temporary = None
+  try:
+    directory = os.path.dirname(MAPBOX_TOKEN_PATH)
+    os.makedirs(directory, mode=0o700, exist_ok=True)
+    os.chmod(directory, 0o700)
+    fd, temporary = tempfile.mkstemp(prefix=".mapbox_token.", dir=directory)
+    with os.fdopen(fd, "w") as stream:
+      os.fchmod(stream.fileno(), 0o600)
+      stream.write(token)
+      stream.flush()
+      os.fsync(stream.fileno())
+    os.replace(temporary, MAPBOX_TOKEN_PATH)
+    temporary = None
+    return {"success": 1}
+  except OSError:
+    return {"success": 0, "error": "Unable to save Mapbox token"}
+  finally:
+    if temporary is not None:
+      with suppress(OSError):
+        os.unlink(temporary)
+
 
 @dispatcher.add_method
 def setNavDestination(latitude: float, longitude: float) -> dict[str, int | str]:

@@ -1,4 +1,5 @@
 import gzip
+import os
 import re
 import struct
 import tempfile
@@ -248,6 +249,10 @@ class TestRemoteTiles(TileServerCase):
 
 class TestRouteEngine(unittest.TestCase):
   def setUp(self):
+    self.enterContext(patch.dict(os.environ))
+    os.environ.pop('MAPBOX_TOKEN', None)
+    self.token_path = Path(self.enterContext(tempfile.TemporaryDirectory())) / 'mapbox_token'
+    self.enterContext(patch('openpilot.selfdrive.navigation.navd.MAPBOX_TOKEN_PATH', self.token_path))
     self.pm = MagicMock()
     self.values = {'NavDestination': {'latitude': 0, 'longitude': 0.002}, 'LanguageSetting': 'main_en'}
     self.sm = MagicMock()
@@ -290,6 +295,97 @@ class TestRouteEngine(unittest.TestCase):
     self.engine.last_position = (0.001, 0)  # at the maneuver
     self.engine.send_instruction()
     self.assertAlmostEqual(self.last_message('navInstruction').navInstruction.maneuverDistance, 0, delta=0.01)
+
+  def test_file_token_routes_directly_to_mapbox(self):
+    token = 'pk.test_payload.test_signature'
+    self.token_path.write_text(token + '\n')
+    self.engine = route_engine(self.sm, self.pm, self.values)
+    self.engine.last_position, self.engine.last_bearing = (0, 0), 90
+    get = self.load_route()
+    self.assertEqual(get.call_args.args[0], 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic/0,0;0.002,0')
+    self.assertEqual(get.call_args.kwargs['params']['access_token'], token)
+    self.assertIsNone(self.engine.api)
+    self.engine.send_instruction()
+    self.assertTrue(self.last_message('navInstruction').valid)
+
+  def test_environment_token_does_not_read_file(self):
+    token = 'pk.environment.signature'
+    with patch.dict(os.environ, {'MAPBOX_TOKEN': token}), patch.object(Path, 'read_text') as read, \
+         patch('requests.get', return_value=self.response):
+      engine = route_engine(self.sm, self.pm, self.values)
+      engine.last_position = (0, 0)
+      engine.recompute_route(gps_ok=True)
+    read.assert_not_called()
+    self.assertEqual(engine.mapbox_token, token)
+    self.assertEqual(engine.mapbox_host, 'https://api.mapbox.com')
+
+  def test_token_provisioning_reloads_without_restart(self):
+    self.load_route()
+    self.engine.recompute_hold = 10
+    token = 'pk.provisioned.signature'
+    self.token_path.write_text(token)
+    with patch('requests.get', return_value=self.response) as get:
+      self.engine.recompute_route(gps_ok=True)
+    self.assertTrue(get.call_args.args[0].startswith('https://api.mapbox.com/directions/'))
+    self.assertEqual(get.call_args.kwargs['params']['access_token'], token)
+    self.assertIsNone(self.engine.api)
+
+  def test_token_rotation_recomputes_route_once(self):
+    self.token_path.write_text('pk.first.signature')
+    with patch('requests.get', return_value=self.response) as get:
+      self.engine.recompute_route(gps_ok=True)
+      self.assertEqual(get.call_args.kwargs['params']['access_token'], 'pk.first.signature')
+      self.token_path.write_text('pk.renewed.signature')
+      self.engine.recompute_route(gps_ok=True)
+      self.assertEqual(get.call_args.kwargs['params']['access_token'], 'pk.renewed.signature')
+      self.engine.recompute_route(gps_ok=True)
+    self.assertEqual(get.call_count, 2)
+
+  def test_missing_or_empty_file_uses_comma(self):
+    self.assertFalse(self.token_path.exists())
+    self.assertIsNone(self.engine.mapbox_token)
+    for contents in ('', ' \n\t'):
+      with self.subTest(contents=contents):
+        self.token_path.write_text(contents)
+        engine = route_engine(self.sm, self.pm, self.values)
+        self.assertIsNone(engine.mapbox_token)
+        self.assertEqual(engine.mapbox_host, 'https://api.commadotai.com/v1/nav')
+
+  def test_invalid_token_file_is_redacted(self):
+    for token in ('sk.secret.signature', 'pk.secret withspace.signature', 'pk.', 'pk.secret.\x00signature'):
+      with self.subTest(token=token), patch('openpilot.selfdrive.navigation.navd.cloudlog') as logger:
+        self.token_path.write_text(token)
+        engine = route_engine(self.sm, self.pm, self.values)
+        self.assertIsNone(engine.mapbox_token)
+        self.assertEqual(logger.mock_calls[0].args, ('navd.mapbox_token_invalid',))
+        self.assertEqual(logger.mock_calls[0].kwargs, {'error': True})
+        self.assertNotIn(token, str(logger.mock_calls))
+
+  def test_unreadable_token_file_is_redacted(self):
+    for error in (PermissionError('pk.secret.signature'), UnicodeError('pk.secret.signature')):
+      with self.subTest(error_type=type(error).__name__), \
+           patch.object(Path, 'read_text', side_effect=error), patch('openpilot.selfdrive.navigation.navd.cloudlog') as logger:
+        engine = route_engine(self.sm, self.pm, self.values)
+        self.assertIsNone(engine.mapbox_token)
+        logger.event.assert_called_once_with('navd.mapbox_token_unavailable', error_type=type(error).__name__, error=True)
+        self.assertNotIn('pk.secret.signature', str(logger.mock_calls))
+
+  def test_http_error_does_not_log_token_or_response(self):
+    token = 'pk.secret.signature'
+    self.engine.mapbox_token = token
+    self.engine.mapbox_host = 'https://api.mapbox.com'
+    self.load_route()
+    response = requests.Response()
+    response.status_code = 401
+    response.url = 'https://api.mapbox.com/directions?access_token=' + token
+    response._content = ('Invalid token: ' + token).encode()
+    with patch('requests.get', return_value=response), patch('openpilot.selfdrive.navigation.navd.cloudlog') as logger:
+      self.engine.calculate_route((0.002, 0))
+    logger.event.assert_called_once_with('navd.route_request_failed', status_code=401, error_type='HTTPError', error=True)
+    logger.exception.assert_not_called()
+    self.assertNotIn(token, str(logger.mock_calls))
+    self.assertNotIn(response.url, str(logger.mock_calls))
+    self.assertIsNone(self.engine.route)
 
   def test_banner_selection(self):
     banners = [{'distanceAlongGeometry': 100, 'primary': {'text': 'Turn right', 'type': 'turn', 'modifier': 'right'}},

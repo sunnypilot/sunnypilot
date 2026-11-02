@@ -121,7 +121,7 @@ def ws_recv(ws: WebSocket, end_event: threading.Event) -> None:
         if opcode == ABNF.OPCODE_TEXT:
           data = data.decode("utf-8")
         recv_queue.put_nowait(data)
-        cloudlog.debug(f"sunnylinkd.ws_recv.recv {data}")
+        cloudlog.debug("sunnylinkd.ws_recv.received")
       elif opcode in (ABNF.OPCODE_PING, ABNF.OPCODE_PONG):
         cloudlog.debug("sunnylinkd.ws_recv.pong")
         last_ping = int(time.monotonic() * 1e9)
