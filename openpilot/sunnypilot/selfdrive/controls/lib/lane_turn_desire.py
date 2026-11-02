@@ -79,7 +79,7 @@ class LaneTurnController:
     left = direction == TurnDirection.turnLeft
     nudged = steering_pressed and (steering_torque > 0 if left else steering_torque < 0)
     model_sees_turn = (turn_probs[0] if left else turn_probs[1]) >= MODEL_TURN_PROB
-    return v_ego < TURN_STOPPED_SPEED or nudged or model_sees_turn
+    return nudged or model_sees_turn
 
   def get_turn_direction(self):
     if not self.enabled:
