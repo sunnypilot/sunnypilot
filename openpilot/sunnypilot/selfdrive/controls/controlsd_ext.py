@@ -31,7 +31,7 @@ class ControlsExt(ModelStateBase):
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
 
-    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'longitudinalPlanSP', 'modelDataV2SP']
+    self.sm_services_ext = ['radarState', 'selfdriveStateSP', 'longitudinalPlanSP']
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
@@ -128,9 +128,6 @@ class ControlsExt(ModelStateBase):
     long_plan = sm['longitudinalPlan']
     CC_SP.leadFollowing = str(long_plan.longitudinalPlanSource) in ('lead0', 'lead1', 'lead2') or \
                           (str(long_plan.longitudinalPlanSource) == 'e2e' and long_plan.hasLead)
-
-    # Blendful lane centering
-    CC_SP.blendfulTrust = float(sm['modelDataV2SP'].blendfulTrust)
 
     return CC_SP
 
