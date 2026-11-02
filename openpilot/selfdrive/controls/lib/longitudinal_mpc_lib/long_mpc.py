@@ -57,11 +57,13 @@ COMFORT_BRAKE = 2.5
 STOP_DISTANCE = 6.0
 MIN_X_LEAD_FACTOR = 0.5
 
-# aggressive matches stock Hyundai SCC closest setting: 2.4 m stopped, 14.8 m @ 14, 20.2 m @ 17.8, 25.2 m @ 21.3 m/s
-# the MPC settles ~1.1 m short of its target at standstill, so 3.5 m stops at ~2.4 m
-AGGRESSIVE_STOP_DISTANCE = 3.5
-AGGRESSIVE_T_FOLLOW_BP = [0., 14., 16., 18., 20., 21.3, 30.]
-AGGRESSIVE_T_FOLLOW_V = [0.82, 0.82, 0.87, 0.94, 0.97, 1.02, 1.08]
+# aggressive follows close to stock Hyundai SCC closest setting: 2.4 m stopped (stock 2.4), 16.3 m @ 31 mph (stock 14.8), 22 m @ 40 (20.2), 27.5 m @ 48 (25.2)
+# the MPC settles ~0.8 m short of its target at standstill, so a 3.2 m target stops at ~2.4 m
+# the short stop gap fades out by 10 m/s and moving gaps are ~0.1 s over stock: exact stock gaps crash in sim when the lead brakes 2 m/s^2 to a stop
+AGGRESSIVE_STOP_DISTANCE_BP = [0., 3., 10.]
+AGGRESSIVE_STOP_DISTANCE_V = [3.2, 3.2, STOP_DISTANCE]
+AGGRESSIVE_T_FOLLOW_BP = [0., 10., 14., 16., 18., 20., 21.3, 30.]
+AGGRESSIVE_T_FOLLOW_V = [0.74, 0.74, 0.74, 0.81, 0.90, 0.945, 1.0, 1.1]
 
 def get_jerk_factor(personality=log.LongitudinalPersonality.standard):
   if personality==log.LongitudinalPersonality.relaxed:
@@ -319,7 +321,7 @@ class LongitudinalMpc:
     if personality == log.LongitudinalPersonality.aggressive:
       t_follow = float(np.interp(self.x0[1], AGGRESSIVE_T_FOLLOW_BP, AGGRESSIVE_T_FOLLOW_V))
       # STOP_DISTANCE is compiled into the solver, so move the lead forward instead
-      stop_distance_offset = STOP_DISTANCE - AGGRESSIVE_STOP_DISTANCE
+      stop_distance_offset = STOP_DISTANCE - float(np.interp(self.x0[1], AGGRESSIVE_STOP_DISTANCE_BP, AGGRESSIVE_STOP_DISTANCE_V))
 
     lead_xv_0 = self.process_lead(radarstate.leadOne)
     lead_xv_1 = self.process_lead(radarstate.leadTwo)

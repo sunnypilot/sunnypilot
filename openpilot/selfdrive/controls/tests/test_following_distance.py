@@ -6,7 +6,7 @@ from openpilot.cereal import log
 
 import numpy as np
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import get_safe_obstacle_distance, get_stopped_equivalence_factor, get_T_FOLLOW, \
-  STOP_DISTANCE, AGGRESSIVE_STOP_DISTANCE, AGGRESSIVE_T_FOLLOW_BP, AGGRESSIVE_T_FOLLOW_V
+  STOP_DISTANCE, AGGRESSIVE_STOP_DISTANCE_BP, AGGRESSIVE_STOP_DISTANCE_V, AGGRESSIVE_T_FOLLOW_BP, AGGRESSIVE_T_FOLLOW_V
 from openpilot.selfdrive.test.longitudinal_maneuvers.maneuver import Maneuver
 
 
@@ -42,7 +42,8 @@ class TestFollowingDistance(OpenpilotTestCase):
     simulation_steady_state = run_following_distance_simulation(v_lead, personality=self.personality)
     if self.personality == log.LongitudinalPersonality.aggressive:
       t_follow = float(np.interp(v_lead, AGGRESSIVE_T_FOLLOW_BP, AGGRESSIVE_T_FOLLOW_V))
-      correct_steady_state = desired_follow_distance(v_lead, v_lead, t_follow) - (STOP_DISTANCE - AGGRESSIVE_STOP_DISTANCE)
+      stop_distance = float(np.interp(v_lead, AGGRESSIVE_STOP_DISTANCE_BP, AGGRESSIVE_STOP_DISTANCE_V))
+      correct_steady_state = desired_follow_distance(v_lead, v_lead, t_follow) - (STOP_DISTANCE - stop_distance)
     else:
       correct_steady_state = desired_follow_distance(v_lead, v_lead, get_T_FOLLOW(self.personality))
     abs_err_margin = 0.5 if v_lead > 0.0 else 1.15
