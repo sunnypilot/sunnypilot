@@ -221,7 +221,8 @@ class AugmentedRoadView(CameraView):
     self._update_calibration()
 
     alert_to_render, not_animating_out = self._alert_renderer.will_render()
-    show_navigation = ui_state.navigation_enabled and ui_state.nav_destination_set and alert_to_render is None
+    show_navigation = (ui_state.navigation_enabled and (ui_state.nav_destination_set or self._navigation.signal_turn_active)
+                       and alert_to_render is None)
 
     # Create inner content area with border padding
     self._content_rect = rl.Rectangle(

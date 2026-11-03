@@ -505,7 +505,8 @@ def main(demo=False):
       lane_change_prob = l_lane_change_prob + r_lane_change_prob
       left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge,
-                desire_prediction=modelv2_send.modelV2.meta.desirePrediction)
+                desire_prediction=modelv2_send.modelV2.meta.desirePrediction, model_position=modelv2_send.modelV2.position,
+                map_turn_supported=True)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       mdv2sp_send.valid = modelv2_send.valid

@@ -96,6 +96,12 @@ class ModelsLayout(Widget):
                                                      "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
                                                   param="LaneTurnDesire")
 
+    self.map_turn_toggle = toggle_item_sp(tr("Mapbox Signal Turns (Experimental)"),
+      tr("Your signal selects the next mapped street and times a turn cue. Requires an internet connection and a Mapbox token. " +
+         "Also enables turn desires. Turn off to restore the usual turn-desire timing."),
+      callback=self._enable_map_turns, enabled=lambda: ui_state.is_offroad() and ui_state.active_runner_tinygrad,
+      param="MapboxNextTurnEnabled")
+
     self.delay_control = option_item_sp(tr("Adjust Software Delay"), "LagdToggleDelay", 5, 50,
                                         tr("Adjust the software delay when Live Learning Steer Delay is toggled off. The default software delay value is 0.2"),
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True, lambda v: f"{v / 100:.2f}s")
@@ -112,8 +118,13 @@ class ModelsLayout(Widget):
                                         lambda v: f"{v / 100:.2f} m")
 
     self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
-                  self.blendful_toggle, self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control,
+                  self.blendful_toggle, self.lane_turn_desire_toggle, self.map_turn_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control,
                   self.camera_offset]
+
+  def _enable_map_turns(self, enabled):
+    if enabled:
+      ui_state.params.put_bool("LaneTurnDesire", True)
+      ui_state.params.put_bool("NavigationEnabled", True)
 
   def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +

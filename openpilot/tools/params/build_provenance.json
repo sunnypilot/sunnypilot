@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "a40295e64ba981ac31a986c4f5360ed859dd2292",
+  "sourceTreeIncludesFeatureChanges": true,
+  "builder": {
+    "architecture": "native aarch64 Linux",
+    "baseImage": "debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3",
+    "testedImageId": "sha256:ce668bac08f6454af65345eb76af47619a50f978b7c25d040e96febff4b8f631",
+    "compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
+    "compileAndTestNetwork": "none",
+    "repositoryMountedInContainer": false
+  },
+  "sources": {
+    "openpilot/common/params.h": "3c7b87d050c79275a401597dc7d15ae9fa57c2316c816ff5472cbdd84588a6e6",
+    "openpilot/common/params.cc": "0074bdf766e9bf410f21820b8f730ed9403117c54725b6193176f28a14233737",
+    "openpilot/common/params_c.cc": "7c3c86301ab3d65aa0eecc3f7b61c3baf4730baf72a9166cbb4de4237419a48d",
+    "openpilot/common/params_keys.h": "3452f2533c7c3bc3e588e624bd9156fcc5838d5b6bfb942dd69116e69bec8e6b",
+    "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
+    "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
+    "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
+    "openpilot/common/util.h": "2a366c25a26a8c11fa0a1c746a00c02cb28546fa027786ee0f2a8a27a39a8896",
+    "openpilot/common/swaglog.cc": "9c2f88a2f1c3c4253b73defb264cc367a13ade23e02928e1d469b5c5833df176",
+    "openpilot/common/swaglog.h": "bcc65e78e40b45366f393fea51286b83ec75792e38c44914f89e3912f5a6841b",
+    "openpilot/common/hardware/hw.h": "defd8c4ae343f3f89573ae3628c3ba0618783fc5f2be128cea51fb0caa550ef5",
+    "openpilot/common/hardware/base.h": "b7e7fda7bf7deb437421ac590fa67a26b3c52411d085aad3e0caa9f86e86853e",
+    "openpilot/common/hardware/comma/hardware.h": "10c14aa9e6556e2a5148c3315e2e0e8ffc11feb97f6f33eb21fbefeb6e6eac7f",
+    "openpilot/common/hardware/pc/hardware.h": "4389449b911037873559375c4ca1faf06ea6909e885db7a597bdeb4c064fcab5",
+    "openpilot/common/version.h": "7de18e09df11f7f5e55f9d182b869d79ee07c91f3fc5a66d71eac645aa21102d",
+    "openpilot/sunnypilot/common/version.h": "3e8a7252bf75bc590be0bb76b0288dc292587e3de3c88c21784a0ff2429ce877",
+    "openpilot/cereal/gen/cpp/log.capnp.h": "5b9738bee43b2787823ab5dd2d33bcfed201a794068e3003d0b3df09a51f1712",
+    "openpilot/cereal/gen/cpp/car.capnp.h": "6a7c186812386e191cba79fd88f8a77dd9bd75189c474cfae99344def613585f",
+    "openpilot/cereal/gen/cpp/custom.capnp.h": "4197fad27d5cd4ccd9dc7085a0e798e4cf4918e7171d1c9aa7111f85345f6532",
+    "openpilot/cereal/gen/cpp/deprecated.capnp.h": "4158c7af29c10cb7e480f14625f661639fa797efe26e2fab336450e3e85c5fc1",
+    "openpilot/common/params.py": "c7333c07046b075d99ff343392f25982691b66d57eab037eee55581c8b5ae8c4",
+    "openpilot/common/tests/test_params.py": "565db228b44eba46898c3887fb2864204ed57c7a1abe5352043b3cc7543efda0",
+    "openpilot/common/tests/test_params_flag_buffers.py": "ee878cdebf25a9e99d55b3443a0022e007a8b68dd0c95c9cf9d1e2117dcef90d"
+  },
+  "uvLockDependencies": [
+    {
+      "name": "comma-deps-capnproto",
+      "version": "1.0.1.post103",
+      "url": "https://files.pythonhosted.org/packages/c4/53/38b0e046aab3f0d371d0fa6eb3d4eb3cf787e7d270f429a485e53080416c/comma_deps_capnproto-1.0.1.post103-py3-none-manylinux_2_28_aarch64.whl",
+      "sha256": "4a115a789af5835dde75371abdd0c1766df40764eaccfd912de4212522935d08"
+    },
+    {
+      "name": "comma-deps-json11",
+      "version": "20170411.0.post103",
+      "url": "https://files.pythonhosted.org/packages/6c/be/51c3dd8f80ee0a968a90b4737e0362e7b621366c24c9c55613386ba0aa14/comma_deps_json11-20170411.0.post103-py3-none-manylinux_2_28_aarch64.whl",
+      "sha256": "0f7764609db411d98c540d985c289a2c37f282fbf2a75e2503017f1243546653"
+    },
+    {
+      "name": "comma-deps-zeromq",
+      "version": "4.3.5.post103",
+      "url": "https://files.pythonhosted.org/packages/0e/72/522bdc7b93d9c84b2600e9ed84588c94acf698a8aa3186e304c6d54b4371/comma_deps_zeromq-4.3.5.post103-py3-none-manylinux_2_28_aarch64.whl",
+      "sha256": "d25d7b336707f39a6c92f0b01b40ca761d067564b39c6c56a6a7f4cca7fd512d"
+    }
+  ],
+  "rebuildTools": {
+    "Dockerfile": "c60c96043ea7b6d8ad94ab4e9181033606ae35e4fb43e034ab38b7505d867cff",
+    "README.md": "40017f3b9ecf44a77be8bf12643a4ad1c8e4cac03a6862482a18a52848166ce9",
+    "verify.py": "5cbc0cdb9af80c07c04aa2a1ba3fa1fda3f3ef33d725464e16281a9d8b37fa68",
+    "rebuild.py": "62f25ff2e6bd7daa9a635d6a6f49b7fdf03533370f2f75296d77003bed01d765"
+  },
+  "build": {
+    "command": [
+      "g++",
+      "-std=c++17",
+      "-D__COMMA_HARDWARE__",
+      "-mcpu=cortex-a57",
+      "-O2",
+      "-g",
+      "-fPIC",
+      "-shared",
+      "-pthread",
+      "-I/build/openpilot",
+      "-I/build",
+      "-I/build/openpilot/cereal/gen/cpp",
+      "-I/build/deps/comma_deps_capnproto-1.0.1.post103.data/purelib/capnproto/install/include",
+      "-I/build/deps/comma_deps_json11-20170411.0.post103.data/purelib/json11/install/include",
+      "-I/build/deps/comma_deps_zeromq-4.3.5.post103.data/purelib/zeromq/install/include",
+      "/build/openpilot/common/params_c.cc",
+      "/build/openpilot/common/params.cc",
+      "/build/openpilot/common/util.cc",
+      "/build/openpilot/common/swaglog.cc",
+      "/build/deps/comma_deps_json11-20170411.0.post103.data/purelib/json11/install/lib/libjson11.a",
+      "/build/deps/comma_deps_zeromq-4.3.5.post103.data/purelib/zeromq/install/lib/libzmq.a",
+      "/build/deps/comma_deps_capnproto-1.0.1.post103.data/purelib/capnproto/install/lib/libcapnp.a",
+      "/build/deps/comma_deps_capnproto-1.0.1.post103.data/purelib/capnproto/install/lib/libkj.a",
+      "-ldl",
+      "-lrt",
+      "-Wl,-z,defs",
+      "-o",
+      "/build/out/libparams_c.so"
+    ],
+    "compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
+    "machine": "aarch64",
+    "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b",
+    "bytes": 4134104
+  },
+  "verification": {
+    "originalTestMethods": [
+      "test_get_bool",
+      "test_params_all_keys",
+      "test_params_default_value",
+      "test_params_get_block",
+      "test_params_get_cleared_manager_start",
+      "test_params_get_type",
+      "test_params_non_ascii",
+      "test_params_put_and_get",
+      "test_params_two_things",
+      "test_params_unknown_key_fails",
+      "test_put_bool_non_blocking_with_get_block",
+      "test_put_non_blocking_with_get_block",
+      "test_remove_not_there"
+    ],
+    "originalTestCount": 13,
+    "flagBufferTestCount": 3,
+    "newKeysTypedRoundTrip": true,
+    "lifecycleClears": true,
+    "asynchronousJson": true,
+    "maxSymbolVersions": {
+      "GLIBC": "2.34",
+      "GLIBCXX": "3.4.30",
+      "CXXABI": "1.3.13"
+    },
+    "needed": [
+      "libstdc++.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "cApi": [
+      "params_check_key",
+      "params_clear_all",
+      "params_create",
+      "params_destroy",
+      "params_get",
+      "params_get_bool",
+      "params_get_default",
+      "params_get_key_type",
+      "params_get_path",
+      "params_key_at",
+      "params_keys_by_flag",
+      "params_keys_size",
+      "params_last_error",
+      "params_put",
+      "params_put_bool",
+      "params_remove"
+    ],
+    "hardwareExecuted": false
+  },
+  "originalRegistryCompatibility": {
+    "originalKeyCount": 273,
+    "rebuiltKeyCount": 278,
+    "exactAddedKeys": [
+      "MapboxNextTurnEnabled",
+      "MapboxTurnContext",
+      "MapboxTurnCue",
+      "MapboxTurnIntent",
+      "MapboxTurnLeadDistance"
+    ],
+    "allOriginalNamesTypesDefaultsUnchanged": true,
+    "executionArchitecture": "nativeaarch64Linux",
+    "baselineComparedWith": "params_keys.h of the base release, flags included; the CI library needs glibc 2.38, newer than the builder, so it was not loaded, and every base key name was found in its bytes"
+  },
+  "abiComparison": {
+    "baseline": {
+      "sha256": "19ed8277c634791f4a587caadf5e75f10e0f9229d2e0fbe308ea01d019108c0b",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "maxVersions": {
+        "GLIBC": "2.38",
+        "GLIBCXX": "3.4.30",
+        "CXXABI": "1.3.13"
+      },
+      "cApi": [
+        "params_check_key",
+        "params_clear_all",
+        "params_create",
+        "params_destroy",
+        "params_get",
+        "params_get_bool",
+        "params_get_default",
+        "params_get_key_type",
+        "params_get_path",
+        "params_key_at",
+        "params_keys_by_flag",
+        "params_keys_size",
+        "params_last_error",
+        "params_put",
+        "params_put_bool",
+        "params_remove"
+      ]
+    },
+    "rebuilt": {
+      "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "maxVersions": {
+        "GLIBC": "2.34",
+        "GLIBCXX": "3.4.30",
+        "CXXABI": "1.3.13"
+      },
+      "cApi": [
+        "params_check_key",
+        "params_clear_all",
+        "params_create",
+        "params_destroy",
+        "params_get",
+        "params_get_bool",
+        "params_get_default",
+        "params_get_key_type",
+        "params_get_path",
+        "params_key_at",
+        "params_keys_by_flag",
+        "params_keys_size",
+        "params_last_error",
+        "params_put",
+        "params_put_bool",
+        "params_remove"
+      ]
+    },
+    "sameCApi": true,
+    "noHigherSymbolVersionRequirement": true,
+    "hardwareExecuted": false
+  },
+  "reproduction": {
+    "sameBinaryFromInitialAndPinnedBuilder": true,
+    "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b"
+  },
+  "limits": [
+    "Executed under ARM64 Linux containers, not on the vehicle device.",
+    "Original Params method bodies use isolated test-directory scaffolding and a logging stub.",
+    "No model, steering, Tesla, cooperative steering, CAN or safety binaries were rebuilt."
+  ]
+}

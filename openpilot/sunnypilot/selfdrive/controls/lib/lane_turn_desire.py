@@ -8,6 +8,8 @@ from openpilot.cereal import custom
 
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
+from openpilot.common.swaglog import cloudlog
+from openpilot.sunnypilot.selfdrive.controls.lib.map_turn_desire import MapTurnGate
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
 
@@ -38,6 +40,7 @@ class LaneTurnController:
     self.armed_direction = TurnDirection.none
     self.cue_sent = False
     self.params = Params()
+    self.map_gate = MapTurnGate(self.params)
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.param_read_counter = 0
     self.enabled = self.params.get_bool("LaneTurnDesire")
@@ -47,6 +50,8 @@ class LaneTurnController:
     self.enabled = self.params.get_bool("LaneTurnDesire")
     value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.lane_turn_value = min(float(LANE_CHANGE_SPEED_MIN), value)
+    self.map_gate.configure(self.params.get_bool("MapboxNextTurnEnabled"),
+                            self.params.get("MapboxTurnLeadDistance", return_default=True))
 
   def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
@@ -54,7 +59,11 @@ class LaneTurnController:
     self.param_read_counter += 1
 
   def update_lane_turn(self, blindspot_left: bool, blindspot_right: bool, left_blinker: bool, right_blinker: bool, v_ego: float,
-                       steering_pressed: bool = False, steering_torque: float = 0., turn_probs: tuple[float, float] = (0., 0.)) -> None:
+                       steering_pressed: bool = False, steering_torque: float = 0., turn_probs: tuple[float, float] = (0., 0.),
+                       lateral_active: bool = True, model_position=None, map_turn_supported: bool = False) -> None:
+    signal = 'left' if left_blinker and not right_blinker else 'right' if right_blinker and not left_blinker else None
+    mapped = self.map_gate.enabled and map_turn_supported
+    self.map_gate.update_signal(signal, self.enabled and mapped)
     if not left_blinker and not right_blinker:
       self.armed_direction = TurnDirection.none
       self.cue_sent = False
@@ -72,6 +81,9 @@ class LaneTurnController:
     else:
       requested = TurnDirection.none
 
+    if requested == TurnDirection.none or not lateral_active:
+      self.map_gate.reset_motion()
+
     if not self.wait_for_turn or requested == TurnDirection.none:
       self.turn_direction = requested
       return
@@ -80,9 +92,16 @@ class LaneTurnController:
       self.turn_direction = TurnDirection.none
 
     # Eligibility can clear the request, but only a canceled or switched signal permits another cue.
-    if (self.turn_direction == TurnDirection.none and not self.cue_sent and
-        self.turn_is_here(requested, v_ego, steering_pressed, steering_torque, turn_probs)):
-      self.turn_direction = requested
+    if self.turn_direction == TurnDirection.none and not self.cue_sent:
+      ready = self.map_gate.ready(v_ego, model_position, lateral_active) if mapped else self.turn_is_here(
+        requested, v_ego, steering_pressed, steering_torque, turn_probs)
+      if ready:
+        self.turn_direction = requested
+        if self.enabled and mapped:
+          self.map_gate.record_cue()
+          cloudlog.event('modeld.mapbox_turn_cue', session=self.map_gate.session, direction=self.map_gate.direction,
+                         distance_m=self.map_gate.last_decision.distance_m, lead_m=self.map_gate.lead_m,
+                         cue_mode=self.map_gate.last_mode, forecast_travel_m=self.map_gate.motion.last_motion_m)
     if self.enabled and self.turn_direction != TurnDirection.none:
       self.cue_sent = True
 

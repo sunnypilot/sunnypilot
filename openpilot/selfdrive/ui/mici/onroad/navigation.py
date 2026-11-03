@@ -1,5 +1,6 @@
 import numpy as np
 import pyray as rl
+import time
 
 from msgq.visionipc import VisionIpcClient
 from openpilot.cereal.visionipc import VisionStreamType
@@ -22,6 +23,38 @@ MAP_COLORS = np.repeat(np.round(np.arange(256) * 0.45).astype(np.uint8)[:, None]
 MAP_COLORS[ROUTE_INTENSITY - 1:ROUTE_INTENSITY + 2] = (72, 235, 132)
 
 
+def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinker):
+  """A display-only status; it cannot authorize a model cue or a vehicle action."""
+  direction = 'left' if left_blinker and not right_blinker else 'right' if right_blinker and not left_blinker else None
+  if (enabled is not True or not isinstance(intent, dict) or not intent.get('session') or
+      direction is None or intent.get('direction') != direction):
+    return None
+  status, reason = 'unavailable', 'navigation_unavailable'
+  if isinstance(context, dict) and context.get('session') == intent['session'] and context.get('direction') == direction:
+    updated = context.get('updatedAt')
+    if isinstance(updated, (int, float)) and not isinstance(updated, bool) and np.isfinite(updated) and 0. <= now-updated <= .35:
+      status, reason = context.get('status'), context.get('reason')
+  if status == 'ready' and context.get('locationValid') is True and context.get('headingValid') is True:
+    distance = context.get('distanceM')
+    if isinstance(distance, (int, float)) and not isinstance(distance, bool) and np.isfinite(distance):
+      return {'state': 'ready', 'primary': 'Signal turn', 'direction': direction, 'distanceM': distance,
+              'secondary': f"{direction.capitalize()} onto {context.get('name', '')}".strip()}
+  if status == 'searching':
+    return {'state': status, 'primary': f'Finding next {direction}', 'secondary': 'Checking mapped streets'}
+  if status == 'passed':
+    return {'state': status, 'primary': 'Turn passed', 'secondary': 'Signal again for another turn'}
+  if status == 'blocked':
+    return {'state': status, 'primary': 'Signal turn blocked',
+            'secondary': 'Destination navigation active' if reason == 'explicit_destination' else 'Signal changed'}
+  explanations = {'missing_token': 'Map token missing', 'invalid_token': 'Map token unavailable',
+                  'gps_unavailable': 'GPS position unavailable', 'gps_or_car_state_invalid': 'GPS position unavailable',
+                  'heading_unavailable': 'Vehicle heading unavailable', 'navigation_unavailable': 'Waiting for navigation',
+                  'target_expired': 'Signal again to refresh target', 'no_matching_turn': 'No supported street turn ahead',
+                  'ambiguous_approach': 'Approach is uncertain', 'approach_location_mismatch': 'Position does not match approach',
+                  'approach_heading_mismatch': 'Heading does not match approach'}
+  return {'state': 'unavailable', 'primary': 'Map turn unavailable', 'secondary': explanations.get(reason, 'Map lookup unavailable')}
+
+
 def format_distance(meters: float) -> str:
   """m / ft under 1000 m / 300 m, km / mi beyond."""
   if ui_state.is_metric:
@@ -41,6 +74,23 @@ class NavigationPanel(Widget):
     self._eta_label = UnifiedLabel('', 34, FontWeight.BOLD, rl.WHITE, scroll=True)
     self._accent = rl.Color(155, 230, 185, 255)
     self._muted = rl.Color(162, 175, 185, 255)
+    self._signal_status = None
+    self._last_signal_poll = -np.inf
+
+  @property
+  def signal_status(self):
+    now = time.monotonic()
+    if now-self._last_signal_poll >= .1:
+      self._last_signal_poll = now
+      car = ui_state.sm['carState']
+      self._signal_status = signal_turn_status(
+        ui_state.params.get_bool('MapboxNextTurnEnabled'), ui_state.params.get('MapboxTurnIntent'),
+        ui_state.params.get('MapboxTurnContext'), now, car.leftBlinker, car.rightBlinker)
+    return self._signal_status
+
+  @property
+  def signal_turn_active(self):
+    return self.signal_status is not None
 
   def _update_state(self):
     if not self._client.is_connected():
@@ -81,8 +131,14 @@ class NavigationPanel(Widget):
     x, y = rect.x, rect.y
     rl.draw_rectangle_rec(rect, rl.Color(7, 13, 18, 255))
     instruction = ui_state.sm['navInstruction']
-    if self.routing:
-      direction = instruction.maneuverModifier
+    signal = self.signal_status
+    signal_ready = signal is not None and signal['state'] == 'ready' and not ui_state.nav_destination_set
+    notification = signal is not None and signal['state'] != 'ready' and not ui_state.nav_destination_set
+    if notification:
+      gui_label(rl.Rectangle(x+12, y+18, rect.width-24, 30), signal['primary'], 22, rl.WHITE, FontWeight.BOLD,
+                alignment_vertical=TextAlignmentVertical.TOP)
+    elif self.routing or signal_ready:
+      direction = signal['direction'] if signal_ready else instruction.maneuverModifier
       flip = -1 if 'left' in direction else 1
       # The maneuver arrow on a 1.4x grid, centered in the header's icon box, with round joins for the thick stroke.
       if direction in ('straight', ''):
@@ -94,14 +150,18 @@ class NavigationPanel(Widget):
         rl.draw_line_ex(a, b, 7, self._accent)
       for point in points:
         rl.draw_circle_v(point, 3.5, self._accent)
-      gui_label(rl.Rectangle(x+64, y+11, rect.width-72, 40), format_distance(max(0, instruction.maneuverDistance)), 34, rl.WHITE, FontWeight.BOLD,
+      distance = signal['distanceM'] if signal_ready else instruction.maneuverDistance
+      gui_label(rl.Rectangle(x+64, y+11, rect.width-72, 40), format_distance(max(0, distance)), 34, rl.WHITE, FontWeight.BOLD,
                 alignment_vertical=TextAlignmentVertical.TOP)
     else:
       gui_label(rl.Rectangle(x+12, y+18, rect.width-24, 30), 'Waiting for route', 26, rl.WHITE, FontWeight.BOLD,
                 alignment_vertical=TextAlignmentVertical.TOP)
     map_rect = rl.Rectangle(x+8, y+61, rect.width-16, rect.height-111)
     rl.draw_rectangle_rec(map_rect, rl.BLACK)
-    if self.map_ready:
+    if notification:
+      gui_label(rl.Rectangle(map_rect.x+10, map_rect.y+16, map_rect.width-20, 80), signal['secondary'], 24, self._muted,
+                FontWeight.MEDIUM, alignment_vertical=TextAlignmentVertical.TOP)
+    elif self.map_ready:
       # A 1:1 crop of the model's frame, centered horizontally with the ego near the bottom.
       width, height = min(map_rect.width, SIZE), min(map_rect.height, SIZE)
       source = rl.Rectangle((SIZE - width) // 2, min(SIZE - height, max(0, EGO[1] + MARKER_MARGIN - height)), width, height)
@@ -109,10 +169,14 @@ class NavigationPanel(Widget):
       rl.draw_texture_pro(self._texture, source, target, rl.Vector2(0, 0), 0, rl.WHITE)
     else:
       self._draw_status(map_rect)
-    if self.routing:
+    if signal is not None and (notification or ui_state.nav_destination_set):
+      self._eta_label.set_text(f"{signal['primary']}: {signal['secondary']}")
+      self._eta_label.render(rl.Rectangle(x+9, y+rect.height-45, rect.width-18, 40))
+    elif self.routing or signal_ready:
       seconds = max(0, instruction.timeRemaining)
       remaining = max(0, instruction.distanceRemaining)
-      self._eta_label.set_text(f'{max(1, round(seconds / 60))} min / {format_distance(remaining)}')
+      self._eta_label.set_text(f"Signal turn: {signal['secondary']}" if signal is not None else
+                               f'{max(1, round(seconds / 60))} min / {format_distance(remaining)}')
       self._eta_label.render(rl.Rectangle(x+9, y+rect.height-45, rect.width-18, 40))
 
   def _unload_texture(self):
