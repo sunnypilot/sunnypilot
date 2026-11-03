@@ -10,6 +10,7 @@ import pyray as rl
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref
+from openpilot.sunnypilot.models.navigation_model import BUILD_REF
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.sunnypilot.model_info import (big_model_state, bundles_for_source, carrying_model, default_model_name,
@@ -67,6 +68,10 @@ class ModelsLayout(Widget):
       callback=lambda: self._open_source_dialog("chestnut")
     )
 
+    self.prepare_navigation_item = button_item(tr("Prepare Navigation Model"), tr("PREPARE"),
+      tr("Download and prepare the experimental navigation model while parked. Preparation can take several minutes. " +
+         "When ready, select it from Big Model; preparation does not change the active model."), self._prepare_navigation_model)
+
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
     self.refresh_item = button_item(tr("Refresh Model List"),
@@ -98,7 +103,7 @@ class ModelsLayout(Widget):
 
     self.map_turn_toggle = toggle_item_sp(tr("Signal Navigation (Experimental)"),
       tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
-         "The first committed maneuver keeps its role until the signal is canceled. " +
+         "Navigation waits for an active lane change to complete. " +
          "Requires a navigation-capable model, internet and a Mapbox token. " +
          "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."),
       callback=self._enable_map_turns, enabled=lambda: ui_state.is_offroad() and ui_state.active_runner_tinygrad,
@@ -119,9 +124,32 @@ class ModelsLayout(Widget):
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
-    self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
+    self.items = [self.small_model_item, self.big_model_item, self.prepare_navigation_item, self.cancel_download_item, self.download_item,
+                  self.refresh_item, self.clear_cache_item,
                   self.blendful_toggle, self.lane_turn_desire_toggle, self.map_turn_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control,
                   self.camera_offset]
+
+  def _prepare_navigation_model(self):
+    if (ui_state.is_offroad() and ui_state.params.get("ModelManager_DownloadRef") is None and
+        not ui_state.params.get_bool("ModelManager_ClearCache")):
+      ui_state.params.put("ModelManager_DownloadRef", BUILD_REF)
+
+  def _handle_navigation_preparation(self, bundle, progresses):
+    if bundle is None or bundle.ref != BUILD_REF:
+      return False
+    ds = custom.ModelManagerSP.DownloadStatus
+    self._downloading = bundle.status == ds.downloading
+    self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
+    self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
+    state = self._download_row_state(progresses, bundle.displayName) if progresses else {"name": bundle.displayName}
+    if self._verifying:
+      state["status_text"] = tr("building")
+    elif bundle.status in (ds.failed, ds.downloaded):
+      state["status_text"] = ""
+    self.download_item.action_item.update(**state)
+    if self._downloading:
+      device._reset_interactive_timeout()
+    return True
 
   def _enable_map_turns(self, enabled):
     if enabled:
@@ -170,6 +198,8 @@ class ModelsLayout(Widget):
 
     bundle = self.model_manager.selectedBundle if self.model_manager else None
     progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName] if bundle else []
+    if self._handle_navigation_preparation(bundle, progresses):
+      return
     if not progresses or bundle.status not in (custom.ModelManagerSP.DownloadStatus.downloading,
                                                custom.ModelManagerSP.DownloadStatus.failed):
       self.download_item.action_item.update(name="", segments=self._slot_segments())
@@ -379,6 +409,8 @@ class ModelsLayout(Widget):
     offroad = ui_state.is_offroad()
     self.small_model_item.action_item.set_enabled(offroad)
     self.big_model_item.action_item.set_enabled(offroad)
+    self.prepare_navigation_item.action_item.set_enabled(
+      offroad and not self._downloading and not self._clearing and ui_state.params.get("ModelManager_DownloadRef") is None)
     self.small_model_item.set_description("" if offroad else tr("Only available when vehicle is off, or always offroad mode is on"))
 
     # manager is offroad-only, so an onroad clear would never be serviced

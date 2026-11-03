@@ -40,6 +40,7 @@ class DesireHelper:
     v_ego = carstate.vEgo
     one_blinker = carstate.leftBlinker != carstate.rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
+    lane_change_completed = False
 
     # Lane turn controller update
     self.lane_turn_controller.update_lane_turn(blindspot_left=carstate.leftBlindspot, blindspot_right=carstate.rightBlindspot,
@@ -92,6 +93,7 @@ class DesireHelper:
         self.lane_change_timer += DT_MDL
 
         if lane_change_prob < 0.02 and self.lane_change_timer >= LANE_CHANGE_START_TIME:
+          lane_change_completed = True
           self.lane_change_timer = 0.0
           if one_blinker:
             self.lane_change_state = LaneChangeState.preLaneChange
@@ -112,9 +114,9 @@ class DesireHelper:
         elif self.lane_change_direction == LaneChangeDirection.right:
           self.desire = log.Desire.laneChangeRight
 
-    # Commit the first actual request before the next model run. LC wins a
-    # same-frame tie; an early fast signal can otherwise remain pending until
-    # a validated turn approach is reached at turn speed.
+    # LC wins while active. Only its normal completion releases its ownership;
+    # speed changes, timeout and disengagement do not indicate completion.
     self.lane_turn_controller.finalize_navigation_intent(
-      self.desire in (log.Desire.laneChangeLeft, log.Desire.laneChangeRight), v_ego, lateral_active, map_turn_supported)
+      self.desire in (log.Desire.laneChangeLeft, log.Desire.laneChangeRight), v_ego, lateral_active, map_turn_supported,
+      lane_change_completed=lane_change_completed)
     self.alc.update_state()

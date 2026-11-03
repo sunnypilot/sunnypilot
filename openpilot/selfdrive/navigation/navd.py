@@ -174,6 +174,7 @@ class SignalTurnEngine:
     self.signal_blocked = False
     self.entered = False
     self.retained = False
+    self.intent_mode = None
     self.retired_key = None
 
   def _invalidate(self):
@@ -189,6 +190,7 @@ class SignalTurnEngine:
     self.signal_blocked = False
     self.entered = False
     self.retained = False
+    self.intent_mode = None
 
   def _clear(self):
     if self.key is not None:
@@ -240,7 +242,7 @@ class SignalTurnEngine:
     intent = self.params.get('MapboxTurnIntent')
     valid_intent = (isinstance(intent, dict) and isinstance(intent.get('session'), str) and
                     1 <= len(intent['session']) <= 128 and intent.get('direction') in ('left', 'right') and
-                    intent.get('mode') in ('pending', 'turn'))
+                    intent.get('mode') in ('pending', 'lane_change', 'turn'))
     model = self.params.get('NavModelState')
     supported = (isinstance(model, dict) and model.get('supported') is True and
                  isinstance(model.get('updatedAt'), (int, float)) and 0. <= now-model['updatedAt'] <= 1.)
@@ -251,7 +253,7 @@ class SignalTurnEngine:
       canceled_after_entry = self.target is not None and self.key is not None and not car.leftBlinker and not car.rightBlinker
     except (AttributeError, KeyError, TypeError):
       lateral, canceled_after_entry = False, False
-    retained = bool(canceled_after_entry and supported and lateral and
+    retained = bool(canceled_after_entry and self.intent_mode == 'turn' and supported and lateral and
                     (not valid_intent or (intent['session'], intent['direction']) == self.key))
     if not valid_intent and not retained:
       self._clear()
@@ -267,6 +269,7 @@ class SignalTurnEngine:
     if destination_active != self.blocked:
       self._invalidate()
       self.blocked = destination_active
+    self.intent_mode = intent['mode']
     self._consume()
     if destination_active:
       self.retired_key = key

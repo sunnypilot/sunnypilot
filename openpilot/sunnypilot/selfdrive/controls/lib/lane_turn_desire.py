@@ -112,14 +112,17 @@ class LaneTurnController:
     model_sees_turn = (turn_probs[0] if left else turn_probs[1]) >= MODEL_TURN_PROB
     return nudged or model_sees_turn
 
-  def finalize_navigation_intent(self, lane_change_requested, speed, lateral_active, model_supported):
+  def finalize_navigation_intent(self, lane_change_requested, speed, lateral_active, model_supported, lane_change_completed=False):
     if not self.navigation_enabled or not model_supported or not lateral_active:
       return
     if lane_change_requested:
       self.nav_intent.commit('lane_change')
-    elif (self.nav_intent.mode == 'pending' and 0. <= speed < self.lane_turn_value and not self.turn_blindspot and
+    else:
+      if lane_change_completed:
+        self.nav_intent.resume_after_lane_change()
+      if (self.nav_intent.mode == 'pending' and 0. <= speed < self.lane_turn_value and not self.turn_blindspot and
           turn_route_ready(self.params.get('MapboxTurnContext'), self.nav_intent.session, self.nav_intent.direction, time.monotonic())):
-      self.nav_intent.commit('turn')
+        self.nav_intent.commit('turn')
     self.navigation_owns_signal = self.nav_intent.mode == 'turn'
 
   def get_turn_direction(self):

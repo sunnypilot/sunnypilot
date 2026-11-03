@@ -100,10 +100,10 @@ def helper(enabled=True, supported=True):
   car = SimpleNamespace(vEgo=12., leftBlinker=False, rightBlinker=True, leftBlindspot=False,
                         rightBlindspot=False, steeringPressed=False, steeringTorque=0., brakePressed=False)
 
-  def step(speed=None, active=True, **kwargs):
+  def step(speed=None, active=True, lane_change_prob=.5, **kwargs):
     if speed is not None:
       car.vEgo = speed
-    dh.update(car, active, .5, map_turn_supported=supported, **kwargs)
+    dh.update(car, active, lane_change_prob, map_turn_supported=supported, **kwargs)
     return dh.desire
 
   return dh, car, step
@@ -168,11 +168,11 @@ class NavigationSignalTests(unittest.TestCase):
     self.assertEqual(intent.params.values['MapboxTurnIntent']['mode'], 'turn')
     self.assertFalse(intent.commit('lane_change'))
 
-  def test_lane_change_commit_cancels_route_and_cannot_flip(self):
+  def test_lane_change_commit_keeps_prefetch_and_cannot_flip_without_completion(self):
     intent = module.NavTurnIntent(Params())
     intent.update('right', True, True, True)
     self.assertTrue(intent.commit('lane_change'))
-    self.assertNotIn('MapboxTurnIntent', intent.params.values)
+    self.assertEqual(intent.params.values.get('MapboxTurnIntent', {}).get('mode'), 'lane_change')
     intent.update('right', True, True, True)
     self.assertFalse(intent.commit('turn'))
     intent.update(None, True, True, True)
@@ -254,8 +254,94 @@ class NavigationSignalTests(unittest.TestCase):
     obj.params.values['MapboxTurnContext'] = ready_context(obj)
     self.assertEqual(step(), DESIRE.laneChangeRight)
     self.assertEqual(obj.nav_intent.mode, 'lane_change')
-    self.assertNotIn('MapboxTurnIntent', obj.params.values)
+    self.assertEqual(obj.params.values.get('MapboxTurnIntent', {}).get('mode'), 'lane_change')
     step(2.)
+    self.assertEqual(obj.nav_intent.mode, 'lane_change')
+    self.assertFalse(obj.navigation_owns_signal)
+
+  def test_normal_lane_change_completion_allows_mapped_turn_with_same_signal_and_route(self):
+    for left in (False, True):
+      with self.subTest(left=left):
+        dh, car, step = helper()
+        car.leftBlinker, car.rightBlinker = left, not left
+        step()
+        obj = dh.lane_turn_controller
+        session = obj.nav_intent.session
+        context = ready_context(obj)
+        obj.params.values['MapboxTurnContext'] = context
+        self.assertEqual(step(), DESIRE.laneChangeLeft if left else DESIRE.laneChangeRight)
+        self.assertEqual(obj.nav_intent.mode, 'lane_change')
+        # Low speed alone cannot terminate an already Starting maneuver.
+        self.assertEqual(step(2.), DESIRE.laneChangeLeft if left else DESIRE.laneChangeRight)
+        self.assertFalse(obj.navigation_owns_signal)
+        dh.lane_change_timer = .5
+        self.assertEqual(step(lane_change_prob=0.), DESIRE.none)
+        self.assertEqual(dh.lane_change_state, ChangeState.preLaneChange)
+        self.assertEqual(obj.nav_intent.mode, 'turn')
+        self.assertEqual(obj.nav_intent.session, session)
+        self.assertIs(obj.params.values['MapboxTurnContext'], context)
+        self.assertTrue(obj.navigation_owns_signal)
+
+  def test_active_lane_change_keeps_prefetch_intent_without_turn_authority(self):
+    dh, _car, step = helper()
+    step()
+    obj = dh.lane_turn_controller
+    session = obj.nav_intent.session
+    step()
+    self.assertIn('MapboxTurnIntent', obj.params.values)
+    self.assertEqual(obj.params.values.get('MapboxTurnIntent', {}).get('mode'), 'lane_change')
+    self.assertEqual(obj.nav_intent.session, session)
+    self.assertFalse(obj.navigation_owns_signal)
+
+  def test_non_normal_resets_do_not_release_lane_change_lock(self):
+    for reason in ('timeout', 'disengage', 'alc_disabled', 'low_speed', 'too_early'):
+      with self.subTest(reason=reason):
+        dh, _car, step = helper()
+        step()
+        obj = dh.lane_turn_controller
+        obj.params.values['MapboxTurnContext'] = ready_context(obj)
+        step()
+        dh.lane_change_timer = 10.01 if reason == 'timeout' else 0. if reason == 'too_early' else .5
+        if reason == 'alc_disabled':
+          dh.alc.lane_change_set_timer = 0
+        step(2., active=reason != 'disengage', lane_change_prob=.5 if reason == 'low_speed' else 0.)
+        self.assertEqual(obj.nav_intent.mode, 'lane_change')
+        self.assertFalse(obj.navigation_owns_signal)
+        if reason == 'disengage':
+          step(2.)
+          self.assertEqual(obj.nav_intent.mode, 'lane_change')
+
+  def test_completion_after_signal_cancel_or_switch_cannot_use_old_route(self):
+    for opposite in (False, True):
+      with self.subTest(opposite=opposite):
+        dh, car, step = helper()
+        step()
+        obj = dh.lane_turn_controller
+        old_session = obj.nav_intent.session
+        obj.params.values['MapboxTurnContext'] = ready_context(obj)
+        step()
+        dh.lane_change_timer = .5
+        car.rightBlinker, car.leftBlinker = False, opposite
+        step(2., lane_change_prob=0.)
+        self.assertNotEqual(obj.nav_intent.mode, 'turn')
+        self.assertNotEqual(obj.nav_intent.session, old_session)
+        self.assertFalse(obj.navigation_owns_signal)
+
+  def test_completed_lc_waits_pending_and_new_lc_remains_authoritative(self):
+    dh, _car, step = helper()
+    step()
+    step()
+    obj = dh.lane_turn_controller
+    dh.lane_change_timer = .5
+    step(12., lane_change_prob=0.)
+    self.assertEqual(obj.nav_intent.mode, 'pending')
+    self.assertEqual(dh.lane_change_state, ChangeState.preLaneChange)
+    # Still above turn speed: an actual new LC can start and must win.
+    step()
+    self.assertEqual(obj.nav_intent.mode, 'lane_change')
+    obj.params.values['MapboxTurnContext'] = ready_context(obj)
+    step(2.)
+    self.assertEqual(dh.lane_change_state, ChangeState.laneChangeStarting)
     self.assertEqual(obj.nav_intent.mode, 'lane_change')
     self.assertFalse(obj.navigation_owns_signal)
 
@@ -295,7 +381,7 @@ class NavigationSignalTests(unittest.TestCase):
     obj.params.values['MapboxTurnContext'] = ready_context(obj)
     obj.finalize_navigation_intent(True, 2., True, True)
     self.assertEqual(obj.nav_intent.mode, 'lane_change')
-    self.assertNotIn('MapboxTurnIntent', obj.params.values)
+    self.assertEqual(obj.params.values.get('MapboxTurnIntent', {}).get('mode'), 'lane_change')
 
   def test_feature_enabled_mid_existing_lane_change_preserves_lane_change(self):
     dh, _car, step = helper(enabled=False)
