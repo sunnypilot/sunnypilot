@@ -21,6 +21,11 @@ storage. Missing device dependencies produce an error; this feature does not
 install system libraries. The compiler log is
 `Paths.model_root()/rl_nav_80eedcdd_build.log`. An interrupted verified download
 can be reused on the next attempt; incomplete downloads are never accepted.
+If a completed compilation fails protocol validation, its artifact, descriptor
+and `validation_failure.json` are retained in the single
+`Paths.model_root()/.rl_nav_failed_build` directory for diagnosis. A later rejected
+build replaces that directory. It is outside normal model registration and is
+never automatically selected or reused as a validated model.
 
 ## Exact checkpoint and build
 

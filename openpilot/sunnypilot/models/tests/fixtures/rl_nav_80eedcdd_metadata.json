@@ -1,0 +1,264 @@
+{
+  "provenance": {
+    "sourceRepository": "commaai/openpilot",
+    "sourceRef": "afbf2e547e9319e2eb9f515e1e4330af63705cec",
+    "sourceModelPath": "openpilot/selfdrive/modeld/models/big_driving_supercombo.onnx",
+    "officialOnnxSha256": "1d18c42ea4cd95c8bffab4635844b78b8e2d4e25b9de44a9c5ac2e0961371a2e",
+    "officialOnnxBytes": 814591106,
+    "sourceCheckpoint": "cf8f6120-49ee-48f8-b2d7-d663a4708271/56320/80eedcdd-f97b-46d0-9b94-780685292acf/12864",
+    "extractedIoMetadataSha256": "10b55d548b2f662f214c5e7c52c5e7864b18675b295ac51064661dd207e93e39",
+    "scope": "Graph declarations and literal metadata only; no model weights or executable pickle."
+  },
+  "input_specs": {
+    "new_img": [
+      [
+        2,
+        6,
+        128,
+        256
+      ],
+      "uint8",
+      "AMD"
+    ],
+    "desire": [
+      [
+        8
+      ],
+      "float32",
+      "AMD"
+    ],
+    "traffic_convention": [
+      [
+        1,
+        2
+      ],
+      "float32",
+      "AMD"
+    ],
+    "action_t": [
+      [
+        1,
+        2
+      ],
+      "float32",
+      "AMD"
+    ],
+    "nav_map": [
+      [
+        1,
+        1,
+        256,
+        256
+      ],
+      "float32",
+      "AMD"
+    ],
+    "navigation": [
+      [
+        1,
+        47
+      ],
+      "float32",
+      "AMD"
+    ],
+    "state_img_q": [
+      [
+        2,
+        5,
+        6,
+        128,
+        256
+      ],
+      "uint8",
+      "AMD"
+    ],
+    "state_desire_q": [
+      [
+        132,
+        1,
+        8
+      ],
+      "float32",
+      "AMD"
+    ],
+    "state_feat_q": [
+      [
+        128,
+        1,
+        16384
+      ],
+      "float32",
+      "AMD"
+    ],
+    "state_map_features_q": [
+      [
+        128,
+        1,
+        64
+      ],
+      "float32",
+      "AMD"
+    ],
+    "state_navigation_features_q": [
+      [
+        128,
+        1,
+        64
+      ],
+      "float32",
+      "AMD"
+    ]
+  },
+  "output_specs": {
+    "outputs": [
+      [
+        1,
+        18580
+      ],
+      "float32",
+      "AMD"
+    ],
+    "next_state_img_q": [
+      [
+        2,
+        5,
+        6,
+        128,
+        256
+      ],
+      "uint8",
+      "AMD"
+    ],
+    "next_state_desire_q": [
+      [
+        132,
+        1,
+        8
+      ],
+      "float32",
+      "AMD"
+    ],
+    "next_state_feat_q": [
+      [
+        128,
+        1,
+        16384
+      ],
+      "float32",
+      "AMD"
+    ],
+    "next_state_map_features_q": [
+      [
+        128,
+        1,
+        64
+      ],
+      "float32",
+      "AMD"
+    ],
+    "next_state_navigation_features_q": [
+      [
+        128,
+        1,
+        64
+      ],
+      "float32",
+      "AMD"
+    ]
+  },
+  "metadata": {
+    "metadata": {
+      "output_slices": "gASV0gEAAAAAAAB9lCiMCmxhbmVfbGluZXOUjAhidWlsdGluc5SMBXNsaWNllJOUSwBNEAJOh5RS\nlIwPbGFuZV9saW5lc19wcm9ilGgETRACTRgCToeUUpSMCnJvYWRfZWRnZXOUaARNGAJNIANOh5RS\nlIwEbWV0YZRoBE0gA01XA06HlFKUjAtkZXNpcmVfcHJlZJRoBE1XA013A06HlFKUjARwb3NllGgE\nTXcDTYMDToeUUpSMFndpZGVfZnJvbV9kZXZpY2VfZXVsZXKUaARNgwNNiQNOh5RSlIwOcm9hZF90\ncmFuc2Zvcm2UaARNiQNNlQNOh5RSlIwEcGxhbpRoBE2VA01zB06HlFKUjARsZWFklGgETXMHTQMI\nToeUUpSMCWxlYWRfcHJvYpRoBE0DCE0GCE6HlFKUjAxkZXNpcmVfc3RhdGWUaARNBghNDghOh5RS\nlIwGYWN0aW9ulGgETQ4ITRIIToeUUpSMDGhpZGRlbl9zdGF0ZZRoBE0SCE0SSE6HlFKUjAxtYXBf\nZmVhdHVyZXOUaARNEkhNUkhOh5RSlIwTbmF2aWdhdGlvbl9mZWF0dXJlc5RoBE1SSE2SSE6HlFKU\njANwYWSUaARNkkhNlEhOh5RSlHUu\n",
+      "model_checkpoint": "cf8f6120-49ee-48f8-b2d7-d663a4708271/56320/80eedcdd-f97b-46d0-9b94-780685292acf/12864"
+    },
+    "input_shapes": {
+      "new_img": [
+        2,
+        6,
+        128,
+        256
+      ],
+      "desire": [
+        8
+      ],
+      "traffic_convention": [
+        1,
+        2
+      ],
+      "action_t": [
+        1,
+        2
+      ],
+      "nav_map": [
+        1,
+        1,
+        256,
+        256
+      ],
+      "navigation": [
+        1,
+        47
+      ],
+      "state_img_q": [
+        2,
+        5,
+        6,
+        128,
+        256
+      ],
+      "state_desire_q": [
+        132,
+        1,
+        8
+      ],
+      "state_feat_q": [
+        128,
+        1,
+        16384
+      ],
+      "state_map_features_q": [
+        128,
+        1,
+        64
+      ],
+      "state_navigation_features_q": [
+        128,
+        1,
+        64
+      ]
+    },
+    "output_shapes": {
+      "outputs": [
+        1,
+        18580
+      ],
+      "next_state_img_q": [
+        2,
+        5,
+        6,
+        128,
+        256
+      ],
+      "next_state_desire_q": [
+        132,
+        1,
+        8
+      ],
+      "next_state_feat_q": [
+        128,
+        1,
+        16384
+      ],
+      "next_state_map_features_q": [
+        128,
+        1,
+        64
+      ],
+      "next_state_navigation_features_q": [
+        128,
+        1,
+        64
+      ]
+    }
+  }
+}

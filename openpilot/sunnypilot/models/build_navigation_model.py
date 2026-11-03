@@ -19,10 +19,36 @@ from openpilot.sunnypilot.models.navigation_model import (MANIFEST_NAME, SOURCE_
 COMPILE_ENV = {'DEBUG': '1', 'DEV': 'USB+AMD:LLVM', 'FRAME_DEV': 'CPU', 'FLOAT16': '1',
                'GMMU': '0', 'TC_OPT': '2', 'TC_MIN_GLOBALS': '32'}
 COMPILER_SHA256 = '0ff7415619aa267914f858c24b3f3c32583f75aceebd89ec4f56e70e9daf32ac'
+FAILED_BUILD_DIRECTORY = '.rl_nav_failed_build'
 
 
 class PreparationCancelled(RuntimeError):
   pass
+
+
+def preserve_failed_build(temporary, root, reason):
+  """Keep one completed rejected build for inspection, outside the selector root."""
+  diagnostic = {'reason': reason, 'sourceOnnxSha256': SOURCE_ONNX_SHA256, 'compilerSha256': COMPILER_SHA256,
+                'registered': False, 'automaticReuseAllowed': False}
+  try:
+    descriptor = json.loads((temporary / MANIFEST_NAME).read_text())
+    artifact = temporary / descriptor['artifact']['fileName']
+    diagnostic['artifact'] = descriptor['artifact'] | {'bytes': artifact.stat().st_size}
+    from openpilot.sunnypilot.modeld_v2.helpers import read_parts
+    _parts, extras = read_parts(str(artifact))
+    metadata = {key: extras.get(key) for key in ('input_specs', 'output_specs', 'metadata')}
+    encoded = json.dumps(metadata, default=repr)
+    diagnostic['compiledMetadata'] = metadata if len(encoded) <= 65536 else {'truncated': True, 'head': encoded[:65536]}
+  except Exception as error:
+    diagnostic['diagnosticReadError'] = str(error)[:2048]
+  (temporary / 'validation_failure.json').write_text(json.dumps(diagnostic, indent=2, default=repr) + '\n')
+  failed = root / FAILED_BUILD_DIRECTORY
+  if failed.is_symlink():
+    failed.unlink()
+  elif failed.exists():
+    shutil.rmtree(failed)
+  temporary.replace(failed)
+  return failed
 
 
 def check_allowed(params, queued):
@@ -145,7 +171,9 @@ def prepare(root, basedir, params, hardware, *, queued=False, onnx=None, report=
     output.rename(temporary / name)
     (temporary / MANIFEST_NAME).write_text(json.dumps(descriptor, indent=2) + '\n')
     if installed_bundle(temporary) is None:
-      raise RuntimeError('Compiled model failed its plain-format/navigation protocol checks. No model was registered.')
+      reason = 'Compiled model failed its plain-format/navigation protocol checks.'
+      failed = preserve_failed_build(temporary, root, reason)
+      raise RuntimeError(f'{reason} No model was registered. Completed build and validation details kept in {failed.name}; see the build log.')
     check()
     (temporary / name).replace(root / name)
     check()
