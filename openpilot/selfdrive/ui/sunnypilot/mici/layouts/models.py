@@ -99,9 +99,19 @@ class ModelsLayoutMici(NavScroller):
                                            description=tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when " +
                                                           "lane lines are clear. Yields around obstacles. Not available with the Default model."))
 
+    self.map_turn_toggle = BigParamControl(tr("mapbox signal turns (experimental)"), "MapboxNextTurnEnabled",
+      toggle_callback=self._enable_map_turns,
+      description=tr("Your signal selects the next mapped street and times a turn cue. Requires an internet connection and a Mapbox token. " +
+                     "Also enables turn desires. Turn off to restore the usual turn-desire timing."))
+
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
-                       self.blendful_toggle]
+                       self.blendful_toggle, self.map_turn_toggle]
     self._scroller.add_widgets(self.main_items)
+
+  def _enable_map_turns(self, enabled):
+    if enabled:
+      ui_state.params.put_bool("LaneTurnDesire", True)
+      ui_state.params.put_bool("NavigationEnabled", True)
 
   @property
   def model_manager(self):
@@ -218,6 +228,8 @@ class ModelsLayoutMici(NavScroller):
     super()._update_state()
 
     self.select_model_btn.set_enabled(ui_state.is_offroad())
+    self.map_turn_toggle.set_enabled(ui_state.is_offroad() and ui_state.active_runner_tinygrad)
+    self.map_turn_toggle.set_checked(ui_state.params.get_bool("MapboxNextTurnEnabled"))
     self.cancel_download_btn.set_visible(False)
     self.current_model_info.current_model_header._shimmer = False
     self.current_model_info.info_header._shimmer = False
