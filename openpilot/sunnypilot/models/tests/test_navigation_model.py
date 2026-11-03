@@ -1,12 +1,17 @@
 """Local selector entries require an installed verified target artifact."""
 import ast
 import base64
+import builtins
 import hashlib
 import importlib.util
 import json
+import io
+import mmap
 from pathlib import Path
 import pickle
 import sys
+import struct
+import subprocess
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
@@ -130,6 +135,87 @@ class LocalNavigationModelTests(unittest.TestCase):
       raise pickle.UnpicklingError('Rejected arbitrary metadata class')
     self.reader.read_parts = invalid
     self.assertIsNone(nav.installed_bundle(self.root))
+
+
+def real_navigation_metadata():
+  fixture = json.loads((SOURCE / 'tests/fixtures/rl_nav_80eedcdd_metadata.json').read_text())
+  for name, value in fixture['input_specs'].items():
+    fixture['input_specs'][name] = (tuple(value[0]), nav.np.dtype(value[1]).str, value[2])
+  for name, value in fixture['output_specs'].items():
+    fixture['output_specs'][name] = (tuple(value[0]), nav.np.dtype(value[1]).name, value[2])
+  for kind in ('input_shapes', 'output_shapes'):
+    fixture['metadata'][kind] = {name: tuple(shape) for name, shape in fixture['metadata'][kind].items()}
+  return fixture
+
+
+def plain_io_functions():
+  """Execute the exact plain writer/reader definitions, with no GPU imports."""
+  path = SOURCE.parents[0] / 'modeld_v2/helpers.py'
+  text = path.read_text() if path.exists() else subprocess.check_output(
+    ['git', '-C', str(SOURCE.parents[2]), 'show', 'HEAD:openpilot/sunnypilot/modeld_v2/helpers.py'], text=True)
+  names = {'Blob', '_MetadataUnpickler', '_relocate', 'write_bundle', 'read_parts'}
+  constants = {'MAGIC', 'ALIGNMENT', 'METADATA_TYPES'}
+  selected = []
+  for node in ast.parse(text).body:
+    if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and node.name in names:
+      selected.append(node)
+    elif isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id in constants for t in node.targets):
+      selected.append(node)
+  namespace = {'hashlib': hashlib, 'builtins': builtins, 'pickle': pickle, 'struct': struct, 'json': json,
+               'io': io, 'mmap': mmap}
+  exec(compile(ast.Module(body=selected, type_ignores=[]), str(path), 'exec'), namespace)
+  return namespace['write_bundle'], namespace['read_parts']
+
+
+class RealNavigationMetadataTests(unittest.TestCase):
+  def test_exact_official_wrapped_metadata_survives_actual_plain_roundtrip(self):
+    fixture = real_navigation_metadata()
+    self.assertEqual(fixture['provenance']['officialOnnxSha256'], nav.SOURCE_ONNX_SHA256)
+    self.assertEqual(fixture['provenance']['officialOnnxBytes'], nav.SOURCE_ONNX_BYTES)
+    self.assertEqual(fixture['metadata']['metadata']['output_slices'].count('\n'), 9)
+    write_bundle, read_parts = plain_io_functions()
+    with TemporaryDirectory() as directory:
+      path = Path(directory) / 'real_metadata_plain_fixture.pkl'
+      # An empty, non-executable run part is sufficient to test the actual format.
+      write_bundle(path, {'run': ({'calls': [], 'buffers': []}, b'')}, fixture)
+      parts, decoded = read_parts(path)
+      self.assertIn('run', parts)
+      self.assertEqual(decoded, fixture)
+      self.assertTrue(nav.compatible_metadata(decoded))
+      (Path(directory) / nav.MANIFEST_NAME).write_text(json.dumps({'version': 1, 'target': 'chestnut',
+        'sourceOnnxSha256': nav.SOURCE_ONNX_SHA256,
+        'artifact': {'fileName': path.name, 'sha256': nav.file_sha256(path)}}))
+      with patch.dict(sys.modules, {'openpilot.sunnypilot.modeld_v2.helpers': SimpleNamespace(read_parts=read_parts)}):
+        self.assertIsNotNone(nav.installed_bundle(directory))
+
+  def test_ascii_wrapping_is_allowed_but_corrupt_base64_is_rejected(self):
+    fixture = real_navigation_metadata()
+    original = fixture['metadata']['metadata']['output_slices']
+    compact = ''.join(original.split())
+    fixture['metadata']['metadata']['output_slices'] = ' \t\r\n'.join(compact[i:i+16] for i in range(0, len(compact), 16))
+    self.assertTrue(nav.compatible_metadata(fixture))
+    for encoded in (compact[:8] + '!' + compact[8:], compact[:-1], compact[:8] + '\u00a0' + compact[8:]):
+      with self.subTest(encoded=encoded[:20]):
+        fixture['metadata']['metadata']['output_slices'] = encoded
+        self.assertFalse(nav.compatible_metadata(fixture))
+
+  def test_wrapping_does_not_permit_executable_or_wrong_slice_metadata(self):
+    class ExecutableMetadata:
+      def __reduce__(self):
+        return builtins.eval, ('1 + 1',)
+    fixture = real_navigation_metadata()
+    payload = base64.encodebytes(pickle.dumps(ExecutableMetadata())).decode('ascii')
+    fixture['metadata']['metadata']['output_slices'] = payload
+    with patch.object(builtins, 'eval', side_effect=AssertionError('Metadata must never execute')) as execute:
+      self.assertFalse(nav.compatible_metadata(fixture))
+      execute.assert_not_called()
+    original = real_navigation_metadata()['metadata']['metadata']['output_slices']
+    slices = nav._SliceMetadata(io.BytesIO(base64.b64decode(original))).load()
+    slices['action'] = slice(2062, 2070)
+    fixture['metadata']['metadata']['output_slices'] = base64.encodebytes(pickle.dumps(slices)).decode('ascii')
+    self.assertFalse(nav.compatible_metadata(fixture))
+    fixture['metadata']['metadata']['output_slices'] = base64.encodebytes(pickle.dumps([])).decode('ascii')
+    self.assertFalse(nav.compatible_metadata(fixture))
 
 
 class CatalogHookTests(unittest.TestCase):

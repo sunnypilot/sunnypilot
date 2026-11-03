@@ -67,6 +67,9 @@ def compatible_metadata(extras):
       if tuple(outputs[name]) != shape or tuple(actual[0]) != shape or np.dtype(actual[1]) != dtype or 'AMD' not in actual[2]:
         return False
     encoded = extras['metadata']['metadata']['output_slices']
+    # Upstream ONNX metadata uses wrapped Base64. Permit only ASCII whitespace
+    # around its encoded bytes; keep strict decoding and restricted unpickling.
+    encoded = encoded.translate(str.maketrans('', '', ' \t\r\n\v\f'))
     slices = _SliceMetadata(io.BytesIO(base64.b64decode(encoded, validate=True))).load()
     required = {'plan': slice(917, 1907), 'action': slice(2062, 2066),
                 'desire_state': slice(2054, 2062), 'desire_pred': slice(855, 887)}

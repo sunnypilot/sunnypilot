@@ -168,6 +168,26 @@ class BuildLifecycleTests(unittest.TestCase):
       self.run_build(lambda _path: None)
     self.assertFalse((self.root / nav.MANIFEST_NAME).exists())
 
+  def test_rejected_completed_build_is_preserved_once_without_normal_registration(self):
+    failed = self.root / builder.FAILED_BUILD_DIRECTORY
+    for attempt in range(2):
+      if attempt:
+        (failed / 'old-build-marker').write_text('must be replaced')
+      with self.assertRaisesRegex(RuntimeError, 'Completed build and validation details kept'):
+        self.run_build(lambda _path: None)
+      descriptor = json.loads((failed / nav.MANIFEST_NAME).read_text())
+      artifact = failed / descriptor['artifact']['fileName']
+      self.assertEqual(artifact.read_bytes(), b'target-plain-model')
+      self.assertEqual(nav.file_sha256(artifact), descriptor['artifact']['sha256'])
+      diagnostic = json.loads((failed / 'validation_failure.json').read_text())
+      self.assertFalse(diagnostic['registered'])
+      self.assertFalse(diagnostic['automaticReuseAllowed'])
+      self.assertEqual(diagnostic['artifact']['sha256'], descriptor['artifact']['sha256'])
+      self.assertFalse((failed / 'old-build-marker').exists())
+      self.assertFalse((self.root / nav.MANIFEST_NAME).exists())
+      self.assertIsNone(nav.installed_bundle(self.root))
+    self.assertEqual([path.name for path in self.root.glob('.rl_nav_failed*')], [builder.FAILED_BUILD_DIRECTORY])
+
   def test_onroad_before_publication_never_registers(self):
     def process(*args, **kwargs):
       result = self.process(*args, **kwargs)
