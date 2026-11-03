@@ -80,7 +80,16 @@ inputs are zeroed. A route preview alone never establishes active model input.
 
 The feature is opt-in under **Signal Navigation (Experimental)**. It needs
 online Directions requests, a Mapbox public token, and automatically fetched
-road-map tiles. Existing steering, cooperative steering, action conversion and
+road-map tiles. Directions use the configured Mapbox token. The basemap is fetched
+from public Protomaps builds, without comma authentication or a Prime subscription.
+Only the required archive byte ranges are downloaded and cached; the entire
+planet archive is not downloaded. The map data is derived from
+[OpenStreetMap](https://www.openstreetmap.org/copyright); attribution is displayed
+over the map preview without changing the model raster. The public basemap is not
+claimed to be byte-identical to comma's training archive. See
+[Protomaps downloads](https://docs.protomaps.com/basemaps/downloads) for distribution
+and attribution information; a wider deployment should serve its own archive mirror.
+Existing steering, cooperative steering, action conversion and
 the restored 1.6 m/s low-speed handling are preserved.
 
 Recorded-camera model replay can test whether real route inputs change the

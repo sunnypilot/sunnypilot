@@ -53,10 +53,28 @@ def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinke
                 model_state.get('session') == intent['session'] and
                 isinstance(context.get('routeGeneration'), int) and context['routeGeneration'] > 0 and
                 model_state.get('routeGeneration') == context['routeGeneration'])
+      waiting = 'Waiting for map and model'
+      matched_wait = (isinstance(model_updated, (int, float)) and not isinstance(model_updated, bool) and
+                      np.isfinite(model_updated) and 0. <= now-model_updated <= .5 and
+                      model_state.get('supported') is True and model_state.get('active') is False and
+                      model_state.get('session') == intent['session'] and
+                      isinstance(context.get('routeGeneration'), int) and not isinstance(context['routeGeneration'], bool) and
+                      context['routeGeneration'] > 0 and model_state.get('routeGeneration') == context['routeGeneration'])
+      model_reason = model_state.get('reason') if matched_wait else None
+      if isinstance(model_reason, str):
+        waiting = {
+          'map_missing': 'Waiting for model map', 'map_stale': 'Model map is stale', 'map_invalid': 'Model map is invalid',
+          'instruction_stale': 'Route instructions are stale', 'route_generation_mismatch': 'Waiting for current route map',
+          'disabled': 'Navigation inputs disabled', 'invalid_time_or_speed': 'Vehicle data unavailable',
+          'signal_navigation_disabled': 'Signal navigation is inactive', 'route_context_missing': 'Waiting for route context',
+          'route_context_unavailable': 'Route context unavailable', 'signal_session_mismatch': 'Waiting for current signal',
+          'destination_route_unavailable': 'Waiting for destination route', 'waiting_for_navigation': 'Waiting for navigation inputs',
+          'ready': 'Waiting for model response',
+        }.get(model_reason, waiting)
       pending = intent.get('mode') == 'pending'
       return {'state': 'ready', 'primary': 'Turn candidate' if pending else 'Navigation active' if active else 'Route ready',
               'direction': direction, 'distanceM': distance,
-              'secondary': (f"{direction.capitalize()} onto {context.get('name', '')}".strip() if active or pending else 'Waiting for map and model')}
+              'secondary': (f"{direction.capitalize()} onto {context.get('name', '')}".strip() if active or pending else waiting)}
   if status == 'searching':
     return {'state': status, 'primary': f'Finding next {direction}', 'secondary': 'Checking mapped streets'}
   if status == 'passed':
@@ -187,6 +205,11 @@ class NavigationPanel(Widget):
       source = rl.Rectangle((SIZE - width) // 2, min(SIZE - height, max(0, EGO[1] + MARKER_MARGIN - height)), width, height)
       target = rl.Rectangle(map_rect.x + (map_rect.width - width) / 2, map_rect.y + map_rect.height - height, width, height)
       rl.draw_texture_pro(self._texture, source, target, rl.Vector2(0, 0), 0, rl.WHITE)
+      # Attribution is a display overlay; the model receives the original raster.
+      credit = rl.Rectangle(map_rect.x+2, map_rect.y+map_rect.height-17, map_rect.width-4, 16)
+      rl.draw_rectangle_rec(credit, rl.Color(7, 13, 18, 220))
+      gui_label(credit, '© OpenStreetMap contributors', 12, self._muted, FontWeight.MEDIUM,
+                alignment_vertical=TextAlignmentVertical.TOP)
     else:
       self._draw_status(map_rect)
     if signal is not None and (notification or ui_state.nav_destination_set):
