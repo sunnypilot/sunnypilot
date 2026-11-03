@@ -9,7 +9,7 @@ import time
 import pyray as rl
 
 from openpilot.cereal import custom
-from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
+from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog, SettingDescriptionDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
 from openpilot.sunnypilot.models.navigation_model import BUILD_REF
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigParamControl
@@ -85,8 +85,14 @@ class ModelsLayoutMici(NavScroller):
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
 
-    self.prepare_navigation_btn = BigButton(tr("prepare navigation model"))
+    self.prepare_navigation_btn = BigButton(tr("prepare navigation model"),
+      description=tr("Preparing the experimental navigation model requires a large download and an on-device build. Keep the device parked. " +
+                     "When ready, select it from Big Model; preparation does not change the active model."))
     self.prepare_navigation_btn.set_click_callback(self._prepare_navigation_model)
+    self.preparation_details_btn = BigButton(tr("preparation details"))
+    self.preparation_details_btn.set_click_callback(self._show_navigation_preparation_details)
+    self.preparation_details_btn.set_visible(False)
+    self._navigation_preparation_message = ""
 
     self.refresh_btn = BigButton(tr("refresh models"))
     self.refresh_btn.set_click_callback(self._refresh_models)
@@ -110,7 +116,7 @@ class ModelsLayoutMici(NavScroller):
                      "Requires a navigation-capable model, internet and a Mapbox token. " +
                      "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,
+    self.main_items = [self.current_model_info, self.preparation_details_btn, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,
                        self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle, self.map_turn_toggle]
     self._scroller.add_widgets(self.main_items)
@@ -120,13 +126,20 @@ class ModelsLayoutMici(NavScroller):
         not ui_state.params.get_bool("ModelManager_ClearCache")):
       ui_state.params.put("ModelManager_DownloadRef", BUILD_REF)
 
+  def _show_navigation_preparation_details(self):
+    if self._navigation_preparation_message:
+      gui_app.push_widget(SettingDescriptionDialog(tr("Navigation model preparation"), self._navigation_preparation_message))
+
   def _handle_navigation_preparation(self, bundle):
+    self.preparation_details_btn.set_visible(bundle is not None and bundle.ref == BUILD_REF)
     if bundle is None or bundle.ref != BUILD_REF:
+      self._navigation_preparation_message = ""
       return False
+    self._navigation_preparation_message = bundle.displayName
     ds = custom.ModelManagerSP.DownloadStatus
     downloading = bundle.status == ds.downloading
     progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName]
-    verifying = any(p.status == ds.verifying for p in progresses)
+    stage = bundle.internalName
     canceling = any(p.canceling for p in progresses)
     self.cancel_download_btn.set_visible(downloading and ui_state.params.get("ModelManager_DownloadRef") is not None)
     self.cancel_download_btn.set_text(tr("cancel preparation"))
@@ -135,7 +148,12 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.current_model_header._shimmer = downloading
     self.current_model_info.info_header.set_text(tr("progress") if downloading else tr("navigation model"))
     progress = sum(p.progress for p in progresses) / len(progresses) if progresses else 0.
-    detail = tr("canceling...") if canceling else tr("building; this can take several minutes") if verifying else f"{progress:.1f}%"
+    detail = {
+      'checking': tr("checking requirements"), 'downloading': f"{progress:.1f}%", 'building': tr("building; keep the device parked"),
+      'verifying': tr("verifying"), 'canceling': tr("canceling..."),
+    }.get(stage, tr("preparing"))
+    if canceling:
+      detail = tr("canceling...")
     self.current_model_info.info_text.set_text(detail if downloading else bundle.displayName)
     return True
 

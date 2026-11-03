@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+from html import escape
 import re
 import time
 import pyray as rl
@@ -68,9 +69,11 @@ class ModelsLayout(Widget):
       callback=lambda: self._open_source_dialog("chestnut")
     )
 
+    self._navigation_preparation_description = tr(
+      "Preparing the experimental navigation model requires a large download and an on-device build. Keep the device parked. " +
+      "When ready, select it from Big Model; preparation does not change the active model.")
     self.prepare_navigation_item = button_item(tr("Prepare Navigation Model"), tr("PREPARE"),
-      tr("Download and prepare the experimental navigation model while parked. Preparation can take several minutes. " +
-         "When ready, select it from Big Model; preparation does not change the active model."), self._prepare_navigation_model)
+      self._navigation_preparation_description, self._prepare_navigation_model)
 
     self.download_item = download_status_item(lambda: tr("Download") if self._downloading else tr("Model Status"))
 
@@ -136,15 +139,25 @@ class ModelsLayout(Widget):
 
   def _handle_navigation_preparation(self, bundle, progresses):
     if bundle is None or bundle.ref != BUILD_REF:
+      if getattr(self, '_navigation_preparation_message', None) is not None:
+        self._navigation_preparation_message = None
+        self.prepare_navigation_item.set_description(self._navigation_preparation_description)
+        self.prepare_navigation_item.show_description(False)
       return False
+    if getattr(self, '_navigation_preparation_message', None) != bundle.displayName:
+      self._navigation_preparation_message = bundle.displayName
+      self._set_item_note(self.prepare_navigation_item, escape(bundle.displayName))
     ds = custom.ModelManagerSP.DownloadStatus
     self._downloading = bundle.status == ds.downloading
-    self._verifying = any(getattr(p.status, 'raw', p.status) == ds.verifying for p in progresses)
+    stage = bundle.internalName
+    self._verifying = stage in ('building', 'verifying')
     self.cancel_download_item.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
     state = self._download_row_state(progresses, bundle.displayName) if progresses else {"name": bundle.displayName}
-    if self._verifying:
-      state["status_text"] = tr("building")
-    elif bundle.status in (ds.failed, ds.downloaded):
+    state["status_text"] = {
+      'checking': tr("checking requirements"), 'downloading': tr("downloading"), 'building': tr("building"),
+      'verifying': tr("verifying"), 'canceling': tr("canceling..."),
+    }.get(stage, tr("preparing"))
+    if bundle.status in (ds.failed, ds.downloaded):
       state["status_text"] = ""
     self.download_item.action_item.update(**state)
     if self._downloading:
