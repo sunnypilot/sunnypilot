@@ -621,6 +621,19 @@
               ]
             },
             {
+              "key": "AccelBoostSP",
+              "widget": "toggle",
+              "title": "Sunnypilot Accel Boost",
+              "description": "Adds acceleration, sized by driving personality, when the driving model predicts no reason to slow, so it reaches your set speed sooner. Fades out in tight curves.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",
