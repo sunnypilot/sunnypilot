@@ -39,6 +39,7 @@ PIECE_ATTEMPTS = 3
 PIECE_BACKOFF = 1.0  # seconds, growing linearly: waits 1 s then 2 s between a piece's three attempts
 TRANSIENT_HTTP_STATUS = frozenset({408, 429, 500, 502, 503, 504})
 REPORT_INTERVAL = 0.5  # seconds between progress publications
+NAV_PREPARE_STARTUP_TIMEOUT = 30.0  # First worker status, not a compilation time limit.
 # byte ranges count encoded bytes but iter_content yields decoded ones, so ask for an unencoded body
 NO_COMPRESSION = {"Accept-Encoding": "identity"}
 SPEED_SMOOTHING = 0.7  # weight of the previous speed sample in the published speed
@@ -379,33 +380,36 @@ class ModelManagerSP:
     status = custom.ModelManagerSP.DownloadStatus
 
     def update(payload):
-      stage = payload.get('stage', 'verifying')
-      bundle.internalName = bundle.displayName = payload.get('message', 'Preparing navigation model')[:512]
+      stage = payload.get('stage', 'checking')
+      bundle.internalName = stage
+      bundle.displayName = payload.get('message', 'Preparing navigation model')[:2048]
       bundle.status = status.failed if stage == 'failed' else status.downloaded if stage == 'ready' else status.downloading
       artifact.downloadProgress.status = (status.downloading if stage == 'downloading' else status.verifying
-                                          if stage in ('building', 'verifying') else bundle.status)
+                                          if stage in ('checking', 'building', 'verifying') else bundle.status)
       artifact.downloadProgress.progress = payload.get('progress', 0)
       artifact.downloadProgress.speed = payload.get('speed', 0)
       artifact.downloadProgress.eta = 0  # Compilation duration has not been measured on this target.
       self._report_status()
 
-    update({'message': 'Checking navigation model preparation requirements'})
-    if self.params.get_bool('IsOnroad') or not self.chestnut_present:
-      update({'stage': 'failed', 'message': 'Park the device with a connected supported Chestnut GPU before preparing the navigation model.'})
-      return
-    from openpilot.common.basedir import BASEDIR
-    root = Path(Paths.model_root())
-    root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='.nav-prepare-', dir=root) as temporary:
-      status_path = Path(temporary) / 'status.json'
-      command = [sys.executable, '-m', 'openpilot.sunnypilot.models.build_navigation_model', '--queued', '--status-file', str(status_path)]
-      process = subprocess.Popen(command, cwd=BASEDIR, start_new_session=True)
-      previous = None
-      try:
+    process = None
+    try:
+      update({'stage': 'checking', 'message': 'Checking navigation model preparation requirements'})
+      if not self.params.get_bool('IsOffroad') or not self.chestnut_present:
+        update({'stage': 'failed', 'message': 'Park the device with a connected supported Chestnut GPU before preparing the navigation model.'})
+        return
+      from openpilot.common.basedir import BASEDIR
+      root = Path(Paths.model_root())
+      root.mkdir(parents=True, exist_ok=True)
+      with tempfile.TemporaryDirectory(prefix='.nav-prepare-', dir=root) as temporary, (root / 'rl_nav_80eedcdd_prepare.log').open('w') as log:
+        status_path = Path(temporary) / 'status.json'
+        command = [sys.executable, '-u', '-m', 'openpilot.sunnypilot.models.build_navigation_model', '--queued', '--status-file', str(status_path)]
+        process = subprocess.Popen(command, cwd=BASEDIR, start_new_session=True, stdout=log, stderr=subprocess.STDOUT)
+        previous = None
+        started = time.monotonic()
         while process.poll() is None:
-          if self.params.get_bool('IsOnroad') or self._download_interrupted():
+          if not self.params.get_bool('IsOffroad') or self._download_interrupted():
             artifact.downloadProgress.canceling = True
-            message = 'Preparation stopped: device entered onroad.' if self.params.get_bool('IsOnroad') else 'Navigation model preparation canceled.'
+            message = 'Preparation stopped: device is not offroad.' if not self.params.get_bool('IsOffroad') else 'Navigation model preparation canceled.'
             raise DownloadCancelled(message)
           try:
             payload = status_path.read_text()
@@ -414,21 +418,25 @@ class ModelManagerSP:
               previous = payload
           except (OSError, ValueError):
             pass
+          if previous is None and time.monotonic() - started >= NAV_PREPARE_STARTUP_TIMEOUT:
+            raise RuntimeError('Preparation worker did not report startup within 30 seconds. See rl_nav_80eedcdd_prepare.log.')
           time.sleep(.2)
         if status_path.exists():
           update(json.loads(status_path.read_text()))
-        if self.params.get_bool('IsOnroad') or self._download_interrupted():
+        if not self.params.get_bool('IsOffroad') or self._download_interrupted():
           raise DownloadCancelled('Preparation stopped before completion; park and prepare again.')
         if process.returncode or installed_bundle(root) is None:
           if bundle.status != status.failed:
-            update({'stage': 'failed', 'message': 'Navigation model preparation failed. No selectable model was registered; see the build log.'})
+              update({'stage': 'failed', 'message': f'Navigation model preparation failed (exit {process.returncode}). ' +
+                    'See rl_nav_80eedcdd_prepare.log and rl_nav_80eedcdd_build.log.'})
         else:
           self.source_models['chestnut'] = self.model_fetcher.get_bundles_for_source('chestnut')
           self.available_models = self.source_models[ModelFetcher.active_source(self.chestnut_present)]
           update({'stage': 'ready', 'message': 'Navigation model ready — select it in the Chestnut model selector', 'progress': 100})
-      except Exception as error:
-        update({'stage': 'failed', 'message': str(error)})
-      finally:
+    except Exception as error:
+      update({'stage': 'failed', 'message': str(error)})
+    finally:
+      if process is not None:
         _stop_job(process)
 
   def _process_download_requests(self) -> None:

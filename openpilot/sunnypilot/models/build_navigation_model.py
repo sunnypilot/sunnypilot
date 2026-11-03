@@ -26,8 +26,8 @@ class PreparationCancelled(RuntimeError):
 
 
 def check_allowed(params, queued):
-  if params.get_bool('IsOnroad'):
-    raise PreparationCancelled('Stopped because the device entered onroad. Park before preparing again.')
+  if not params.get_bool('IsOffroad'):
+    raise PreparationCancelled('Stopped because the device is not confirmed offroad. Park before preparing again.')
   if queued and params.get('ModelManager_DownloadRef') is None:
     raise PreparationCancelled('Navigation model preparation canceled.')
 
@@ -96,7 +96,7 @@ def prepare(root, basedir, params, hardware, *, queued=False, onnx=None, report=
   def check():
     check_allowed(params, queued)
   check()
-  report('verifying', 'Checking target build requirements', 0)
+  report('checking', 'Checking target build requirements', 0)
   compiler = preflight(basedir, hardware)
   root.mkdir(parents=True, exist_ok=True)
   # Source + compiled output + compiler scratch; fail before the large transfer.

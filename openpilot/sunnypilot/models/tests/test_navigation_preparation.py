@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -18,6 +19,8 @@ from unittest.mock import Mock, patch
 import requests
 
 SOURCE = Path(__file__).resolve().parents[1]
+KEY_SOURCE = SOURCE.parents[1] / 'common/params_keys.h'
+REGISTERED_KEYS = set(re.findall(r'\{"([A-Za-z0-9_]+)"', KEY_SOURCE.read_text()))
 
 
 def load(name, path):
@@ -35,8 +38,12 @@ with patch.dict(sys.modules, {'openpilot.sunnypilot.models.navigation_model': na
 class Params:
   def __init__(self):
     self.onroad, self.ref = False, nav.BUILD_REF.encode()
-  def get_bool(self, _key):
-    return self.onroad
+  def get_bool(self, key):
+    if key not in REGISTERED_KEYS:
+      raise KeyError(f'UnknownKeyName: {key}')
+    if key != 'IsOffroad':
+      raise AssertionError(f'Unexpected preparation key: {key}')
+    return not self.onroad
   def get(self, _key):
     return self.ref
 
@@ -100,6 +107,16 @@ class SourceDownloadTests(unittest.TestCase):
     params.ref = None
     with self.assertRaises(builder.PreparationCancelled):
       builder.check_allowed(params, True)
+
+  def test_offroad_guard_uses_actual_registered_key_and_missing_is_fail_closed(self):
+    self.assertIn('IsOffroad', REGISTERED_KEYS)
+    self.assertNotIn('IsOnroad', REGISTERED_KEYS)
+    params = Params()
+    builder.check_allowed(params, True)
+    with self.assertRaises(KeyError):
+      params.get_bool('IsOnroad')
+    with self.assertRaises(builder.PreparationCancelled):
+      builder.check_allowed(NS(get_bool=lambda key: False, get=lambda key: nav.BUILD_REF), True)
     params.ref, params.onroad = b'queued-other-model', True
     with self.assertRaises(builder.PreparationCancelled):
       builder.check_allowed(params, True)
@@ -259,6 +276,25 @@ class ManagerPreparationTests(unittest.TestCase):
         process.assert_not_called()
       self.assertEqual(self.manager.selected_bundle.status, 4)
       self.assertIn('Park', self.manager.selected_bundle.displayName)
+
+  def test_startup_exceptions_are_visible_failed_status_through_real_dispatch(self):
+    for failure in ('model-directory', 'status-directory', 'worker-exec'):
+      with self.subTest(failure=failure):
+        store = {'ModelManager_DownloadRef': nav.BUILD_REF.encode()}
+        params = self.manager.params = Mock()
+        params.get.side_effect = store.get
+        params.get_bool.side_effect = Params().get_bool
+        params.remove.side_effect = lambda key, current=store: current.pop(key, None)
+        self.manager._download_ref = None
+        error = OSError(f'fixture {failure} startup failure')
+        target, method = ((Path, 'mkdir') if failure == 'model-directory' else
+                          (tempfile, 'TemporaryDirectory') if failure == 'status-directory' else (subprocess, 'Popen'))
+        with patch.object(target, method, side_effect=error):
+          self.manager._process_download_requests()
+        self.assertEqual(self.manager.active_bundle, 'unchanged-active-model')
+        self.assertIsNone(store.get('ModelManager_DownloadRef'))
+        self.assertEqual(self.manager.selected_bundle.status, 4, 'Startup failure must not leave initial checking forever')
+        self.assertIn('startup failure', self.manager.selected_bundle.displayName)
 
   def test_success_remains_explicit_selection_and_stops_entire_job_group(self):
     process = Mock(pid=99999999, returncode=0)
