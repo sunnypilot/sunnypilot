@@ -105,6 +105,13 @@ class TestSignalTurnStatus(unittest.TestCase):
     values['MapboxTurnIntent']['mode'] = 'pending'
     self.assertEqual(load_widget(ui_state).NavigationPanel().signal_status['primary'], 'Turn candidate')
 
+  def test_lane_change_holds_prepared_route_without_claiming_navigation(self):
+    ui_state, values = state('ready')
+    values['MapboxTurnIntent']['mode'] = 'lane_change'
+    status = load_widget(ui_state).NavigationPanel().signal_status
+    self.assertEqual(status['primary'], 'Lane change')
+    self.assertEqual(status['state'], 'lane_change')
+
   def test_actual_destination_owned_context_has_priority_without_a_signal_session(self):
     ui_state, values = state('ready', destination=True)
     values['MapboxTurnContext'] = {'status': 'ready', 'updatedAt': 100., 'routeOwner': 'destination', 'routeGeneration': 20}

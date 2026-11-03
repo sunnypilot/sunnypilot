@@ -6,26 +6,34 @@ driving network continuously. This replaces the earlier map-timed turn-cue
 experiment when a compatible model is selected; it does not add steering angles.
 The automatic candidate begins with a pending signal and may prefetch a route
 at any speed. Pending discovery does not send navigation inputs or suppress the
-existing lane-change checks. The first emitted host lane-change request commits
-lane-change mode and cancels the candidate route. Otherwise, a fresh validated
+existing lane-change checks. An emitted host lane-change request holds
+lane-change mode while preserving the candidate route. Otherwise, a fresh validated
 street approach below the configured turn speed (19 mph by default) may commit
 turn mode. An early fast signal can therefore prepare a route and later become
-a turn, provided no lane-change request has already started. LC wins a same-frame
-tie. After either commitment, the role is fixed until cancel/opposite.
+a turn. LC wins a same-frame tie. A lane-change request blocks navigation until
+the existing helper reports normal completion (its probability/timer condition),
+after which the held signal may become a turn at a fresh eligible approach.
+Slowing down, timeout, disengagement and disabling lane changes do not themselves
+release this block. A committed turn remains a turn until cancel/opposite.
 
 Only a committed turn suppresses competing lane-change pulses. Map conditioning
 requires a validated connected street, matching position and heading, and a
-coherent fresh route. Pending intent cannot feed navigation.
+coherent fresh route. Pending and lane-change intent cannot feed navigation.
 This arbitration still cannot reliably identify every early fast turn signal or
 slow lane change. A nearby legal street does not establish the driver's intended street.
 Predicted missing lane lines must not be treated as proof that no adjacent lane
 exists. These ambiguity cases remain validation limitations, not solved intent.
 
-A causal host audit of the saved recordings gives this candidate navigation
-eligibility on 23 of 39 street-turn requests; nine encounter a lane-change
-request first and seven remain pending. All four recorded lane-change contexts
-retain lane-change mode. These are selection proxies, not neural turn successes;
-map-target identity is a separate check and can still select the wrong street.
+A causal host audit using captured map contexts and recorded helper/model heads
+finds eventual navigation eligibility on 29 of 39 street-turn requests, compared
+with 23 under the earlier permanent lane-change lock. Only two of those six
+additional opportunities precede the recorded intervention cutoff; later
+eligibility must not be counted as recovering the original turn. All four
+recorded lane-change controls retain their lane-change request and none gains
+navigation eligibility. These are selection proxies, not new navigation-model
+inference or neural turn successes. Map-target identity is a separate check and
+can still select the wrong street. The two newly recovered Mapbox probe responses
+were verified separately and are not silently included in this frozen-context audit.
 An earlier speed-at-signal classifier was rejected because 18 street-turn
 requests began above 20 mph. The automatic selector is not dependable enough to
 claim road-test readiness from these results.
@@ -47,8 +55,11 @@ the latest three compiled navigation artifacts returned object-not-found.
 
 The ONNX was downloaded through a third-party mirror and independently matched
 against comma's exact LFS pointer. A Chestnut-compatible plain artifact still
-requires the target compilation and verification step. A Mac CPU ONNX smoke is
-not a verified device build. No model is automatically swapped when signaling.
+requires the target compilation and verification step. Use **Settings → Models →
+Prepare Navigation Model** while parked, then explicitly select the prepared
+model. See [model preparation](../../sunnypilot/models/NAVIGATION_MODEL.md).
+A Mac CPU ONNX smoke is not a verified device build. No model is automatically
+swapped when signaling.
 
 ## Route ownership and input coherence
 

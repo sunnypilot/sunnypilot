@@ -96,6 +96,27 @@ class SignalMiniRouteTests(unittest.TestCase):
     self.params.values['MapboxTurnIntent']['mode'] = 'turn'
     self.assertTrue(guard.check(**arguments)['ready'])
 
+  def test_lane_change_keeps_prefetch_generation_for_later_turn(self):
+    self.params.values['MapboxTurnIntent']['mode'] = 'lane_change'
+    self.ready()
+    generation = self.engine.route_generation
+    session = self.params.values['MapboxTurnIntent']['session']
+    self.assertEqual(len(self.executor.jobs), 1)
+    self.params.values['MapboxTurnIntent']['mode'] = 'pending'
+    self.engine.update()
+    self.params.values['MapboxTurnIntent']['mode'] = 'turn'
+    self.engine.update()
+    self.assertEqual(self.engine.route_generation, generation)
+    self.assertEqual(self.params.values['MapboxTurnContext']['session'], session)
+    self.assertEqual(len(self.executor.jobs), 1, 'Completing LC must not force another routing request')
+
+  def test_lane_change_only_route_is_cleared_on_cancel_even_at_junction(self):
+    self.params.values['MapboxTurnIntent']['mode'] = 'lane_change'
+    self.ready()
+    self.enter_and_cancel()
+    self.assertIsNone(self.engine.route)
+    self.assertNotIn('MapboxTurnContext', self.params.values)
+
   def test_cancel_before_entry_clears_route_and_context(self):
     self.ready()
     self.params.values.pop('MapboxTurnIntent')

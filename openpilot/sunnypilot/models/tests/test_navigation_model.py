@@ -155,49 +155,26 @@ class CatalogHookTests(unittest.TestCase):
 
 
 class OffroadBuilderTests(unittest.TestCase):
-  def run_builder(self, *, hardware, onroad, expected_hash=False, compile_fails=False):
+  def test_cli_failure_is_nonzero_and_never_registers(self):
+    # Detailed stream/build/cancel behavior is covered in test_navigation_preparation.
     with TemporaryDirectory() as directory:
       root = Path(directory)
       modules = {
         'openpilot.sunnypilot.models.navigation_model': nav,
         'openpilot.common.basedir': SimpleNamespace(BASEDIR=str(SOURCE.parents[2])),
-        'openpilot.common.hardware': SimpleNamespace(COMMA_HARDWARE=hardware),
+        'openpilot.common.hardware': SimpleNamespace(COMMA_HARDWARE=False),
         'openpilot.common.hardware.hw': SimpleNamespace(Paths=SimpleNamespace(model_root=lambda: str(root))),
-        'openpilot.common.params': SimpleNamespace(Params=lambda: SimpleNamespace(get_bool=lambda _key: onroad)),
+        'openpilot.common.params': SimpleNamespace(Params=lambda: SimpleNamespace(get_bool=lambda _key: False)),
       }
-      with patch.dict(sys.modules, modules), patch.object(sys, 'argv', ['build_navigation_model', '--onnx', str(root / 'source.onnx')]):
+      with patch.dict(sys.modules, modules), patch.object(sys, 'argv', ['build_navigation_model']):
         builder_spec = importlib.util.spec_from_file_location('nav_builder_under_test', SOURCE / 'build_navigation_model.py')
         builder = importlib.util.module_from_spec(builder_spec)
         builder_spec.loader.exec_module(builder)
-        with patch.object(builder, 'file_sha256', return_value=nav.SOURCE_ONNX_SHA256 if expected_hash else 'wrong'):
-          if compile_fails:
-            class Failed:
-              returncode = 1
-              def __enter__(self):
-                return self
-              def __exit__(self, *_args):
-                pass
-              def poll(self):
-                return 1
-            with patch.object(builder.subprocess, 'Popen', return_value=Failed()):
-              with self.assertRaises(RuntimeError):
-                builder.main()
-          else:
-            with patch.object(builder.subprocess, 'Popen', side_effect=AssertionError('Compiler must not start')):
-              with self.assertRaises(SystemExit) as error:
-                builder.main()
-              self.assertEqual(error.exception.code, 2)
+        with patch.object(builder.subprocess, 'Popen', side_effect=AssertionError('Compiler must not start')):
+          with self.assertRaises(SystemExit) as error:
+            builder.main()
+          self.assertEqual(error.exception.code, 1)
         self.assertFalse((root / nav.MANIFEST_NAME).exists())
-
-  def test_mac_or_onroad_build_never_starts_compiler(self):
-    self.run_builder(hardware=False, onroad=False)
-    self.run_builder(hardware=True, onroad=True)
-
-  def test_wrong_onnx_bytes_never_start_compiler(self):
-    self.run_builder(hardware=True, onroad=False)
-
-  def test_failed_compile_exposes_no_manifest_or_selected_model(self):
-    self.run_builder(hardware=True, onroad=False, expected_hash=True, compile_fails=True)
 
 
 if __name__ == '__main__':

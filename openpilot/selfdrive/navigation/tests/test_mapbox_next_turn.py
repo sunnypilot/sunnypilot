@@ -80,6 +80,8 @@ class NextTurnClientTests(unittest.TestCase):
     self.assertEqual(target.junction_geometry_index, 1)
     self.assertFalse(target.provenance['probeEndpointIsTarget'])
     self.assertFalse(target.provenance['steeringCommandIssued'])
+    self.assertFalse(target.provenance['probeFallbackUsed'])
+    self.assertEqual(target.provenance['probeEndpointRadiusM'], 100.)
     for call in request.call_args_list:
       self.assertEqual(call.kwargs['timeout'], (2., 3.))
       self.assertEqual(call.kwargs['params']['snapping_include_closures'], 'false;false')
@@ -368,9 +370,49 @@ class NextTurnClientTests(unittest.TestCase):
       self.discover(probe=value)
 
   def test_missing_request_id_and_no_route_are_explicit(self):
-    for value, reason in (({'code': 'NoRoute'}, 'no_route'), ({**body(), 'uuid': ''}, 'missing_request_id')):
-      with self.subTest(reason=reason), self.assertRaisesRegex(next_turn.NextTurnError, reason):
-        self.discover(probe=value)
+    with self.assertRaisesRegex(next_turn.NextTurnError, 'missing_request_id'):
+      self.discover(probe={**body(), 'uuid': ''})
+    with patch.object(next_turn.requests, 'get', return_value=response({'code': 'NoRoute'})) as request:
+      with self.assertRaisesRegex(next_turn.NextTurnError, 'no_route'):
+        next_turn.MapboxNextTurnClient(TOKEN).discover(ORIGIN, 0., 'right')
+    self.assertEqual(request.call_count, 2)
+
+  def test_failed_probe_retries_once_with_same_coordinates_heading_and_strict_exit(self):
+    with patch.object(next_turn.requests, 'get', side_effect=[response({'code': 'NoSegment'}), response(body()), response(body(True))]) as request:
+      target = next_turn.MapboxNextTurnClient(TOKEN).discover(ORIGIN, 0., 'right')
+    calls = request.call_args_list
+    self.assertEqual(len(calls), 3)
+    self.assertEqual(calls[0].args[0], calls[1].args[0])
+    self.assertEqual([call.kwargs['params']['radiuses'] for call in calls], ['20;100', '20;300', '20;15'])
+    self.assertEqual([call.kwargs['params']['bearings'] for call in calls], ['0,30;']*3)
+    self.assertEqual(target.provenance['requestCount'], 3)
+    self.assertTrue(target.provenance['probeFallbackUsed'])
+    self.assertEqual(target.provenance['probeFallbackOriginalReason'], 'no_route')
+    self.assertTrue(target.provenance['coherentNavigationRoute'])
+    self.assertEqual(target.steps[-1]['maneuver']['type'], 'arrive')
+
+  def test_fallback_does_not_relax_source_snap(self):
+    invalid = body()
+    invalid['waypoints'][0]['location'] = list(next_turn.offset(ORIGIN, 90., 30.))
+    with patch.object(next_turn.requests, 'get', side_effect=[response({'code': 'NoSegment'}), response(invalid)]) as request:
+      with self.assertRaisesRegex(next_turn.NextTurnError, 'snapping_mismatch'):
+        next_turn.MapboxNextTurnClient(TOKEN).discover(ORIGIN, 0., 'right')
+    self.assertEqual(request.call_count, 2)
+
+  def test_exit_failure_never_uses_probe_fallback(self):
+    with patch.object(next_turn.requests, 'get', side_effect=[response(body()), response({'code': 'NoSegment'})]) as request:
+      with self.assertRaisesRegex(next_turn.NextTurnError, 'no_route'):
+        next_turn.MapboxNextTurnClient(TOKEN).discover(ORIGIN, 0., 'right')
+    self.assertEqual(request.call_count, 2)
+    self.assertEqual(request.call_args_list[-1].kwargs['params']['radiuses'], '20;15')
+
+  def test_heading_mismatch_never_uses_probe_fallback(self):
+    value = body()
+    value['routes'][0]['geometry']['coordinates'][1] = list(next_turn.offset(ORIGIN, 30., 100.))
+    with patch.object(next_turn.requests, 'get', return_value=response(value)) as request:
+      with self.assertRaisesRegex(next_turn.NextTurnError, 'incoming_heading_mismatch'):
+        next_turn.MapboxNextTurnClient(TOKEN).discover(ORIGIN, 0., 'right')
+    self.assertEqual(request.call_count, 1)
 
   def test_closed_route_and_exclusion_violation_are_rejected(self):
     closed = body(True)

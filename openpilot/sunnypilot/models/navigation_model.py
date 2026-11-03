@@ -17,6 +17,11 @@ import numpy as np
 
 SOURCE_COMMIT = 'afbf2e547e9319e2eb9f515e1e4330af63705cec'
 SOURCE_ONNX_SHA256 = '1d18c42ea4cd95c8bffab4635844b78b8e2d4e25b9de44a9c5ac2e0961371a2e'
+SOURCE_ONNX_BYTES = 814591106
+# Alternate transport; accepted only when the bytes match the official upstream LFS pointer above.
+SOURCE_ONNX_URL = ('https://github.com/happymaj11r/openpilot-models/releases/download/' +
+                   'big-nav-model-integration-1d18c42e/big_driving_supercombo.onnx')
+BUILD_REF = 'local-prepare-rl-navigation-80eedcdd'
 MODEL_NAME = 'RL Navigation 80eedcdd (experimental)'
 MANIFEST_NAME = 'rl_nav_80eedcdd_bundle.json'
 SELECTOR_VERSION = 21

@@ -11,6 +11,7 @@ import pyray as rl
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
+from openpilot.sunnypilot.models.navigation_model import BUILD_REF
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigParamControl
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
@@ -84,6 +85,9 @@ class ModelsLayoutMici(NavScroller):
     self.select_model_btn = BigButton(tr("select model"))
     self.select_model_btn.set_click_callback(self._show_folders)
 
+    self.prepare_navigation_btn = BigButton(tr("prepare navigation model"))
+    self.prepare_navigation_btn.set_click_callback(self._prepare_navigation_model)
+
     self.refresh_btn = BigButton(tr("refresh models"))
     self.refresh_btn.set_click_callback(self._refresh_models)
     self._refresh_start: float | None = None
@@ -102,13 +106,38 @@ class ModelsLayoutMici(NavScroller):
     self.map_turn_toggle = BigParamControl(tr("signal navigation (experimental)"), "MapboxNextTurnEnabled",
       toggle_callback=self._enable_map_turns,
       description=tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
-                     "The first committed maneuver keeps its role until the signal is canceled. " +
+                     "Navigation waits for an active lane change to complete. " +
                      "Requires a navigation-capable model, internet and a Mapbox token. " +
                      "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
-    self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
+    self.main_items = [self.current_model_info, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,
+                       self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle, self.map_turn_toggle]
     self._scroller.add_widgets(self.main_items)
+
+  def _prepare_navigation_model(self):
+    if (ui_state.is_offroad() and ui_state.params.get("ModelManager_DownloadRef") is None and
+        not ui_state.params.get_bool("ModelManager_ClearCache")):
+      ui_state.params.put("ModelManager_DownloadRef", BUILD_REF)
+
+  def _handle_navigation_preparation(self, bundle):
+    if bundle is None or bundle.ref != BUILD_REF:
+      return False
+    ds = custom.ModelManagerSP.DownloadStatus
+    downloading = bundle.status == ds.downloading
+    progresses = [model.artifact.downloadProgress for model in bundle.models if model.artifact.fileName]
+    verifying = any(p.status == ds.verifying for p in progresses)
+    canceling = any(p.canceling for p in progresses)
+    self.cancel_download_btn.set_visible(downloading and ui_state.params.get("ModelManager_DownloadRef") is not None)
+    self.cancel_download_btn.set_text(tr("cancel preparation"))
+    self.current_model_info.current_model_header.set_text(tr("navigation model preparation"))
+    self.current_model_info.current_model_text.set_text(bundle.displayName)
+    self.current_model_info.current_model_header._shimmer = downloading
+    self.current_model_info.info_header.set_text(tr("progress") if downloading else tr("navigation model"))
+    progress = sum(p.progress for p in progresses) / len(progresses) if progresses else 0.
+    detail = tr("canceling...") if canceling else tr("building; this can take several minutes") if verifying else f"{progress:.1f}%"
+    self.current_model_info.info_text.set_text(detail if downloading else bundle.displayName)
+    return True
 
   def _enable_map_turns(self, enabled):
     if enabled:
@@ -261,6 +290,8 @@ class ModelsLayoutMici(NavScroller):
     # manager is offroad-only, so an onroad clear would never be serviced
     clearing = ui_state.params.get_bool("ModelManager_ClearCache")
     self.clear_cache_btn.set_enabled(ui_state.is_offroad() and not is_downloading and not clearing)
+    self.prepare_navigation_btn.set_enabled(
+      ui_state.is_offroad() and not is_downloading and not clearing and ui_state.params.get("ModelManager_DownloadRef") is None)
     if clearing:
       self.clear_cache_btn.set_value(tr("clearing..."))
       self._cache_size_time = 0.0  # refresh the size as soon as clearing finishes
@@ -278,6 +309,9 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.current_model_text.set_text(active_text)
     self.current_model_info.info_header.set_text(info_header)
     self.current_model_info.info_text.set_text(info_text)
+
+    if self._handle_navigation_preparation(manager.selectedBundle):
+      return
 
     if manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed:
       self.current_model_info.info_header.set_text(tr("error") + self._download_progress)

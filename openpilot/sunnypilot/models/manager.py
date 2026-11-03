@@ -6,8 +6,14 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import asyncio
+import json
 import os
+from pathlib import Path
 import re
+import signal
+import subprocess
+import sys
+import tempfile
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +26,7 @@ from openpilot.common.hardware.hw import Paths
 
 from openpilot.cereal import messaging, custom
 from openpilot.sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.navigation_model import BUILD_REF, MANIFEST_NAME, installed_bundle
 from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_bundle, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles, verify_file)
 
@@ -40,6 +47,23 @@ SPEED_FLOOR = 0.05 * 1024 ** 2  # bytes/s; anything slower would only display as
 
 class DownloadCancelled(Exception):
   pass
+
+
+def _stop_job(process) -> None:
+  """The detached worker and its compiler share one process group."""
+  try:
+    os.killpg(process.pid, signal.SIGTERM)
+  except ProcessLookupError:
+    pass
+  try:
+    process.wait(timeout=2)
+  except subprocess.TimeoutExpired:
+    pass
+  try:
+    os.killpg(process.pid, signal.SIGKILL)
+  except ProcessLookupError:
+    pass
+  process.wait()
 
 
 def _is_transient(e: BaseException) -> bool:
@@ -345,6 +369,68 @@ class ModelManagerSP:
     """Main entry point for downloading a model bundle"""
     asyncio.run(self._download_bundle(model_bundle, destination_path, source))
 
+  def _prepare_navigation(self) -> None:
+    # This is a preparation job, never an activation or a normal download bundle.
+    bundle = custom.ModelManagerSP.ModelBundle()
+    bundle.ref = BUILD_REF
+    bundle.models = [{'type': 'chunked', 'artifact': {'fileName': 'rl_nav_80eedcdd_source.onnx'}}]
+    self.selected_bundle = bundle
+    artifact = bundle.models[0].artifact
+    status = custom.ModelManagerSP.DownloadStatus
+
+    def update(payload):
+      stage = payload.get('stage', 'verifying')
+      bundle.internalName = bundle.displayName = payload.get('message', 'Preparing navigation model')[:512]
+      bundle.status = status.failed if stage == 'failed' else status.downloaded if stage == 'ready' else status.downloading
+      artifact.downloadProgress.status = (status.downloading if stage == 'downloading' else status.verifying
+                                          if stage in ('building', 'verifying') else bundle.status)
+      artifact.downloadProgress.progress = payload.get('progress', 0)
+      artifact.downloadProgress.speed = payload.get('speed', 0)
+      artifact.downloadProgress.eta = 0  # Compilation duration has not been measured on this target.
+      self._report_status()
+
+    update({'message': 'Checking navigation model preparation requirements'})
+    if self.params.get_bool('IsOnroad') or not self.chestnut_present:
+      update({'stage': 'failed', 'message': 'Park the device with a connected supported Chestnut GPU before preparing the navigation model.'})
+      return
+    from openpilot.common.basedir import BASEDIR
+    root = Path(Paths.model_root())
+    root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='.nav-prepare-', dir=root) as temporary:
+      status_path = Path(temporary) / 'status.json'
+      command = [sys.executable, '-m', 'openpilot.sunnypilot.models.build_navigation_model', '--queued', '--status-file', str(status_path)]
+      process = subprocess.Popen(command, cwd=BASEDIR, start_new_session=True)
+      previous = None
+      try:
+        while process.poll() is None:
+          if self.params.get_bool('IsOnroad') or self._download_interrupted():
+            artifact.downloadProgress.canceling = True
+            message = 'Preparation stopped: device entered onroad.' if self.params.get_bool('IsOnroad') else 'Navigation model preparation canceled.'
+            raise DownloadCancelled(message)
+          try:
+            payload = status_path.read_text()
+            if payload != previous:
+              update(json.loads(payload))
+              previous = payload
+          except (OSError, ValueError):
+            pass
+          time.sleep(.2)
+        if status_path.exists():
+          update(json.loads(status_path.read_text()))
+        if self.params.get_bool('IsOnroad') or self._download_interrupted():
+          raise DownloadCancelled('Preparation stopped before completion; park and prepare again.')
+        if process.returncode or installed_bundle(root) is None:
+          if bundle.status != status.failed:
+            update({'stage': 'failed', 'message': 'Navigation model preparation failed. No selectable model was registered; see the build log.'})
+        else:
+          self.source_models['chestnut'] = self.model_fetcher.get_bundles_for_source('chestnut')
+          self.available_models = self.source_models[ModelFetcher.active_source(self.chestnut_present)]
+          update({'stage': 'ready', 'message': 'Navigation model ready — select it in the Chestnut model selector', 'progress': 100})
+      except Exception as error:
+        update({'stage': 'failed', 'message': str(error)})
+      finally:
+        _stop_job(process)
+
   def _process_download_requests(self) -> None:
     # loops so a ref queued during a download starts in the same tick, without
     # the bar dropping to idle for a tick between the two transfers
@@ -353,6 +439,15 @@ class ModelManagerSP:
       if ref_to_download == last_ref:  # a repeating ref falls back to the next tick instead of spinning
         return
       last_ref = ref_to_download
+      if ref_to_download in (BUILD_REF, BUILD_REF.encode()):
+        self._download_ref = ref_to_download
+        try:
+          self._prepare_navigation()
+        except Exception as e:
+          cloudlog.exception(e)
+        finally:
+          self._release_download_ref()
+        continue
       resolved = resolve_bundle_by_ref(ref_to_download, self.source_models)
       if not resolved:
         return
@@ -407,6 +502,10 @@ class ModelManagerSP:
             active_files.append(model.artifact.fileName)
 
     model_dir = Paths.model_root()
+    local_navigation = installed_bundle(model_dir)
+    if local_navigation and local_navigation['models'][0]['artifact']['file_name'] in active_files:
+      # Its descriptor is part of the installed local bundle, not a remote catalog cache.
+      active_files.append(MANIFEST_NAME)
     try:
       for filename in os.listdir(model_dir):
         if filename not in active_files:

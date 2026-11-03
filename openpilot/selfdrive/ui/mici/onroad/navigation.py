@@ -37,6 +37,8 @@ def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinke
   status, reason = 'unavailable', 'navigation_unavailable'
   if isinstance(context, dict) and context.get('routeOwner') == 'destination':
     return {'state': 'blocked', 'primary': 'Signal turn blocked', 'secondary': 'Destination navigation active'}
+  if intent.get('mode') == 'lane_change':
+    return {'state': 'lane_change', 'primary': 'Lane change', 'secondary': 'Street route on hold'}
   if isinstance(context, dict) and context.get('session') == intent['session'] and context.get('direction') == direction:
     updated = context.get('updatedAt')
     if isinstance(updated, (int, float)) and not isinstance(updated, bool) and np.isfinite(updated) and 0. <= now-updated <= .35:

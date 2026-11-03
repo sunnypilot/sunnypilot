@@ -1,4 +1,4 @@
-"""Own a signal's pending route, then its first committed maneuver."""
+"""Keep a signal's route prepared through completed lane changes and a turn."""
 import math
 import time
 
@@ -43,8 +43,18 @@ class NavTurnIntent:
     self._publish()
     return True
 
+  def resume_after_lane_change(self):
+    """Called only for the helper's normal completion, never for a speed drop."""
+    if self.mode != 'lane_change' or self.physical_direction is None or not self._active or not self._supported:
+      return False
+    self.mode = 'pending'
+    self._publish()
+    return True
+
   def _publish(self):
-    direction = self.physical_direction if self._active and self.mode in ('pending', 'turn') else None
+    # LC keeps the same session and route warm; its mode never authorizes map
+    # inputs. Normal completion can then use the route without another lookup.
+    direction = self.physical_direction if self._active and self.mode in ('pending', 'lane_change', 'turn') else None
     if direction != self.direction:
       self.direction = direction
       self.session = str(self.session_clock()) if direction else None

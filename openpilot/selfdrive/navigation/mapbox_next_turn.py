@@ -16,6 +16,8 @@ import requests
 
 EARTH_RADIUS_M = 6371008.8
 PROBE_DISTANCE_M = 500.
+PROBE_ENDPOINT_RADIUS_M = 100.
+PROBE_FALLBACK_ENDPOINT_RADIUS_M = 300.
 MAX_TARGET_DISTANCE_M = 300.
 EXIT_QUERY_DISTANCE_M = 45.
 MIN_EXIT_DISTANCE_M = 20.
@@ -387,12 +389,25 @@ class MapboxNextTurnClient:
       raise NextTurnError('invalid_direction')
     try:
       probe_endpoint = offset(position, heading, PROBE_DISTANCE_M)
-      probe = self._request(position, heading, probe_endpoint, profile='driving-traffic', endpoint_radius=100.)
+      probe_radius = PROBE_ENDPOINT_RADIUS_M
+      probe_fallback_used = False
+      try:
+        probe = self._request(position, heading, probe_endpoint, profile='driving-traffic', endpoint_radius=probe_radius)
+      except NextTurnError as error:
+        if error.reason != 'no_route':
+          raise
+        # This point is only a discovery probe, not the turn destination. A
+        # straight500m projection can land over100m from any road. Retry once
+        # with the same origin, heading and endpoint; actual exit validation
+        # below keeps its own strict radius and first-turn/legality checks.
+        probe_radius = PROBE_FALLBACK_ENDPOINT_RADIUS_M
+        probe_fallback_used = True
+        probe = self._request(position, heading, probe_endpoint, profile='driving-traffic', endpoint_radius=probe_radius)
       candidate = _choose_branch(probe, direction)
       query_endpoint = offset(candidate['location'], candidate['exit'], EXIT_QUERY_DISTANCE_M)
       validated = self._request(position, heading, query_endpoint, profile='driving-traffic', endpoint_radius=EXIT_RADIUS_M)
       matched, road_class, validated = _validate_turn(validated, candidate, direction)
-      request_count = 2
+      request_count = 2+int(probe_fallback_used)
       if validated.get('targetScopeTruncated'):
         # Query an actual endpoint on the validated receiving road. Keep the
         # complete new leg/arrival rather than turning a clipped preview into
@@ -416,6 +431,8 @@ class MapboxNextTurnClient:
                     'probeResponseSha256': probe['responseSha256'], 'validationResponseSha256': validated['responseSha256'],
                     'classificationResponseSha256': classification['responseSha256'] if classification else None,
                     'requestCount': request_count,
+                    'probeEndpointRadiusM': probe_radius, 'probeFallbackUsed': probe_fallback_used,
+                    'probeFallbackOriginalReason': 'no_route' if probe_fallback_used else None,
                     'targetScopeTruncated': validated.get('targetScopeTruncated', False),
                     'targetExitDistanceM': _length(validated['points'][matched['index']:]),
                     'fullValidationResponsePreservedByHash': True,
