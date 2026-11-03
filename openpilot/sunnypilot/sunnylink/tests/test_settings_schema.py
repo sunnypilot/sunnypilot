@@ -287,6 +287,7 @@ class TestKnownVehicleSettings(OpenpilotTestCase):
     assert "ToyotaEnforceStockLongitudinal" in keys
     assert "ToyotaStopAndGoHack" in keys
     assert "ToyotaEnhancedBsm" in keys
+    assert "ToyotaTSS2Smooth" in keys
 
   def test_tesla_has_coop_steering(self, schema):
     keys = {i["key"] for i in _brand_items(schema["vehicle_settings"].get("tesla"))}
