@@ -59,7 +59,7 @@ def run():
   with tempfile.TemporaryDirectory() as directory:
     params = native.Params(directory)
     expected = {'MapboxNextTurnEnabled': ('BOOL', False), 'MapboxTurnLeadDistance': ('FLOAT', 20.0),
-                **dict.fromkeys(events, ('JSON', None))}
+                **dict.fromkeys(events + ['NavModelState'], ('JSON', None))}
     assert {key: (params.get_type(key).name, params.get_default_value(key)) for key in expected} == expected
     params.put_bool('MapboxNextTurnEnabled', True, block=True)
     params.put('MapboxTurnLeadDistance', 20., block=True)
@@ -71,6 +71,11 @@ def run():
       assert all(params.get(key) is None for key in events)
       assert params.get_bool('MapboxNextTurnEnabled') is True
       assert params.get('MapboxTurnLeadDistance') == 20.
+    for flag in (native.ParamKeyFlag.CLEAR_ON_MANAGER_START, native.ParamKeyFlag.CLEAR_ON_OFFROAD_TRANSITION):
+      params.put('NavModelState', {'supported': True, 'active': False}, block=True)
+      assert params.get('NavModelState') == {'supported': True, 'active': False}
+      params.clear_all(flag)
+      assert params.get('NavModelState') is None
     params.put(events[0], {'session': 'async-test'}, block=False)
     deadline = time.monotonic() + 2.
     while params.get(events[0]) != {'session': 'async-test'} and time.monotonic() < deadline:

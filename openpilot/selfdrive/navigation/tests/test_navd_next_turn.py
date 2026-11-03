@@ -27,7 +27,9 @@ def source(name):
 
 class Params:
   def __init__(self, enabled=True):
-    self.values = {'MapboxNextTurnEnabled': enabled, 'MapboxTurnIntent': {'session': 'one', 'direction': 'right'}}
+    self.values = {'MapboxNextTurnEnabled': enabled, 'MapboxTurnIntent':
+      {'session': 'one', 'direction': 'right', 'mode': 'turn', 'modelSupportsNavigation': True, 'lateralActive': True}}
+    self.values['NavModelState'] = {'updatedAt': 100., 'supported': True}
     self.writes = []
 
   def get(self, key, **kwargs):
@@ -64,7 +66,7 @@ class Executor:
 
 
 def message(service, valid=True):
-  return SimpleNamespace(valid=valid, **{service: SimpleNamespace(coordinates=[])})
+  return SimpleNamespace(valid=valid, logMonoTime=100_000_000_001, **{service: SimpleNamespace(coordinates=[])})
 
 
 def load_navd():
@@ -74,7 +76,9 @@ def load_navd():
                'API_HOST': 'https://api.example.test', 'Api': Mock(), 'Params': Params, 'Ratekeeper': Mock(),
                'cloudlog': Mock(), 'MapboxNextTurnClient': Mock(), 'NextTurnError': NextTurnError,
                'latest_gps_source': lambda sm: 'gpsLocation' if sm.valid['gpsLocation'] else None,
-               'along_path': route['along_path'], 'local_meters': route['local_meters']}
+               'along_path': route['along_path'], 'local_meters': route['local_meters'],
+               'RouteTracker': route['RouteTracker'], 'cumulative_distance': route['cumulative_distance'],
+               'nearest_segment': route['nearest_segment']}
   tree = ast.parse(source('navd.py'))
   tree.body = [node for node in tree.body
                if not (isinstance(node, ast.ImportFrom) and node.module.startswith('openpilot.'))
@@ -86,7 +90,7 @@ def load_navd():
 class SM:
   def __init__(self):
     self.frame = 1
-    self.valid = dict.fromkeys(('gpsLocation', 'carState'), True)
+    self.valid = dict.fromkeys(('gpsLocation', 'carState', 'carControl'), True)
     self.recv_time = dict.fromkeys(self.valid, 100.)
     self.logMonoTime = dict.fromkeys(self.valid, 100_000_000_000)
     self.gps = SimpleNamespace(hasFix=True, longitude=0., latitude=0., bearingDeg=0., bearingAccuracyDeg=3.,
@@ -94,17 +98,29 @@ class SM:
     self.car = SimpleNamespace(vEgo=2., gearShifter='drive', leftBlinker=False, rightBlinker=True)
 
   def __getitem__(self, key):
-    return self.car if key == 'carState' else self.gps
+    return SimpleNamespace(latActive=True) if key == 'carControl' else self.car if key == 'carState' else self.gps
 
   def update(self, timeout):
     pass
 
 
 def target(direction='right', request='validation-one', discovered=100.):
-  return SimpleNamespace(direction=direction, discovered_at=discovered, approach_geometry=((0., 0.), (0., .001)),
+  result = SimpleNamespace(direction=direction, discovered_at=discovered, approach_geometry=((0., 0.), (0., .001)),
                          geometry=((0., 0.), (0., .001), (.0004, .001)), junction=(0., .001),
                          incoming_bearing_deg=0., exit_bearing_deg=90. if direction == 'right' else 270.,
-                         validation_uuid=request, probe_uuid='probe-one', name='Example Street')
+                         validation_uuid=request, probe_uuid='probe-one', name='Example Street', junction_geometry_index=1)
+
+  points = list(result.geometry)
+  result.steps = [
+    {'geometry': {'coordinates': points[:2]}, 'distance': 111., 'duration': 20.,
+     'maneuver': {'type': 'depart'}, 'bannerInstructions': [{'distanceAlongGeometry': 111.,
+       'primary': {'text': 'Turn right', 'type': 'turn', 'modifier': direction}}]},
+    {'geometry': {'coordinates': points[1:]}, 'distance': 44., 'duration': 8.,
+     'maneuver': {'type': 'turn', 'modifier': direction}, 'bannerInstructions': []},
+    {'geometry': {'coordinates': [points[-1]]}, 'distance': 0., 'duration': 0.,
+     'maneuver': {'type': 'arrive'}, 'bannerInstructions': []}]
+  result.to_dict = lambda: {'steps': result.steps}
+  return result
 
 
 class TestSignalTurnEngine(unittest.TestCase):
@@ -126,7 +142,7 @@ class TestSignalTurnEngine(unittest.TestCase):
   def ready(self):
     self.assertEqual(self.update()['status'], 'searching')
     self.executor.jobs[-1][0].set_result(target())
-    self.assertEqual(self.update()['status'], 'ready')
+    self.assertEqual(self.update()['status'], 'route_pending')
 
   def test_disabled_makes_no_token_client_worker_or_account_request(self):
     self.params.values['MapboxNextTurnEnabled'] = False
@@ -158,7 +174,7 @@ class TestSignalTurnEngine(unittest.TestCase):
 
   def test_opposite_signal_waits_for_single_worker_and_discards_old_result(self):
     self.update()
-    self.params.values['MapboxTurnIntent'] = {'session': 'two', 'direction': 'left'}
+    self.params.values['MapboxTurnIntent'] = {'session': 'two', 'direction': 'left', 'mode': 'turn', 'modelSupportsNavigation': True, 'lateralActive': True}
     self.sm.car.leftBlinker, self.sm.car.rightBlinker = True, False
     self.assertEqual(self.update()['status'], 'searching')
     self.assertEqual(len(self.executor.jobs), 1)
@@ -168,7 +184,7 @@ class TestSignalTurnEngine(unittest.TestCase):
     self.assertEqual(len(self.executor.jobs), 2)
     self.executor.jobs[1][0].set_result(target('left', 'validation-two'))
     context = self.update()
-    self.assertEqual((context['session'], context['direction'], context['status']), ('two', 'left', 'ready'))
+    self.assertEqual((context['session'], context['direction'], context['status']), ('two', 'left', 'route_pending'))
 
   def test_cancel_or_disable_retires_inflight_result(self):
     for cancel in ('intent', 'disable'):
@@ -189,11 +205,8 @@ class TestSignalTurnEngine(unittest.TestCase):
     self.assertEqual(self.update(destination=True)['status'], 'blocked')
     self.assertEqual(self.executor.jobs, [])
     self.client_factory.assert_not_called()
-    self.update(destination=False)
-    self.assertEqual(len(self.executor.jobs), 1)
-    self.update(destination=True)
-    self.executor.jobs[0][0].set_result(target())
-    self.assertEqual(self.update(destination=True)['reason'], 'explicit_destination')
+    self.assertEqual(self.update(destination=False)['reason'], 'manual_destination_preempted')
+    self.assertEqual(self.executor.jobs, [])
     self.assertIsNone(self.engine.target)
 
   def test_stale_fix_poor_accuracy_future_publication_and_reverse_block_discovery(self):
@@ -212,7 +225,7 @@ class TestSignalTurnEngine(unittest.TestCase):
     self.ready()
     self.sm.car.rightBlinker = False
     context = self.update()
-    self.assertEqual(context['reason'], 'physical_signal_mismatch')
+    self.assertIsNone(context)
     self.assertIsNone(self.engine.target)
     self.assertEqual(len(self.executor.jobs), 1)
 
@@ -339,7 +352,9 @@ class TestNavigationIntegration(unittest.TestCase):
       sm.frame += 1
       engine.update()
       instructions = [call.args[1] for call in pm.send.call_args_list if call.args[0] == 'navInstruction']
-      self.assertEqual(instructions[-1].navInstruction.maneuverPrimaryText, 'Signal turn')
+      self.assertEqual(instructions[-1].navInstruction.maneuverPrimaryText, 'Turn right')
+      self.assertTrue(instructions[-1].navInstruction.allManeuvers)
+      self.assertEqual(engine.route_owner, 'signal')
       self.assertTrue(instructions[-1].valid)
       self.assertNotIn('NavDestination', params.values)
       params.values.pop('MapboxTurnIntent')

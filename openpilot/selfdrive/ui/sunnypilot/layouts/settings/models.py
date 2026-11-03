@@ -96,9 +96,11 @@ class ModelsLayout(Widget):
                                                      "This prevents situations (like at red lights) where the car might plan the wrong turn direction."),
                                                   param="LaneTurnDesire")
 
-    self.map_turn_toggle = toggle_item_sp(tr("Mapbox Signal Turns (Experimental)"),
-      tr("Your signal selects the next mapped street and times a turn cue. Requires an internet connection and a Mapbox token. " +
-         "Also enables turn desires. Turn off to restore the usual turn-desire timing."),
+    self.map_turn_toggle = toggle_item_sp(tr("Signal Navigation (Experimental)"),
+      tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
+         "The first committed maneuver keeps its role until the signal is canceled. " +
+         "Requires a navigation-capable model, internet and a Mapbox token. " +
+         "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."),
       callback=self._enable_map_turns, enabled=lambda: ui_state.is_offroad() and ui_state.active_runner_tinygrad,
       param="MapboxNextTurnEnabled")
 
@@ -123,7 +125,6 @@ class ModelsLayout(Widget):
 
   def _enable_map_turns(self, enabled):
     if enabled:
-      ui_state.params.put_bool("LaneTurnDesire", True)
       ui_state.params.put_bool("NavigationEnabled", True)
 
   def _update_lagd_description(self, lagd_toggle: bool):

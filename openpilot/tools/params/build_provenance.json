@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "baseCommit": "a40295e64ba981ac31a986c4f5360ed859dd2292",
+  "baseCommit": "26c39fb969ac925be31ba14aa60c54f0ec088dff",
   "sourceTreeIncludesFeatureChanges": true,
   "builder": {
     "architecture": "native aarch64 Linux",
@@ -14,7 +14,7 @@
     "openpilot/common/params.h": "3c7b87d050c79275a401597dc7d15ae9fa57c2316c816ff5472cbdd84588a6e6",
     "openpilot/common/params.cc": "0074bdf766e9bf410f21820b8f730ed9403117c54725b6193176f28a14233737",
     "openpilot/common/params_c.cc": "7c3c86301ab3d65aa0eecc3f7b61c3baf4730baf72a9166cbb4de4237419a48d",
-    "openpilot/common/params_keys.h": "3452f2533c7c3bc3e588e624bd9156fcc5838d5b6bfb942dd69116e69bec8e6b",
+    "openpilot/common/params_keys.h": "57bf9f5f1974c78b24202bc2f5b8a54876ba553a8d54b841865196129ac434f6",
     "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
     "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
     "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
@@ -57,8 +57,8 @@
   ],
   "rebuildTools": {
     "Dockerfile": "c60c96043ea7b6d8ad94ab4e9181033606ae35e4fb43e034ab38b7505d867cff",
-    "README.md": "40017f3b9ecf44a77be8bf12643a4ad1c8e4cac03a6862482a18a52848166ce9",
-    "verify.py": "5cbc0cdb9af80c07c04aa2a1ba3fa1fda3f3ef33d725464e16281a9d8b37fa68",
+    "README.md": "9cd81cb0390895b6dacceabd0fc11baf0ff0412a4878cea957c21bf298eae9a8",
+    "verify.py": "b068578579c1694c7b1594deca244917894ba43d69a80651058280c9a60a1b9f",
     "rebuild.py": "62f25ff2e6bd7daa9a635d6a6f49b7fdf03533370f2f75296d77003bed01d765"
   },
   "build": {
@@ -94,8 +94,8 @@
     ],
     "compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
     "machine": "aarch64",
-    "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b",
-    "bytes": 4134104
+    "sha256": "219e3b2bf38ede21e43f331c5f9b78431eb962dbc769059cb40f7499bc24b929",
+    "bytes": 4137328
   },
   "verification": {
     "originalTestMethods": [
@@ -148,20 +148,6 @@
     ],
     "hardwareExecuted": false
   },
-  "originalRegistryCompatibility": {
-    "originalKeyCount": 273,
-    "rebuiltKeyCount": 278,
-    "exactAddedKeys": [
-      "MapboxNextTurnEnabled",
-      "MapboxTurnContext",
-      "MapboxTurnCue",
-      "MapboxTurnIntent",
-      "MapboxTurnLeadDistance"
-    ],
-    "allOriginalNamesTypesDefaultsUnchanged": true,
-    "executionArchitecture": "nativeaarch64Linux",
-    "baselineComparedWith": "params_keys.h of the base release, flags included; the CI library needs glibc 2.38, newer than the builder, so it was not loaded, and every base key name was found in its bytes"
-  },
   "abiComparison": {
     "baseline": {
       "sha256": "19ed8277c634791f4a587caadf5e75f10e0f9229d2e0fbe308ea01d019108c0b",
@@ -195,7 +181,7 @@
       ]
     },
     "rebuilt": {
-      "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b",
+      "sha256": "219e3b2bf38ede21e43f331c5f9b78431eb962dbc769059cb40f7499bc24b929",
       "needed": [
         "libstdc++.so.6",
         "libgcc_s.so.1",
@@ -229,13 +215,33 @@
     "noHigherSymbolVersionRequirement": true,
     "hardwareExecuted": false
   },
-  "reproduction": {
-    "sameBinaryFromInitialAndPinnedBuilder": true,
-    "sha256": "3e992569dc226213eeeb1701c67d767411fc99fe398c53f176e72da7213d218b"
-  },
   "limits": [
     "Executed under ARM64 Linux containers, not on the vehicle device.",
     "Original Params method bodies use isolated test-directory scaffolding and a logging stub.",
     "No model, steering, Tesla, cooperative steering, CAN or safety binaries were rebuilt."
-  ]
+  ],
+  "previousRegistryCompatibility": {
+    "originalKeyCount": 273,
+    "rebuiltKeyCount": 278,
+    "exactAddedKeys": [
+      "MapboxNextTurnEnabled",
+      "MapboxTurnContext",
+      "MapboxTurnCue",
+      "MapboxTurnIntent",
+      "MapboxTurnLeadDistance"
+    ],
+    "allOriginalNamesTypesDefaultsUnchanged": true,
+    "executionArchitecture": "nativeaarch64Linux",
+    "baselineComparedWith": "params_keys.h of the base release, flags included; the CI library needs glibc 2.38, newer than the builder, so it was not loaded, and every base key name was found in its bytes"
+  },
+  "registryCompatibility": {
+    "originalKeyCount": 278,
+    "rebuiltKeyCount": 279,
+    "exactAddedKeys": [
+      "NavModelState"
+    ],
+    "allOriginalNamesTypesDefaultsUnchanged": true,
+    "executionArchitecture": "nativeaarch64Linux",
+    "baselineCommit": "26c39fb969ac925be31ba14aa60c54f0ec088dff"
+  }
 }

@@ -99,10 +99,12 @@ class ModelsLayoutMici(NavScroller):
                                            description=tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when " +
                                                           "lane lines are clear. Yields around obstacles. Not available with the Default model."))
 
-    self.map_turn_toggle = BigParamControl(tr("mapbox signal turns (experimental)"), "MapboxNextTurnEnabled",
+    self.map_turn_toggle = BigParamControl(tr("signal navigation (experimental)"), "MapboxNextTurnEnabled",
       toggle_callback=self._enable_map_turns,
-      description=tr("Your signal selects the next mapped street and times a turn cue. Requires an internet connection and a Mapbox token. " +
-                     "Also enables turn desires. Turn off to restore the usual turn-desire timing."))
+      description=tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
+                     "The first committed maneuver keeps its role until the signal is canceled. " +
+                     "Requires a navigation-capable model, internet and a Mapbox token. " +
+                     "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle, self.map_turn_toggle]
@@ -110,7 +112,6 @@ class ModelsLayoutMici(NavScroller):
 
   def _enable_map_turns(self, enabled):
     if enabled:
-      ui_state.params.put_bool("LaneTurnDesire", True)
       ui_state.params.put_bool("NavigationEnabled", True)
 
   @property

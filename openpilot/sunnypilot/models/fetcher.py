@@ -14,6 +14,17 @@ from openpilot.sunnypilot.models.helpers import is_bundle_version_compatible
 from openpilot.cereal import custom
 
 
+def _with_local_navigation(bundles, source):
+  if source == 'chestnut':
+    from openpilot.common.hardware.hw import Paths
+    from openpilot.sunnypilot.models.navigation_model import installed_bundle
+    local = installed_bundle(Paths.model_root())
+    if local is not None:
+      parsed = ModelParser._parse_bundle(local)
+      return [bundle for bundle in bundles if bundle.ref != parsed.ref] + [parsed]
+  return bundles
+
+
 class ModelParser:
   """Handles parsing of model data into cereal objects"""
 
@@ -179,6 +190,9 @@ class ModelFetcher:
     return not any(bundle.get("is_big") is True for bundle in bundles)
 
   def get_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
+    return _with_local_navigation(self._get_remote_bundles_for_source(source), source)
+
+  def _get_remote_bundles_for_source(self, source: str) -> list[custom.ModelManagerSP.ModelBundle]:
     if source not in self.MODEL_SOURCES:
       cloudlog.warning(f"Unknown model source: {source}")
       return []
@@ -226,12 +240,12 @@ def get_cached_bundles(params: Params, source: str) -> list[custom.ModelManagerS
   _, suffix = ModelFetcher.MODEL_SOURCES[source]
   cached_data = params.get(f"ModelManager_ModelsCache{suffix}")
   if not cached_data:
-    return []
+    return _with_local_navigation([], source)
   try:
-    return ModelParser.parse_models(cached_data)
+    return _with_local_navigation(ModelParser.parse_models(cached_data), source)
   except Exception as e:
     cloudlog.warning(f"Failed to parse cached models for source {source}: {e}")
-    return []
+    return _with_local_navigation([], source)
 
 
 if __name__ == "__main__":

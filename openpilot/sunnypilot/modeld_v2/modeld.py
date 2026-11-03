@@ -49,6 +49,8 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
+from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
+                                                          destination_route_context, navigation_capability)
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 from openpilot.sunnypilot.selfdrive.controls.lib.relc import RoadEdgeLaneChangeController
 
@@ -98,6 +100,7 @@ class ModelState(ModelStateBase):
     else:
       model_bundle = get_active_bundle(chestnut=chestnut)
     self.generation = model_bundle.generation if model_bundle is not None else None
+    self.model_name = model_bundle.displayName if model_bundle is not None else ''
     overrides = {override.key: override.value for override in model_bundle.overrides} if model_bundle else {}
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
@@ -125,6 +128,7 @@ class ModelState(ModelStateBase):
     self._combined_model_type = self.adapter._combined_model_type
     self._vision_input_names = self.adapter._vision_input_names
     self.numpy_inputs = self.adapter.numpy_inputs
+    self.navigation_supported, self.navigation_capability_reason = navigation_capability(self.numpy_inputs, bundle, native=self.adapter.is_native)
     self._policy_keys = self.adapter._policy_keys
     self._has_on_policy = self.adapter._has_on_policy
     self._desire_key = self.adapter._desire_key
@@ -174,6 +178,9 @@ class ModelState(ModelStateBase):
     for key in ('traffic_convention', 'lateral_control_params', 'action_t'):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
+    for key in ('nav_map', 'navigation'):
+      if key in self.numpy_inputs:
+        self.numpy_inputs[key][:] = inputs.get(key, 0)
 
     if self.adapter.is_native:
       for i, key in enumerate(self._vision_input_names):
@@ -270,6 +277,8 @@ def main(demo=False):
     AMDDevice.wait_timeout_ms = 3000
 
   params = Params()
+  navigation_state = NavigationStatePublisher(params)
+  navigation_state.publish(now=time.monotonic(), supported=False, active=False, reason='model_loading', force=True)
   params.put_bool("ChestnutLoading", CHESTNUT)
   params.remove("ChestnutActive")
 
@@ -331,6 +340,9 @@ def main(demo=False):
   params.put_bool("ChestnutLoading", False)
   assert model is not None
   cloudlog.warning(f"models loaded in {time.monotonic() - st:.1f}s, modeld starting")
+  navigation_state.publish(now=time.monotonic(), supported=model.navigation_supported, active=False,
+                           reason='waiting_for_navigation' if model.navigation_supported else model.navigation_capability_reason,
+                           model_name=model.model_name, force=True)
 
   config_realtime_process(7, 54)
 
@@ -338,7 +350,11 @@ def main(demo=False):
   pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutGpuState"] if CHESTNUT else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState",
-                  "carControl", "controlsState", "lateralDelay"])
+                  "carControl", "controlsState", "lateralDelay", "navInstruction"])
+
+  vipc_client_map = VisionIpcClient("mapsd", VisionStreamType.VISION_STREAM_MAP, True)
+  navigation_buffer = NavigationInputBuffer()
+  signal_route_guard = SignalRouteGuard()
 
   publish_state = PublishState()
   chestnut_state = ChestnutGpuState(pm, model.chestnut) if CHESTNUT else None
@@ -463,6 +479,33 @@ def main(demo=False):
     if 'action_t' in model.numpy_inputs:
       inputs['action_t'] = np.array([lat_action_t, long_action_t], dtype=np.float32)
 
+    navigation_route = {}
+    navigation_reason = model.navigation_capability_reason
+    if model.navigation_supported:
+      destination, context = params.get('NavDestination'), params.get('MapboxTurnContext')
+      intent = params.get('MapboxTurnIntent')
+      if vipc_client_map.is_connected() or vipc_client_map.connect(False):
+        if (buf_map := vipc_client_map.recv(0)) is not None:
+          navigation_buffer.observe_map(buf_map.data, buf_map.width, buf_map.height,
+                                        timestamp_ns=vipc_client_map.timestamp_sof, received_at=time.monotonic(),
+                                        route_generation=vipc_client_map.timestamp_eof)
+      now = time.monotonic()
+      if destination is not None:
+        signal_route_guard.reset()
+        navigation_route = destination_route_context(destination, context, now)
+      else:
+        navigation_route = signal_route_guard.check(
+          now=now, enabled=params.get_bool('MapboxNextTurnEnabled'), lateral_active=sm['carControl'].latActive,
+          left_blinker=sm['carState'].leftBlinker, right_blinker=sm['carState'].rightBlinker,
+          intent=intent, context=context,
+        )
+      inputs.update(navigation_buffer.prepare(
+        now=now, enabled=params.get_bool('NavigationEnabled') and navigation_route['ready'], instruction=sm['navInstruction'],
+        instruction_valid=sm.valid['navInstruction'], instruction_received_at=sm.recv_time['navInstruction'], speed=v_ego,
+        instruction_published_ns=sm.logMonoTime['navInstruction'], expected_route_generation=navigation_route.get('routeGeneration'),
+      ))
+      navigation_reason = navigation_buffer.reason if navigation_route['ready'] else navigation_route['reason']
+
     mt1 = time.perf_counter()
     try:
       send_chestnut = (chestnut_state is not None and
@@ -475,12 +518,23 @@ def main(demo=False):
       params.put_bool("ChestnutActive", False)
       assert small_model is not None
       model = small_model
+      signal_route_guard.reset()
+      navigation_state.publish(now=time.monotonic(), supported=model.navigation_supported, active=False,
+                               reason=model.navigation_capability_reason, model_name=model.model_name, force=True)
       if chestnut_state is not None:
         chestnut_state.big = False
       run_count = 0
       model_output = None
     mt2 = time.perf_counter()
     model_execution_time = mt2 - mt1
+
+    navigation_active = model.navigation_supported and model_output is not None and navigation_reason == 'ready'
+    if navigation_active and navigation_route.get('session') is not None:
+      signal_route_guard.consumed(navigation_route['session'], navigation_route['routeGeneration'])
+    navigation_state.publish(now=time.monotonic(), supported=model.navigation_supported, active=navigation_active,
+                             reason=navigation_reason if model.navigation_supported else model.navigation_capability_reason,
+                             model_name=model.model_name, session=navigation_route.get('session'),
+                             route_generation=navigation_route.get('routeGeneration'))
 
     if model_output is not None:
       modelv2_send = messaging.new_message('modelV2')
@@ -506,7 +560,7 @@ def main(demo=False):
       left_edge, right_edge = RELC.update_and_fill(modelv2_send.modelV2, mdv2sp_send.modelDataV2SP, v_ego)
       DH.update(sm['carState'], sm['carControl'].latActive, lane_change_prob, left_edge, right_edge,
                 desire_prediction=modelv2_send.modelV2.meta.desirePrediction, model_position=modelv2_send.modelV2.position,
-                map_turn_supported=True)
+                map_turn_supported=model.navigation_supported)
       modelv2_send.modelV2.meta.laneChangeState = DH.lane_change_state
       modelv2_send.modelV2.meta.laneChangeDirection = DH.lane_change_direction
       mdv2sp_send.valid = modelv2_send.valid

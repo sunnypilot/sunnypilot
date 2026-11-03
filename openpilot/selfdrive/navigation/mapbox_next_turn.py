@@ -328,6 +328,31 @@ def _local_exit_scope(route, matched):
           'targetScopeTruncated': True}
 
 
+def coherent_route_steps(route):
+  """Require a complete actual Directions leg, including its arrival step.
+
+  A clipped discovery prefix is not a new route: its old distances/banners no
+  longer describe its geometry. It must be rerouted to the real exit endpoint.
+  """
+  if route.get('targetScopeTruncated'):
+    raise NextTurnError('incomplete_navigation_route')
+  steps = json.loads(json.dumps(route['steps']))
+  if not steps or steps[-1]['maneuver']['type'] != 'arrive':
+    raise NextTurnError('incomplete_navigation_route')
+  for step in steps:
+    points = [_point(point) for point in step['geometry']['coordinates']]
+    distance_m, duration = _number(step.get('distance')), _number(step.get('duration'))
+    if not points or distance_m < 0 or duration < 0:
+      raise NextTurnError('incomplete_navigation_route')
+    if abs(_length(points)-distance_m) > max(5., distance_m*.2):
+      raise NextTurnError('inconsistent_navigation_distance')
+    step.setdefault('bannerInstructions', [])
+  for before, after in zip(steps[:-1], steps[1:], strict=True):
+    if distance(_point(before['geometry']['coordinates'][-1]), _point(after['geometry']['coordinates'][0])) > 3.:
+      raise NextTurnError('disconnected_navigation_route')
+  return steps
+
+
 class MapboxNextTurnClient:
   def __init__(self, token):
     if not isinstance(token, str) or not re.fullmatch(r'[ps]k\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+', token):
@@ -367,28 +392,40 @@ class MapboxNextTurnClient:
       query_endpoint = offset(candidate['location'], candidate['exit'], EXIT_QUERY_DISTANCE_M)
       validated = self._request(position, heading, query_endpoint, profile='driving-traffic', endpoint_radius=EXIT_RADIUS_M)
       matched, road_class, validated = _validate_turn(validated, candidate, direction)
+      request_count = 2
+      if validated.get('targetScopeTruncated'):
+        # Query an actual endpoint on the validated receiving road. Keep the
+        # complete new leg/arrival rather than turning a clipped preview into
+        # model navigation data with stale step distances and instructions.
+        query_endpoint = validated['points'][-1]
+        validated = self._request(position, heading, query_endpoint, profile='driving-traffic', endpoint_radius=3.)
+        matched, road_class, validated = _validate_turn(validated, candidate, direction)
+        request_count += 1
       classification = None
       if road_class is None:
+        request_count += 1
         classification = self._request(position, heading, query_endpoint, profile='driving', endpoint_radius=EXIT_RADIUS_M)
         _, road_class, classification = _validate_turn(classification, candidate, direction)
       if road_class is None:
         raise NextTurnError('missing_road_class')
+      complete_steps = coherent_route_steps(validated)
       approach = tuple(validated['points'][:matched['index']]) + (matched['location'],)
       turn_step = validated['steps'][matched['step']]
       provenance = {'method': 'router intersection discovery plus separately validated first-turn route',
                     'requestedPosition': position, 'requestedBearingDeg': heading, 'requestedDirection': direction,
                     'probeResponseSha256': probe['responseSha256'], 'validationResponseSha256': validated['responseSha256'],
                     'classificationResponseSha256': classification['responseSha256'] if classification else None,
-                    'requestCount': 3 if classification else 2,
+                    'requestCount': request_count,
                     'targetScopeTruncated': validated.get('targetScopeTruncated', False),
                     'targetExitDistanceM': _length(validated['points'][matched['index']:]),
                     'fullValidationResponsePreservedByHash': True,
                     'requestStartedAt': started, 'requestCompletedAt': time.monotonic(),
                     'probeEndpointIsTarget': False, 'steeringCommandIssued': False}
+      provenance['coherentNavigationRoute'] = True
       return NextTurnTarget(junction=matched['location'], distance_m=matched['distance'],
         incoming_bearing_deg=matched['incoming'], exit_bearing_deg=matched['outgoing'], direction=direction,
         name=str(turn_step.get('name') or 'Unnamed road'), road_class=road_class,
-        geometry=tuple(validated['points']), steps=_freeze(validated['steps']), approach_geometry=approach,
+        geometry=tuple(validated['points']), steps=_freeze(complete_steps), approach_geometry=approach,
         approach_distance_m=_length(approach), turn_step_index=matched['step'], junction_geometry_index=matched['index'],
         origin=position, discovered_at=started, probe_uuid=probe['uuid'], validation_uuid=validated['uuid'],
         classification_uuid=classification['uuid'] if classification else None, provenance=_freeze(provenance))

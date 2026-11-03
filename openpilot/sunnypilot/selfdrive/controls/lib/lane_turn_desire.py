@@ -8,8 +8,8 @@ from openpilot.cereal import custom
 
 from openpilot.common.constants import CV
 from openpilot.common.params import Params
-from openpilot.common.swaglog import cloudlog
-from openpilot.sunnypilot.selfdrive.controls.lib.map_turn_desire import MapTurnGate
+from openpilot.sunnypilot.selfdrive.controls.lib.nav_turn_intent import NavTurnIntent, turn_route_ready
+import time
 
 TurnDirection = custom.ModelDataV2SP.TurnDirection
 
@@ -17,7 +17,6 @@ LANE_CHANGE_SPEED_MIN = 20 * CV.MPH_TO_MS
 
 # "Wait for the turn": the blinker only arms the turn, and the one-shot turn desire is sent when one of these says
 # the turn is here. The model treats the desire as "turn now", so sending it early makes it take the first opening.
-TURN_STOPPED_SPEED = 0.5  # m/s, stopped at the turn (red light, stop sign)
 MODEL_TURN_PROB = 0.35  # model's own prediction that a turn starts within the next horizons
 MODEL_TURN_HORIZONS = 2  # desirePrediction horizons checked, soonest first
 DESIRE_PRED_WIDTH = 8
@@ -40,7 +39,9 @@ class LaneTurnController:
     self.armed_direction = TurnDirection.none
     self.cue_sent = False
     self.params = Params()
-    self.map_gate = MapTurnGate(self.params)
+    self.nav_intent = NavTurnIntent(self.params)
+    self.navigation_enabled = False
+    self.navigation_owns_signal = False
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.param_read_counter = 0
     self.enabled = self.params.get_bool("LaneTurnDesire")
@@ -50,8 +51,7 @@ class LaneTurnController:
     self.enabled = self.params.get_bool("LaneTurnDesire")
     value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.lane_turn_value = min(float(LANE_CHANGE_SPEED_MIN), value)
-    self.map_gate.configure(self.params.get_bool("MapboxNextTurnEnabled"),
-                            self.params.get("MapboxTurnLeadDistance", return_default=True))
+    self.navigation_enabled = self.params.get_bool("MapboxNextTurnEnabled")
 
   def update_params(self) -> None:
     if self.param_read_counter % 50 == 0:
@@ -62,8 +62,17 @@ class LaneTurnController:
                        steering_pressed: bool = False, steering_torque: float = 0., turn_probs: tuple[float, float] = (0., 0.),
                        lateral_active: bool = True, model_position=None, map_turn_supported: bool = False) -> None:
     signal = 'left' if left_blinker and not right_blinker else 'right' if right_blinker and not left_blinker else None
-    mapped = self.map_gate.enabled and map_turn_supported
-    self.map_gate.update_signal(signal, self.enabled and mapped)
+    self.nav_intent.update(signal, self.navigation_enabled, map_turn_supported, lateral_active)
+    self.navigation_owns_signal = (self.navigation_enabled and map_turn_supported and
+                                    self.nav_intent.mode == 'turn' and signal is not None)
+    self.turn_blindspot = blindspot_left if signal == 'left' else blindspot_right
+    # Navigation-conditioned models consume the short route continuously. Sending
+    # the legacy turn-now desire as well would introduce a second timing source.
+    if self.navigation_enabled and map_turn_supported:
+      self.turn_direction = TurnDirection.none
+      self.armed_direction = TurnDirection.none
+      self.cue_sent = False
+      return
     if not left_blinker and not right_blinker:
       self.armed_direction = TurnDirection.none
       self.cue_sent = False
@@ -81,9 +90,6 @@ class LaneTurnController:
     else:
       requested = TurnDirection.none
 
-    if requested == TurnDirection.none or not lateral_active:
-      self.map_gate.reset_motion()
-
     if not self.wait_for_turn or requested == TurnDirection.none:
       self.turn_direction = requested
       return
@@ -93,15 +99,9 @@ class LaneTurnController:
 
     # Eligibility can clear the request, but only a canceled or switched signal permits another cue.
     if self.turn_direction == TurnDirection.none and not self.cue_sent:
-      ready = self.map_gate.ready(v_ego, model_position, lateral_active) if mapped else self.turn_is_here(
-        requested, v_ego, steering_pressed, steering_torque, turn_probs)
+      ready = self.turn_is_here(requested, v_ego, steering_pressed, steering_torque, turn_probs)
       if ready:
         self.turn_direction = requested
-        if self.enabled and mapped:
-          self.map_gate.record_cue()
-          cloudlog.event('modeld.mapbox_turn_cue', session=self.map_gate.session, direction=self.map_gate.direction,
-                         distance_m=self.map_gate.last_decision.distance_m, lead_m=self.map_gate.lead_m,
-                         cue_mode=self.map_gate.last_mode, forecast_travel_m=self.map_gate.motion.last_motion_m)
     if self.enabled and self.turn_direction != TurnDirection.none:
       self.cue_sent = True
 
@@ -111,6 +111,16 @@ class LaneTurnController:
     nudged = steering_pressed and (steering_torque > 0 if left else steering_torque < 0)
     model_sees_turn = (turn_probs[0] if left else turn_probs[1]) >= MODEL_TURN_PROB
     return nudged or model_sees_turn
+
+  def finalize_navigation_intent(self, lane_change_requested, speed, lateral_active, model_supported):
+    if not self.navigation_enabled or not model_supported or not lateral_active:
+      return
+    if lane_change_requested:
+      self.nav_intent.commit('lane_change')
+    elif (self.nav_intent.mode == 'pending' and 0. <= speed < self.lane_turn_value and not self.turn_blindspot and
+          turn_route_ready(self.params.get('MapboxTurnContext'), self.nav_intent.session, self.nav_intent.direction, time.monotonic())):
+      self.nav_intent.commit('turn')
+    self.navigation_owns_signal = self.nav_intent.mode == 'turn'
 
   def get_turn_direction(self):
     if not self.enabled:
