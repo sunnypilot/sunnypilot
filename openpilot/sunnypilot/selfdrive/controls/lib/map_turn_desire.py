@@ -1,4 +1,4 @@
-"""Opt-in map timing for the existing turn-desire input, without actuator changes."""
+"""Legacy cue-experiment helpers; live signal navigation uses nav_turn_intent."""
 from dataclasses import dataclass
 import math
 import time

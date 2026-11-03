@@ -264,9 +264,10 @@ class TestRouteEngine(unittest.TestCase):
     self.engine.last_position, self.engine.last_bearing = (0, 0), 90
     distance = 111.195  # Mapbox's length of 0.001 degrees at the equator
     self.response = mapbox_response([
-      {'geometry': {'coordinates': [[0, 0], [0.0005, 0], [0.001, 0]]}, 'distance': distance, 'duration': 10,
+      {'maneuver': {'type': 'depart'}, 'geometry': {'coordinates': [[0, 0], [0.0005, 0], [0.001, 0]]}, 'distance': distance, 'duration': 10,
        'bannerInstructions': [{'distanceAlongGeometry': 100, 'primary': {'text': 'Turn right', 'type': 'turn', 'modifier': 'right'}}]},
-      {'geometry': {'coordinates': [[0.001, 0], [0.002, 0]]}, 'distance': distance, 'duration': 10, 'bannerInstructions': []},
+      {'maneuver': {'type': 'continue', 'modifier': 'straight'}, 'geometry': {'coordinates': [[0.001, 0], [0.002, 0]]},
+       'distance': distance, 'duration': 10, 'bannerInstructions': []},
     ])
 
   def last_message(self, service):

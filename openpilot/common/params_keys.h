@@ -262,6 +262,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"MapboxTurnIntent", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, JSON}},
     {"MapboxTurnContext", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, JSON}},
     {"MapboxTurnCue", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, JSON}},
+    {"NavModelState", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, JSON}},
     {"Blendful", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"PlanplusControl", {PERSISTENT | BACKUP, FLOAT, "1.0"}},
 

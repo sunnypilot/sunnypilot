@@ -19,8 +19,10 @@ the inputs, command, binary hash and checks. Existing wheel downloads are
 verified and reused. An unavailable pinned package is a build error.
 
 The checked-in `build_provenance.json` describes the shipped feature build.
-Its original 272 key names, types and raw defaults were compared with the
-base release; exactly five Mapbox keys were added. The C API exports and dynamic
+The previous build preserved all 272 original key names, types and raw defaults
+and added five Mapbox keys. The navigation build adds only `NavModelState`;
+all 277 previous registry entries were compared against the real ARM64 library
+and remain identical. The status JSON clears on manager startup and going offroad. The C API exports and dynamic
 library dependencies match the base release, with no increased symbol-version
 requirements. The `params_keys_by_flag` correction returns distinct buffers
 owned by the handle instead of aliasing one temporary string.

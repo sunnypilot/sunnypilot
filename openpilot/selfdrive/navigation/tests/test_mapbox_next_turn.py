@@ -44,6 +44,10 @@ def body(turn=False, road_class='street'):
                   'geometry': {'type': 'LineString', 'coordinates': points[1:]}, 'intersections': [at], 'bannerInstructions': []})
   steps.append({'mode': 'driving', 'name': 'End', 'maneuver': {'type': 'arrive', 'location': list(endpoint)},
                 'geometry': {'type': 'LineString', 'coordinates': [points[-1]]}, 'intersections': [arrival]})
+  for step in steps:
+    step['distance'] = next_turn._length(step['geometry']['coordinates'])
+    step['duration'] = step['distance']/4.
+    step.setdefault('bannerInstructions', [])
   return {'code': 'Ok', 'uuid': 'validation-id' if turn else 'probe-id',
           'waypoints': [{'location': list(ORIGIN)}, {'location': list(endpoint)}],
           'routes': [{'geometry': {'type': 'LineString', 'coordinates': points}, 'legs': [{'steps': steps}]}]}
@@ -231,13 +235,13 @@ class NextTurnClientTests(unittest.TestCase):
     steps[-1]['maneuver']['location'] = list(endpoint)
     steps[-1]['geometry']['coordinates'] = [list(endpoint)]
     steps[-1]['intersections'][0].update(location=list(endpoint), geometry_index=3)
-    target, _ = self.discover(validated=value)
-    self.assertTrue(target.provenance['targetScopeTruncated'])
-    self.assertTrue(target.provenance['fullValidationResponsePreservedByHash'])
-    self.assertAlmostEqual(next_turn._length(target.geometry[target.junction_geometry_index:]), 20., places=5)
-    self.assertEqual(len(target.steps), 2)
-    self.assertEqual(target.road_class, 'street')
-    self.assertNotEqual(target.geometry[-1], tuple(endpoint))
+    parsed = next_turn._parse_route(value, ORIGIN, 0., endpoint, 15.)
+    probe = next_turn._parse_route(body(), ORIGIN, 0., PROBE, 100.)
+    candidate = next_turn._choose_branch(probe, 'right')
+    _, _, scoped = next_turn._validate_turn(parsed, candidate, 'right')
+    self.assertTrue(scoped['targetScopeTruncated'])
+    with self.assertRaisesRegex(next_turn.NextTurnError, 'incomplete_navigation_route'):
+      next_turn.coherent_route_steps(scoped)
 
   def test_additional_turn_within_first_20m_of_exit_is_rejected(self):
     value = body(True)
@@ -268,16 +272,66 @@ class NextTurnClientTests(unittest.TestCase):
     steps[-1]['maneuver']['location'] = list(endpoint)
     steps[-1]['geometry']['coordinates'] = [list(endpoint)]
     steps[-1]['intersections'][0].update(location=list(endpoint), geometry_index=4)
-    target, _ = self.discover(validated=value)
-    self.assertTrue(target.provenance['targetScopeTruncated'])
-    self.assertAlmostEqual(next_turn._length(target.geometry[1:]), 20., places=5)
-    self.assertLess(next_turn.distance(target.junction, target.geometry[-1]), 20.)
+    parsed = next_turn._parse_route(value, ORIGIN, 0., endpoint, 15.)
+    probe = next_turn._parse_route(body(), ORIGIN, 0., PROBE, 100.)
+    _, _, scoped = next_turn._validate_turn(parsed, next_turn._choose_branch(probe, 'right'), 'right')
+    self.assertTrue(scoped['targetScopeTruncated'])
+    self.assertAlmostEqual(next_turn._length(scoped['points'][1:]), 20., places=5)
+    with self.assertRaisesRegex(next_turn.NextTurnError, 'incomplete_navigation_route'):
+      next_turn.coherent_route_steps(scoped)
 
   def test_validation_cannot_choose_opposite_exit(self):
     value = body(True)
     value['routes'][0]['legs'][0]['steps'][1]['intersections'][0]['out'] = 3
     with self.assertRaisesRegex(next_turn.NextTurnError, 'target_mismatch'):
       self.discover(validated=value)
+
+  def test_clipped_discovery_is_requeried_as_a_complete_actual_exit_route(self):
+    value = body(True)
+    later = next_turn.offset(JUNCTION, 90., 35.)
+    endpoint = next_turn.offset(later, 0., 5.)
+    value['waypoints'][-1]['location'] = list(endpoint)
+    points = [list(ORIGIN), list(JUNCTION), list(later), list(endpoint)]
+    route = value['routes'][0]
+    route['geometry']['coordinates'] = points
+    steps = route['legs'][0]['steps']
+    steps[1]['geometry']['coordinates'] = points[1:3]
+    extra = junction(location=later, index=2, out=0)
+    extra['in'] = 3
+    steps.insert(2, {'mode': 'driving', 'name': 'Later', 'maneuver': {'type': 'turn', 'location': list(later)},
+      'geometry': {'coordinates': points[2:]}, 'intersections': [extra]})
+    steps[-1]['maneuver']['location'] = list(endpoint)
+    steps[-1]['geometry']['coordinates'] = [list(endpoint)]
+    steps[-1]['intersections'][0].update(location=list(endpoint), geometry_index=3)
+
+    final = body(True)
+    actual_endpoint = next_turn.offset(JUNCTION, 90., 20.)
+    final['waypoints'][-1]['location'] = list(actual_endpoint)
+    final_route = final['routes'][0]
+    final_route['geometry']['coordinates'][-1] = list(actual_endpoint)
+    final_steps = final_route['legs'][0]['steps']
+    final_steps[1]['geometry']['coordinates'][-1] = list(actual_endpoint)
+    final_steps[1]['distance'], final_steps[1]['duration'] = 20., 5.
+    final_steps[-1]['geometry']['coordinates'] = [list(actual_endpoint)]
+    final_steps[-1]['maneuver']['location'] = list(actual_endpoint)
+    final_steps[-1]['intersections'][0]['location'] = list(actual_endpoint)
+    target, request = self.discover(validated=value, third=final)
+    self.assertEqual(request.call_count, 3)
+    self.assertEqual(target.provenance['requestCount'], 3)
+    self.assertTrue(target.provenance['coherentNavigationRoute'])
+    self.assertFalse(target.provenance['targetScopeTruncated'])
+    self.assertEqual(target.steps[-1]['maneuver']['type'], 'arrive')
+    self.assertAlmostEqual(target.steps[1]['distance'], 20.)
+
+  def test_navigation_route_rejects_missing_arrival_or_disconnected_steps(self):
+    route = body(True)['routes'][0]
+    steps = route['legs'][0]['steps']
+    with self.assertRaisesRegex(next_turn.NextTurnError, 'incomplete_navigation_route'):
+      next_turn.coherent_route_steps({'steps': steps[:-1]})
+    steps[1]['geometry']['coordinates'][0] = list(next_turn.offset(JUNCTION, 0., 10.))
+    steps[1]['distance'] = next_turn._length(steps[1]['geometry']['coordinates'])
+    with self.assertRaisesRegex(next_turn.NextTurnError, 'disconnected_navigation_route'):
+      next_turn.coherent_route_steps({'steps': steps})
 
   def test_close_intersection_after_corner_uses_its_local_incoming_segment(self):
     value = body(True)

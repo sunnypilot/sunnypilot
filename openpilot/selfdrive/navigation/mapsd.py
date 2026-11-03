@@ -24,10 +24,12 @@ class MapsD:
     self.route = np.empty((0, 2))
     self.prefetched = False
     self.retry_at = 0.0
+    self.route_generation = 0
 
   def update(self, sm) -> tuple[np.ndarray, int]:
     """The map frame for the latest messages: black with a zero timestamp without a usable map, never stale."""
     if sm.updated['navRoute']:
+      self.route_generation = int(sm.logMonoTime['navRoute'])
       route = np.array([(c.longitude, c.latitude) for c in sm['navRoute'].coordinates], dtype=np.float64).reshape((-1, 2))
       if not np.array_equal(route, self.route):
         self.route = route
@@ -74,7 +76,10 @@ def main():
     while True:
       sm.update(0)
       image, timestamp = mapsd.update(sm)
-      server.send(VisionStreamType.VISION_STREAM_MAP, image.tobytes(), rk.frame, timestamp, time.monotonic_ns())
+      # EOF is the exact route generation rendered, not completion time. An
+      # old-route render finishing after a new route cannot impersonate it.
+      generation = mapsd.route_generation if timestamp else 0
+      server.send(VisionStreamType.VISION_STREAM_MAP, image.tobytes(), rk.frame, timestamp, generation)
       rk.keep_time()
   finally:
     mapsd.close()

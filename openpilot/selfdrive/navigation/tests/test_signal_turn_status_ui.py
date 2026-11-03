@@ -54,7 +54,7 @@ def state(status='unavailable', destination=False):
             'MapboxTurnContext': {'session': 'one', 'direction': 'right', 'status': status, 'updatedAt': 100.,
                                   'reason': 'explicit_destination' if status == 'blocked' else 'gps_unavailable',
                                   'locationValid': status == 'ready', 'headingValid': status == 'ready',
-                                  'distanceM': 8., 'name': 'Example Street'}}
+                                  'distanceM': 8., 'name': 'Example Street', 'routeGeneration': 10}}
   params = SimpleNamespace(get=values.get, get_bool=lambda key: values.get(key) is True)
   return SimpleNamespace(sm=SM(), params=params, nav_destination_set=destination, navigation_enabled=True, is_metric=True), values
 
@@ -78,7 +78,19 @@ class TestSignalTurnStatus(unittest.TestCase):
     widget = module.NavigationPanel()
     widget._render(module.rl.Rectangle(0, 0, 261, 400))
     self.assertGreater(module.rl.draw_line_ex.call_count, 0)
-    self.assertIn('Signal turn', widget._eta_label.text)
+    self.assertIn('Route ready', widget._eta_label.text)
+
+  def test_route_preview_is_not_navigation_active_without_fresh_model_consumption(self):
+    ui_state, values = state('ready')
+    for value in (None, {'updatedAt': 99., 'supported': True, 'active': True, 'session': 'one'},
+                  {'updatedAt': 100., 'supported': True, 'active': True, 'session': 'old'},
+                  {'updatedAt': 100., 'supported': False, 'active': False, 'session': 'one'}):
+      values['NavModelState'] = value
+      widget = load_widget(ui_state).NavigationPanel()
+      self.assertEqual(widget.signal_status['primary'], 'Route ready')
+    values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': True, 'session': 'one', 'routeGeneration': 10}
+    widget = load_widget(ui_state).NavigationPanel()
+    self.assertEqual(widget.signal_status['primary'], 'Navigation active')
 
   def test_explicit_destination_keeps_normal_arrow_and_shows_blocked_footer(self):
     ui_state, _ = state('blocked', destination=True)
@@ -87,6 +99,27 @@ class TestSignalTurnStatus(unittest.TestCase):
     widget._render(module.rl.Rectangle(0, 0, 261, 400))
     self.assertGreater(module.rl.draw_line_ex.call_count, 0)
     self.assertIn('Destination navigation active', widget._eta_label.text)
+
+  def test_pending_candidate_does_not_claim_navigation_is_active(self):
+    ui_state, values = state('ready')
+    values['MapboxTurnIntent']['mode'] = 'pending'
+    self.assertEqual(load_widget(ui_state).NavigationPanel().signal_status['primary'], 'Turn candidate')
+
+  def test_actual_destination_owned_context_has_priority_without_a_signal_session(self):
+    ui_state, values = state('ready', destination=True)
+    values['MapboxTurnContext'] = {'status': 'ready', 'updatedAt': 100., 'routeOwner': 'destination', 'routeGeneration': 20}
+    widget = load_widget(ui_state).NavigationPanel()
+    self.assertEqual(widget.signal_status['secondary'], 'Destination navigation active')
+
+  def test_retained_exit_guidance_remains_visible_after_auto_cancel(self):
+    ui_state, values = state('ready')
+    ui_state.sm.car.rightBlinker = False
+    values['MapboxTurnIntent'] = None
+    values['MapboxTurnContext']['retainedAfterSignalCancel'] = True
+    widget = load_widget(ui_state).NavigationPanel()
+    self.assertTrue(widget.signal_turn_active)
+    ui_state.sm.car.leftBlinker = True
+    self.assertFalse(load_widget(ui_state).NavigationPanel().signal_turn_active)
 
   def test_cancel_disable_hazards_stale_or_wrong_session_does_not_claim_ready(self):
     for update in ('off', 'cancel', 'hazards', 'stale', 'different_session'):

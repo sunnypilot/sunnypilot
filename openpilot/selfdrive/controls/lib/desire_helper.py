@@ -49,7 +49,11 @@ class DesireHelper:
                                                model_position=model_position, map_turn_supported=map_turn_supported)
     self.lane_turn_direction = self.lane_turn_controller.get_turn_direction()
 
-    if not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF:
+    # Only an already committed turn owns the signal. Pending map discovery
+    # leaves the existing lane-change eligibility and timing unchanged.
+    navigation_signal = self.lane_turn_controller.navigation_owns_signal
+    if (navigation_signal or not lateral_active or self.lane_change_timer > LANE_CHANGE_TIME_MAX or
+        self.alc.lane_change_set_timer == AutoLaneChangeMode.OFF):
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
       self.lane_change_timer = 0.0
@@ -108,4 +112,9 @@ class DesireHelper:
         elif self.lane_change_direction == LaneChangeDirection.right:
           self.desire = log.Desire.laneChangeRight
 
+    # Commit the first actual request before the next model run. LC wins a
+    # same-frame tie; an early fast signal can otherwise remain pending until
+    # a validated turn approach is reached at turn speed.
+    self.lane_turn_controller.finalize_navigation_intent(
+      self.desire in (log.Desire.laneChangeLeft, log.Desire.laneChangeRight), v_ego, lateral_active, map_turn_supported)
     self.alc.update_state()

@@ -23,13 +23,20 @@ MAP_COLORS = np.repeat(np.round(np.arange(256) * 0.45).astype(np.uint8)[:, None]
 MAP_COLORS[ROUTE_INTENSITY - 1:ROUTE_INTENSITY + 2] = (72, 235, 132)
 
 
-def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinker):
-  """A display-only status; it cannot authorize a model cue or a vehicle action."""
+def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinker, model_state=None):
+  """Distinguish a route lookup from actual navigation inputs consumed by the model."""
   direction = 'left' if left_blinker and not right_blinker else 'right' if right_blinker and not left_blinker else None
+  if (direction is None and not left_blinker and not right_blinker and isinstance(context, dict) and
+      context.get('retainedAfterSignalCancel') is True and context.get('status') == 'ready'):
+    # Auto-cancel during an entered turn does not end its short exit guidance.
+    direction = context.get('direction')
+    intent = {'session': context.get('session'), 'direction': direction}
   if (enabled is not True or not isinstance(intent, dict) or not intent.get('session') or
-      direction is None or intent.get('direction') != direction):
+      direction not in ('left', 'right') or intent.get('direction') != direction):
     return None
   status, reason = 'unavailable', 'navigation_unavailable'
+  if isinstance(context, dict) and context.get('routeOwner') == 'destination':
+    return {'state': 'blocked', 'primary': 'Signal turn blocked', 'secondary': 'Destination navigation active'}
   if isinstance(context, dict) and context.get('session') == intent['session'] and context.get('direction') == direction:
     updated = context.get('updatedAt')
     if isinstance(updated, (int, float)) and not isinstance(updated, bool) and np.isfinite(updated) and 0. <= now-updated <= .35:
@@ -37,8 +44,17 @@ def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinke
   if status == 'ready' and context.get('locationValid') is True and context.get('headingValid') is True:
     distance = context.get('distanceM')
     if isinstance(distance, (int, float)) and not isinstance(distance, bool) and np.isfinite(distance):
-      return {'state': 'ready', 'primary': 'Signal turn', 'direction': direction, 'distanceM': distance,
-              'secondary': f"{direction.capitalize()} onto {context.get('name', '')}".strip()}
+      model_updated = model_state.get('updatedAt') if isinstance(model_state, dict) else None
+      active = (isinstance(model_updated, (int, float)) and not isinstance(model_updated, bool) and
+                np.isfinite(model_updated) and 0. <= now-model_updated <= .5 and
+                model_state.get('supported') is True and model_state.get('active') is True and
+                model_state.get('session') == intent['session'] and
+                isinstance(context.get('routeGeneration'), int) and context['routeGeneration'] > 0 and
+                model_state.get('routeGeneration') == context['routeGeneration'])
+      pending = intent.get('mode') == 'pending'
+      return {'state': 'ready', 'primary': 'Turn candidate' if pending else 'Navigation active' if active else 'Route ready',
+              'direction': direction, 'distanceM': distance,
+              'secondary': (f"{direction.capitalize()} onto {context.get('name', '')}".strip() if active or pending else 'Waiting for map and model')}
   if status == 'searching':
     return {'state': status, 'primary': f'Finding next {direction}', 'secondary': 'Checking mapped streets'}
   if status == 'passed':
@@ -47,6 +63,7 @@ def signal_turn_status(enabled, intent, context, now, left_blinker, right_blinke
     return {'state': status, 'primary': 'Signal turn blocked',
             'secondary': 'Destination navigation active' if reason == 'explicit_destination' else 'Signal changed'}
   explanations = {'missing_token': 'Map token missing', 'invalid_token': 'Map token unavailable',
+                  'navigation_model_required': 'Select a navigation-capable model',
                   'gps_unavailable': 'GPS position unavailable', 'gps_or_car_state_invalid': 'GPS position unavailable',
                   'heading_unavailable': 'Vehicle heading unavailable', 'navigation_unavailable': 'Waiting for navigation',
                   'target_expired': 'Signal again to refresh target', 'no_matching_turn': 'No supported street turn ahead',
@@ -85,7 +102,8 @@ class NavigationPanel(Widget):
       car = ui_state.sm['carState']
       self._signal_status = signal_turn_status(
         ui_state.params.get_bool('MapboxNextTurnEnabled'), ui_state.params.get('MapboxTurnIntent'),
-        ui_state.params.get('MapboxTurnContext'), now, car.leftBlinker, car.rightBlinker)
+        ui_state.params.get('MapboxTurnContext'), now, car.leftBlinker, car.rightBlinker,
+        ui_state.params.get('NavModelState'))
     return self._signal_status
 
   @property
@@ -175,7 +193,7 @@ class NavigationPanel(Widget):
     elif self.routing or signal_ready:
       seconds = max(0, instruction.timeRemaining)
       remaining = max(0, instruction.distanceRemaining)
-      self._eta_label.set_text(f"Signal turn: {signal['secondary']}" if signal is not None else
+      self._eta_label.set_text(f"{signal['primary']}: {signal['secondary']}" if signal is not None else
                                f'{max(1, round(seconds / 60))} min / {format_distance(remaining)}')
       self._eta_label.render(rl.Rectangle(x+9, y+rect.height-45, rect.width-18, 40))
 
