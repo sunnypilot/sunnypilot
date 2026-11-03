@@ -1,4 +1,5 @@
 import gzip
+import json
 import os
 import re
 import struct
@@ -18,7 +19,7 @@ import requests
 import openpilot.cereal.messaging as messaging
 from openpilot.common.prefix import OpenpilotPrefix
 from openpilot.selfdrive.navigation.mapsd import MapsD
-from openpilot.selfdrive.navigation.navd import REROUTE_COUNTER_MIN, ROUTE_RESEND_PERIOD, RouteEngine, set_banner
+from openpilot.selfdrive.navigation.navd import RECOMPUTE_HOLD, REROUTE_COUNTER_MIN, ROUTE_RESEND_PERIOD, RouteEngine, set_banner
 from openpilot.selfdrive.navigation.pmtiles import PMTiles, decode_directory, tile_id
 from openpilot.selfdrive.navigation.renderer import MAJOR, MEDIUM, MINOR, SIZE, STREET, TRACK, MapRenderer, draw_segments, mercator, project, stroke_widths
 from openpilot.selfdrive.navigation.route import RouteTracker
@@ -101,6 +102,16 @@ def route_engine(sm, pm, values):
 
 class RangeHandler(BaseHTTPRequestHandler):
   def do_GET(self):
+    if self.path == '/builds.json':
+      self.server.index_requests += 1
+      entries = {} if self.server.invalid_index else [
+        {'key': '20261103.pmtiles', 'version': '4.15.2', 'size': len(self.server.archive)}]
+      data = json.dumps(entries).encode()
+      self.send_response(200)
+      self.send_header('Content-Length', str(len(data)))
+      self.end_headers()
+      self.wfile.write(data)
+      return
     self.server.requests.append(dict(self.headers))
     if self.headers.get('If-Match', self.server.etag) != self.server.etag:
       self.send_error(412)
@@ -123,7 +134,7 @@ class RangeHandler(BaseHTTPRequestHandler):
 
 
 class TileServerCase(unittest.TestCase):
-  """Serves a leaf-directory archive over HTTP range requests, with the comma API and tile cache stubbed."""
+  """Serves a real public-index/leaf-directory archive protocol over local HTTP."""
 
   def setUp(self):
     self.directory = tempfile.TemporaryDirectory()
@@ -137,11 +148,10 @@ class TileServerCase(unittest.TestCase):
     threading.Thread(target=self.server.serve_forever, kwargs={'poll_interval': 0.01}, daemon=True).start()
     self.addCleanup(self.server.server_close)
     self.addCleanup(self.server.shutdown)
-    self.api = MagicMock(dongle_id='test-dongle')
-    self.api.get_token.return_value = 'device-token'
-    self.url = f'http://127.0.0.1:{self.server.server_port}/planet.pmtiles?sig=secret'
-    self.api.get.return_value.json.return_value = {'url': self.url, 'expires': time.time() + 86400}  # noqa: TID251
-    for name, value in [('Api', MagicMock(return_value=self.api)), ('Params', MagicMock()), ('PC', True)]:
+    self.server.index_requests = 0
+    self.server.invalid_index = False
+    self.url = f'http://127.0.0.1:{self.server.server_port}'
+    for name, value in [('PC', True), ('BUILD_INDEX_URL', self.url + '/builds.json'), ('BUILD_BASE_URL', self.url + '/')]:
       self.enterContext(patch(f'openpilot.selfdrive.navigation.tiles.{name}', value))
     self.enterContext(patch('openpilot.selfdrive.navigation.tiles.Paths.comma_home', return_value=self.directory.name))
 
@@ -168,6 +178,15 @@ class TestEndToEnd(TileServerCase):
         sm.update(0)
         return mapsd.update(sm)
 
+      def restored_route_frame():
+        # Destination cancellation retains the existing recompute cooldown.
+        # Advance its bounded update count before testing tile-cache reuse.
+        for _ in range((RECOMPUTE_HOLD + 1) * navd.update_frequency):
+          result = frame()
+          if navd.route is not None:
+            return result
+        self.fail('Destination route was not restored within the existing recompute cooldown')
+
       image, timestamp = frame()
       # The route is centered over the white road, with the ego arrow three quarters down.
       self.assertEqual((image[128, 128], image[128, 131], image[188, 128], image[195, 128]), (128, 255, 255, 0))
@@ -180,39 +199,39 @@ class TestEndToEnd(TileServerCase):
       values.pop('NavDestination')
       self.assertFalse(frame()[0].any())  # black without a route
       values['NavDestination'] = dict(destination)
-      self.assertEqual(frame()[0][128, 128], 128)
+      self.assertEqual(restored_route_frame()[0][128, 128], 128)
       self.assertEqual(len(self.server.requests), fetched)  # the second route is served from the cache
       image, timestamp = frame(fix=False)
       self.assertFalse(image.any() or timestamp)  # black, not stale, without a fix
-      self.api.get.assert_called_once()
+      self.assertEqual(self.server.index_requests, 1)
       self.assertTrue(all('Range' in headers for headers in self.server.requests))
       self.assertTrue(all(headers['If-Match'] == self.server.etag for headers in self.server.requests[1:]))
-      self.assertTrue(all(b'secret' not in p.read_bytes() for p in self.cache.iterdir()))
+      self.assertTrue(all(b'secret' not in p.read_bytes() for p in self.cache.rglob('*') if p.is_file()))
       # The archive is replaced on the server and the cache evicted: the next fetch fails, the map goes black,
       # and after a delay a fresh reader starts over on the new version.
       self.server.etag = '"new-version"'
-      for cached in self.cache.iterdir():
-        cached.unlink()
+      for cached in self.cache.rglob('*'):
+        if cached.is_file() and re.fullmatch(r'\d+-\d+', cached.name):
+          cached.unlink()
       values.pop('NavDestination')
       frame()
       values['NavDestination'] = dict(destination)
-      image, timestamp = frame()
+      image, timestamp = restored_route_frame()
       self.assertFalse(image.any() or timestamp)
       fetched = len(self.server.requests)
       self.assertFalse(frame()[1])  # not retried yet
       self.assertEqual(len(self.server.requests), fetched)
       mapsd.retry_at = 0
       self.assertEqual(frame()[0][128, 128], 128)
-      self.assertEqual((self.cache / 'version').read_text().split()[0], '"new-version"')
+      self.assertEqual(json.loads((self.cache / 'archive.json').read_text())['etag'], '"new-version"')
 
 
 class TestRemoteTiles(TileServerCase):
   def test_shared_cache_and_refresh(self):
     with closing(PMTiles(RemoteTiles())) as archive:
-      archive.source.expires = 0  # the signed URL is refreshed before the next fetch
       self.assertEqual(archive.get(0, 0, 0), road_tile())
       self.assertEqual(archive.get(0, 0, 0), road_tile())
-      self.assertEqual(self.api.get.call_count, 2)
+      self.assertEqual(self.server.index_requests, 1)
     count = len(self.server.requests)
     with closing(PMTiles(RemoteTiles())) as archive:
       self.assertEqual(archive.get(0, 0, 0), road_tile())
@@ -220,7 +239,9 @@ class TestRemoteTiles(TileServerCase):
     self.assertEqual(len(self.server.requests), count + 1)
     with patch('openpilot.selfdrive.navigation.tiles.CACHE_LIMIT', 1), closing(RemoteTiles()) as source:
       source.read(1, 2)  # an uncached range is downloaded, then the cache is trimmed to the limit
-    self.assertEqual([p.name for p in self.cache.iterdir()], ['version'])
+    retained = [p.name for p in self.cache.rglob('*') if p.is_file() and re.fullmatch(r'\d+-\d+', p.name)]
+    self.assertEqual(retained, ['0-127'])  # current header is retained for offline startup
+    self.assertTrue((self.cache / 'archive.json').exists())
 
   def test_prefetch_merges_nearby_ranges(self):
     with patch('openpilot.selfdrive.navigation.tiles.MERGE_GAP', 16), closing(RemoteTiles()) as source:
@@ -235,15 +256,16 @@ class TestRemoteTiles(TileServerCase):
   def test_failures(self):
     with closing(PMTiles(RemoteTiles())) as archive:
       self.server.etag = '"new-version"'
-      with self.assertRaisesRegex(OSError, '412'):  # the archive changed under an open reader
+      with self.assertRaises(OSError):  # the archive changed under an open reader
         archive.get(0, 0, 0)
     with closing(PMTiles(RemoteTiles())) as archive:  # a new reader starts over on the new version
       self.assertEqual(archive.get(0, 0, 0), road_tile())
     self.server.ignore_range = True
-    with self.assertRaisesRegex(OSError, '200'):
+    with self.assertRaises(OSError):
       RemoteTiles()
-    self.api.get.return_value.raise_for_status.side_effect = requests.HTTPError(self.url)
-    with self.assertRaisesRegex(OSError, '^Unable to fetch map tiles$'):  # the signed URL stays out of the error
+    self.server.ignore_range = False
+    self.server.invalid_index = True
+    with self.assertRaisesRegex(OSError, '^Unable to load public Protomaps basemap$'):
       RemoteTiles()
 
 

@@ -92,6 +92,58 @@ class TestSignalTurnStatus(unittest.TestCase):
     widget = load_widget(ui_state).NavigationPanel()
     self.assertEqual(widget.signal_status['primary'], 'Navigation active')
 
+  def test_ready_route_explains_fresh_matched_model_map_wait(self):
+    ui_state, values = state('ready')
+    values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': False,
+                               'session': 'one', 'routeGeneration': 10, 'reason': 'map_missing'}
+    module = load_widget(ui_state)
+    widget = module.NavigationPanel()
+    self.assertEqual(widget.signal_status['primary'], 'Route ready')
+    self.assertEqual(widget.signal_status['secondary'], 'Waiting for model map')
+    widget._render(module.rl.Rectangle(0, 0, 261, 400))
+    self.assertIn('Waiting for model map', widget._eta_label.text)
+
+  def test_fresh_matched_wait_reasons_are_specific_without_claiming_active(self):
+    expected = {'map_stale': 'Model map is stale', 'map_invalid': 'Model map is invalid',
+                'instruction_stale': 'Route instructions are stale', 'route_generation_mismatch': 'Waiting for current route map',
+                'disabled': 'Navigation inputs disabled', 'invalid_time_or_speed': 'Vehicle data unavailable'}
+    for reason, text in expected.items():
+      with self.subTest(reason=reason):
+        ui_state, values = state('ready')
+        values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': False,
+                                   'session': 'one', 'routeGeneration': 10, 'reason': reason}
+        result = load_widget(ui_state).NavigationPanel().signal_status
+        self.assertEqual(result['primary'], 'Route ready')
+        self.assertEqual(result['secondary'], text)
+
+  def test_stale_wrong_route_or_unsupported_model_reason_is_not_reused(self):
+    for change in ({'updatedAt': 99.}, {'updatedAt': 101.}, {'updatedAt': float('nan')}, {'updatedAt': True},
+                   {'session': 'other'}, {'routeGeneration': 11}, {'supported': False}, {'active': 0}):
+      with self.subTest(change=change):
+        ui_state, values = state('ready')
+        values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': False,
+                                   'session': 'one', 'routeGeneration': 10, 'reason': 'map_invalid', **change}
+        result = load_widget(ui_state).NavigationPanel().signal_status
+        self.assertEqual(result['primary'], 'Route ready')
+        self.assertEqual(result['secondary'], 'Waiting for map and model')
+
+  def test_active_and_pending_route_labels_ignore_old_wait_reason(self):
+    for mode, active, primary in (('turn', True, 'Navigation active'), ('pending', False, 'Turn candidate')):
+      ui_state, values = state('ready')
+      values['MapboxTurnIntent']['mode'] = mode
+      values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': active,
+                                 'session': 'one', 'routeGeneration': 10, 'reason': 'map_missing'}
+      result = load_widget(ui_state).NavigationPanel().signal_status
+      self.assertEqual(result['primary'], primary)
+      self.assertEqual(result['secondary'], 'Right onto Example Street')
+
+  def test_unknown_or_malformed_wait_reason_keeps_generic_message(self):
+    for reason in (None, 'unknown_future_reason', [], {}):
+      ui_state, values = state('ready')
+      values['NavModelState'] = {'updatedAt': 100., 'supported': True, 'active': False,
+                                 'session': 'one', 'routeGeneration': 10, 'reason': reason}
+      self.assertEqual(load_widget(ui_state).NavigationPanel().signal_status['secondary'], 'Waiting for map and model')
+
   def test_explicit_destination_keeps_normal_arrow_and_shows_blocked_footer(self):
     ui_state, _ = state('blocked', destination=True)
     module = load_widget(ui_state)
