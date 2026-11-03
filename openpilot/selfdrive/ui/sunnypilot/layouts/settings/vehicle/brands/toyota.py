@@ -17,7 +17,8 @@ from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 
 ONROAD_ONLY_DESCRIPTION = tr_noop("Start the vehicle to check vehicle compatibility.")
 SNG_HACK_UNAVAILABLE = tr_noop("sunnypilot Longitudinal Control must be available and enabled for your vehicle to use this feature.")
-BSM_UNAVAILABLE = tr_noop("Enhanced Blind Spot Monitoring requires a TSS2 Toyota/Lexus without SecOC.")
+BSM_UNAVAILABLE = tr_noop("Enhanced Blind Spot Monitoring requires a TSS2 Toyota/Lexus without SecOC, " +
+                           "or a smartDSU with sunnypilot longitudinal control.")
 BSM_STOCK_LONG_UNAVAILABLE = tr_noop("Enhanced Blind Spot Monitoring is not available while Enforce Factory Longitudinal Control is enabled.")
 BSM_REQUIRED = tr_noop("This vehicle does not report blind spot status over the standard CAN signals. " +
                         "Enhanced Blind Spot Monitoring is required for blind spot detection.")
@@ -153,8 +154,12 @@ class ToyotaSettings(BrandSettings):
           self.stop_and_go_hack.show_description(True)
 
       # Enhanced BSM needs the radar diagnostic address, which is only in the TX allowlist for
-      # TSS2 cars without SecOC that are not enforcing factory longitudinal control
-      bsm_supported = bool(ui_state.CP.flags & ToyotaFlags.TSS2) and not bool(ui_state.CP.flags & ToyotaFlags.SECOC)
+      # TSS2 cars without SecOC, or for TSS-P cars whose smartDSU lets sunnypilot control
+      # longitudinal. Enforcing factory longitudinal control rules both of those out.
+      sdsu_bsm_supported = (longitudinal and ui_state.CP_SP is not None and
+                            bool(ui_state.CP_SP.flags & ToyotaFlagsSP.SMART_DSU))
+      bsm_supported = (not bool(ui_state.CP.flags & ToyotaFlags.SECOC) and
+                       (bool(ui_state.CP.flags & ToyotaFlags.TSS2) or sdsu_bsm_supported))
       bsm_available = bsm_supported and not enforce_stock
       self.enhanced_bsm.action_item.set_enabled(bsm_available and not ui_state.engaged)
 

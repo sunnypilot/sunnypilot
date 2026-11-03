@@ -13,6 +13,7 @@ from opendbc.car.subaru.values import CAR as SUBARU_CAR, SubaruFlags
 from opendbc.car.toyota.values import CAR as TOYOTA_CAR, ToyotaFlags
 from opendbc.sunnypilot.car.interfaces import has_bsm
 from opendbc.sunnypilot.car.tesla.values import TeslaFlagsSP
+from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.hardware import HARDWARE
@@ -83,7 +84,7 @@ def _bundle_field(bundle: dict | None, key: str) -> str:
   return bundle.get(key, "") if isinstance(bundle, dict) else ""
 
 
-def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
+def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP, CP_SP=None) -> None:
   """Set brand-specific capabilities from bundle platform or CarParams fallback.
 
   Bundle (manual car selection) is a pre-fingerprint approximation.
@@ -122,7 +123,11 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
       except KeyError:
         cloudlog.exception(f"capabilities: unknown toyota platform {bundle_platform!r}")
     elif CP is not None:
-      caps["toyota_enhanced_bsm_available"] = bool(CP.flags & ToyotaFlags.TSS2) and not bool(CP.flags & ToyotaFlags.SECOC)
+      # same gate as _initialize_toyota: TSS2 without SecOC, or TSS-P with a smartDSU and openpilot
+      # longitudinal control (the bundle path can't see 0x2FF, so it stays TSS2-only)
+      sdsu_bsm = CP_SP is not None and bool(CP_SP.flags & ToyotaFlagsSP.SMART_DSU) and bool(CP.openpilotLongitudinalControl)
+      caps["toyota_enhanced_bsm_available"] = (not bool(CP.flags & ToyotaFlags.SECOC) and
+                                               (bool(CP.flags & ToyotaFlags.TSS2) or sdsu_bsm))
 
 
 def generate_capabilities(params: Params | None = None) -> dict:
@@ -194,7 +199,7 @@ def generate_capabilities(params: Params | None = None) -> dict:
   if CP is not None:
     caps["has_bsm"] = has_bsm(CP, CP_SP)
 
-  _resolve_brand_capabilities(caps, bundle_platform, CP)
+  _resolve_brand_capabilities(caps, bundle_platform, CP, CP_SP)
 
   return caps
 
