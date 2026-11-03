@@ -70,11 +70,11 @@ class TestAccelBoostSP(OpenpilotTestCase):
   def test_param_switch(self):
     params = Params()
     boost = AccelBoostSP()
-    params.put_bool("AccelBoostSP", True)
+    params.put_bool("AccelBoostSP", True, block=True)
     assert boost.update_params() and boost.enabled
     for _ in range(100):
       boost.update(make_sm(), 0.0, 9.0, 9.0)
-    params.put_bool("AccelBoostSP", False)
+    params.put_bool("AccelBoostSP", False, block=True)
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL) - 1):
       assert not boost.update_params()
     assert boost.update_params() and not boost.enabled
