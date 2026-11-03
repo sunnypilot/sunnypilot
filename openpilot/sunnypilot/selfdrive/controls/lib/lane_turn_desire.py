@@ -36,6 +36,7 @@ class LaneTurnController:
     self.DH = desire_helper
     self.turn_direction = TurnDirection.none
     self.armed_direction = TurnDirection.none
+    self.cue_sent = False
     self.params = Params()
     self.lane_turn_value = float(self.params.get("LaneTurnValue", return_default=True)) * CV.MPH_TO_MS
     self.param_read_counter = 0
@@ -54,6 +55,16 @@ class LaneTurnController:
 
   def update_lane_turn(self, blindspot_left: bool, blindspot_right: bool, left_blinker: bool, right_blinker: bool, v_ego: float,
                        steering_pressed: bool = False, steering_torque: float = 0., turn_probs: tuple[float, float] = (0., 0.)) -> None:
+    if not left_blinker and not right_blinker:
+      self.armed_direction = TurnDirection.none
+      self.cue_sent = False
+    elif left_blinker != right_blinker:
+      direction = TurnDirection.turnLeft if left_blinker else TurnDirection.turnRight
+      if direction != self.armed_direction:
+        self.armed_direction = direction
+        self.turn_direction = TurnDirection.none
+        self.cue_sent = False
+
     if left_blinker and not right_blinker and v_ego < self.lane_turn_value and not blindspot_left:
       requested = TurnDirection.turnLeft
     elif right_blinker and not left_blinker and v_ego < self.lane_turn_value and not blindspot_right:
@@ -62,17 +73,18 @@ class LaneTurnController:
       requested = TurnDirection.none
 
     if not self.wait_for_turn or requested == TurnDirection.none:
-      self.armed_direction = TurnDirection.none
       self.turn_direction = requested
       return
 
-    if requested != self.armed_direction:
-      # newly armed, or the blinker switched sides: wait again
-      self.armed_direction = requested
+    if not self.enabled and self.cue_sent:
       self.turn_direction = TurnDirection.none
 
-    if self.turn_direction == TurnDirection.none and self.turn_is_here(requested, v_ego, steering_pressed, steering_torque, turn_probs):
-      self.turn_direction = requested  # latched until the blinker goes off
+    # Eligibility can clear the request, but only a canceled or switched signal permits another cue.
+    if (self.turn_direction == TurnDirection.none and not self.cue_sent and
+        self.turn_is_here(requested, v_ego, steering_pressed, steering_torque, turn_probs)):
+      self.turn_direction = requested
+    if self.enabled and self.turn_direction != TurnDirection.none:
+      self.cue_sent = True
 
   @staticmethod
   def turn_is_here(direction, v_ego: float, steering_pressed: bool, steering_torque: float, turn_probs: tuple[float, float]) -> bool:

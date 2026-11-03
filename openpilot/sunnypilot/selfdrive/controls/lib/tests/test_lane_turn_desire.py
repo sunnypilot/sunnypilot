@@ -97,6 +97,39 @@ def set_lane_turn_params():
 
 
 class TestDesireHelperIntegration(OpenpilotTestCase):
+  @parameterized.expand([(True,), (False,)], names=["left"])
+  def test_turn_cue_is_not_repeated_after_lateral_reengagement(self, left, set_lane_turn_params):
+    dh = DesireHelper()
+    dh.lane_turn_controller.wait_for_turn = True
+    carstate = DummyCarState(vEgo=6, leftBlinker=left, rightBlinker=not left)
+    direction = log.Desire.turnLeft if left else log.Desire.turnRight
+    prediction = [0.] * (DESIRE_PRED_WIDTH * 4)
+    prediction[1 if left else 2] = MODEL_TURN_PROB
+    requests = [log.Desire.none]
+
+    def update(active):
+      dh.update(carstate, active, 1., desire_prediction=prediction)
+      requests.append(dh.desire)
+
+    update(True)
+    carstate.vEgo = LANE_CHANGE_SPEED_MIN + .1
+    update(False)
+    carstate.vEgo = 6
+    carstate.steeringPressed = True
+    carstate.steeringTorque = 2.08 if left else -2.08
+    update(False)
+    carstate.steeringPressed = False
+    update(True)
+    assert requests == [log.Desire.none, direction, log.Desire.none, log.Desire.none, log.Desire.none]
+
+    carstate.leftBlinker = carstate.rightBlinker = False
+    update(True)
+    carstate.leftBlinker, carstate.rightBlinker = left, not left
+    update(True)
+    pulses = sum(current == direction and previous != direction for previous, current in zip(requests, requests[1:], strict=False))
+    assert pulses == 2
+    assert requests[-1] == direction
+
   @parameterized.expand([
     # Lane turn desire overrides lane change desire
     (DummyCarState(vEgo=5, leftBlinker=True, rightBlinker=False, leftBlindspot=False, rightBlindspot=False), True, 1.0,
@@ -230,6 +263,111 @@ class TestWaitForTurn(OpenpilotTestCase):
     assert controller.get_turn_direction() == TurnDirection.turnLeft
     controller.update_lane_turn(False, False, False, False, 6)
     controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  @parameterized.expand([(True, True), (True, False), (False, True), (False, False)])
+  def test_speed_crossing_does_not_send_another_cue(self, left, model_trigger):
+    controller = make_wait_controller()
+    direction = TurnDirection.turnLeft if left else TurnDirection.turnRight
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == direction
+    retry = {"turn_probs": probs} if model_trigger else {"steering_pressed": True, "steering_torque": 2.08 if left else -2.08}
+    for speed in (LANE_CHANGE_SPEED_MIN + .1, LANE_CHANGE_SPEED_MIN, 6, 6):
+      controller.update_lane_turn(False, False, left, not left, speed, **retry)
+      assert controller.get_turn_direction() == TurnDirection.none
+
+  @parameterized.expand([(True, True), (True, False), (False, True), (False, False)])
+  def test_blindspot_interruption_does_not_send_another_cue(self, left, model_trigger):
+    controller = make_wait_controller()
+    direction = TurnDirection.turnLeft if left else TurnDirection.turnRight
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == direction
+    controller.update_lane_turn(left, not left, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == TurnDirection.none
+    retry = {"turn_probs": probs} if model_trigger else {"steering_pressed": True, "steering_torque": 2.08 if left else -2.08}
+    controller.update_lane_turn(False, False, left, not left, 6, **retry)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  @parameterized.expand([(True, "speed"), (False, "speed"), (True, "blindspot"), (False, "blindspot")])
+  def test_blocking_before_first_cue_does_not_consume_signal(self, left, block):
+    controller = make_wait_controller()
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(block == "blindspot" and left, block == "blindspot" and not left,
+                                left, not left, LANE_CHANGE_SPEED_MIN if block == "speed" else 6, turn_probs=probs)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, left, not left, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == (TurnDirection.turnLeft if left else TurnDirection.turnRight)
+
+  @parameterized.expand([(True,), (False,)])
+  def test_canceling_consumed_signal_allows_next_turn(self, left):
+    controller = make_wait_controller()
+    direction = TurnDirection.turnLeft if left else TurnDirection.turnRight
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == direction
+    controller.update_lane_turn(False, False, left, not left, LANE_CHANGE_SPEED_MIN)
+    controller.update_lane_turn(False, False, False, False, 6)
+    controller.update_lane_turn(False, False, left, not left, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == direction
+
+  @parameterized.expand([(True,), (False,)])
+  def test_switching_signal_side_allows_next_turn(self, left):
+    controller = make_wait_controller()
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == (TurnDirection.turnLeft if left else TurnDirection.turnRight)
+    controller.update_lane_turn(False, False, not left, left, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, not left, left, 6, turn_probs=probs[::-1])
+    assert controller.get_turn_direction() == (TurnDirection.turnRight if left else TurnDirection.turnLeft)
+
+  @parameterized.expand([(True,), (False,)])
+  def test_hazards_do_not_rearm_same_signal(self, left):
+    controller = make_wait_controller()
+    probs = (MODEL_TURN_PROB, 0.) if left else (0., MODEL_TURN_PROB)
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == (TurnDirection.turnLeft if left else TurnDirection.turnRight)
+    controller.update_lane_turn(False, False, True, True, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, left, not left, 6, turn_probs=probs)
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  def test_disabled_feature_does_not_consume_unemitted_cue(self):
+    controller = make_wait_controller()
+    controller.enabled = False
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.update_lane_turn(False, False, True, False, LANE_CHANGE_SPEED_MIN)
+    controller.enabled = True
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+
+  def test_enabling_latched_turn_remembers_emitted_cue(self):
+    controller = make_wait_controller()
+    controller.enabled = False
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
+    controller.enabled = True
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+    controller.update_lane_turn(False, False, True, False, LANE_CHANGE_SPEED_MIN)
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
+    assert controller.get_turn_direction() == TurnDirection.none
+
+  def test_feature_toggle_does_not_repeat_emitted_cue(self):
+    controller = make_wait_controller()
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
+    assert controller.get_turn_direction() == TurnDirection.turnLeft
+    controller.enabled = False
+    controller.update_lane_turn(False, False, True, False, 6)
+    assert controller.get_turn_direction() == TurnDirection.none
+    controller.enabled = True
+    controller.update_lane_turn(False, False, True, False, 6, turn_probs=(MODEL_TURN_PROB, 0.))
     assert controller.get_turn_direction() == TurnDirection.none
 
   def test_model_turn_probs(self):
