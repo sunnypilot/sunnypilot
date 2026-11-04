@@ -10,6 +10,7 @@ from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.application import gui_app
+from openpilot.selfdrive.ui.sunnypilot.layouts.trip_summary import TripSummary
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings import SettingsLayoutSP as SettingsLayout
@@ -57,6 +58,7 @@ class MiciMainLayout(Scroller):
     self._setup_callbacks()
 
     gui_app.add_nav_stack_tick(self._handle_transitions)
+    self._trip_summary = TripSummary()
     gui_app.push_widget(self)
 
     # Start onboarding if terms or training not completed, make sure to push after self
