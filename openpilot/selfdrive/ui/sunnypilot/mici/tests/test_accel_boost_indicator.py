@@ -47,6 +47,5 @@ class TestAccelBoostIndicator(OpenpilotTestCase):
     assert relaxed.b > relaxed.r
     assert relaxed.b >= relaxed.g
     assert aggressive.r > aggressive.b
-    # lighter in RGB means the dimmest channel came up towards white
     assert relaxed.r > RELAXED_COLOR.r
     assert aggressive.g > AGGRESSIVE_COLOR.g

@@ -19,7 +19,6 @@ BAR_WIDTH = 26
 BAR_RADIUS = 0.5
 TRACK_TOP_RATIO = 0.08
 TRACK_BOTTOM_RATIO = 0.92
-# Fades to white only near the profile cap, like the stock torque bar fading toward orange at high torque
 CAP_BLEND_START = 0.70
 MAX_BOOST_BLEND = 0.55
 
@@ -42,13 +41,11 @@ FADE_THRESHOLD = 0.01
 
 
 def get_boost_style(personality) -> tuple[rl.Color, float]:
-  """Color and full-scale boost for the active personality."""
   raw = getattr(personality, "raw", personality)
   return PROFILE_STYLES.get(int(raw), PROFILE_STYLES[1])
 
 
 def get_boost_fraction(boost: float, max_boost: float) -> float:
-  """How much of the active profile's boost budget is in use, clamped to a full bar."""
   if max_boost <= 0.0:
     return 0.0
   return min(max(boost / max_boost, 0.0), 1.0)
@@ -71,7 +68,6 @@ class AccelBoostIndicator(Widget):
     fps = max(gui_app.target_fps, 1)
     self._boost_filter = FirstOrderFilter(0.0, 0.15, 1 / fps)
     self._alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / fps)
-    # Smoothly rescale the bar when the follow distance profile changes mid-drive
     self._max_boost_filter = FirstOrderFilter(0.0, 0.25, 1 / fps)
     self._profile_color, self._max_boost = PROFILE_STYLES[1]
 
@@ -82,7 +78,7 @@ class AccelBoostIndicator(Widget):
     visible = (ui_state.accel_boost and ui_state.has_longitudinal_control and sm.alive['selfdriveState'] and
                sm.alive['longitudinalPlan'] and sm['selfdriveState'].enabled)
     plan = sm['longitudinalPlan']
-    # only while the boosted e2e target wins the planner's min(); lead or cruise limiting means boost does nothing
+    # boost only moves the car while e2e wins the planner's min()
     if visible and plan.accelBoost > FADE_THRESHOLD and plan.longitudinalPlanSource == log.LongitudinalPlan.LongitudinalPlanSource.e2e:
       self._applied_time = rl.get_time()
     visible = visible and rl.get_time() - self._applied_time < SET_SPEED_PERSISTENCE
@@ -108,18 +104,15 @@ class AccelBoostIndicator(Widget):
     track_h = max(1.0, track_bottom - track_top)
     track_rect = rl.Rectangle(bar_x, track_top, bar_w, track_h)
 
-    # soft well behind the track so the bar reads on the black side panel
     rl.draw_rectangle_rounded(rl.Rectangle(bar_x - 3, track_top - 3, bar_w + 6, track_h + 6), BAR_RADIUS, 12,
                               rl.Color(0, 0, 0, int(80 * alpha)))
 
-    # track, light enough to read on the black side panel
     rl.draw_rectangle_rounded(track_rect, BAR_RADIUS, 12,
                               rl.Color(COLOR_TRACK.r, COLOR_TRACK.g, COLOR_TRACK.b, int(COLOR_TRACK.a * alpha)))
     rl.draw_rectangle_rounded_lines_ex(track_rect, BAR_RADIUS, 12, 1,
                                        rl.Color(COLOR_TRACK_EDGE.r, COLOR_TRACK_EDGE.g, COLOR_TRACK_EDGE.b,
                                                 int(COLOR_TRACK_EDGE.a * alpha)))
 
-    # Scale to the current profile's cap, so a maxed boost fills the bar and a profile change rescales it
     boost = max(self._boost_filter.x, 0.0)
     ratio = get_boost_fraction(boost, self._max_boost_filter.x)
     fill_h = ratio * track_h
@@ -130,7 +123,6 @@ class AccelBoostIndicator(Widget):
     fill_color = lighten(self._profile_color, MAX_BOOST_BLEND * cap_blend)
     tip_y = track_bottom - fill_h
 
-    # soft glow around the tip, like the confidence ball's gradient
     tip_center_y = tip_y + min(fill_h, bar_w) / 2
     glow = rl.Color(fill_color.r, fill_color.g, fill_color.b, int(85 * alpha))
     rl.draw_circle_gradient(rl.Vector2(cx, tip_center_y), int(bar_w * 0.85), glow, rl.BLANK)
@@ -143,13 +135,11 @@ class AccelBoostIndicator(Widget):
     else:
       rl.draw_rectangle_rounded(rl.Rectangle(bar_x, tip_y, bar_w, fill_h), BAR_RADIUS, 12, fill)
 
-      # subtle inner highlight gives the fill a rounded, glassy edge
       if fill_h > 12:
         highlight_rect = rl.Rectangle(bar_x + 4, tip_y + 5, 3, fill_h - 10)
         rl.draw_rectangle_rounded(highlight_rect, 0.5, 8,
                                   rl.Color(COLOR_HIGHLIGHT.r, COLOR_HIGHLIGHT.g, COLOR_HIGHLIGHT.b,
                                            int(COLOR_HIGHLIGHT.a * alpha)))
 
-      # bright cap at the tip
       rl.draw_circle(int(cx), int(tip_center_y), 2,
                      rl.Color(255, 255, 255, int(150 * alpha)))
