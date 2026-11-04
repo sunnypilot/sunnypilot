@@ -39,6 +39,10 @@ sections:
     description: Show a timer on the HUD when the car is at a standstill.
     visibility:
     - $ref: '#/macros/hide_on_mici'
+  - key: TripSummary
+    widget: toggle
+    title: Trip Summary
+    description: Show a summary of distance and engagement when you shift into park after a drive.
   - key: RocketFuel
     widget: toggle
     title: Real-time Acceleration Bar

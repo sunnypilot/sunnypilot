@@ -49,6 +49,7 @@ class UIStateSP:
     self.model_runner_tinygrad: bool = False
     self.active_runner_tinygrad: bool = False
     self.blindspot: bool = False
+    self.trip_summary: bool = True
     self.chevron_metrics = None
     self.custom_interactive_timeout: int = 0
     self.developer_ui = None
@@ -187,6 +188,7 @@ class UIStateSP:
     self.standstill_timer = self.params.get_bool("StandstillTimer")
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.torque_bar = self.params.get_bool("TorqueBar")
+    self.trip_summary = self.params.get_bool("TripSummary")
     self.enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
     self.custom_torque_params = self.params.get_bool("CustomTorqueParams")
     self.torque_override_enabled = self.params.get_bool("TorqueParamsOverrideEnabled")
