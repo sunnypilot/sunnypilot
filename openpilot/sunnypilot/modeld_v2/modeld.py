@@ -49,7 +49,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
-from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
+from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor, turn_plan_floor_scale
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -251,12 +251,12 @@ class ModelState(ModelStateBase):
     else:
       desired_accel = model_output['action'][0, 1]
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
-      if turn_sign:
-        # the action head can under-commit on turn entry while the model's own plan has the turn; use the plan as a floor
+      if turn_sign and (floor_scale := turn_plan_floor_scale(v_ego)) > 0.:
+        # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
         plan = model_output['plan'][0]
         plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
                                                  self.constants.T_IDXS, v_ego, lat_action_t)
-        desired_curvature = apply_turn_plan_floor(desired_curvature, plan_curvature, turn_sign)
+        desired_curvature = apply_turn_plan_floor(desired_curvature, plan_curvature, turn_sign, floor_scale)
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
