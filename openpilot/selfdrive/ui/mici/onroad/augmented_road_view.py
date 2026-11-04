@@ -181,8 +181,7 @@ class AugmentedRoadView(CameraView):
     self._long_indicator = LongIndicator()
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverStateRenderer()
-    self._confidence_ball = ConfidenceBall()
-    self._accel_boost_indicator = AccelBoostIndicator() if gui_app.sunnypilot_ui() else None
+    self._confidence_ball = AccelBoostIndicator(ConfidenceBall()) if gui_app.sunnypilot_ui() else ConfidenceBall()
     self._offroad_label = UnifiedLabel("start the car to\nuse sunnypilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=TextAlignment.CENTER,
@@ -276,11 +275,6 @@ class AugmentedRoadView(CameraView):
     # Use self._content_rect for positioning within camera bounds
     if show_navigation:
       self._navigation.render(rl.Rectangle(self._content_rect.x + self._content_rect.width, self.rect.y, PANEL_WIDTH, self.rect.height))
-    elif self._accel_boost_indicator is not None:
-      # The boost bar owns the side panel while the feature is on; the ball only shows otherwise
-      self._accel_boost_indicator.render(self.rect)
-      if not self._accel_boost_indicator.panel_in_use:
-        self._confidence_ball.render(self.rect)
     else:
       self._confidence_ball.render(self.rect)
 

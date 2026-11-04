@@ -63,8 +63,9 @@ def lighten(color: rl.Color, amount: float) -> rl.Color:
 
 
 class AccelBoostIndicator(Widget):
-  def __init__(self, panel_width: float = SIDE_PANEL_WIDTH, bar_width: float = BAR_WIDTH):
+  def __init__(self, fallback: Widget | None = None, panel_width: float = SIDE_PANEL_WIDTH, bar_width: float = BAR_WIDTH):
     super().__init__()
+    self._fallback = fallback
     self._panel_width = panel_width
     self._bar_width = bar_width
     fps = max(gui_app.target_fps, 1)
@@ -75,7 +76,6 @@ class AccelBoostIndicator(Widget):
     self._profile_color, self._max_boost = PROFILE_STYLES[1]
 
     self._applied_time = float('-inf')
-    self.panel_in_use = False
 
   def _update_state(self):
     sm = ui_state.sm
@@ -93,12 +93,11 @@ class AccelBoostIndicator(Widget):
       self._profile_color, self._max_boost = get_boost_style(sm['selfdriveState'].personality)
     self._max_boost_filter.update(self._max_boost)
 
-    # The bar owns the panel while it is drawn; the confidence ball returns when it fades out
-    self.panel_in_use = self._alpha_filter.x > FADE_THRESHOLD
-
   def _render(self, _):
     alpha = self._alpha_filter.x
     if alpha < FADE_THRESHOLD or self._max_boost <= 0.0:
+      if self._fallback is not None:
+        self._fallback.render(self.rect)
       return
 
     bar_w = self._bar_width
