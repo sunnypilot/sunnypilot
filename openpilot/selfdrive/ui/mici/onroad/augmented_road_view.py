@@ -22,7 +22,6 @@ from openpilot.common.transformations.orientation import rot_from_euler
 from enum import IntEnum
 
 if gui_app.sunnypilot_ui():
-  from openpilot.selfdrive.ui.sunnypilot.mici.onroad.accel_boost_indicator import AccelBoostIndicator
   from openpilot.selfdrive.ui.sunnypilot.mici.onroad.hud_renderer import HudRendererSP as HudRenderer
   from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
 
@@ -181,7 +180,7 @@ class AugmentedRoadView(CameraView):
     self._long_indicator = LongIndicator()
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverStateRenderer()
-    self._confidence_ball = AccelBoostIndicator(ConfidenceBall()) if gui_app.sunnypilot_ui() else ConfidenceBall()
+    self._confidence_ball = ConfidenceBall()
     self._offroad_label = UnifiedLabel("start the car to\nuse sunnypilot", 54, FontWeight.DISPLAY,
                                        text_color=rl.Color(255, 255, 255, int(255 * 0.9)),
                                        alignment=TextAlignment.CENTER,
