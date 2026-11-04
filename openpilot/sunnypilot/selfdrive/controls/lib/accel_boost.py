@@ -1,5 +1,5 @@
 """
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
@@ -14,7 +14,7 @@ from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 ACCEL_BOOST_MIN_SPEED = 1.0
 ACCEL_BOOST_MAX = (0.4, 0.25, 0.1)  # aggressive, standard, relaxed, m/s^2
 ACCEL_BOOST_BUILD, ACCEL_BOOST_RELEASE = 0.2, 1.0  # m/s^3
-BRAKE_PROB = (0.1, 0.3)  # the model's brake press in 2 s: it wants to slow
+BRAKE_PROB = (0.1, 0.3)  # the model's brake press in 4 s: it wants to slow
 GAS_PROB = (0.6, 0.8)  # predicts a human gas press at this hypothesis at about 23%
 CURVE_LAT_ACCEL = (1.5, 2.5)
 

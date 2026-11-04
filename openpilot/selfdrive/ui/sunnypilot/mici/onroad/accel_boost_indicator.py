@@ -1,13 +1,15 @@
 """
-Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import pyray as rl
 
+from openpilot.cereal import log
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
+from openpilot.selfdrive.ui.mici.onroad.hud_renderer import SET_SPEED_PERSISTENCE
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import ACCEL_BOOST_MAX
 from openpilot.system.ui.lib.application import gui_app
@@ -61,8 +63,10 @@ def lighten(color: rl.Color, amount: float) -> rl.Color:
 
 
 class AccelBoostIndicator(Widget):
-  def __init__(self):
+  def __init__(self, panel_width: float = SIDE_PANEL_WIDTH, bar_width: float = BAR_WIDTH):
     super().__init__()
+    self._panel_width = panel_width
+    self._bar_width = bar_width
     fps = max(gui_app.target_fps, 1)
     self._boost_filter = FirstOrderFilter(0.0, 0.15, 1 / fps)
     self._alpha_filter = FirstOrderFilter(0.0, 0.1, 1 / fps)
@@ -70,14 +74,20 @@ class AccelBoostIndicator(Widget):
     self._max_boost_filter = FirstOrderFilter(0.0, 0.25, 1 / fps)
     self._profile_color, self._max_boost = PROFILE_STYLES[1]
 
+    self._applied_time = float('-inf')
     self.panel_in_use = False
 
   def _update_state(self):
     sm = ui_state.sm
-    visible = (ui_state.has_longitudinal_control and sm.alive['selfdriveState'] and
+    visible = (ui_state.accel_boost and ui_state.has_longitudinal_control and sm.alive['selfdriveState'] and
                sm.alive['longitudinalPlan'] and sm['selfdriveState'].enabled)
+    plan = sm['longitudinalPlan']
+    # only while the boosted e2e target wins the planner's min(); lead or cruise limiting means boost does nothing
+    if visible and plan.accelBoost > FADE_THRESHOLD and plan.longitudinalPlanSource == log.LongitudinalPlan.LongitudinalPlanSource.e2e:
+      self._applied_time = rl.get_time()
+    visible = visible and rl.get_time() - self._applied_time < SET_SPEED_PERSISTENCE
     self._alpha_filter.update(1.0 if visible else 0.0)
-    self._boost_filter.update(float(sm['longitudinalPlan'].accelBoost) if visible else 0.0)
+    self._boost_filter.update(float(plan.accelBoost) if visible else 0.0)
 
     if sm.alive['selfdriveState']:
       self._profile_color, self._max_boost = get_boost_style(sm['selfdriveState'].personality)
@@ -91,16 +101,16 @@ class AccelBoostIndicator(Widget):
     if alpha < FADE_THRESHOLD or self._max_boost <= 0.0:
       return
 
-    panel_x = self.rect.x + self.rect.width - SIDE_PANEL_WIDTH
-    cx = panel_x + SIDE_PANEL_WIDTH / 2
-    bar_x = cx - BAR_WIDTH / 2
+    bar_w = self._bar_width
+    cx = self.rect.x + self.rect.width - self._panel_width / 2
+    bar_x = cx - bar_w / 2
     track_top = self.rect.y + self.rect.height * TRACK_TOP_RATIO
     track_bottom = self.rect.y + self.rect.height * TRACK_BOTTOM_RATIO
     track_h = max(1.0, track_bottom - track_top)
-    track_rect = rl.Rectangle(bar_x, track_top, BAR_WIDTH, track_h)
+    track_rect = rl.Rectangle(bar_x, track_top, bar_w, track_h)
 
     # soft well behind the track so the bar reads on the black side panel
-    rl.draw_rectangle_rounded(rl.Rectangle(bar_x - 3, track_top - 3, BAR_WIDTH + 6, track_h + 6), BAR_RADIUS, 12,
+    rl.draw_rectangle_rounded(rl.Rectangle(bar_x - 3, track_top - 3, bar_w + 6, track_h + 6), BAR_RADIUS, 12,
                               rl.Color(0, 0, 0, int(80 * alpha)))
 
     # track, light enough to read on the black side panel
@@ -122,17 +132,17 @@ class AccelBoostIndicator(Widget):
     tip_y = track_bottom - fill_h
 
     # soft glow around the tip, like the confidence ball's gradient
-    tip_center_y = tip_y + min(fill_h, BAR_WIDTH) / 2
+    tip_center_y = tip_y + min(fill_h, bar_w) / 2
     glow = rl.Color(fill_color.r, fill_color.g, fill_color.b, int(85 * alpha))
-    rl.draw_circle_gradient(rl.Vector2(cx, tip_center_y), int(BAR_WIDTH * 0.85), glow, rl.BLANK)
+    rl.draw_circle_gradient(rl.Vector2(cx, tip_center_y), int(bar_w * 0.85), glow, rl.BLANK)
 
     fill = rl.Color(fill_color.r, fill_color.g, fill_color.b, int(255 * alpha))
-    if fill_h < BAR_WIDTH:
+    if fill_h < bar_w:
       # Keep the cap inside the track: a fixed radius would paint below the track near zero boost
       radius = max(1, int(fill_h / 2))
       rl.draw_circle(int(cx), int(track_bottom - radius), radius, fill)
     else:
-      rl.draw_rectangle_rounded(rl.Rectangle(bar_x, tip_y, BAR_WIDTH, fill_h), BAR_RADIUS, 12, fill)
+      rl.draw_rectangle_rounded(rl.Rectangle(bar_x, tip_y, bar_w, fill_h), BAR_RADIUS, 12, fill)
 
       # subtle inner highlight gives the fill a rounded, glassy edge
       if fill_h > 12:

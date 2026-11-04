@@ -8,6 +8,7 @@ import pyray as rl
 
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.torque_bar import TorqueBar
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.accel_boost_indicator import AccelBoostIndicator
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui import DeveloperUiRenderer, DeveloperUiState, get_bottom_dev_ui_offset
 from openpilot.selfdrive.ui.sunnypilot.onroad.road_name import RoadNameRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.rocket_fuel import RocketFuel
@@ -37,6 +38,7 @@ class HudRendererSP(HudRenderer):
     self.circular_alerts_renderer = CircularAlertsRenderer()
     self.speed_renderer = SpeedRenderer()
     self._torque_bar = TorqueBar(scale=3.0, always=True)
+    self._accel_boost_indicator = AccelBoostIndicator(panel_width=72, bar_width=36)
 
     self.pcm_cruise_speed: bool = True
     self.show_icbm_status: bool = False
@@ -131,11 +133,15 @@ class HudRendererSP(HudRenderer):
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
 
+    hud_rect = rect
+    if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
+      hud_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height - get_bottom_dev_ui_offset())
     if ui_state.torque_bar:
-      torque_rect = rect
-      if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
-        torque_rect = rl.Rectangle(rect.x, rect.y, rect.width, rect.height - get_bottom_dev_ui_offset())
-      self._torque_bar.render(torque_rect)
+      self._torque_bar.render(hud_rect)
+    boost_rect = hud_rect
+    if ui_state.developer_ui in (DeveloperUiState.RIGHT, DeveloperUiState.BOTH):
+      boost_rect = rl.Rectangle(hud_rect.x, hud_rect.y, hud_rect.width - 230, hud_rect.height)
+    self._accel_boost_indicator.render(boost_rect)
 
     self.developer_ui.render(rect)
     self.road_name_renderer.render(rect)
