@@ -22,7 +22,9 @@ The checked-in `build_provenance.json` describes the shipped feature build.
 The previous build preserved all 273 base key names, types, flags and raw defaults
 and added five Mapbox keys. The navigation build adds only `NavModelState`;
 all 278 previous registry entries were compared against the real ARM64 library
-and remain identical. The status JSON clears on manager startup and going offroad. The C API exports and dynamic
+and remain identical. The plan braking build adds only the `PlanLong` bool (persistent, backup, default
+`0`); all 279 previous registry entries were compared against the real ARM64 library and remain identical.
+The status JSON clears on manager startup and going offroad. The C API exports and dynamic
 library dependencies match the base release, with no increased symbol-version
 requirements. The `params_keys_by_flag` correction returns distinct buffers
 owned by the handle instead of aliasing one temporary string.

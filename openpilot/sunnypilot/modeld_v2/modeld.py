@@ -50,6 +50,7 @@ from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
 from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor, turn_plan_floor_scale
+from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
 from openpilot.sunnypilot.models.helpers import get_active_bundle
@@ -239,17 +240,24 @@ class ModelState(ModelStateBase):
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
-                            blendful: Callable[[float], float] | None = None, turn_sign: float = 0.) -> log.ModelDataV2.Action:
+                            blendful: Callable[[float], float] | None = None, turn_sign: float = 0.,
+                            plan_long: PlanLong | None = None) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
-      desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
-                                          action_t=long_action_t)
+      if plan_long is not None:
+        desired_accel = plan_long.update(plan, model_output['plan_stds'][0], self.constants.T_IDXS, long_action_t)
+      else:
+        desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
+                                            action_t=long_action_t)
 
       curvature_plan = (plan + (self.PLANPLUS_CONTROL - 1.0) * model_output['planplus'][0]
                         if 'planplus' in model_output and self.PLANPLUS_CONTROL != 1.0 else plan)
       desired_curvature = get_curvature_from_output(model_output, curvature_plan, v_ego, lat_action_t, self.mlsim)
     else:
       desired_accel = model_output['action'][0, 1]
+      if plan_long is not None:
+        desired_accel = plan_long.update(model_output['plan'][0], model_output['plan_stds'][0], self.constants.T_IDXS, long_action_t,
+                                         action_accel=desired_accel)
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
       if turn_sign and (floor_scale := turn_plan_floor_scale(v_ego)) > 0.:
         # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
@@ -396,6 +404,8 @@ def main(demo=False):
   RELC = RoadEdgeLaneChangeController()
   blendful = Blendful()
   blendful_enabled = False
+  plan_long = PlanLong()
+  plan_long_enabled = False
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -440,6 +450,9 @@ def main(demo=False):
       model.PLANPLUS_CONTROL = params.get("PlanplusControl", return_default=True)
       camera_offset_helper.set_offset(params.get("CameraOffset", return_default=True))
       blendful_enabled = params.get_bool("Blendful")
+      plan_long_enabled = params.get_bool("PlanLong")
+      if not plan_long_enabled:
+        plan_long.reset()
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -555,7 +568,7 @@ def main(demo=False):
       turn_sign = 1. if desire == log.Desire.turnRight else -1. if desire == log.Desire.turnLeft else 0.  # curvature + is right
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
                                            partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled),
-                                           turn_sign=turn_sign)
+                                           turn_sign=turn_sign, plan_long=plan_long if plan_long_enabled else None)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
