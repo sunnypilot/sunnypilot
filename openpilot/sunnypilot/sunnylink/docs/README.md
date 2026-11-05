@@ -170,9 +170,9 @@ The tables below describe the **compiled** `settings_ui.json` schema — what th
 | `not_engaged` | Param can be changed while the car is started but only when sunnypilot/MADS is **not** actively driving. | Less strict than offroad. Matches Raylib `engaged = started AND (selfdriveState.enabled OR mads.enabled)`. Use for items the device must apply mid-drive (e.g. test maneuvers, longitudinal stock-vs-OP toggle). |
 | `param`-based | Behavior depends on another setting's value (parent toggle, mode selector, etc.). | Composes with `not`/`any`/`all` for arbitrary logic. |
 | `capability`-based | Behavior depends on the connected car or device (brand, longitudinal, hardware). | Resolved on the device from `CarParams` / hardware. See [`capabilities.py`](../capabilities.py) for the full field list. |
-| (no rule) | Param is always writable, no gating. | Rare. Prefer at least `offroad_only` unless the param is genuinely safe to flip mid-drive. |
+| (no rule) | Param is always writable, no gating. | Rare. Prefer at least `not_engaged` unless the param is genuinely safe to flip while engaged. |
 
-Default for new toggles: `enablement: [{$ref: "#/macros/offroad"}]`. Drop down to `not_engaged` only if you've confirmed mid-drive write is safe in the controls/UI code path.
+Use `enablement: [{$ref: "#/macros/offroad"}]` for new toggles by default. Drop down to `not_engaged` or (no rule) only if you've confirmed mid-drive write is safe in the controls/UI code path.
 
 ### Use `details` for safety notes / extended help
 
