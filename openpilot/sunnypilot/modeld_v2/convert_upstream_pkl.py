@@ -110,7 +110,7 @@ def _input_pokes(submit, kernargs) -> dict[int, tuple[int, int]]:
   pokes = {}
   for call in (u for u in submit.src[0].src[0].toposort() if u.op is Ops.CALL and len(u.src) > 3):
     _, address, value, *_ = call.src[1:]
-    used = list({_outer_slot(x, packed) for x in value.toposort()} & inputs.keys())
+    used = list({slot for x in value.toposort() if (slot := _outer_slot(x, packed)) is not None} & inputs.keys())
     if len(used) != 1 or not kernargs_params & {_outer_slot(x, packed) for x in address.toposort()}:
       continue
     ranges = list(dict.fromkeys(x for x in (*address.toposort(), *value.toposort()) if x.op is Ops.RANGE))
