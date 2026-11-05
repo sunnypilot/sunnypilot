@@ -634,6 +634,23 @@
               ]
             },
             {
+              "key": "SmoothStopSP",
+              "widget": "toggle",
+              "needs_onroad_cycle": true,
+              "title": "Smooth Stop",
+              "description": "Brakes gently as sunnypilot comes to a final stop to reduce the lurch at the end. Applies to all vehicles with sunnypilot longitudinal control.",
+              "enablement": [
+                {
+                  "type": "not_engaged"
+                },
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",

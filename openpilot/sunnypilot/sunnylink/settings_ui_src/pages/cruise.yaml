@@ -36,6 +36,16 @@ sections:
     description: "Adds a small push on top of sunnypilot's own acceleration, stronger in Aggressive and gentler in Relaxed. Eases off in curves and when sunnypilot slows or stops. Never goes past your set speed, and lead-car following still comes first."
     enablement:
     - $ref: '#/macros/longitudinal'
+  - key: SmoothStopSP
+    widget: toggle
+    needs_onroad_cycle: true
+    title: Smooth Stop
+    description: Brakes gently as sunnypilot comes to a final stop to reduce the lurch at the end. Applies to all vehicles with sunnypilot longitudinal control.
+    enablement:
+    - type: not_engaged
+    - type: capability
+      field: has_longitudinal_control
+      equals: true
   - key: IntelligentCruiseButtonManagement
     widget: toggle
     title: Intelligent Cruise Button Management (ICBM) (Alpha)

@@ -12,11 +12,13 @@ from openpilot.cereal import log, custom
 from opendbc.car import structs
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
+from openpilot.selfdrive.controls.lib.longcontrol import LongControl
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol_sp import LongControlSP
 
 
 class ControlsExt(ModelStateBase):
@@ -33,6 +35,11 @@ class ControlsExt(ModelStateBase):
 
     self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
+
+  def initialize_longitudinal_control(self, lo_c: LongControl) -> LongControl:
+    if self.CP_SP.smoothStopDecelRate > 0.0:
+      return LongControlSP(self.CP, self.CP_SP)
+    return lo_c
 
   def initialize_lateral_control(self, lac, CI, dt):
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
