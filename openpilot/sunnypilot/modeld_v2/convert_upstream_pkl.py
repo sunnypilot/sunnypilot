@@ -66,13 +66,13 @@ def _patched(buf, topo) -> tuple[bytearray, dict]:
   return blob, rows
 
 
-def _packed_args(program) -> dict[int, int]:  # since tinygrad af8961676 a program reads its params from one packed "args": byte offset -> slot
+def _packed_args(program) -> dict[int, int]:
   from tinygrad.device import TinyELF
   params = getattr(program.arg, "params", None) or ()
   return {off: p.arg.slot for (off, _), p in zip(TinyELF.iter_sig(tuple((None, p.addrspace, p.dtype, ()) for p in params)), params, strict=True)}
 
 
-def _outer_slot(u, packed: dict[int, int]) -> int | None:  # the submit argument u reads: a param of its own, a REFPARAM, or a word of "args"
+def _outer_slot(u, packed: dict[int, int]) -> int | None:
   from tinygrad.uop.ops import Ops
   if u.op is Ops.PARAM:
     return None if packed else u.arg.slot
