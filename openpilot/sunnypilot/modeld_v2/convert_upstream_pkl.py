@@ -122,8 +122,6 @@ def _input_pokes(submit, kernargs) -> dict[int, tuple[int, int]]:
 
 
 def _elf(image: bytes, rodata: int, entry: int) -> bytes:
-  # .rodata starts at the kernel descriptor and .text runs from the code to its end: tinygrad's own assembler puts the code first,
-  # comgr's linker after the descriptor. the loader reads .rodata, tinygrad's amd mock sizes the code from .text
   spans = [(".text", 0, rodata), (".rodata", rodata, len(image))] if entry < rodata else \
           [(".data", 0, rodata), (".rodata", rodata, entry), (".text", entry, len(image))]
   sections, names = [(0, 0, 0, 0, b"")], b"\0"
