@@ -46,6 +46,23 @@ jobs:
           CHECK_OOB: 0
           GMMU: 0
         run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_convert_upstream_pkl.py
+      - name: Resolve commaai's tinygrad pin, which their precompiled chestnut model is built and converted with
+        id: upstream-tg
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          read -r sha url < <(gh api repos/commaai/openpilot/contents/tinygrad_repo --jq '.sha + " " + .submodule_git_url')
+          echo "commaai/openpilot master pins $url@$sha, ours is $(git rev-parse HEAD:tinygrad_repo)"
+          dir="$RUNNER_TEMP/upstream_tinygrad"
+          git init -q "$dir" && git -C "$dir" fetch -q --depth 1 "$url" "$sha" && git -C "$dir" checkout -q FETCH_HEAD
+          echo "path=$dir" >> "$GITHUB_OUTPUT"
+      - name: Convert a pickled USB+AMD jit under commaai's tinygrad, as the chestnut model build does
+        env:
+          DEV: MOCKUSB+AMD
+          CHECK_OOB: 0
+          GMMU: 0
+          PYTHONPATH: ${{ steps.upstream-tg.outputs.path }}:${{ github.workspace }}
+        run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_convert_upstream_pkl.py
       - name: Where tinygrad moved, for the helper or failure point named above
         if: failure() && github.event_name == 'pull_request'
         run: |
