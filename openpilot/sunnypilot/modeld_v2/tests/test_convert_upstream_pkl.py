@@ -123,7 +123,7 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
 
 
 class TestKernelElf(OpenpilotTestCase):
-  def test_sections_follow_the_code(self):  # tinygrad's assembler puts the code before the kernel descriptor, comgr's linker after it
+  def test_sections_follow_the_code(self):
     from tinygrad.runtime.support.elf import elf_loader
     code = bytes(range(1, 129))
     for rodata, entry in ((len(code), 0), (0, 256)):
