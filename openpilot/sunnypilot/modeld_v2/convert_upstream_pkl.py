@@ -121,12 +121,22 @@ def _input_pokes(submit, kernargs) -> dict[int, tuple[int, int]]:
   return pokes
 
 
-def _elf(image: bytes, rodata: int) -> bytes:
-  names, offset, data, headers = b"\0.text\0.rodata\0.shstrtab\0", 64, b"", []
-  for name, kind, address, content in [(0, 0, 0, b""), (1, 1, ALIGNMENT, image[:rodata]), (7, 1, ALIGNMENT + rodata, image[rodata:]), (15, 3, 0, names)]:
-    headers.append(struct.pack("<IIQQQQIIQQ", name, kind, 2 if kind == 1 else 0, address, offset, len(content), 0, 0, 1, 0))
+def _elf(image: bytes, rodata: int, entry: int) -> bytes:
+  # .rodata starts at the kernel descriptor and .text runs from the code to its end: tinygrad's own assembler puts the code first,
+  # comgr's linker after the descriptor. the loader reads .rodata, tinygrad's amd mock sizes the code from .text
+  spans = [(".text", 0, rodata), (".rodata", rodata, len(image))] if entry < rodata else \
+          [(".data", 0, rodata), (".rodata", rodata, entry), (".text", entry, len(image))]
+  sections, names = [(0, 0, 0, 0, b"")], b"\0"
+  for name, start, end in (span for span in spans if span[1] < span[2]):
+    sections.append((len(names), 1, 6 if name == ".text" else 2, ALIGNMENT + start, image[start:end]))
+    names += name.encode() + b"\0"
+  sections.append((len(names), 3, 0, 0, names + b".shstrtab\0"))
+  offset, data, headers = 64, b"", []
+  for name, kind, flags, address, content in sections:
+    headers.append(struct.pack("<IIQQQQIIQQ", name, kind, flags, address, offset, len(content), 0, 0, 1, 0))
     data, offset = data + content, offset + len(content)
-  return b"\x7fELF\x02\x01\x01" + bytes(9) + struct.pack("<HHIQQQIHHHHHH", 1, 0xe0, 1, 0, 0, offset, 0, 64, 0, 0, 64, 4, 3) + data + b"".join(headers)
+  header = struct.pack("<HHIQQQIHHHHHH", 1, 0xe0, 1, 0, 0, offset, 0, 64, 0, 0, 64, len(sections), len(sections) - 1)
+  return b"\x7fELF\x02\x01\x01" + bytes(9) + header + data + b"".join(headers)
 
 
 def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
@@ -175,7 +185,7 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
     if image_alloc not in programs:
       image = bytes(_patched(image_alloc, topo)[0])
       rodata = next(r for r in range(0, len(image) - 24, 64) if r + struct.unpack_from("<q", image, r + 16)[0] == entry)
-      programs[image_alloc] = blob.add(_elf(image, rodata))
+      programs[image_alloc] = blob.add(_elf(image, rodata, entry))
     start, size = _view(arguments.src[0])
     args = []
     for slot in range(start, start + unwrap(size), 8):
