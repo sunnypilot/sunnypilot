@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import re
 import time
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.cereal import custom
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle, resolve_bundle_by_ref

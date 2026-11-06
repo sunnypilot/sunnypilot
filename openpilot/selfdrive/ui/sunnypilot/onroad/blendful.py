@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -82,8 +82,8 @@ class BlendfulRenderer:
     active = self._color(BLENDFUL_COLOR, np.clip(abs(pull) / 0.1, 0.0, 1.0) * 255)
     idle = self._color((255, 255, 255), 40)
     lx, rx = x + 18, x + w - 18
-    rl.draw_triangle(rl.Vector2(lx, cy), rl.Vector2(lx + 16, cy + 12), rl.Vector2(lx + 16, cy - 12), active if pull < 0 else idle)
-    rl.draw_triangle(rl.Vector2(rx - 16, cy - 12), rl.Vector2(rx - 16, cy + 12), rl.Vector2(rx, cy), active if pull > 0 else idle)
+    rl.draw_triangle_fan([rl.Vector2(lx, cy), rl.Vector2(lx + 16, cy + 12), rl.Vector2(lx + 16, cy - 12)], 3, active if pull < 0 else idle)
+    rl.draw_triangle_fan([rl.Vector2(rx - 16, cy - 12), rl.Vector2(rx - 16, cy + 12), rl.Vector2(rx, cy)], 3, active if pull > 0 else idle)
 
     bar = rl.Rectangle(x + 24, y + h - 16, w - 48, 6)
     rl.draw_rectangle_rounded(bar, 1.0, 6, self._color((255, 255, 255), 40))

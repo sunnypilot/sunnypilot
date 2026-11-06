@@ -1,5 +1,5 @@
 import math
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.widgets import Widget
@@ -24,19 +24,12 @@ def draw_circle_gradient(center_x: float, center_y: float, radius: int,
 
 
 class ConfidenceBall(Widget, ConfidenceBallSP):
-  def __init__(self, demo: bool = False):
+  def __init__(self):
     Widget.__init__(self)
     ConfidenceBallSP.__init__(self)
-    self._demo = demo
     self._confidence_filter = FirstOrderFilter(-0.5, 0.5, 1 / gui_app.target_fps)
 
-  def update_filter(self, value: float):
-    self._confidence_filter.update(value)
-
   def _update_state(self):
-    if self._demo:
-      return
-
     # animate status dot in from bottom
     if ui_state.status == UIStatus.DISENGAGED:
       self._confidence_filter.update(-0.5)
@@ -59,7 +52,7 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
     dot_height = self._rect.y + dot_height
 
     # confidence zones
-    if ui_state.status == UIStatus.ENGAGED or self._demo:
+    if ui_state.status == UIStatus.ENGAGED:
       if self._confidence_filter.x > 0.5:
         top_dot_color = rl.Color(0, 255, 204, 255)
         bottom_dot_color = rl.Color(0, 255, 38, 255)

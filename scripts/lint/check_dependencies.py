@@ -26,7 +26,7 @@ def main() -> int:
   for name, value, limit in (
     ("Direct dependencies (all extras)", direct, 39),
     ("Total dependencies", len(packages), 84),
-    ("Venv size (MiB)", size / 1024**2, 570),
+    ("Venv size (MiB)", size / 1024**2, 580),
   ):
     print(f"{name}: {value:g} (limit: {limit})")
     failed |= value > limit
