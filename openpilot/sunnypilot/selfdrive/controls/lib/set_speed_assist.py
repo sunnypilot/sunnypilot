@@ -30,12 +30,16 @@ APPROACH_GAP_BP = [0., 1., 3., 5., 10.]  # m/s below the target speed
 APPROACH_GAP_FRACTION = [0.38, 0.47, 0.57, 0.72, 1.]
 
 
-def approach_accel(v_ego: float, v_target: float, personality) -> float:
-  """Max floor accel while closing on v_target. The table is Standard; the other personalities move
-  it by Acceleration Boost's step between them."""
+def approach_ceiling(v_ego: float, personality) -> float:
+  """The most the approach asks for at v_ego, a long way under the target. The table is Standard;
+  the other personalities move it by Acceleration Boost's step between them."""
   step = get_boost_max(personality) - get_boost_max(log.LongitudinalPersonality.standard)
-  ceiling = np.interp(v_ego, APPROACH_BP, APPROACH_V) + step
-  return float(ceiling * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
+  return float(np.interp(v_ego, APPROACH_BP, APPROACH_V) + step)
+
+
+def approach_accel(v_ego: float, v_target: float, personality) -> float:
+  """Max floor accel while closing on v_target."""
+  return approach_ceiling(v_ego, personality) * float(np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
 
 
 class SetSpeedAssist:

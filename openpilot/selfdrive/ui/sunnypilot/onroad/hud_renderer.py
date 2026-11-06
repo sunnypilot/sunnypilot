@@ -16,6 +16,8 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.smart_cruise_control import SmartC
 from openpilot.selfdrive.ui.sunnypilot.onroad.turn_signal import TurnSignalController
 from openpilot.selfdrive.ui.sunnypilot.onroad.circular_alerts import CircularAlertsRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_renderer import SpeedRenderer
+from openpilot.selfdrive.ui.sunnypilot.onroad.speed_assist_button import SpeedAssistButton
+from openpilot.selfdrive.ui import UI_BORDER_SIZE
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.onroad.hud_renderer import HudRenderer, UI_CONFIG, FONT_SIZES, COLORS, CRUISE_DISABLED_CHAR
 from openpilot.system.ui.lib.application import gui_app
@@ -23,6 +25,9 @@ from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 SLA_ACTIVE_COLOR = rl.Color(0x91, 0x9b, 0x95, 0xff)
+
+# the experimental mode button's place and size, before upstream retired chill mode
+SPEED_ASSIST_BUTTON_SIZE = 192
 
 
 class HudRendererSP(HudRenderer):
@@ -37,6 +42,7 @@ class HudRendererSP(HudRenderer):
     self.circular_alerts_renderer = CircularAlertsRenderer()
     self.speed_renderer = SpeedRenderer()
     self._torque_bar = TorqueBar(scale=3.0, always=True)
+    self._speed_assist_button = SpeedAssistButton(SPEED_ASSIST_BUTTON_SIZE)
 
     self.pcm_cruise_speed: bool = True
     self.show_icbm_status: bool = False
@@ -131,6 +137,11 @@ class HudRendererSP(HudRenderer):
   def _render(self, rect: rl.Rectangle) -> None:
     super()._render(rect)
 
+    if ui_state.has_longitudinal_control:
+      button_x = rect.x + rect.width - UI_BORDER_SIZE - SPEED_ASSIST_BUTTON_SIZE
+      button_y = rect.y + UI_BORDER_SIZE
+      self._speed_assist_button.render(rl.Rectangle(button_x, button_y, SPEED_ASSIST_BUTTON_SIZE, SPEED_ASSIST_BUTTON_SIZE))
+
     if ui_state.torque_bar:
       torque_rect = rect
       if ui_state.developer_ui in (DeveloperUiState.BOTTOM, DeveloperUiState.BOTH):
@@ -144,3 +155,6 @@ class HudRendererSP(HudRenderer):
     self.turn_signal_controller.render(rect)
     self.circular_alerts_renderer.render(rect)
     self.rocket_fuel.render(rect, ui_state.sm)
+
+  def user_interacting(self) -> bool:
+    return self._speed_assist_button.is_pressed
