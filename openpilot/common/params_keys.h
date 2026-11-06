@@ -267,6 +267,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"Blendful", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"PlanplusControl", {PERSISTENT | BACKUP, FLOAT, "1.0"}},
     {"PlanLong", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"TurnInHold", {PERSISTENT | BACKUP, BOOL, "1"}},
 
     // mapd
     {"MapAdvisorySpeedLimit", {CLEAR_ON_ONROAD_TRANSITION, FLOAT}},

@@ -15,6 +15,11 @@ corner 1.4-3.5 m ahead of the camera), mostly while the floor set the command; a
 those turns, the car already turned in about when the plan's corner reached the bumper (69 of 71 pushback frames came
 after that), so the hold has to last past the corner: a further PAST_CORNER_M of travel, counted by speed, since a car
 held at the corner gets a plan that turns right where it is.
+
+Route 92, the first drive with the hold: held straight at a crawl, the model kept re-planning its corner 0.5-1.2 m ahead
+of the bumper, so it never arrived and two right turns stayed held for about 4 s until the driver steered. So once the
+corner is within NEAR_CORNER_M it's counted down by travel. Counted that way, the old turn-ins came about 1 m past it
+and the driver gave up on route 92 about 2.5 m past it, hence PAST_CORNER_M of 1.5 m.
 """
 import math
 from dataclasses import dataclass
@@ -26,15 +31,15 @@ BEND_RAD = math.radians(5.)  # the plan's corner starts where its heading has tu
 TURN_IN_AT = 0.  # m ahead of the front bumper: the plan's corner is reached here
 APPROACH_MAX_S = 8.  # s of creeping toward the corner, at most: a plan whose corner stays just out of reach can't pin it
 MOVING = 0.5  # m/s: waiting at a stop doesn't use up the approach
-PAST_CORNER_M = 2.0  # m travelled past the corner before turning in, like FSD going well past the entrance
+PAST_CORNER_M = 1.5  # m travelled past the corner before turning in, like FSD going past the entrance
 PAST_CORNER_RAMP = 1.0  # m over which the hold lets go at the end of that
-HOLD_MAX_S = 2.5  # s after reaching the corner, whatever the travel: the hold never outlasts this
+HOLD_MAX_S = 2.0  # s after reaching the corner, whatever the travel: the hold never outlasts this
 DT = 0.05  # s between updates, the model's frame
 HOLD_SPEED_BP = [4., 6.]  # m/s: full hold at a crawl, none from 13 mph, where turns were fine
 MIN_PLAN_TRAVEL = 8.  # m: a plan covering less (a stopped car) has no corner to measure
 LEAD_BP, LEAD_V = [4., 8.], [0.3, 0.]  # s of extra look-ahead for the floor: the wheel lags its command most at a crawl
 NOW_T = 0.1  # s: reading the plan this soon gives the curvature of the road right under the car
-NEAR_CORNER_M = 3.  # m: from this close the plan's curvature under the car is the turn itself, not the road before it
+NEAR_CORNER_M = 3.  # m: from this close the plan's curvature under the car is the turn, and the corner is counted by travel
 ROUTE_MARGIN_DEG = 10.  # the route has to want this much more turn than the plan before it counts
 ROUTE_MIN_PLAN_DEG = 30.  # a plan that has barely started its turn isn't scaled from almost nothing
 ROUTE_MAX_FACTOR = 1.3
@@ -154,10 +159,12 @@ class TurnShaper:
   def __init__(self):
     self.reset(0.)
     self.shape = TurnShape()
+    self.hold_enabled = True  # the TurnInHold toggle; off, nothing is held and the floor acts from the start
 
   def reset(self, turn_sign: float) -> None:
     self.sign = turn_sign
-    self.reached = False  # the plan's corner has come to the bumper
+    self.reached = False  # the corner has come to the bumper
+    self.corner_left: float | None = None  # m from the bumper to the corner, counted by travel once within NEAR_CORNER_M
     self.approach_s = 0.  # s held before the corner
     self.past_m, self.held_s = 0., 0.  # travel and time since the corner
     self.road = 0.  # the road's curvature under the car while the corner was still NEAR_CORNER_M away
@@ -174,8 +181,14 @@ class TurnShaper:
     bend = plan_bend_distance(xs, ys, yaws, turn_sign)
     if not self.reached and (bend is None or bend > NEAR_CORNER_M):
       self.road = road_now
+    # a near corner is counted down by travel: held straight, the model keeps re-planning its corner just ahead, so the
+    # plan's own corner would never arrive. A plan whose corner comes closer than that still counts.
+    if self.corner_left is not None:
+      self.corner_left -= max(v_ego, 0.) * DT
+    if bend is not None and (self.corner_left is not None or bend <= NEAR_CORNER_M):
+      self.corner_left = bend if self.corner_left is None else min(self.corner_left, bend)
     # only the corner starts the countdown: a turn signalled at speed still gets held once it slows for the corner
-    if not self.reached and bend is not None and bend <= TURN_IN_AT:
+    if not self.reached and self.corner_left is not None and self.corner_left <= TURN_IN_AT:
       self.reached = True
     if self.reached and not self.released:
       self.past_m += max(v_ego, 0.) * DT
@@ -190,7 +203,7 @@ class TurnShaper:
       hold = approach_hold(bend, self.approach_s)
       if hold > 0. and MOVING < v_ego and speed_factor(v_ego) > 0.:
         self.approach_s += DT
-    self.shape = TurnShape(hold=hold * speed_factor(v_ego), lead=turn_lead(v_ego),
+    self.shape = TurnShape(hold=hold * speed_factor(v_ego) if self.hold_enabled else 0., lead=turn_lead(v_ego),
                            factor=route_factor(route_remaining, yaws, turn_sign), bend=-1. if bend is None else bend,
                            route_deg=-1. if route_remaining is None else route_remaining, road=self.road)
     return self.shape

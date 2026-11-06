@@ -61,7 +61,7 @@ def test_scale_is_full_at_low_speed_and_fades_out():
 
 def _run_action(turn_sign, v_ego=2., k=0.1, action_share=0.5, turn_state=None, corner_m=0., route_deg=None, turn_deg=None,
                 frames=40):
-  # frames: model frames run on the same plan; the default carries the car past the corner hold (2 m at 2 m/s is 20)
+  # frames: model frames run on the same plan; the default carries the car past the corner hold (1.5 m at 2 m/s is 15)
   # a right turn the plan holds at curvature k from corner_m metres out while the action head asks for only part of it
   from typing import Any
   import numpy as np
@@ -147,7 +147,7 @@ def test_before_the_corner_the_turn_in_is_held_and_the_floor_is_off(sign):
 
 
 @pytest.mark.parametrize("sign", [RIGHT, LEFT])
-def test_at_the_corner_the_turn_in_waits_2_m_then_the_floor_is_the_full_plan(sign):
+def test_at_the_corner_the_turn_in_waits_then_the_floor_is_the_full_plan(sign):
   state, action = _run_action(sign, k=sign * 0.1, corner_m=0., frames=1)
   assert state.turn_shaper.shape.hold == 1.
   assert action.desiredCurvature == pytest.approx(0., abs=1e-6)

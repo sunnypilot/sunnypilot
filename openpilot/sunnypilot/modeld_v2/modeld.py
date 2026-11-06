@@ -481,6 +481,7 @@ def main(demo=False):
       plan_long_enabled = params.get_bool("PlanLong")
       if not plan_long_enabled:
         plan_long.reset()
+      model.turn_shaper.hold_enabled = params.get_bool("TurnInHold")
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)

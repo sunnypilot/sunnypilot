@@ -87,16 +87,34 @@ def drive(shaper, plan, v, frames, sign=RIGHT):
   return [shaper.update(*plan, sign, v).hold for _ in range(frames)]
 
 
-def test_shaper_holds_to_the_corner_then_2_m_past_it_then_lets_go_for_the_turn():
+def test_shaper_holds_to_the_corner_then_past_it_then_lets_go_for_the_turn():
   shaper = ts.TurnShaper()
   assert drive(shaper, corner_plan(12.), 3., 5) == [1.] * 5
-  # the corner reaches the bumper: still held for the next 2 m (0.15 m a frame at 3 m/s)
+  # the corner reaches the bumper: still held for the next 1.5 m, letting go over its last metre (0.15 m a frame at 3 m/s)
   holds = drive(shaper, corner_plan(0.), 3., 20)
-  assert holds[:6] == [1.] * 6
+  assert holds[:3] == [1.] * 3
   assert holds[-1] == 0. and shaper.released
   assert holds == sorted(holds, reverse=True)
   # turning, the plan's corner can look further off again: the hold doesn't come back
   assert drive(shaper, corner_plan(12.), 3., 3) == [0.] * 3
+
+
+def test_a_corner_the_plan_keeps_just_ahead_is_still_reached_by_travel():
+  # route 92: held straight at a crawl, the model re-plans its corner about 1 m ahead of the bumper, frame after frame
+  plan = corner_plan(1.8)
+  assert ts.plan_bend_distance(*plan, RIGHT) == pytest.approx(1., abs=0.1)
+  shaper = ts.TurnShaper()
+  holds = drive(shaper, plan, 2., 30)  # 0.1 m a frame: the corner after about 10, then 1.5 m more
+  assert holds[:14] == [1.] * 14
+  assert holds[-1] == 0. and shaper.released
+
+
+def test_the_hold_can_be_turned_off_and_the_corner_is_still_measured():
+  shaper = ts.TurnShaper()
+  shaper.hold_enabled = False
+  shape = shaper.update(*corner_plan(12.), RIGHT, 3.)
+  assert shape.hold == 0.
+  assert shape.bend == pytest.approx(12. + ts.BEND_RAD / 0.12 - ts.CAMERA_TO_FRONT, abs=0.3)
 
 
 def test_waiting_at_the_corner_still_turns_in_after_hold_max_s():
