@@ -196,9 +196,9 @@ jobs:
           export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
           python3 -c "
           import time
-          from openpilot.system.hardware.chestnut.flash import link_up
+          from openpilot.sunnypilot.modeld_v2.compile_modeld import chestnut_link_up
           for i in range(10):
-              if link_up():
+              if chestnut_link_up():
                   print(f'PCIe link up after {i+1} attempt(s)')
                   break
               time.sleep(1)
