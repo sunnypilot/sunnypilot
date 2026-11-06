@@ -31,7 +31,7 @@ class LeadVehicle:
     self.fade_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
 
-class ModelRenderer(BaseModelRenderer):
+class ModelRenderer(BaseModelRenderer, ModelRendererSP):
   LANE_LINE_WIDTHS = (0.12, 0.16, 0.16, 0.16)
   ROAD_EDGE_WIDTH = 0.16
 
