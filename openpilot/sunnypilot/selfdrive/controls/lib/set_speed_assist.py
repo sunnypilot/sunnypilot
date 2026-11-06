@@ -13,6 +13,7 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.selfdrive.modeld.constants import ModelConstants
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import get_boost_max
 
 LaneChangeState = log.LaneChangeState
 
@@ -27,18 +28,13 @@ APPROACH_BP = [0., 4., 9., 14., 18., 25.]  # m/s
 APPROACH_V = [1.5, 1.75, 1.45, 1.05, 0.85, 0.65]  # m/s^2
 APPROACH_GAP_BP = [0., 1., 3., 5., 10.]  # m/s below the target speed
 APPROACH_GAP_FRACTION = [0.38, 0.47, 0.57, 0.72, 1.]
-# The table is Standard; Relaxed and Aggressive move it by AccelBoostSP's personality step.
-APPROACH_PERSONALITY_OFFSET = {
-  log.LongitudinalPersonality.relaxed: -0.15,
-  log.LongitudinalPersonality.standard: 0.,
-  log.LongitudinalPersonality.aggressive: 0.15,
-}  # m/s^2
 
 
-def approach_accel(v_ego: float, v_target: float, personality: int) -> float:
-  """Max floor accel while closing on v_target. personality: the enum's raw value (a capnp enum read
-  from a message compares equal to it but hashes differently)."""
-  ceiling = np.interp(v_ego, APPROACH_BP, APPROACH_V) + APPROACH_PERSONALITY_OFFSET[personality]
+def approach_accel(v_ego: float, v_target: float, personality) -> float:
+  """Max floor accel while closing on v_target. The table is Standard; the other personalities move
+  it by Acceleration Boost's step between them."""
+  step = get_boost_max(personality) - get_boost_max(log.LongitudinalPersonality.standard)
+  ceiling = np.interp(v_ego, APPROACH_BP, APPROACH_V) + step
   return float(ceiling * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
 
 
@@ -78,11 +74,9 @@ class SetSpeedAssist:
     v_ego = sm['carState'].vEgo
     vel = np.asarray(md.velocity.x)
     yaw_rate = np.asarray(md.orientationRate.z)
-    gas_press_probs = md.meta.disengagePredictions.gasPressProbs
-    throttle_prob = gas_press_probs[1] if len(gas_press_probs) > 1 else 1.
     curvatures = [md.action.desiredCurvature, sm['controlsState'].curvature]
     if not (len(vel) == len(yaw_rate) == ModelConstants.IDX_N and
-            np.isfinite(np.concatenate([vel, yaw_rate, [v_ego, a_model, a_floor, throttle_prob, *curvatures]])).all()):
+            np.isfinite(np.concatenate([vel, yaw_rate, [v_ego, a_model, a_floor, *curvatures]])).all()):
       self.lift = 0.
       return a_model
 
@@ -90,7 +84,7 @@ class SetSpeedAssist:
     curvature = max(*np.abs(curvatures), np.max(np.abs(yaw_rate) / np.maximum(vel, 1.)))
     lat_acc = curvature * v_ego ** 2
 
-    self.gain = np.interp(a_model, GAIN_BP, [0., 1.]) * throttle_prob * np.interp(v_ego, [MIN_SPEED, FULL_SPEED], [0., 1.])
+    self.gain = np.interp(a_model, GAIN_BP, [0., 1.]) * np.interp(v_ego, [MIN_SPEED, FULL_SPEED], [0., 1.])
     self.fade = np.interp(lat_acc, FADE_LAT_ACC_BP, [1., 0.])
     self.active = self.enabled and md.meta.laneChangeState == LaneChangeState.off
 

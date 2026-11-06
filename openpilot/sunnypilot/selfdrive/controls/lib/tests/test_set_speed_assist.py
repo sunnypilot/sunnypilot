@@ -27,14 +27,13 @@ SETTLE = int(2. / (J_CRUISE_VALS[-1] * DT_MDL)) + 10
 STANDARD = log.LongitudinalPersonality.standard
 
 
-def build_sm(v_ego=V_EGO, yaw_rate=0., throttle_prob=1., lane_change=False):
+def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False):
   cs = messaging.new_message('carState')
   cs.carState.vEgo = v_ego
   cs.carState.vCruise = (V_EGO + 5.) * 3.6
   md = messaging.new_message('modelV2')
   md.modelV2.velocity.x = np.full(len(T_IDXS), v_ego).tolist()
   md.modelV2.orientationRate.z = np.broadcast_to(np.asarray(yaw_rate, dtype=float), T_IDXS.shape).tolist()
-  md.modelV2.meta.disengagePredictions.gasPressProbs = [1., throttle_prob, 1.]
   md.modelV2.meta.laneChangeState = log.LaneChangeState.laneChangeStarting if lane_change else log.LaneChangeState.off
   ctrl = messaging.new_message('controlsState')
   ctrl.controlsState.longControlState = LongCtrlState.pid
@@ -76,10 +75,6 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     run(assist, SETTLE, build_sm(), a_model=ssa.GAIN_BP[0])
     assert assist.lift == 0.
 
-  def test_throttle_probability_scales_the_lift(self, assist):
-    run(assist, SETTLE, build_sm(throttle_prob=0.5))
-    assert np.isclose(assist.lift, 0.5 * A_FLOOR)
-
   def test_stop_and_go_stays_the_models(self, assist):
     assert run(assist, SETTLE, build_sm(v_ego=ssa.MIN_SPEED - 1.), a_model=-0.05) == -0.05
 
@@ -109,7 +104,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     run(assist, SETTLE, build_sm())
     assert run(assist, 1, build_sm(), a_model=0.05, reset_state=True) == 0.05
     run(assist, SETTLE, build_sm())
-    assert run(assist, 1, build_sm(throttle_prob=float('nan')), a_model=0.05) == 0.05
+    assert run(assist, 1, build_sm(v_ego=float('nan')), a_model=0.05) == 0.05
     assert assist.lift == 0.
 
 
@@ -124,7 +119,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     def personality(name):
       msg = messaging.new_message('selfdriveState')
       msg.selfdriveState.personality = name
-      return msg.as_reader().selfdriveState.personality.raw
+      return msg.as_reader().selfdriveState.personality
     relaxed_p, standard_p, aggressive_p = (personality(n) for n in ('relaxed', 'standard', 'aggressive'))
     for v in ssa.APPROACH_BP:
       relaxed, standard, aggressive = (ssa.approach_accel(v, v + 10., p) for p in (relaxed_p, standard_p, aggressive_p))
@@ -178,7 +173,7 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
   def test_on_drives_to_the_set_speed(self, mocker):
     p = planner(mocker, True)
     # capped at the approach pace, below the cruise planner's
-    approach = ssa.approach_accel(V_EGO, p.output_v_target, planner_sm()['selfdriveState'].personality.raw)
+    approach = ssa.approach_accel(V_EGO, p.output_v_target, planner_sm()['selfdriveState'].personality)
     assert p.a_cruise > 1. > approach
     assert np.isclose(p.output_a_target, approach)
     assert np.isclose(p.set_speed_assist.lift, approach)

@@ -70,7 +70,7 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, a_mpc: float, a_cruise: float, reset_state: bool) -> float:
-    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target, sm['selfdriveState'].personality.raw))
+    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target, sm['selfdriveState'].personality))
     return self.set_speed_assist.update(sm, a_model, a_floor, reset_state)
 
   def update(self, sm: messaging.SubMaster) -> None:
