@@ -49,7 +49,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
-from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor, turn_plan_floor_scale
+from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor, turn_plan_floor_scale, turn_state_gate
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
@@ -110,6 +110,8 @@ class ModelState(ModelStateBase):
     self.MIN_LAT_CONTROL_SPEED = 0.3
     self.PLANPLUS_CONTROL: float = 1.0
     self.chestnut = chestnut
+    self.action_curvature = 0.  # last command before the turn plan floor, logged for tuning
+    self.turn_plan_curvature = 0.
 
     pkl_path = _find_driving_pkl(model_bundle)
     assert pkl_path is not None, f"No driving pkl found for {'chestnut' if chestnut else 'small model'} — all models must be compiled with compile_modeld.py"
@@ -253,18 +255,26 @@ class ModelState(ModelStateBase):
       curvature_plan = (plan + (self.PLANPLUS_CONTROL - 1.0) * model_output['planplus'][0]
                         if 'planplus' in model_output and self.PLANPLUS_CONTROL != 1.0 else plan)
       desired_curvature = get_curvature_from_output(model_output, curvature_plan, v_ego, lat_action_t, self.mlsim)
+      self.action_curvature, self.turn_plan_curvature = desired_curvature, 0.
     else:
       desired_accel = model_output['action'][0, 1]
       if plan_long is not None:
         desired_accel = plan_long.update(model_output['plan'][0], model_output['plan_stds'][0], self.constants.T_IDXS, long_action_t,
                                          action_accel=desired_accel)
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
-      if turn_sign and (floor_scale := turn_plan_floor_scale(v_ego)) > 0.:
-        # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
+      self.action_curvature, self.turn_plan_curvature = desired_curvature, 0.
+      if turn_sign:
         plan = model_output['plan'][0]
-        plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
-                                                 self.constants.T_IDXS, v_ego, lat_action_t)
-        desired_curvature = apply_turn_plan_floor(desired_curvature, plan_curvature, turn_sign, floor_scale)
+        self.turn_plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
+                                                           self.constants.T_IDXS, v_ego, lat_action_t)
+        floor_scale = turn_plan_floor_scale(v_ego)
+        if 'desire_state' in model_output:
+          # fade the floor out when the model itself has lost the turn, e.g. pulling away after a wait at a stop
+          turn_state = model_output['desire_state'][0, int(log.Desire.turnRight if turn_sign > 0 else log.Desire.turnLeft)]
+          floor_scale *= turn_state_gate(turn_state)
+        if floor_scale > 0.:
+          # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
+          desired_curvature = apply_turn_plan_floor(desired_curvature, self.turn_plan_curvature, turn_sign, floor_scale)
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
@@ -594,6 +604,8 @@ def main(demo=False):
       mdv2sp_send.modelDataV2SP.blendfulLeftProb = blendful.l_prob
       mdv2sp_send.modelDataV2SP.blendfulRightProb = blendful.r_prob
       mdv2sp_send.modelDataV2SP.blendfulLaneWidth = float(blendful.lane_width.x)
+      mdv2sp_send.modelDataV2SP.actionCurvature = float(model.action_curvature)
+      mdv2sp_send.modelDataV2SP.turnPlanCurvature = float(model.turn_plan_curvature)
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 

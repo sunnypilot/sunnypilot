@@ -475,6 +475,8 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   blendfulLeftProb @7 :Float32;
   blendfulRightProb @8 :Float32;
   blendfulLaneWidth @9 :Float32;
+  actionCurvature @10 :Float32;  # action head curvature before the turn plan floor
+  turnPlanCurvature @11 :Float32;  # plan curvature the turn floor compares against, 0 when no turn is requested
 
   enum TurnDirection {
     none @0;
