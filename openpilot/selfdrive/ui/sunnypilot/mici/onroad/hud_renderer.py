@@ -16,10 +16,10 @@ from openpilot.system.ui.lib.application import gui_app
 
 # Set Speed Assist's gauge mirrors the steering wheel in the bottom-right corner
 SPEED_ASSIST_HEIGHT = 44  # the wheel is 50, and round; the gauge's swoosh carries it to the same weight
-# status, not a call to act: dim while armed, brightening as the lift nears the most the
-# personality's approach pace asks for at this speed
-SPEED_ASSIST_ALPHA_IDLE = 0.4
-SPEED_ASSIST_ALPHA_LIFT = 0.7
+# the HUD's idle and lit levels: armed draws like an unlit distance bar, and brightens to the
+# wheel's 0.9 as the lift nears the most the personality's approach pace asks for at this speed
+SPEED_ASSIST_ALPHA_IDLE = 0.35
+SPEED_ASSIST_ALPHA_LIFT = 0.9
 
 
 class HudRendererSP(HudRenderer):
