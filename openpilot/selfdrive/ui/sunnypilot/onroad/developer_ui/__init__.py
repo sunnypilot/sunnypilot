@@ -4,9 +4,11 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
 from enum import IntEnum
 
-import pyray as rl
+import numpy as np
+import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
   UiElement, RelDistElement, RelSpeedElement, SteeringAngleElement,
@@ -17,6 +19,35 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
+
+
+RIGHT_UNIT_SIZE = 28
+RIGHT_UNITS = ("m", "km/h", "mph", "m/s^2")
+
+
+def load_text_texture(font: rl.Font, text: str, font_size: int) -> rl.Texture:
+  """Rasterize white text into a texture, so it can be drawn rotated with draw_texture_pro."""
+  size = measure_text_cached(font, text, font_size)
+  width, height = math.ceil(size.x), math.ceil(size.y)
+  target = rl.load_render_texture(width, height)
+  rl.begin_texture_mode(target)
+  rl.clear_background(rl.BLANK)
+  rl.draw_text_ex(font, text, rl.Vector2(0, 0), font_size, 0, rl.WHITE)
+  rl.end_texture_mode()
+
+  image = rl.load_image_from_texture(target.texture)
+  pixels = np.frombuffer(image.to_bytes(width * height * 4), dtype=np.uint8).reshape(height, width, 4)
+  rl.unload_image(image)
+  rl.unload_render_texture(target)
+
+  # Blending onto a transparent target leaves the coverage in rgb and squares the alpha; rebuild straight alpha.
+  # Render textures are stored bottom-up, so flip the rows.
+  rgba = np.full((height, width, 4), 255, dtype=np.uint8)
+  rgba[..., 3] = pixels[::-1, :, 0]
+  texture = rl.load_texture_from_image(rl.Image(rgba, width, height, 1, rl.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8))
+  rl.set_texture_filter(texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
+  rl.set_texture_wrap(texture, rl.TextureWrap.TEXTURE_WRAP_CLAMP)
+  return texture
 
 
 def get_bottom_dev_ui_offset():
@@ -38,6 +69,8 @@ class DeveloperUiRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self.dev_ui_mode = DeveloperUiState.OFF
+    # rotated units (raylib_nb has no draw_text_pro), built outside the frame since onroad renders inside a scissor
+    self._unit_textures = {unit: load_text_texture(self._font_bold, unit, RIGHT_UNIT_SIZE) for unit in RIGHT_UNITS}
 
     self.rel_dist_elem = RelDistElement()
     self.rel_speed_elem = RelSpeedElement()
@@ -106,7 +139,6 @@ class DeveloperUiRenderer(Widget):
     container_width = 184
     label_size = 28
     value_size = 60
-    unit_size = 28
     label_width = measure_text_cached(self._font_bold, element.label, label_size, 0).x
     centered_label_x = x + (container_width - label_width) / 2
     rl.draw_text_ex(self._font_bold, element.label, rl.Vector2(centered_label_x, y), label_size, 0, rl.WHITE)
@@ -117,12 +149,12 @@ class DeveloperUiRenderer(Widget):
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
     if element.unit:
-      units_height = measure_text_cached(self._font_bold, element.unit, unit_size, 0).x
-
+      unit_texture = self._unit_textures[element.unit]
       units_x = x + container_width
-      units_y = y + (value_size / 2) + (units_height / 2)
-
-      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
+      units_y = y + (value_size / 2) + (unit_texture.width / 2)
+      src = rl.Rectangle(0, 0, unit_texture.width, unit_texture.height)
+      dst = rl.Rectangle(units_x, units_y, unit_texture.width, unit_texture.height)
+      rl.draw_texture_pro(unit_texture, src, dst, rl.Vector2(0, 0), -90.0, rl.WHITE)
 
     return 130
 

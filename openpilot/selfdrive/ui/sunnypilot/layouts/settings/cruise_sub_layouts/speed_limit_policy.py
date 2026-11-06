@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from collections.abc import Callable
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import multiple_button_item_sp

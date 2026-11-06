@@ -9,7 +9,7 @@ import threading
 import requests
 import time
 import json
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.cereal import messaging
 from openpilot.common.params import Params

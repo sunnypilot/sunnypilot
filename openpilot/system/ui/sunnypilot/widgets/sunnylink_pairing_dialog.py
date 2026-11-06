@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import base64
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
@@ -120,7 +120,7 @@ class SunnylinkPairingDialog(PairingDialog):
       rl.draw_circle(int(circle_x), int(circle_y), circle_radius, rl.Color(70, 70, 70, 255))
       number = str(i + 1)
       number_size = measure_text_cached(font, number, 30)
-      rl.draw_text_ex(font, number, (int(circle_x - number_size.x // 2), int(circle_y - number_size.y // 2)), 30, 0, rl.WHITE)
+      rl.draw_text_ex(font, number, rl.Vector2(int(circle_x - number_size.x // 2), int(circle_y - number_size.y // 2)), 30, 0, rl.WHITE)
 
       # Text
       rl.draw_text_ex(font, "\n".join(wrapped), rl.Vector2(text_x, y), 47, 0.0, rl.BLACK)

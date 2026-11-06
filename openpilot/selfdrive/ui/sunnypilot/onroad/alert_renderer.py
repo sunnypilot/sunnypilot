@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.onroad.alert_renderer import AlertRenderer, AlertSize, ALERT_FONT_MEDIUM, ALERT_FONT_BIG, \
   ALERT_FONT_SMALL, ALERT_MARGIN, ALERT_HEIGHTS, ALERT_PADDING, Alert
 from openpilot.selfdrive.ui.ui_state import ui_state
