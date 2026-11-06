@@ -26,6 +26,9 @@ class SpeedAssistButton(Widget):
     self._engageable: bool = False
     self._black_bg: rl.Color = rl.Color(0, 0, 0, 166)
     self._rect = rl.Rectangle(0, 0, button_size, button_size)
+    # stays pressed past a tap whose press and release land in one frame, so the road view,
+    # which handles its events after this button, still sees it pressed and skips the sidebar
+    self._click_delay = 0.075
 
   def set_rect(self, rect: rl.Rectangle) -> None:
     self._rect.x, self._rect.y = rect.x, rect.y
