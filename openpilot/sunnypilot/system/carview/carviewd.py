@@ -5,13 +5,16 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
-carview test server: a page for the car's own browser, fed live from the comma.
+carview: a driving view for the car's own browser, fed live from the comma.
 
-It serves static/index.html on the local network and streams a small snapshot of the car's state to it as server-sent
-events. Every few seconds the page posts back what it measured (frame rate, WebGL, how steadily the data arrives), and
-each report is logged with the car's state at that moment, so one drive shows whether the car's browser keeps drawing
-and receiving while in Drive. It only reads messages and serves HTTP: it can't affect driving, and selfdrived ignores it
-if it dies. It runs only while the enabled file in carview_root() exists.
+It serves static/index.html (the view; /test is the original browser test) on the local network and streams the car,
+the model's road and path, leads, alerts and cues to it as server-sent events. Every few seconds the page posts back what
+it measured (frame rate, WebGL, how steadily the data arrives), and each report is logged with the car's state at that
+moment, so a drive shows how well the car's browser kept up. It only reads messages and serves HTTP: it can't affect
+driving, and selfdrived ignores it if it dies. It runs only while the enabled file in carview_root() exists.
+
+The car's browser refuses private addresses, so the car joins the comma's own hotspot and opens http://3.3.3.3:8099
+(see Hotspot).
 """
 import json
 import os
@@ -35,8 +38,10 @@ STATIC_DIR = Path(__file__).parent / "static"
 STATIC_FILES = {
   "/": ("index.html", "text/html; charset=utf-8"),
   "/index.html": ("index.html", "text/html; charset=utf-8"),
+  "/test": ("test.html", "text/html; charset=utf-8"),
   "/garage": ("garage.html", "text/html; charset=utf-8"),
   "/cars.js": ("cars.js", "text/javascript; charset=utf-8"),
+  "/view.js": ("view.js", "text/javascript; charset=utf-8"),
 }
 
 
@@ -52,12 +57,63 @@ def stats_path() -> Path:
   return carview_root() / "stats.jsonl"
 
 
+SERVICES = ['carState', 'selfdriveState', 'selfdriveStateSP', 'modelV2', 'radarState', 'longitudinalPlanSP',
+            'navInstruction', 'modelDataV2SP']
+
+
+def _r(xs, places: int = 2) -> list[float]:
+  return [round(float(v), places) for v in xs]
+
+
+def view_state(sm) -> dict:
+  """What the page draws, from the latest messages: the car, the model's road and path, leads, alerts and cues."""
+  cs, ss, sp = sm['carState'], sm['selfdriveState'], sm['selfdriveStateSP']
+  state = {
+    'vEgo': round(cs.vEgo, 2), 'gear': str(cs.gearShifter), 'standstill': cs.standstill,
+    'vCruise': round(cs.vCruiseCluster, 1), 'leftBlinker': cs.leftBlinker, 'rightBlinker': cs.rightBlinker,
+    'leftBlindspot': cs.leftBlindspot, 'rightBlindspot': cs.rightBlindspot, 'steeringAngle': round(cs.steeringAngleDeg, 1),
+    'engaged': ss.enabled, 'mads': sp.mads.enabled, 'state': str(ss.state),
+    'alert': ss.alertText1, 'alert2': ss.alertText2, 'alertStatus': str(ss.alertStatus),
+    'carStateAlive': sm.alive['carState'],
+  }
+
+  # the model's road in its own frame: x forward, y right, z down, metres from the camera
+  m = sm['modelV2']
+  if sm.alive['modelV2'] and len(m.position.x):
+    state['model'] = {
+      'path': [_r(m.position.x), _r(m.position.y), _r(m.position.z)],
+      'lineX': _r(m.laneLines[0].x, 1) if len(m.laneLines) else [],
+      'lines': [[_r(line.y), _r(line.z)] for line in m.laneLines],
+      'lineProbs': _r(m.laneLineProbs),
+      'edges': [[_r(edge.y), _r(edge.z)] for edge in m.roadEdges],
+      'edgeStds': _r(m.roadEdgeStds),
+    }
+
+  # leads: dRel from our front bumper, yRel positive to the left
+  rs = sm['radarState']
+  state['leads'] = [{'d': round(lead.dRel, 1), 'y': round(lead.yRel, 2), 'v': round(lead.vLead, 1), 'a': round(lead.aLeadK, 2)}
+                    for lead in (rs.leadOne, rs.leadTwo) if sm.alive['radarState'] and lead.present]
+
+  resolver = sm['longitudinalPlanSP'].speedLimit.resolver
+  state['speedLimit'] = round(resolver.speedLimit, 2) if resolver.speedLimitValid else 0.
+
+  nav = sm['navInstruction']
+  if sm.alive['navInstruction'] and nav.maneuverPrimaryText:
+    state['nav'] = {'primary': nav.maneuverPrimaryText, 'secondary': nav.maneuverSecondaryText, 'distance': round(nav.maneuverDistance),
+                    'type': nav.maneuverType, 'modifier': nav.maneuverModifier, 'timeRemaining': round(nav.timeRemaining),
+                    'distanceRemaining': round(nav.distanceRemaining)}
+
+  md = sm['modelDataV2SP']
+  state['turn'] = {'direction': str(md.laneTurnDirection), 'action': round(md.actionCurvature, 4), 'plan': round(md.turnPlanCurvature, 4)}
+  return state
+
+
 class CarSnapshot:
-  """The latest car state as a plain dict, refreshed from messaging on a background thread."""
+  """The latest view state as a plain dict, refreshed from messaging on a background thread."""
 
   def __init__(self):
     from openpilot.cereal import messaging
-    self.sm = messaging.SubMaster(['carState', 'selfdriveState', 'selfdriveStateSP'])
+    self.sm = messaging.SubMaster(SERVICES)
     self.lock = threading.Lock()
     self.state: dict = {}
     threading.Thread(target=self._run, daemon=True).start()
@@ -65,13 +121,11 @@ class CarSnapshot:
   def _run(self) -> None:
     while True:
       self.sm.update(0)
-      cs, ss, sp = self.sm['carState'], self.sm['selfdriveState'], self.sm['selfdriveStateSP']
-      state = {
-        'vEgo': round(cs.vEgo, 2), 'gear': str(cs.gearShifter), 'standstill': cs.standstill,
-        'vCruise': round(cs.vCruiseCluster, 1), 'leftBlinker': cs.leftBlinker, 'rightBlinker': cs.rightBlinker,
-        'engaged': ss.enabled, 'mads': sp.mads.enabled, 'state': str(ss.state), 'alert': ss.alertText1,
-        'carStateAlive': self.sm.alive['carState'],
-      }
+      try:
+        state = view_state(self.sm)
+      except Exception:
+        cloudlog.exception("carviewd: building the view state failed")
+        state = {}
       with self.lock:
         self.state = state
       time.sleep(1. / SEND_HZ)
@@ -79,6 +133,62 @@ class CarSnapshot:
   def __call__(self) -> dict:
     with self.lock:
       return dict(self.state)
+
+
+TETHER_ADDRESS = "192.168.43.1"  # the comma's own hotspot
+CAR_ADDRESS = "3.3.3.3"  # the car's browser refuses private addresses, so on the comma's hotspot the page is also here
+HOTSPOT_CHECK_S = 5.
+
+
+class Hotspot:
+  """While the comma's hotspot is on: answer at CAR_ADDRESS, and share the comma's internet with the hotspot.
+
+  NetworkManager tries to share it itself, but with an iptables that this kernel can't run, so the hotspot has no
+  internet and a car joining it drops it again. iptables-legacy works. Off the hotspot, CAR_ADDRESS is taken away again so
+  it never hides the real host of that address.
+  """
+
+  def __init__(self, run: Callable[[list[str]], tuple[int, str]]):
+    self.run = run
+
+  def tethering(self) -> bool:
+    return f"inet {TETHER_ADDRESS}/" in self.run(["ip", "-4", "-o", "addr", "show"])[1]
+
+  def has_car_address(self) -> bool:
+    return f"inet {CAR_ADDRESS}/32" in self.run(["ip", "-4", "-o", "addr", "show", "dev", "lo"])[1]
+
+  def uplink(self) -> str | None:
+    words = self.run(["ip", "route", "show", "default"])[1].split()
+    return words[words.index("dev") + 1] if "dev" in words[:-1] else None
+
+  def update(self) -> None:
+    on = self.tethering()
+    if on and not self.has_car_address():
+      self.run(["sudo", "-n", "ip", "addr", "add", f"{CAR_ADDRESS}/32", "dev", "lo"])
+    elif not on and self.has_car_address():
+      self.run(["sudo", "-n", "ip", "addr", "del", f"{CAR_ADDRESS}/32", "dev", "lo"])
+    if on and (dev := self.uplink()):
+      rule = ["POSTROUTING", "-s", f"{TETHER_ADDRESS.rsplit('.', 1)[0]}.0/24", "-o", dev, "-j", "MASQUERADE"]
+      if self.run(["sudo", "-n", "iptables-legacy", "-t", "nat", "-C", *rule])[0] != 0:
+        self.run(["sudo", "-n", "iptables-legacy", "-t", "nat", "-A", *rule])
+
+
+def run_command(cmd: list[str]) -> tuple[int, str]:
+  import subprocess
+  try:
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+    return p.returncode, p.stdout
+  except (OSError, subprocess.TimeoutExpired):
+    return 1, ""
+
+
+def keep_hotspot(hotspot: Hotspot) -> None:
+  while True:
+    try:
+      hotspot.update()
+    except Exception:
+      cloudlog.exception("carviewd: hotspot setup failed")
+    time.sleep(HOTSPOT_CHECK_S)
 
 
 def wall_ms() -> int:
@@ -164,7 +274,8 @@ def make_handler(snapshot: Callable[[], dict], log_path: Path, send_hz: float = 
         self._send(400, b"bad json", "text/plain")
         return
       server_ms = wall_ms()
-      append_report(log_path, {'serverTime': server_ms, 'client': self.client_address[0], 'car': snapshot(), 'page': page})
+      car = {k: v for k, v in snapshot().items() if k != 'model'}  # the road geometry would make the log 10x bigger
+      append_report(log_path, {'serverTime': server_ms, 'client': self.client_address[0], 'car': car, 'page': page})
       self._send(200, json.dumps({'serverTime': server_ms}).encode(), "application/json")
 
   return Handler
@@ -185,7 +296,10 @@ def make_server(snapshot: Callable[[], dict], log_path: Path, host: str = "0.0.0
 
 
 def main() -> None:
+  from openpilot.common.hardware import COMMA_HARDWARE
   os.nice(15)  # well below the driving processes
+  if COMMA_HARDWARE:
+    threading.Thread(target=keep_hotspot, args=(Hotspot(run_command),), daemon=True).start()
   server = make_server(CarSnapshot(), stats_path())
   cloudlog.warning(f"carviewd serving on port {PORT}")
   server.serve_forever()

@@ -3,43 +3,65 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>carview test</title>
+<title>carview</title>
 <style>
   :root {
-    --sky: #dcdde0; --ink: #1d1f22; --muted: #6b7076; --card: rgba(255, 255, 255, 0.92); --line: #e3e4e7;
-    --ok: #1f9d55; --bad: #d64545; --wait: #b7791f; --blue: #3e6ae1;
+    --sky: #dcdde0; --ink: #1d1f22; --muted: #6b7076; --faint: #a3a7ad; --card: rgba(255, 255, 255, 0.9);
+    --blue: #3e6ae1; --green: #2fb344; --amber: #c27c0e; --red: #c8312f;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sky); color: var(--ink);
     font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-user-select: none; user-select: none; }
   #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
 
-  #hud { position: fixed; top: 24px; left: 32px; }
-  #gears { letter-spacing: 0.35em; font-size: 18px; color: #a3a7ad; font-weight: 600; }
+  #hud { position: fixed; top: 20px; left: 28px; }
+  #gears { letter-spacing: 0.35em; font-size: 17px; color: var(--faint); font-weight: 600; }
   #gears b { color: var(--ink); }
-  #speed { font-size: 88px; font-weight: 300; line-height: 1; margin-top: 6px; font-variant-numeric: tabular-nums; }
-  #unit { font-size: 16px; color: var(--muted); letter-spacing: 0.1em; }
-  #setRow { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
-  #max { font-size: 26px; color: var(--blue); font-weight: 500; font-variant-numeric: tabular-nums; }
-  #max small { font-size: 13px; display: block; letter-spacing: 0.1em; }
-  .pill { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #c9ccd1; color: #fff; }
-  .pill.on { background: var(--ok); } .pill.lat { background: var(--blue); }
-  #clock { position: fixed; top: 26px; right: 32px; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--muted); }
+  #speedRow { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  #speed { font-size: 84px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; min-width: 1.2em; }
+  .blinker { width: 26px; height: 26px; opacity: 0.14; transition: opacity 0.08s; }
+  .blinker.on { opacity: 1; }
+  #unit { font-size: 15px; color: var(--muted); letter-spacing: 0.12em; margin-left: 40px; }
+  #setRow { display: flex; gap: 14px; align-items: center; margin-top: 12px; }
+  #max { font-size: 26px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--muted); text-align: center; }
+  #max small { font-size: 12px; display: block; letter-spacing: 0.12em; }
+  #max.on { color: var(--blue); }
+  #limit { display: none; width: 50px; border: 2px solid var(--ink); border-radius: 7px; background: #fff; text-align: center;
+    padding: 3px 0 2px; line-height: 1; }
+  #limit small { display: block; font-size: 8px; font-weight: 700; letter-spacing: 0.04em; }
+  #limit b { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #wheel { width: 30px; height: 30px; color: var(--faint); }
+  #wheel.steer { color: var(--blue); } #wheel.on { color: var(--blue); }
+  #wheel.on circle.fill { fill: currentColor; fill-opacity: 0.16; }
 
-  #panel { position: fixed; left: 24px; bottom: 24px; width: min(440px, calc(100vw - 48px)); background: var(--card);
-    border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); padding: 16px 18px; }
-  #panel h1 { font-size: 17px; margin: 0 0 4px; display: flex; justify-content: space-between; align-items: center; }
-  #beat { width: 56px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
-  #beatDot { width: 12px; height: 6px; border-radius: 3px; background: var(--blue); }
-  .row { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0;
-    border-top: 1px solid var(--line); font-size: 16px; }
-  .row:first-of-type { border-top: 0; }
-  .mark { font-weight: 700; } .ok .mark { color: var(--ok); } .bad .mark { color: var(--bad); } .wait .mark { color: var(--wait); }
-  .val { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
-  #renderer { font-size: 12px; color: var(--muted); margin: 2px 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #panel button { margin-top: 10px; width: 100%; font-size: 16px; padding: 12px; border-radius: 10px; border: 0;
-    background: var(--ink); color: #fff; font-weight: 600; }
-  #panel p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+  #nav { display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--card);
+    border-radius: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1); padding: 10px 18px 10px 12px; align-items: center; gap: 12px; max-width: 46vw; }
+  #navArrow { width: 38px; height: 38px; flex: none; }
+  #navDist { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #navStreet { font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  #topRight { position: fixed; top: 20px; right: 24px; text-align: right; }
+  #clockRow { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+  #clock { font-size: 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  #eta { display: none; margin-top: 6px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.75); color: var(--ink);
+    display: grid; place-items: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); padding: 0; }
+  .btn svg { width: 18px; height: 18px; }
+  .embed .btn { display: none; }
+
+  /* between the speed panel on the left and the buttons and clock on the right */
+  #alert { display: none; position: fixed; left: 50%; top: 20px; transform: translateX(-50%); width: max-content;
+    max-width: calc(100vw - 460px); min-width: 220px; border-radius: 14px; padding: 12px 20px; color: #fff; text-align: center; background: rgba(29, 31, 34, 0.9);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); }
+  #alert.userPrompt { background: var(--amber); } #alert.critical { background: var(--red); }
+  #alert b { display: block; font-size: 20px; font-weight: 600; }
+  #alert span { display: block; font-size: 15px; opacity: 0.9; margin-top: 3px; }
+
+  #status { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--card);
+    border-radius: 12px; padding: 12px 18px; font-size: 16px; color: var(--muted); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1); }
+  #toast { position: fixed; right: 24px; top: 70px; max-width: 320px; background: rgba(29, 31, 34, 0.9); color: #fff; font-size: 14px;
+    border-radius: 10px; padding: 10px 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
+  #toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -47,243 +69,201 @@
 
 <div id="hud">
   <div id="gears">P R N D</div>
-  <div id="speed">--</div>
+  <div id="speedRow">
+    <svg class="blinker" id="blinkL" viewBox="0 0 24 24"><path fill="#2fb344" d="M10 4 2 12l8 8v-5h12V9H10z"/></svg>
+    <div id="speed">--</div>
+    <svg class="blinker" id="blinkR" viewBox="0 0 24 24"><path fill="#2fb344" d="M14 4l8 8-8 8v-5H2V9h12z"/></svg>
+  </div>
   <div id="unit">MPH</div>
-  <div id="setRow"><div id="max">--<small>MAX</small></div><span id="engaged" class="pill">off</span></div>
-</div>
-<div id="clock"></div>
-
-<div id="panel">
-  <h1>carview test <span id="beat"><div id="beatDot"></div></span></h1>
-  <div id="renderer">checking WebGL...</div>
-  <div class="row wait" id="r-data"><span class="mark">…</span><span>Live data from the comma</span><span class="val"></span></div>
-  <div class="row wait" id="r-draw"><span class="mark">…</span><span>Drawing</span><span class="val"></span></div>
-  <div class="row wait" id="r-webgl"><span class="mark">…</span><span>WebGL 2</span><span class="val"></span></div>
-  <div class="row wait" id="r-three"><span class="mark">…</span><span>three.js</span><span class="val"></span></div>
-  <div class="row wait" id="r-report"><span class="mark">…</span><span>Reports to the comma</span><span class="val"></span></div>
-  <button id="fullscreen">Try fullscreen</button>
-  <p>Leave this open and drive. Every 2 s the page tells the comma what it measured.</p>
+  <div id="setRow">
+    <svg id="wheel" viewBox="0 0 32 32" aria-label="steering"><circle class="fill" cx="16" cy="16" r="13" fill="none"/>
+      <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="2.6"/>
+      <path d="M3.5 14.5c4-1.6 8.2-2.4 12.5-2.4s8.5.8 12.5 2.4M16 18v10.5M12.5 18.5 4.6 22.6M19.5 18.5l7.9 4.1" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <div id="max">--<small>MAX</small></div>
+    <div id="limit"><small>SPEED<br>LIMIT</small><b>--</b></div>
+  </div>
 </div>
 
-<script>
-// ---- what the page measures, reported to the comma every REPORT_S
+<div id="nav"><svg id="navArrow" viewBox="0 0 40 40"><g id="navArrowG" transform="rotate(0 20 20)">
+  <path d="M20 5 9 17h7v18h8V17h7z" fill="#1d1f22"/></g></svg>
+  <div><div id="navDist"></div><div id="navStreet"></div></div></div>
+
+<div id="topRight">
+  <div id="clockRow">
+    <button class="btn" id="popout" title="Pop out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="13" height="13" rx="2"/><path d="M11 3h8a2 2 0 0 1 2 2v8"/></svg></button>
+    <button class="btn" id="full" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    <div id="clock"></div>
+  </div>
+  <div id="eta"></div>
+</div>
+
+<div id="alert"><b></b><span></span></div>
+<div id="status">Waiting for the comma…</div>
+<div id="toast"></div>
+
+<script type="module">
+const params = new URLSearchParams(location.search);
+const embedded = params.has('embed');
+if (embedded) document.body.classList.add('embed');
 const REPORT_S = 2;
 const started = performance.now();
-const m = { frames: 0, frameGapMax: 0, events: 0, eventGapMax: 0, lastEvent: 0, rtt: null, reportOk: null,
-            webgl1: false, webgl2: false, renderer: '', three: 'loading', threeError: '', mode: 'none' };
-let car = { vEgo: 0, gear: 'unknown', vCruise: 0, engaged: false, mads: false };
-let fps = 0, fpsMin = 0;
+const m = { frames: 0, frameGapMax: 0, events: 0, eventGapMax: 0, lastEvent: 0, rtt: null, three: 'loading', threeError: '',
+            webgl2: !!document.createElement('canvas').getContext('webgl2'), renderer: '', fullscreen: '', popout: '', popoutSize: '' };
+let car = {}, view = null, paused = false, fps = 0, fpsMin = Infinity;
 
-function setRow(id, state, text) {
-  const el = document.getElementById(id);
-  el.className = 'row ' + state;
-  el.querySelector('.mark').textContent = state === 'ok' ? '✓' : state === 'bad' ? '✗' : '…';
-  el.querySelector('.val').textContent = text;
-}
+const $ = (id) => document.getElementById(id);
+function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 4000); }
 
-(function detectWebGL() {
-  const c = document.createElement('canvas');
-  const g2 = c.getContext('webgl2');
-  m.webgl2 = !!g2;
-  const g = g2 || c.getContext('webgl');
-  m.webgl1 = !!(g2 || document.createElement('canvas').getContext('webgl'));
-  if (g) {
-    const info = g.getExtension('WEBGL_debug_renderer_info');
-    m.renderer = info ? g.getParameter(info.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER);
-  }
-  document.getElementById('renderer').textContent = m.renderer || 'no WebGL renderer';
-  setRow('r-webgl', m.webgl2 ? 'ok' : 'bad', m.webgl2 ? 'yes' : (m.webgl1 ? 'only WebGL 1' : 'no'));
-})();
-
-// ---- live data: server-sent events from the comma
+// ---- live data from the comma
 const es = new EventSource('/events');
 let eventsThisWindow = 0;
 es.onmessage = (e) => {
   const now = performance.now();
   if (m.lastEvent) m.eventGapMax = Math.max(m.eventGapMax, now - m.lastEvent);
-  m.lastEvent = now;
-  m.events++; eventsThisWindow++;
-  try { car = JSON.parse(e.data); } catch (err) { /* keep the last good state */ }
+  m.lastEvent = now; m.events++; eventsThisWindow++;
+  try { car = JSON.parse(e.data); } catch (err) { return; }
+  if (view) view.update(car);
 };
 
-// ---- the scene: three.js when it loads, a flat canvas otherwise
-const canvas = document.getElementById('scene');
-let drawScene = () => {};
-let distance = 0, vSmooth = 0;
-let ss = null, leadCar = null;  // the supersampler and the car ahead, once three.js has loaded
-
-async function startThree() {
-  const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
-  const { buildCar, studioEnvironment, supersampler } = await import('/cars.js');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.0;
-  ss = supersampler(renderer);
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xdcdde0);
-  scene.fog = new THREE.Fog(0xdcdde0, 45, 170);
-  scene.environment = studioEnvironment(THREE, renderer);
-  scene.environmentIntensity = 0.75;
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
-  camera.position.set(0, 6.5, 15);
-  camera.lookAt(0, 0, -26);
-  scene.add(new THREE.HemisphereLight(0xffffff, 0xa9abaf, 0.6));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(-5, 9, 6);
-  scene.add(sun);
-
-  const flat = (w, l, color, x, z, y) => {
-    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, l), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
-    mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, y, z); scene.add(mesh); return mesh;
-  };
-  flat(400, 400, 0xbfc2c6, 0, -150, 0);
-  flat(11.2, 400, 0xf5f5f6, 0, -180, 0.01);
-  flat(0.15, 400, 0xd9b44a, -5.4, -180, 0.02);  // yellow edge, left
-  flat(0.15, 400, 0xb8bbc0, 5.4, -180, 0.02);   // white edge, right
-  const path = flat(1.1, 58, 0x3e6ae1, 0, -31, 0.03);
-  path.material.transparent = true; path.material.opacity = 0.9;
-
-  // lane dashes: one instanced mesh, moved by the distance driven
-  const DASH_EVERY = 12, DASHES = 34, LANES = [-1.8, 1.8];
-  const dashes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.01, 3), new THREE.MeshStandardMaterial({ color: 0xa9adb3, roughness: 1 }),
-                                         DASHES * LANES.length);
-  scene.add(dashes);
-  const tmp = new THREE.Object3D();
-
-  const place = (type, paint, x, z) => { const c = buildCar(THREE, type, paint); c.position.set(x, 0, z); scene.add(c); return c; };
-  place('crossover', 'ego', 0, 0);
-  const lead = place('crossover', 'clay', 0, -34);
-  place('suv', 'clay', -3.6, -58);
-  place('sedan', 'clay', 3.6, -22);
-  place('pickup', 'clay', -3.6, -96);
-  leadCar = lead;
-
-  const resize = () => {
-    renderer.setSize(window.innerWidth, window.innerHeight, false);
-    camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
-  };
-  window.addEventListener('resize', resize); resize();
-
-  drawScene = (now) => {
-    ss.tick(now);
-    let i = 0;
-    for (const x of LANES) {
-      for (let k = 0; k < DASHES; k++) {
-        tmp.position.set(x, 0.02, 20 - k * DASH_EVERY + (distance % DASH_EVERY));
-        tmp.updateMatrix(); dashes.setMatrixAt(i++, tmp.matrix);
-      }
-    }
-    dashes.instanceMatrix.needsUpdate = true;
-    renderer.render(scene, camera);
-  };
-  m.three = 'loaded'; m.mode = 'three';
-}
-
-function startFlat() {
-  const ctx = canvas.getContext('2d');
-  m.mode = ctx ? 'canvas2d' : 'none';
-  drawScene = () => {
-    const w = window.innerWidth, h = window.innerHeight;
-    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
-    ctx.fillStyle = '#dcdde0'; ctx.fillRect(0, 0, w, h);
-    const hz = h * 0.42, cx = w / 2;
-    ctx.fillStyle = '#f5f5f6';
-    ctx.beginPath(); ctx.moveTo(cx - 20, hz); ctx.lineTo(cx + 20, hz); ctx.lineTo(cx + w * 0.45, h); ctx.lineTo(cx - w * 0.45, h); ctx.fill();
-    ctx.fillStyle = '#a9adb3';
-    for (let k = 0; k < 14; k++) {
-      const z = ((k * 12 - (distance % 12)) + 168) % 168 + 4;  // metres ahead
-      const y = hz + (h - hz) * (6 / z);
-      for (const s of [-1, 1]) {
-        const x = cx + s * (w * 0.15) * (6 / z);
-        ctx.fillRect(x - 2, y, 4, Math.max(2, 40 * (6 / z)));
-      }
-    }
-  };
-}
-
-if (new URLSearchParams(location.search).has('flat')) {  // ?flat: skip three.js, to compare a plain canvas
-  m.three = 'skipped'; startFlat();
-} else {
-  startThree().catch((err) => { m.three = 'failed'; m.threeError = String(err).slice(0, 200); startFlat(); });
-}
-
-// ---- the frame loop
-const beatDot = document.getElementById('beatDot');
-let lastFrame = 0, minThisWindow = Infinity;
-function frame(now) {
-  if (lastFrame) {
-    const dt = Math.min((now - lastFrame) / 1000, 0.25);
-    m.frameGapMax = Math.max(m.frameGapMax, now - lastFrame);
-    vSmooth += (car.vEgo - vSmooth) * Math.min(1, dt * 4);  // the stream is 20 Hz, the screen faster
-    distance += vSmooth * dt;
+// ---- the scene
+(async () => {
+  try {
+    const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
+    const { createView } = await import('/view.js');
+    view = createView(THREE, $('scene'));
+    view.update(car);
+    m.three = 'loaded';
+    const g = document.createElement('canvas').getContext('webgl');
+    const info = g && g.getExtension('WEBGL_debug_renderer_info');
+    m.renderer = info ? g.getParameter(info.UNMASKED_RENDERER_WEBGL) : '';
+  } catch (err) {
+    m.three = 'failed'; m.threeError = String(err).slice(0, 200);
+    $('status').textContent = "Couldn't load the 3D view: " + m.threeError; $('status').style.display = 'block';
   }
-  lastFrame = now; m.frames++;
-  beatDot.style.transform = `translateX(${(now / 25) % 44}px)`;
-  if (leadCar) leadCar.userData.setBraking(Math.floor(now / 3000) % 3 === 0);  // the tail lights blink for the test
-  drawScene(now);
-  requestAnimationFrame(frame);
-}
+})();
 
-// frames counted by the clock, not by the frame loop, so a browser that stops drawing reads 0 instead of its last rate
-let hudFrames = 0, hudTime = performance.now();
-function measureFps() {
-  const now = performance.now();
-  fps = Math.round((m.frames - hudFrames) * 1000 / (now - hudTime));
-  minThisWindow = Math.min(minThisWindow, fps);
-  hudFrames = m.frames; hudTime = now;
+let last = 0;
+function frame(now) {
+  const dt = last ? Math.min((now - last) / 1000, 0.25) : 0;
+  if (last) m.frameGapMax = Math.max(m.frameGapMax, now - last);
+  last = now; m.frames++;
+  if (view && !paused) view.frame(now, dt);
+  requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-// ---- HUD and checklist, once a second is plenty
+// ---- HUD, a few times a second
 const GEARS = { park: 'P', reverse: 'R', neutral: 'N', drive: 'D' };
-function updateHud() {
-  measureFps();
-  const gear = GEARS[car.gear] || '';
-  document.getElementById('gears').innerHTML = ['P', 'R', 'N', 'D'].map(g => g === gear ? `<b>${g}</b>` : g).join(' ');
-  document.getElementById('speed').textContent = Math.round(car.vEgo * 2.23694);
-  const max = car.vCruise > 0 && car.vCruise < 250 ? Math.round(car.vCruise * 0.621371) : '--';
-  document.getElementById('max').innerHTML = `${max}<small>MAX</small>`;
-  const pill = document.getElementById('engaged');
-  pill.className = 'pill' + (car.engaged ? ' on' : car.mads ? ' lat' : '');
-  pill.textContent = car.engaged ? 'openpilot' : car.mads ? 'steering' : 'off';
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-  const since = m.lastEvent ? performance.now() - m.lastEvent : Infinity;
-  setRow('r-data', since < 1000 && eventsThisWindow >= 10 ? 'ok' : since < 3000 ? 'wait' : 'bad',
-         m.lastEvent ? `${eventsThisWindow}/s, gap ${Math.round(m.eventGapMax)} ms` : 'waiting');
-  eventsThisWindow = 0;
-  setRow('r-draw', fps >= 30 ? 'ok' : fps > 0 ? 'wait' : 'bad', `${fps} fps (${m.mode}${ss ? `, ${ss.ratio}x` : ''})`);
-  setRow('r-three', m.three === 'loaded' ? 'ok' : m.three === 'failed' ? 'bad' : 'wait', m.three);
-  if (m.reportOk !== null) setRow('r-report', m.reportOk ? 'ok' : 'bad', m.reportOk ? `${m.rtt} ms round trip` : 'failed');
+const MPH = 2.23694;
+function fmtDistance(m_) { const mi = m_ / 1609.34; return mi < 0.1 ? `${Math.max(10, Math.round(m_ * 3.28084 / 10) * 10)} ft` : `${mi < 10 ? mi.toFixed(1) : Math.round(mi)} mi`; }
+function arrowAngle(type, modifier) {
+  if (type === 'arrive') return 0;
+  const mod = (modifier || '').toLowerCase();
+  const a = { 'sharp left': -135, 'left': -90, 'slight left': -45, 'straight': 0, 'slight right': 45, 'right': 90, 'sharp right': 135, 'uturn': 180 }[mod];
+  return a ?? 0;
 }
-setInterval(updateHud, 1000);
+function hud() {
+  const gear = GEARS[car.gear] || '';
+  $('gears').innerHTML = ['P', 'R', 'N', 'D'].map(g => (g === gear ? `<b>${g}</b>` : g)).join(' ');
+  $('speed').textContent = car.carStateAlive ? Math.round((car.vEgo || 0) * MPH) : '--';
+  const set = car.vCruise > 0 && car.vCruise < 250 ? Math.round(car.vCruise * 0.621371) : null;
+  $('max').innerHTML = `${set ?? '--'}<small>MAX</small>`;
+  $('max').className = car.engaged ? 'on' : '';
+  $('wheel').setAttribute('class', car.engaged ? 'on' : car.mads ? 'steer' : '');
+  const limit = car.speedLimit > 0 ? Math.round(car.speedLimit * MPH) : 0;
+  $('limit').style.display = limit ? 'block' : 'none';
+  $('limit').querySelector('b').textContent = limit || '';
+  const blinkOn = Math.floor(performance.now() / 333) % 2 === 0;
+  $('blinkL').classList.toggle('on', !!car.leftBlinker && blinkOn);
+  $('blinkR').classList.toggle('on', !!car.rightBlinker && blinkOn);
 
-// ---- report to the comma
+  const nav = car.nav;
+  $('nav').style.display = nav ? 'flex' : 'none';
+  if (nav) {
+    $('navArrowG').setAttribute('transform', `rotate(${arrowAngle(nav.type, nav.modifier)} 20 20)`);
+    $('navDist').textContent = fmtDistance(nav.distance);
+    $('navStreet').textContent = nav.primary;
+    const arrive = new Date(Date.now() + nav.timeRemaining * 1000);
+    $('eta').style.display = 'block';
+    $('eta').textContent = `${arrive.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} · ${Math.round(nav.timeRemaining / 60)} min · ${fmtDistance(nav.distanceRemaining)}`;
+  } else $('eta').style.display = 'none';
+
+  const al = $('alert');
+  al.style.display = car.alert ? 'block' : 'none';
+  al.style.top = nav ? `${$('nav').offsetHeight + 32}px` : '20px';  // under the nav card when there is one
+  al.className = car.alertStatus || '';
+  al.querySelector('b').textContent = car.alert || '';
+  al.querySelector('span').textContent = car.alert2 || '';
+  $('clock').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  const quiet = !m.lastEvent || performance.now() - m.lastEvent > 1500;
+  if (m.three !== 'failed') { $('status').textContent = 'Waiting for the comma…'; $('status').style.display = quiet ? 'block' : 'none'; }
+}
+setInterval(hud, 166);
+
+// frames counted by the clock, so a browser that stops drawing reads 0 instead of its last rate
+let fpsFrames = 0, fpsTime = performance.now();
+setInterval(() => {
+  const now = performance.now();
+  fps = Math.round((m.frames - fpsFrames) * 1000 / (now - fpsTime));
+  fpsMin = Math.min(fpsMin, fps); fpsFrames = m.frames; fpsTime = now;
+}, 1000);
+
+// ---- full screen and pop out
+$('full').onclick = async () => {
+  const el = document.documentElement;
+  if (document.fullscreenElement) { document.exitFullscreen(); return; }
+  if (!el.requestFullscreen) { m.fullscreen = 'not supported'; toast("This browser can't go full screen."); return; }
+  try { await el.requestFullscreen({ navigationUI: 'hide' }); m.fullscreen = 'entered'; }
+  catch (err) { m.fullscreen = 'refused: ' + (err.message || err.name); toast("The browser refused full screen."); }
+  report();
+};
+document.addEventListener('fullscreenchange', report);
+
+$('popout').onclick = async () => {
+  // ?w=&h= sets the pop-out's size
+  const w = Number(params.get('w')) || 960, h = Number(params.get('h')) || 540;
+  m.popout = ''; m.popoutSize = '';
+  if ('documentPictureInPicture' in window) {
+    try {
+      const pip = await window.documentPictureInPicture.requestWindow({ width: w, height: h });
+      pip.document.body.style.margin = '0';
+      const frameEl = pip.document.createElement('iframe');
+      frameEl.src = '/?embed'; frameEl.style.cssText = 'border:0;width:100vw;height:100vh;display:block';
+      pip.document.body.appendChild(frameEl);
+      paused = true;  // one scene drawing at a time
+      pip.addEventListener('pagehide', () => { paused = false; m.popout += ', closed'; report(); });
+      m.popout = `picture-in-picture ${w}x${h}`;
+      setTimeout(() => { m.popoutSize = `${pip.innerWidth}x${pip.innerHeight}`; report(); }, 1500);
+      toast('Popped out.'); report(); return;
+    } catch (err) { m.popout = 'picture-in-picture refused: ' + (err.message || err.name) + '; '; }
+  } else m.popout = 'no picture-in-picture; ';
+  const win = window.open('/?embed', 'carview', `popup,width=${w},height=${h}`);
+  m.popout += win ? 'window.open opened' : 'window.open blocked';
+  toast(win ? 'Opened a pop-out window.' : 'The browser blocked the pop-out.');
+  if (win) setTimeout(() => { try { m.popoutSize = `${win.outerWidth}x${win.outerHeight}`; } catch (err) { m.popoutSize = 'unknown'; } report(); }, 1500);
+  report();
+};
+
+// ---- report to the comma what this browser managed
 async function report() {
   const body = {
-    uptimeS: Math.round((performance.now() - started) / 1000), fps, fpsMin: Number.isFinite(minThisWindow) ? Math.round(minThisWindow) : null,
-    frames: m.frames, frameGapMaxMs: Math.round(m.frameGapMax), events: m.events, eventGapMaxMs: Math.round(m.eventGapMax),
-    eventSource: es.readyState, carSeen: { vEgo: car.vEgo, gear: car.gear, n: car.n },
-    webgl1: m.webgl1, webgl2: m.webgl2, renderer: m.renderer, three: m.three, threeError: m.threeError, mode: m.mode,
-    visibility: document.visibilityState, w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio,
-    rttMs: m.rtt, pixelRatio: ss ? ss.ratio : null, ua: navigator.userAgent, url: location.href,
+    page: embedded ? 'view-embed' : 'view', uptimeS: Math.round((performance.now() - started) / 1000), fps,
+    fpsMin: Number.isFinite(fpsMin) ? fpsMin : null, frames: m.frames, frameGapMaxMs: Math.round(m.frameGapMax), events: m.events,
+    eventGapMaxMs: Math.round(m.eventGapMax), eventSource: es.readyState, webgl2: m.webgl2, renderer: m.renderer, three: m.three,
+    threeError: m.threeError, pixelRatio: view ? view.pixelRatio : null, visibility: document.visibilityState,
+    fullscreenNow: !!document.fullscreenElement, fullscreen: m.fullscreen, popout: m.popout, popoutSize: m.popoutSize, paused,
+    w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio, rttMs: m.rtt, ua: navigator.userAgent,
   };
-  m.frameGapMax = 0; m.eventGapMax = 0; minThisWindow = Infinity;
+  m.frameGapMax = 0; m.eventGapMax = 0; fpsMin = Infinity;
   const t0 = performance.now();
   try {
     const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    m.reportOk = r.ok; m.rtt = Math.round(performance.now() - t0);
-  } catch (err) {
-    m.reportOk = false;
-  }
+    if (r.ok) m.rtt = Math.round(performance.now() - t0);
+  } catch (err) { /* the next one will tell */ }
 }
 setInterval(report, REPORT_S * 1000);
 document.addEventListener('visibilitychange', report);
-
-document.getElementById('fullscreen').onclick = () => {
-  // the car opens YouTube's redirect page chromeless, and the page it forwards to stays that way
-  location.href = 'https://www.youtube.com/redirect?q=' + encodeURIComponent(location.href);
-};
 </script>
 </body>
 </html>

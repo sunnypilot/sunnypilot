@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>carview test</title>
+<style>
+  :root {
+    --sky: #dcdde0; --ink: #1d1f22; --muted: #6b7076; --card: rgba(255, 255, 255, 0.92); --line: #e3e4e7;
+    --ok: #1f9d55; --bad: #d64545; --wait: #b7791f; --blue: #3e6ae1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--sky); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-user-select: none; user-select: none; }
+  #scene { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+
+  #hud { position: fixed; top: 24px; left: 32px; }
+  #gears { letter-spacing: 0.35em; font-size: 18px; color: #a3a7ad; font-weight: 600; }
+  #gears b { color: var(--ink); }
+  #speed { font-size: 88px; font-weight: 300; line-height: 1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  #unit { font-size: 16px; color: var(--muted); letter-spacing: 0.1em; }
+  #setRow { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+  #max { font-size: 26px; color: var(--blue); font-weight: 500; font-variant-numeric: tabular-nums; }
+  #max small { font-size: 13px; display: block; letter-spacing: 0.1em; }
+  .pill { font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #c9ccd1; color: #fff; }
+  .pill.on { background: var(--ok); } .pill.lat { background: var(--blue); }
+  #clock { position: fixed; top: 26px; right: 32px; font-size: 22px; font-variant-numeric: tabular-nums; color: var(--muted); }
+
+  #panel { position: fixed; left: 24px; bottom: 24px; width: min(440px, calc(100vw - 48px)); background: var(--card);
+    border-radius: 16px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); padding: 16px 18px; }
+  #panel h1 { font-size: 17px; margin: 0 0 4px; display: flex; justify-content: space-between; align-items: center; }
+  #beat { width: 56px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  #beatDot { width: 12px; height: 6px; border-radius: 3px; background: var(--blue); }
+  .row { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: baseline; padding: 7px 0;
+    border-top: 1px solid var(--line); font-size: 16px; }
+  .row:first-of-type { border-top: 0; }
+  .mark { font-weight: 700; } .ok .mark { color: var(--ok); } .bad .mark { color: var(--bad); } .wait .mark { color: var(--wait); }
+  .val { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  #renderer { font-size: 12px; color: var(--muted); margin: 2px 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #panel button { margin-top: 10px; width: 100%; font-size: 16px; padding: 12px; border-radius: 10px; border: 0;
+    background: var(--ink); color: #fff; font-weight: 600; }
+  #panel p { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div id="hud">
+  <div id="gears">P R N D</div>
+  <div id="speed">--</div>
+  <div id="unit">MPH</div>
+  <div id="setRow"><div id="max">--<small>MAX</small></div><span id="engaged" class="pill">off</span></div>
+</div>
+<div id="clock"></div>
+
+<div id="panel">
+  <h1>carview test <span id="beat"><div id="beatDot"></div></span></h1>
+  <div id="renderer">checking WebGL...</div>
+  <div class="row wait" id="r-data"><span class="mark">…</span><span>Live data from the comma</span><span class="val"></span></div>
+  <div class="row wait" id="r-draw"><span class="mark">…</span><span>Drawing</span><span class="val"></span></div>
+  <div class="row wait" id="r-webgl"><span class="mark">…</span><span>WebGL 2</span><span class="val"></span></div>
+  <div class="row wait" id="r-three"><span class="mark">…</span><span>three.js</span><span class="val"></span></div>
+  <div class="row wait" id="r-report"><span class="mark">…</span><span>Reports to the comma</span><span class="val"></span></div>
+  <button id="fullscreen">Try full screen</button>
+  <p>Leave this open and drive. Every 2 s the page tells the comma what it measured.</p>
+</div>
+
+<script>
+// ---- what the page measures, reported to the comma every REPORT_S
+const REPORT_S = 2;
+const started = performance.now();
+const m = { frames: 0, frameGapMax: 0, events: 0, eventGapMax: 0, lastEvent: 0, rtt: null, reportOk: null,
+            webgl1: false, webgl2: false, renderer: '', three: 'loading', threeError: '', mode: 'none' };
+let car = { vEgo: 0, gear: 'unknown', vCruise: 0, engaged: false, mads: false };
+let fps = 0, fpsMin = 0;
+
+function setRow(id, state, text) {
+  const el = document.getElementById(id);
+  el.className = 'row ' + state;
+  el.querySelector('.mark').textContent = state === 'ok' ? '✓' : state === 'bad' ? '✗' : '…';
+  el.querySelector('.val').textContent = text;
+}
+
+(function detectWebGL() {
+  const c = document.createElement('canvas');
+  const g2 = c.getContext('webgl2');
+  m.webgl2 = !!g2;
+  const g = g2 || c.getContext('webgl');
+  m.webgl1 = !!(g2 || document.createElement('canvas').getContext('webgl'));
+  if (g) {
+    const info = g.getExtension('WEBGL_debug_renderer_info');
+    m.renderer = info ? g.getParameter(info.UNMASKED_RENDERER_WEBGL) : g.getParameter(g.RENDERER);
+  }
+  document.getElementById('renderer').textContent = m.renderer || 'no WebGL renderer';
+  setRow('r-webgl', m.webgl2 ? 'ok' : 'bad', m.webgl2 ? 'yes' : (m.webgl1 ? 'only WebGL 1' : 'no'));
+})();
+
+// ---- live data: server-sent events from the comma
+const es = new EventSource('/events');
+let eventsThisWindow = 0;
+es.onmessage = (e) => {
+  const now = performance.now();
+  if (m.lastEvent) m.eventGapMax = Math.max(m.eventGapMax, now - m.lastEvent);
+  m.lastEvent = now;
+  m.events++; eventsThisWindow++;
+  try { car = JSON.parse(e.data); } catch (err) { /* keep the last good state */ }
+};
+
+// ---- the scene: three.js when it loads, a flat canvas otherwise
+const canvas = document.getElementById('scene');
+let drawScene = () => {};
+let distance = 0, vSmooth = 0;
+let ss = null, leadCar = null;  // the supersampler and the car ahead, once three.js has loaded
+
+async function startThree() {
+  const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
+  const { buildCar, studioEnvironment, supersampler } = await import('/cars.js');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  ss = supersampler(renderer);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdcdde0);
+  scene.fog = new THREE.Fog(0xdcdde0, 45, 170);
+  scene.environment = studioEnvironment(THREE, renderer);
+  scene.environmentIntensity = 0.75;
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 400);
+  camera.position.set(0, 6.5, 15);
+  camera.lookAt(0, 0, -26);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xa9abaf, 0.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+  sun.position.set(-5, 9, 6);
+  scene.add(sun);
+
+  const flat = (w, l, color, x, z, y) => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, l), new THREE.MeshStandardMaterial({ color, roughness: 1 }));
+    mesh.rotation.x = -Math.PI / 2; mesh.position.set(x, y, z); scene.add(mesh); return mesh;
+  };
+  flat(400, 400, 0xbfc2c6, 0, -150, 0);
+  flat(11.2, 400, 0xf5f5f6, 0, -180, 0.01);
+  flat(0.15, 400, 0xd9b44a, -5.4, -180, 0.02);  // yellow edge, left
+  flat(0.15, 400, 0xb8bbc0, 5.4, -180, 0.02);   // white edge, right
+  const path = flat(1.1, 58, 0x3e6ae1, 0, -31, 0.03);
+  path.material.transparent = true; path.material.opacity = 0.9;
+
+  // lane dashes: one instanced mesh, moved by the distance driven
+  const DASH_EVERY = 12, DASHES = 34, LANES = [-1.8, 1.8];
+  const dashes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.01, 3), new THREE.MeshStandardMaterial({ color: 0xa9adb3, roughness: 1 }),
+                                         DASHES * LANES.length);
+  scene.add(dashes);
+  const tmp = new THREE.Object3D();
+
+  const place = (type, paint, x, z) => { const c = buildCar(THREE, type, paint); c.position.set(x, 0, z); scene.add(c); return c; };
+  place('crossover', 'ego', 0, 0);
+  const lead = place('crossover', 'clay', 0, -34);
+  place('suv', 'clay', -3.6, -58);
+  place('sedan', 'clay', 3.6, -22);
+  place('pickup', 'clay', -3.6, -96);
+  leadCar = lead;
+
+  const resize = () => {
+    renderer.setSize(window.innerWidth, window.innerHeight, false);
+    camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix();
+  };
+  window.addEventListener('resize', resize); resize();
+
+  drawScene = (now) => {
+    ss.tick(now);
+    let i = 0;
+    for (const x of LANES) {
+      for (let k = 0; k < DASHES; k++) {
+        tmp.position.set(x, 0.02, 20 - k * DASH_EVERY + (distance % DASH_EVERY));
+        tmp.updateMatrix(); dashes.setMatrixAt(i++, tmp.matrix);
+      }
+    }
+    dashes.instanceMatrix.needsUpdate = true;
+    renderer.render(scene, camera);
+  };
+  m.three = 'loaded'; m.mode = 'three';
+}
+
+function startFlat() {
+  const ctx = canvas.getContext('2d');
+  m.mode = ctx ? 'canvas2d' : 'none';
+  drawScene = () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    ctx.fillStyle = '#dcdde0'; ctx.fillRect(0, 0, w, h);
+    const hz = h * 0.42, cx = w / 2;
+    ctx.fillStyle = '#f5f5f6';
+    ctx.beginPath(); ctx.moveTo(cx - 20, hz); ctx.lineTo(cx + 20, hz); ctx.lineTo(cx + w * 0.45, h); ctx.lineTo(cx - w * 0.45, h); ctx.fill();
+    ctx.fillStyle = '#a9adb3';
+    for (let k = 0; k < 14; k++) {
+      const z = ((k * 12 - (distance % 12)) + 168) % 168 + 4;  // metres ahead
+      const y = hz + (h - hz) * (6 / z);
+      for (const s of [-1, 1]) {
+        const x = cx + s * (w * 0.15) * (6 / z);
+        ctx.fillRect(x - 2, y, 4, Math.max(2, 40 * (6 / z)));
+      }
+    }
+  };
+}
+
+if (new URLSearchParams(location.search).has('flat')) {  // ?flat: skip three.js, to compare a plain canvas
+  m.three = 'skipped'; startFlat();
+} else {
+  startThree().catch((err) => { m.three = 'failed'; m.threeError = String(err).slice(0, 200); startFlat(); });
+}
+
+// ---- the frame loop
+const beatDot = document.getElementById('beatDot');
+let lastFrame = 0, minThisWindow = Infinity;
+function frame(now) {
+  if (lastFrame) {
+    const dt = Math.min((now - lastFrame) / 1000, 0.25);
+    m.frameGapMax = Math.max(m.frameGapMax, now - lastFrame);
+    vSmooth += (car.vEgo - vSmooth) * Math.min(1, dt * 4);  // the stream is 20 Hz, the screen faster
+    distance += vSmooth * dt;
+  }
+  lastFrame = now; m.frames++;
+  beatDot.style.transform = `translateX(${(now / 25) % 44}px)`;
+  if (leadCar) leadCar.userData.setBraking(Math.floor(now / 3000) % 3 === 0);  // the tail lights blink for the test
+  drawScene(now);
+  requestAnimationFrame(frame);
+}
+
+// frames counted by the clock, not by the frame loop, so a browser that stops drawing reads 0 instead of its last rate
+let hudFrames = 0, hudTime = performance.now();
+function measureFps() {
+  const now = performance.now();
+  fps = Math.round((m.frames - hudFrames) * 1000 / (now - hudTime));
+  minThisWindow = Math.min(minThisWindow, fps);
+  hudFrames = m.frames; hudTime = now;
+}
+requestAnimationFrame(frame);
+
+// ---- HUD and checklist, once a second is plenty
+const GEARS = { park: 'P', reverse: 'R', neutral: 'N', drive: 'D' };
+function updateHud() {
+  measureFps();
+  const gear = GEARS[car.gear] || '';
+  document.getElementById('gears').innerHTML = ['P', 'R', 'N', 'D'].map(g => g === gear ? `<b>${g}</b>` : g).join(' ');
+  document.getElementById('speed').textContent = Math.round(car.vEgo * 2.23694);
+  const max = car.vCruise > 0 && car.vCruise < 250 ? Math.round(car.vCruise * 0.621371) : '--';
+  document.getElementById('max').innerHTML = `${max}<small>MAX</small>`;
+  const pill = document.getElementById('engaged');
+  pill.className = 'pill' + (car.engaged ? ' on' : car.mads ? ' lat' : '');
+  pill.textContent = car.engaged ? 'openpilot' : car.mads ? 'steering' : 'off';
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  const since = m.lastEvent ? performance.now() - m.lastEvent : Infinity;
+  setRow('r-data', since < 1000 && eventsThisWindow >= 10 ? 'ok' : since < 3000 ? 'wait' : 'bad',
+         m.lastEvent ? `${eventsThisWindow}/s, gap ${Math.round(m.eventGapMax)} ms` : 'waiting');
+  eventsThisWindow = 0;
+  setRow('r-draw', fps >= 30 ? 'ok' : fps > 0 ? 'wait' : 'bad', `${fps} fps (${m.mode}${ss ? `, ${ss.ratio}x` : ''})`);
+  setRow('r-three', m.three === 'loaded' ? 'ok' : m.three === 'failed' ? 'bad' : 'wait', m.three);
+  if (m.reportOk !== null) setRow('r-report', m.reportOk ? 'ok' : 'bad', m.reportOk ? `${m.rtt} ms round trip` : 'failed');
+}
+setInterval(updateHud, 1000);
+
+// ---- report to the comma
+async function report() {
+  const body = {
+    uptimeS: Math.round((performance.now() - started) / 1000), fps, fpsMin: Number.isFinite(minThisWindow) ? Math.round(minThisWindow) : null,
+    frames: m.frames, frameGapMaxMs: Math.round(m.frameGapMax), events: m.events, eventGapMaxMs: Math.round(m.eventGapMax),
+    eventSource: es.readyState, carSeen: { vEgo: car.vEgo, gear: car.gear, n: car.n },
+    webgl1: m.webgl1, webgl2: m.webgl2, renderer: m.renderer, three: m.three, threeError: m.threeError, mode: m.mode,
+    visibility: document.visibilityState, w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio,
+    rttMs: m.rtt, pixelRatio: ss ? ss.ratio : null, fullscreenNow: !!document.fullscreenElement, ua: navigator.userAgent, url: location.href,
+  };
+  m.frameGapMax = 0; m.eventGapMax = 0; minThisWindow = Infinity;
+  const t0 = performance.now();
+  try {
+    const r = await fetch('/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    m.reportOk = r.ok; m.rtt = Math.round(performance.now() - t0);
+  } catch (err) {
+    m.reportOk = false;
+  }
+}
+setInterval(report, REPORT_S * 1000);
+document.addEventListener('visibilitychange', report);
+
+document.getElementById('fullscreen').onclick = async () => {
+  // the browser's own full screen; the page's next report says whether it was allowed
+  try { await document.documentElement.requestFullscreen(); } catch (err) { /* reported below */ }
+  report();
+};
+</script>
+</body>
+</html>
