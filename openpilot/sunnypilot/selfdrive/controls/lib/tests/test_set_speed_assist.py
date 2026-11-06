@@ -16,6 +16,7 @@ from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
 from openpilot.selfdrive.controls.lib.longitudinal_mpc_lib.long_mpc import T_IDXS as T_IDXS_MPC
 from openpilot.selfdrive.controls.lib.longitudinal_planner import J_CRUISE_BP, J_CRUISE_VALS, LongitudinalPlanner, LongitudinalPlanSource
 from openpilot.selfdrive.modeld.constants import ModelConstants
+from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
 from openpilot.sunnypilot.selfdrive.controls.lib import set_speed_assist as ssa
 from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist
 
@@ -93,7 +94,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   def test_the_models_braking_passes_straight_through(self, assist):
     run(assist, SETTLE, build_sm())
-    # partway into the gain's fade, the lift drops to its new target at once
+    # halfway into the fade, the lift drops to its new value in one frame instead of easing off
     a_model = sum(ssa.GAIN_BP) / 2
     run(assist, 1, build_sm(), a_model=a_model)
     assert np.isclose(assist.lift, 0.5 * (A_FLOOR - a_model))
@@ -202,6 +203,7 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
   def test_switching_the_assist_on_drops_the_boost_the_same_frame(self, mocker):
     p = planner(mocker, False, accel_boost_sp=True)
     Params().put_bool("SetSpeedAssist", True)
-    while not p.set_speed_assist.enabled:
+    for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL) + 1):
       p.update(planner_sm())
       assert (p.accel_boost is p.accel_boost_sp) != p.set_speed_assist.enabled
+    assert p.set_speed_assist.enabled
