@@ -194,7 +194,7 @@ def longitudinal_maneuver_alert(CP: car.CarParams, CS: car.CarState, sm: messagi
 
 def personality_changed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
   personality = str(personality).title()
-  return NormalPermanentAlert(f"Following Distance: {personality}", duration=1.5)
+  return NormalPermanentAlert(f"Driving Personality: {personality}", duration=1.5)
 
 
 def invalid_lkas_setting_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int, personality) -> Alert:
@@ -214,7 +214,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.noGps: {},
   EventName.stockFcw: {},
-  EventName.actuatorsApiUnavailable: {},
 
   # ********** events only containing alerts displayed in all states **********
 
@@ -474,12 +473,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
     ET.SOFT_DISABLE: soft_disable_alert("locationd Temporary Error"),
   },
 
-  EventName.locationdPermanentError: {
-    ET.NO_ENTRY: NoEntryAlert("locationd Permanent Error"),
-    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("locationd Permanent Error"),
-    ET.PERMANENT: NormalPermanentAlert("locationd Permanent Error"),
-  },
-
   # openpilot tries to learn certain parameters about your car by observing
   # how the car behaves to steering inputs from both human and openpilot driving.
   # This includes:
@@ -491,12 +484,6 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
   EventName.paramsdTemporaryError: {
     ET.NO_ENTRY: paramsd_invalid_alert,
     ET.SOFT_DISABLE: soft_disable_alert("paramsd Temporary Error"),
-  },
-
-  EventName.paramsdPermanentError: {
-    ET.NO_ENTRY: NoEntryAlert("paramsd Permanent Error"),
-    ET.IMMEDIATE_DISABLE: ImmediateDisableAlert("paramsd Permanent Error"),
-    ET.PERMANENT: NormalPermanentAlert("paramsd Permanent Error"),
   },
 
   # ********** events that affect controls state transitions **********
@@ -511,6 +498,14 @@ EVENTS: dict[int, dict[str, Alert | AlertCallbackType]] = {
 
   EventName.pcmDisable: {
     ET.USER_DISABLE: EngagementAlert(AudibleAlert.disengage),
+  },
+
+  EventName.startupCruiseCanceled: {
+    ET.PERMANENT: Alert(
+      "Cruise Canceled",
+      "Cruise was on at startup",
+      AlertStatus.normal, AlertSize.mid,
+      Priority.MID, VisualAlert.none, AudibleAlert.disengage, 3.),
   },
 
   EventName.buttonCancel: {
