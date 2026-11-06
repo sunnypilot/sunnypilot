@@ -30,7 +30,7 @@ class HudRendererSP(HudRenderer):
     super().__init__()
     self.developer_ui = DeveloperUiRenderer()
     self.road_name_renderer = RoadNameRenderer()
-    self.rocket_fuel = RocketFuel()
+    self.rocket_fuel = RocketFuel(scale=3.0)
     self.speed_limit_renderer = SpeedLimitRenderer()
     self.smart_cruise_control_renderer = SmartCruiseControlRenderer()
     self.turn_signal_controller = TurnSignalController()
