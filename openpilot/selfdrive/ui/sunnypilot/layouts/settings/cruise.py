@@ -62,6 +62,7 @@ class CruiseLayout(Widget):
       description=tr("Accelerate up to the set speed, or the personality's following distance behind a lead, " +
                      "when the driving model would drive slower. The model still decides when to slow down."),
       param="SetSpeedAssist")
+    self._set_speed_assist_param = self.set_speed_assist_toggle.action_item.get_state()
 
     self.accel_boost_toggle = toggle_item_sp(
       title=tr("Acceleration Boost"),
@@ -162,15 +163,20 @@ class CruiseLayout(Widget):
         self.scc_v_toggle.action_item.set_enabled(False)
         self.scc_m_toggle.action_item.set_enabled(False)
 
-      self.set_speed_assist_toggle.action_item.set_enabled(has_long)
-      # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
-      self.accel_boost_toggle.action_item.set_enabled(has_long and not self.set_speed_assist_toggle.action_item.get_state())
-
     else:
       has_icbm = has_long = False
       self.icbm_toggle.action_item.set_enabled(False)
-      self.accel_boost_toggle.action_item.set_enabled(False)
       self.icbm_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
+
+    # the quick toggles and sunnylink write SetSpeedAssist too: take it when the param changes, so a
+    # tap's own write, still pending, isn't read back over the toggle
+    set_speed_assist = ui_state.params.get_bool("SetSpeedAssist")
+    if set_speed_assist != self._set_speed_assist_param:
+      self._set_speed_assist_param = set_speed_assist
+      self.set_speed_assist_toggle.action_item.set_state(set_speed_assist)
+    self.set_speed_assist_toggle.action_item.set_enabled(has_long)
+    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    self.accel_boost_toggle.action_item.set_enabled(has_long and not self.set_speed_assist_toggle.action_item.get_state())
 
     show_custom_acc_desc = False
 

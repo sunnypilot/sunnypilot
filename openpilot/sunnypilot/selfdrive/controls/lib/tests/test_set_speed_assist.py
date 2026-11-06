@@ -43,6 +43,7 @@ def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False):
 def run(ctl, frames, sm, a_model=0., a_floor=A_FLOOR, reset_state=False):
   out = a_model
   for _ in range(frames):
+    ctl.update_params()
     out = ctl.update(sm, a_model, a_floor, reset_state)
   return out
 
@@ -89,8 +90,16 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     run(assist, SETTLE, build_sm())
     run(assist, 1, build_sm(lane_change=True))
     assert np.isclose(assist.lift, A_FLOOR - ssa.LIFT_FALL * DT_MDL)
-    run(assist, 1, build_sm(), a_model=-0.5)
-    assert np.isclose(assist.lift, A_FLOOR - 2 * ssa.LIFT_FALL * DT_MDL)
+
+  def test_the_models_braking_passes_straight_through(self, assist):
+    run(assist, SETTLE, build_sm())
+    # partway into the gain's fade, the lift drops to its new target at once
+    a_model = sum(ssa.GAIN_BP) / 2
+    run(assist, 1, build_sm(), a_model=a_model)
+    assert np.isclose(assist.lift, 0.5 * (A_FLOOR - a_model))
+    run(assist, SETTLE, build_sm())
+    assert run(assist, 1, build_sm(), a_model=ssa.GAIN_BP[0]) == ssa.GAIN_BP[0]
+    assert assist.lift == 0.
 
   def test_switched_off_eases_out(self, assist):
     sm = build_sm()
@@ -189,3 +198,10 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
     assert p.accel_boost is p.accel_boost_sp
     p = planner(mocker, True, accel_boost_sp=True)
     assert p.accel_boost is not p.accel_boost_sp
+
+  def test_switching_the_assist_on_drops_the_boost_the_same_frame(self, mocker):
+    p = planner(mocker, False, accel_boost_sp=True)
+    Params().put_bool("SetSpeedAssist", True)
+    while not p.set_speed_assist.enabled:
+      p.update(planner_sm())
+      assert (p.accel_boost is p.accel_boost_sp) != p.set_speed_assist.enabled
