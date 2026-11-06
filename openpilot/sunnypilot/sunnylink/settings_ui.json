@@ -1413,6 +1413,12 @@
               ]
             },
             {
+              "key": "TripSummary",
+              "widget": "toggle",
+              "title": "Trip Summary",
+              "description": "Show a summary of distance and engagement when you shift into park after a drive."
+            },
+            {
               "key": "RocketFuel",
               "widget": "toggle",
               "title": "Real-time Acceleration Bar",
