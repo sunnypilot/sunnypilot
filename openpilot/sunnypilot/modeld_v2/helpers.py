@@ -264,8 +264,8 @@ def _program_uop(call: dict, lib: bytes):
     parameter = UOp.param(call["globals"][compact_slot], _dtype(dtype), math.prod(shape))
     image = (shape[0], shape[1]) if len(shape) == 3 and shape[2] == 4 else None
     parameters.append(parameter.replace(arg=_fields(parameter.arg, name=name, image=image)))
-  info = _fields(ProgramInfo, global_size=tuple(call["global_size"]), local_size=tuple(call["local_size"]), globals=tuple(call["globals"]),
-                 outs=tuple(call["outs"]), ins=tuple(call["ins"]), target=_fields(Target, **call["target"]))
+  info = _fields(ProgramInfo, global_size=tuple(call["global_size"]), local_size=tuple(call["local_size"]), params=tuple(parameters),
+                 globals=tuple(call["globals"]), outs=tuple(call["outs"]), ins=tuple(call["ins"]), target=_fields(Target, **call["target"]))
   return UOp(Ops.PROGRAM, src=(UOp(Ops.SINK, arg=KernelInfo(name=call["name"])), UOp(Ops.LINEAR, src=tuple(parameters)),
                                UOp(Ops.SOURCE, arg=""), UOp(Ops.BINARY, arg=lib)), arg=info)
 
