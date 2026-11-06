@@ -21,7 +21,7 @@ MIN_SPEED = 5.  # m/s. No assist below this, so stop-and-go stays with the model
 FULL_SPEED = 8.  # m/s. Full assist from this speed up.
 GAIN_BP = [-0.3, -0.1]  # Model accel over which the assist fades out as the model slows down.
 FADE_LAT_ACC_BP = [0.6, 1.0]  # Lat acc of the sharpest bend ahead over which the assist fades out.
-LIFT_FALL = 2.4  # m/s^3. For a lane change, a bend or a lower floor; a falling gain lets go faster.
+LIFT_FALL = 2.4  # m/s^3. The slowest the lift eases off, e.g. on a lane change or a bend.
 # Stock ACC approach to the target speed, gentler than the cruise planner's: max accel by speed,
 # scaled by the shortfall.
 APPROACH_BP = [0., 4., 9., 14., 18., 25.]  # m/s
@@ -62,7 +62,7 @@ class SetSpeedAssist:
     self.lift = 0.
 
   def update_params(self) -> None:
-    """Once a frame, before the planner picks its boost."""
+    """Read the param. Called before the planner decides whether Acceleration Boost may run."""
     self.frame += 1
     if self.frame % int(PARAMS_UPDATE_PERIOD / DT_MDL) == 0:
       self.enabled = self.params.get_bool("SetSpeedAssist")
@@ -71,7 +71,7 @@ class SetSpeedAssist:
     """Return the model's accel plus the assist. a_floor is the lower of the lead and cruise accels and the approach pace."""
     self.active = False
     self.gain = self.fade = 0.
-    # when switched off, the assist eases out at LIFT_FALL before stopping
+    # when switched off, the lift eases out before the assist stops
     if reset_state or (not self.enabled and self.lift == 0.):
       self.lift = 0.
       return a_model
@@ -96,8 +96,8 @@ class SetSpeedAssist:
 
     target = self.gain * self.fade * max(0., a_floor - a_model) if self.active else 0.
     rise = np.interp(v_ego, self.rise_bp, self.rise_vals)
-    # the lift may also drop at once by the gain's share, so with the model at GAIN_BP[0] its
-    # braking passes straight through
+    # Normally the lift eases off at LIFT_FALL. When the model starts to brake the gain drops, and
+    # the lift may drop with it in one frame, so at gain 0 the model's braking is not delayed.
     fall = max(LIFT_FALL * DT_MDL, (1. - self.gain) * self.lift)
     self.lift = rate_limit(target, self.lift, -fall, rise * DT_MDL)
     return a_model + self.lift
