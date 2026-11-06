@@ -114,22 +114,17 @@ class ModelsLayoutMici(NavScroller):
                                                            "while the model still sets the cruising speed. Turns off the accel boost. " +
                                                            "Needs openpilot longitudinal. Not available with the Default model."))
 
-    self.turn_in_hold_toggle = BigParamControl(tr("late turn-in"), "TurnInHold",
-                                               description=tr("On slow signalled turns, drives about 1.5 m past the corner before turning, " +
-                                                              "so the inside wheels clear it. Off, it turns in where the model wants. " +
-                                                              "Needs lane turn desire. Not available with the Default model."))
-
     self.map_turn_toggle = BigParamControl(tr("signal navigation (experimental)"), "MapboxNextTurnEnabled",
       toggle_callback=self._enable_map_turns,
       description=tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
                      "Navigation waits for an active lane change to complete. " +
-                     "Needs internet and a Mapbox token. With any model it shapes slow signalled turns and their corner speed; " +
+                     "Needs internet and a Mapbox token. With any model it sets the corner speed of slow signalled turns; " +
                      "a navigation-capable model also gets the route as input. " +
                      "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
     self.main_items = [self.current_model_info, self.preparation_details_btn, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,
                        self.refresh_btn, self.clear_cache_btn,
-                       self.blendful_toggle, self.plan_long_toggle, self.turn_in_hold_toggle, self.map_turn_toggle]
+                       self.blendful_toggle, self.plan_long_toggle, self.map_turn_toggle]
     self._scroller.add_widgets(self.main_items)
 
   def _prepare_navigation_model(self):
@@ -283,7 +278,6 @@ class ModelsLayoutMici(NavScroller):
     super().show_event()
     self.blendful_toggle.refresh()
     self.plan_long_toggle.refresh()
-    self.turn_in_hold_toggle.refresh()
 
   def _update_state(self):
     super()._update_state()
@@ -310,11 +304,6 @@ class ModelsLayoutMici(NavScroller):
     self.plan_long_toggle.set_enabled(blendful_allowed)
     if self.plan_long_toggle.value != blendful_value:
       self.plan_long_toggle.set_value(blendful_value)
-    # the turn-in hold lives in the custom model's modeld too
-    self.turn_in_hold_toggle.set_checked(blendful_allowed and ui_state.params.get_bool("TurnInHold"))
-    self.turn_in_hold_toggle.set_enabled(blendful_allowed)
-    if self.turn_in_hold_toggle.value != blendful_value:
-      self.turn_in_hold_toggle.set_value(blendful_value)
 
     manager = self.model_manager
     self._download_frame += 1

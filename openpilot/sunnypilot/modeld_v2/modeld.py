@@ -49,8 +49,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
-from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor, turn_plan_floor_scale, turn_state_gate
-from openpilot.sunnypilot.modeld_v2.turn_shaping import NOW_T as TURN_NOW_T, TurnShaper, hold_turn_in, limit_floor, route_turn_remaining
+from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
@@ -113,8 +112,6 @@ class ModelState(ModelStateBase):
     self.chestnut = chestnut
     self.action_curvature = 0.  # last command before the turn plan floor, logged for tuning
     self.turn_plan_curvature = 0.
-    self.turn_shaper = TurnShaper()  # crawl turns: hold the turn-in until the corner, then the full plan, read ahead
-    self.route_turn_deg: float | None = None  # turn the signal route still wants, from navd
 
     pkl_path = _find_driving_pkl(model_bundle)
     assert pkl_path is not None, f"No driving pkl found for {'chestnut' if chestnut else 'small model'} — all models must be compiled with compile_modeld.py"
@@ -267,26 +264,11 @@ class ModelState(ModelStateBase):
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
       self.action_curvature, self.turn_plan_curvature = desired_curvature, 0.
       if turn_sign:
+        # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
         plan = model_output['plan'][0]
-        yaws, yaw_rates = plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2]
-        road_now = get_curvature_from_plan(yaws, yaw_rates, self.constants.T_IDXS, v_ego, TURN_NOW_T)
-        shape = self.turn_shaper.update(plan[:, Plan.POSITION][:, 0], plan[:, Plan.POSITION][:, 1], yaws, turn_sign, v_ego,
-                                        road_now, self.route_turn_deg)
-        # read further ahead at a crawl, where the rate-limited wheel lags its command most
-        self.turn_plan_curvature = get_curvature_from_plan(yaws, yaw_rates, self.constants.T_IDXS, v_ego, lat_action_t + shape.lead)
-        if shape.hold > 0.:
-          # until 2 m past the plan's corner, steer toward the turn only as much as the road before the corner did
-          desired_curvature = hold_turn_in(desired_curvature, shape.road, turn_sign, shape.hold)
-        floor_scale = turn_plan_floor_scale(v_ego) * (1. - shape.hold)
-        if 'desire_state' in model_output:
-          # fade the floor out when the model itself has lost the turn, e.g. pulling away after a wait at a stop
-          turn_state = model_output['desire_state'][0, int(log.Desire.turnRight if turn_sign > 0 else log.Desire.turnLeft)]
-          floor_scale *= turn_state_gate(turn_state)
-        if floor_scale > 0.:
-          # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor,
-          # scaled up when the route says more turn is left than the plan has
-          floor = limit_floor(shape.factor * self.turn_plan_curvature, v_ego)
-          desired_curvature = apply_turn_plan_floor(desired_curvature, floor, turn_sign, floor_scale)
+        self.turn_plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
+                                                           self.constants.T_IDXS, v_ego, lat_action_t)
+        desired_curvature = apply_turn_plan_floor(desired_curvature, self.turn_plan_curvature, turn_sign)
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
@@ -467,12 +449,6 @@ def main(demo=False):
     is_rhd = sm["driverMonitoringState"].isRHD
     frame_id = sm["narrowRoadCameraState"].frameId
     v_ego = max(sm["carState"].vEgo, 0.)
-    # the turn the signal route still wants shapes a signalled turn (navd's MapboxTurnContext, 10 Hz, only while turning)
-    if desire not in (log.Desire.turnLeft, log.Desire.turnRight):
-      model.route_turn_deg = None
-    elif sm.frame % 2 == 0:
-      model.route_turn_deg = route_turn_remaining(params.get('MapboxTurnContext'), 1. if desire == log.Desire.turnRight else -1.,
-                                                  time.monotonic())
     if sm.frame % 60 == 0:
       model.lat_delay = get_lat_delay(params, sm["lateralDelay"].lateralDelay)
       model.PLANPLUS_CONTROL = params.get("PlanplusControl", return_default=True)
@@ -481,7 +457,6 @@ def main(demo=False):
       plan_long_enabled = params.get_bool("PlanLong")
       if not plan_long_enabled:
         plan_long.reset()
-      model.turn_shaper.hold_enabled = params.get_bool("TurnInHold")
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -595,8 +570,6 @@ def main(demo=False):
         prev_action.desiredCurvature = sm['controlsState'].curvature
       blendful_active = desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
       turn_sign = 1. if desire == log.Desire.turnRight else -1. if desire == log.Desire.turnLeft else 0.  # curvature + is right
-      if not turn_sign:
-        model.turn_shaper.update(None, None, None, 0., v_ego)  # the turn is over: the next one starts held again
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
                                            partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled),
                                            turn_sign=turn_sign, plan_long=plan_long if plan_long_enabled else None)
@@ -627,12 +600,6 @@ def main(demo=False):
       mdv2sp_send.modelDataV2SP.blendfulLaneWidth = float(blendful.lane_width.x)
       mdv2sp_send.modelDataV2SP.actionCurvature = float(model.action_curvature)
       mdv2sp_send.modelDataV2SP.turnPlanCurvature = float(model.turn_plan_curvature)
-      shape = model.turn_shaper.shape
-      mdv2sp_send.modelDataV2SP.turnInHold = float(shape.hold)
-      mdv2sp_send.modelDataV2SP.turnBendDistance = float(shape.bend)
-      mdv2sp_send.modelDataV2SP.turnLead = float(shape.lead)
-      mdv2sp_send.modelDataV2SP.turnRouteRemainingDeg = float(shape.route_deg)
-      mdv2sp_send.modelDataV2SP.turnRouteFactor = float(shape.factor)
       drivingdata_send.drivingModelData.meta.laneChangeState = DH.lane_change_state
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 

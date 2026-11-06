@@ -278,9 +278,9 @@ class SignalTurnEngine:
       return self._publish(now, 'blocked', reason='explicit_destination')
     if self.retired_key == key:
       return self._publish(now, 'blocked', reason='manual_destination_preempted')
-    # A model without navigation inputs still gets the turn's shape: crawl-turn steering and the corner speed read its
-    # bearings and distance (modeld_v2/turn_shaping.py, controls/lib/turn_speed.py). Map inputs to the model itself stay
-    # gated on modelSupportsNavigation (modeld_v2/navigation_input.py, the turn intent), as before.
+    # A model without navigation inputs still gets the turn's shape: the corner speed reads its bearings and distance
+    # (controls/lib/turn_speed.py). Map inputs to the model itself stay gated on modelSupportsNavigation
+    # (modeld_v2/navigation_input.py, the turn intent), as before.
     self.model_supports_navigation = bool(supported and intent.get('modelSupportsNavigation') is True)
     if not lateral or intent.get('lateralActive') is not True:
       self.target = None

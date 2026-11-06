@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "baseCommit": "b9d8f95ae98b7c3d3683d747583c00a9f00cb564",
+  "baseCommit": "c425b51ba6732b395d06ebd787751321d0cde4ba",
   "sourceTreeIncludesFeatureChanges": true,
   "builder": {
     "architecture": "native aarch64 Linux",
     "baseImage": "debian:bookworm-slim@sha256:99c0b25c46d0214d5a2091092e7908907dcaecd6a962cde0ac700acee222b6f3",
-    "testedImageId": "sha256:abda66d2bbcc53009489cd6b4797ef3ab398b57519c72f8013f27b695096de38",
+    "testedImageId": "sha256:ce668bac08f6454af65345eb76af47619a50f978b7c25d040e96febff4b8f631",
     "compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
     "compileAndTestNetwork": "none",
     "repositoryMountedInContainer": false
@@ -14,7 +14,7 @@
     "openpilot/common/params.h": "3c7b87d050c79275a401597dc7d15ae9fa57c2316c816ff5472cbdd84588a6e6",
     "openpilot/common/params.cc": "0074bdf766e9bf410f21820b8f730ed9403117c54725b6193176f28a14233737",
     "openpilot/common/params_c.cc": "7c3c86301ab3d65aa0eecc3f7b61c3baf4730baf72a9166cbb4de4237419a48d",
-    "openpilot/common/params_keys.h": "08a3103a245bc440a8db585ff5f0a486c2f6621925712f27ff40ef5d8d7bb712",
+    "openpilot/common/params_keys.h": "768739177e7e0798d4ca1c4af10c82293127aa9a733f3e16e0817a46c8187032",
     "openpilot/common/queue.h": "f7c75c847ae63dfd6e864406e722248540a79908270e85ca2674b43407408fcf",
     "openpilot/common/timing.h": "66a580e240fa4fe4af03bc3073ddd0f4db5d1027720e8adfa92ba448f7c8bc71",
     "openpilot/common/util.cc": "4479ecf72465e8f453d8af78447f7715f02d9397c58a49048f2bbc87a96d6b8a",
@@ -57,7 +57,7 @@
   ],
   "rebuildTools": {
     "Dockerfile": "c60c96043ea7b6d8ad94ab4e9181033606ae35e4fb43e034ab38b7505d867cff",
-    "README.md": "c6c2467839e05fffed20a60a666ad95cdfcb68659f5d2cd1b043e28e272246a1",
+    "README.md": "50f87b6e127db3d43f5f85e2124f98e99f4c576bc8fb561e6bdddf6e309598bd",
     "verify.py": "b068578579c1694c7b1594deca244917894ba43d69a80651058280c9a60a1b9f",
     "rebuild.py": "62f25ff2e6bd7daa9a635d6a6f49b7fdf03533370f2f75296d77003bed01d765"
   },
@@ -94,8 +94,8 @@
     ],
     "compiler": "g++ (Debian 12.2.0-14+deb12u1) 12.2.0",
     "machine": "aarch64",
-    "sha256": "cc59d319b431523db077d81a0272df55987c0d56fd594d530adfc37f0acc29df",
-    "bytes": 4147088
+    "sha256": "fcd1a9af21eaa5da8f6e487f1864b95f85cae6e5babd1e70563a1a2892688ad0",
+    "bytes": 4142344
   },
   "verification": {
     "originalTestMethods": [
@@ -181,7 +181,7 @@
       ]
     },
     "rebuilt": {
-      "sha256": "cc59d319b431523db077d81a0272df55987c0d56fd594d530adfc37f0acc29df",
+      "sha256": "fcd1a9af21eaa5da8f6e487f1864b95f85cae6e5babd1e70563a1a2892688ad0",
       "needed": [
         "libstdc++.so.6",
         "libgcc_s.so.1",
@@ -244,26 +244,16 @@
       "allOriginalNamesTypesDefaultsUnchanged": true,
       "executionArchitecture": "nativeaarch64Linux",
       "baselineCommit": "26c39fb969ac925be31ba14aa60c54f0ec088dff"
-    },
-    {
-      "originalKeyCount": 279,
-      "rebuiltKeyCount": 280,
-      "exactAddedKeys": [
-        "PlanLong"
-      ],
-      "allOriginalNamesTypesDefaultsUnchanged": true,
-      "executionArchitecture": "nativeaarch64Linux",
-      "baselineCommit": "c425b51ba6732b395d06ebd787751321d0cde4ba"
     }
   ],
   "registryCompatibility": {
-    "originalKeyCount": 280,
-    "rebuiltKeyCount": 281,
+    "originalKeyCount": 279,
+    "rebuiltKeyCount": 280,
     "exactAddedKeys": [
-      "TurnInHold"
+      "PlanLong"
     ],
     "allOriginalNamesTypesDefaultsUnchanged": true,
     "executionArchitecture": "nativeaarch64Linux",
-    "baselineCommit": "b9d8f95ae98b7c3d3683d747583c00a9f00cb564"
+    "baselineCommit": "c425b51ba6732b395d06ebd787751321d0cde4ba"
   }
 }
