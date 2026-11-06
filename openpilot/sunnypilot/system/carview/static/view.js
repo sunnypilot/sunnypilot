@@ -12,7 +12,11 @@ const PATH_FAR = 90;           // m of planned path drawn
 const PATH_WIDTH = 0.9;
 const LINE_WIDTH = 0.15;
 const DASH = 3.0, DASH_EVERY = 12.0;  // m: US lane dashes are 10 ft long with 30 ft gaps
-const EASE_S = 0.08;           // s: the 20 Hz model eased into the screen's 60 Hz
+// easing toward each new model frame, in seconds: long enough that the model's frame-to-frame noise doesn't show,
+// short enough that the road still swings round with us in a turn
+const EASE_S = { line: 0.22, edge: 0.45, path: 0.14, lead: 0.3 };
+const SMOOTH_FROM = 15;        // m: lines and edges are averaged along their length past this, where they wobble
+const EDGE_MIN = 1.6, EDGE_MAX = 8.0;  // m from the path that a road edge is kept to
 const LEAD_BRAKING = -1.0;     // m/s^2, the lead's tail lights come on below this
 
 const COLORS = {
@@ -100,6 +104,29 @@ const live = (THREE, geo, mat) => { const m = new THREE.Mesh(geo, mat); m.frustu
 
 const toScene = (x, y, z) => [y, -z, -x];
 
+// a 5-point running average along a line, only past SMOOTH_FROM: near the car the model is sharp and steady
+function steady(xs, ys) {
+  return ys.map((y, i) => {
+    if (xs[i] < SMOOTH_FROM) return y;
+    let sum = 0, n = 0;
+    for (let j = Math.max(0, i - 2); j <= Math.min(ys.length - 1, i + 2); j++) { sum += ys[j]; n++; }
+    return sum / n;
+  });
+}
+
+// the path's sideways offset at model x, from its [xs, ys, zs]; held at its ends, and only ever read forward, since a
+// stopped car's path folds back on itself
+function alongPath(path) {
+  if (!path || !path[0].length) return () => 0;
+  const xs = [], ys = [];
+  path[0].forEach((x, i) => { if (!xs.length || x > xs[xs.length - 1]) { xs.push(x); ys.push(path[1][i]); } });
+  return (x) => {
+    if (x <= xs[0]) return ys[0];
+    for (let i = 1; i < xs.length; i++) if (x <= xs[i]) return ys[i - 1] + (ys[i] - ys[i - 1]) * (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
+    return ys[ys.length - 1];
+  };
+}
+
 export function createView(THREE, canvas) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.toneMapping = THREE.NeutralToneMapping;
@@ -169,16 +196,24 @@ export function createView(THREE, canvas) {
     const m = car.model;
     if (!m) return;
     if (m.lineX && m.lineX.length && m.lineX.length + 1 !== lines[0].xs.length) [...lines, ...edges].forEach(l => l.setX(m.lineX));
-    // lane lines and road edges come with z from the camera (the road ~1.3 m below it), the path with z from the road:
-    // take the camera's height as where our lane's lines and the road edges start
-    const starts = [...(m.lines || []).slice(1, 3), ...(m.edges || [])].map(l => l[1][0]).filter(Number.isFinite);
-    const h = starts.length ? starts.reduce((a, b) => a + b, 0) / starts.length : 0;
-    const fromRoad = (zs) => zs.map(z => z - h);
-    (m.lines || []).forEach((l, i) => lines[i] && lines[i].target(l[0], fromRoad(l[1])));
-    (m.edges || []).forEach((e, i) => edges[i] && edges[i].target(e[0], fromRoad(e[1])));
+    // The road is drawn flat, as on the car's own display. Seen live: lane lines and road edges come with z from a
+    // camera tilted against the road (15 cm higher on the right across the lane, half a metre higher 100 m out), and the
+    // path's own z swings by metres 60 m out from one frame to the next, enough to hide the road behind a crest.
+    const lx = m.lineX || [], flat = lx.map(() => 0);
+    const pathY = alongPath(m.path);
+    (m.lines || []).forEach((l, i) => lines[i] && lines[i].target(steady(lx, l[0]), flat));
+    // road edges the model is unsure of wander and even cross the path: keep each on its own side, within reach
+    (m.edges || []).forEach((e, i) => {
+      if (!edges[i]) return;
+      const side = i === 0 ? -1 : 1;
+      edges[i].target(steady(lx, e[0].map((y, j) => {
+        const p = pathY(lx[j]), off = Math.min(EDGE_MAX, Math.max(EDGE_MIN, side * (y - p)));
+        return p + side * off;
+      })), flat);
+    });
     (m.lineProbs || []).forEach((p, i) => { probTarget[i] = p; });
     if (m.path && m.path[0].length) {
-      pathTarget = m.path[0].map((x, i) => [x, m.path[1][i], m.path[2][i]]);
+      pathTarget = m.path[0].map((x, i) => [x, m.path[1][i], 0]);  // flat, like the road
       if (!path || path.length !== pathTarget.length) path = pathTarget.map(p => [...p]);
     }
   }
@@ -187,10 +222,12 @@ export function createView(THREE, canvas) {
 
   function frame(now, dt) {
     ss.tick(now);
-    const k = 1 - Math.exp(-dt / EASE_S);
-    [...lines, ...edges].forEach(l => l.ease(k));
+    const ease = (s) => 1 - Math.exp(-dt / s);
+    const k = ease(EASE_S.line), kp = ease(EASE_S.path), kl = ease(EASE_S.lead);
+    lines.forEach(l => l.ease(k));
+    edges.forEach(l => l.ease(ease(EASE_S.edge)));
     for (let i = 0; i < 4; i++) lineProbs[i] += (probTarget[i] - lineProbs[i]) * k;
-    if (path && pathTarget) for (let i = 0; i < path.length; i++) for (let j = 0; j < 3; j++) path[i][j] += (pathTarget[i][j] - path[i][j]) * k;
+    if (path && pathTarget) for (let i = 0; i < path.length; i++) for (let j = 0; j < 3; j++) path[i][j] += (pathTarget[i][j] - path[i][j]) * kp;
 
     v += ((car.vEgo || 0) - v) * Math.min(1, dt * 4);
     distance += v * dt;
@@ -232,16 +269,18 @@ export function createView(THREE, canvas) {
     pathMat.color.setHex(car.engaged ? COLORS.pathOn : car.mads ? COLORS.pathSteer : COLORS.pathOff);
     pathMat.opacity = car.engaged || car.mads ? 1 : 0.55;
 
-    // leads: dRel from our front bumper, yRel to the left
-    const leads = car.leads || [];
+    // leads: dRel from our front bumper, yRel to the left. The second lead is often the first one again (seen live:
+    // both at 8.2 m), which drew two cars in one spot, so it only counts when it's clearly another car.
+    const all = car.leads || [];
+    const leads = all.filter((l, i) => i === 0 || Math.abs(l.d - all[0].d) > 4 || Math.abs(l.y - all[0].y) > 1.5);
     leadCars.forEach((lc, i) => {
       const lead = leads[i], st = leadState[i];
       if (!lead) { lc.visible = false; st.on = false; return; }
-      const x = CAMERA_TO_FRONT + lead.d + lc.userData.length / 2, [, z] = lines[1].at(x);
-      const tx = -lead.y, tz = -x;
+      const x = CAMERA_TO_FRONT + lead.d + lc.userData.length / 2;
+      const tx = -Math.max(-8, Math.min(8, lead.y)), tz = -x;
       if (!st.on) { st.x = tx; st.z = tz; st.on = true; }
-      st.x += (tx - st.x) * k; st.z += (tz - st.z) * k;
-      lc.position.set(st.x, -z, st.z);
+      st.x += (tx - st.x) * kl; st.z += (tz - st.z) * kl;
+      lc.position.set(st.x, 0, st.z);
       lc.visible = true;
       lc.userData.setBraking(lead.a < LEAD_BRAKING);
     });

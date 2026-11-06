@@ -44,10 +44,6 @@
   #clockRow { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
   #clock { font-size: 20px; color: var(--muted); font-variant-numeric: tabular-nums; }
   #eta { display: none; margin-top: 6px; font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.75); color: var(--ink);
-    display: grid; place-items: center; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); padding: 0; }
-  .btn svg { width: 18px; height: 18px; }
-  .embed .btn { display: none; }
 
   /* between the speed panel on the left and the buttons and clock on the right */
   #alert { display: none; position: fixed; left: 50%; top: 20px; transform: translateX(-50%); width: max-content;
@@ -59,9 +55,6 @@
 
   #status { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--card);
     border-radius: 12px; padding: 12px 18px; font-size: 16px; color: var(--muted); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1); }
-  #toast { position: fixed; right: 24px; top: 70px; max-width: 320px; background: rgba(29, 31, 34, 0.9); color: #fff; font-size: 14px;
-    border-radius: 10px; padding: 10px 14px; opacity: 0; transition: opacity 0.25s; pointer-events: none; }
-  #toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -90,8 +83,6 @@
 
 <div id="topRight">
   <div id="clockRow">
-    <button class="btn" id="popout" title="Pop out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="13" height="13" rx="2"/><path d="M11 3h8a2 2 0 0 1 2 2v8"/></svg></button>
-    <button class="btn" id="full" title="Full screen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
     <div id="clock"></div>
   </div>
   <div id="eta"></div>
@@ -99,20 +90,15 @@
 
 <div id="alert"><b></b><span></span></div>
 <div id="status">Waiting for the comma…</div>
-<div id="toast"></div>
 
 <script type="module">
-const params = new URLSearchParams(location.search);
-const embedded = params.has('embed');
-if (embedded) document.body.classList.add('embed');
 const REPORT_S = 2;
 const started = performance.now();
 const m = { frames: 0, frameGapMax: 0, events: 0, eventGapMax: 0, lastEvent: 0, rtt: null, three: 'loading', threeError: '',
-            webgl2: !!document.createElement('canvas').getContext('webgl2'), renderer: '', fullscreen: '', popout: '', popoutSize: '' };
-let car = {}, view = null, paused = false, fps = 0, fpsMin = Infinity;
+            webgl2: !!document.createElement('canvas').getContext('webgl2'), renderer: '' };
+let car = {}, view = null, fps = 0, fpsMin = Infinity;
 
 const $ = (id) => document.getElementById(id);
-function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 4000); }
 
 // ---- live data from the comma
 const es = new EventSource('/events');
@@ -147,7 +133,7 @@ function frame(now) {
   const dt = last ? Math.min((now - last) / 1000, 0.25) : 0;
   if (last) m.frameGapMax = Math.max(m.frameGapMax, now - last);
   last = now; m.frames++;
-  if (view && !paused) view.frame(now, dt);
+  if (view) view.frame(now, dt);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
@@ -209,50 +195,17 @@ setInterval(() => {
   fpsMin = Math.min(fpsMin, fps); fpsFrames = m.frames; fpsTime = now;
 }, 1000);
 
-// ---- full screen and pop out
-$('full').onclick = async () => {
-  const el = document.documentElement;
-  if (document.fullscreenElement) { document.exitFullscreen(); return; }
-  if (!el.requestFullscreen) { m.fullscreen = 'not supported'; toast("This browser can't go full screen."); return; }
-  try { await el.requestFullscreen({ navigationUI: 'hide' }); m.fullscreen = 'entered'; }
-  catch (err) { m.fullscreen = 'refused: ' + (err.message || err.name); toast("The browser refused full screen."); }
-  report();
-};
-document.addEventListener('fullscreenchange', report);
-
-$('popout').onclick = async () => {
-  // ?w=&h= sets the pop-out's size
-  const w = Number(params.get('w')) || 960, h = Number(params.get('h')) || 540;
-  m.popout = ''; m.popoutSize = '';
-  if ('documentPictureInPicture' in window) {
-    try {
-      const pip = await window.documentPictureInPicture.requestWindow({ width: w, height: h });
-      pip.document.body.style.margin = '0';
-      const frameEl = pip.document.createElement('iframe');
-      frameEl.src = '/?embed'; frameEl.style.cssText = 'border:0;width:100vw;height:100vh;display:block';
-      pip.document.body.appendChild(frameEl);
-      paused = true;  // one scene drawing at a time
-      pip.addEventListener('pagehide', () => { paused = false; m.popout += ', closed'; report(); });
-      m.popout = `picture-in-picture ${w}x${h}`;
-      setTimeout(() => { m.popoutSize = `${pip.innerWidth}x${pip.innerHeight}`; report(); }, 1500);
-      toast('Popped out.'); report(); return;
-    } catch (err) { m.popout = 'picture-in-picture refused: ' + (err.message || err.name) + '; '; }
-  } else m.popout = 'no picture-in-picture; ';
-  const win = window.open('/?embed', 'carview', `popup,width=${w},height=${h}`);
-  m.popout += win ? 'window.open opened' : 'window.open blocked';
-  toast(win ? 'Opened a pop-out window.' : 'The browser blocked the pop-out.');
-  if (win) setTimeout(() => { try { m.popoutSize = `${win.outerWidth}x${win.outerHeight}`; } catch (err) { m.popoutSize = 'unknown'; } report(); }, 1500);
-  report();
-};
+// No full screen or pop-out buttons: in the car the browser accepts a full-screen request but stays inside its panel
+// (773x601), has no picture-in-picture, and opens a sized window.open as another tab of the same size. Only the
+// browser's own expand button makes the page bigger (1256x706, over the map).
 
 // ---- report to the comma what this browser managed
 async function report() {
   const body = {
-    page: embedded ? 'view-embed' : 'view', uptimeS: Math.round((performance.now() - started) / 1000), fps,
+    page: 'view', uptimeS: Math.round((performance.now() - started) / 1000), fps,
     fpsMin: Number.isFinite(fpsMin) ? fpsMin : null, frames: m.frames, frameGapMaxMs: Math.round(m.frameGapMax), events: m.events,
     eventGapMaxMs: Math.round(m.eventGapMax), eventSource: es.readyState, webgl2: m.webgl2, renderer: m.renderer, three: m.three,
     threeError: m.threeError, pixelRatio: view ? view.pixelRatio : null, visibility: document.visibilityState,
-    fullscreenNow: !!document.fullscreenElement, fullscreen: m.fullscreen, popout: m.popout, popoutSize: m.popoutSize, paused,
     w: window.innerWidth, h: window.innerHeight, dpr: window.devicePixelRatio, rttMs: m.rtt, ua: navigator.userAgent,
   };
   m.frameGapMax = 0; m.eventGapMax = 0; fpsMin = Infinity;

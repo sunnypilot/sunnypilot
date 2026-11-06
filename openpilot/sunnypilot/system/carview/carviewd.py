@@ -171,6 +171,10 @@ class Hotspot:
       rule = ["POSTROUTING", "-s", f"{TETHER_ADDRESS.rsplit('.', 1)[0]}.0/24", "-o", dev, "-j", "MASQUERADE"]
       if self.run(["sudo", "-n", "iptables-legacy", "-t", "nat", "-C", *rule])[0] != 0:
         self.run(["sudo", "-n", "iptables-legacy", "-t", "nat", "-A", *rule])
+      # NetworkManager doesn't always switch forwarding on either, and without it the rule above passes nothing. Read
+      # from /proc: manager starts carviewd with no PATH, and sysctl is in /usr/sbin (sudo has its own search path)
+      if self.run(["cat", "/proc/sys/net/ipv4/ip_forward"])[1].strip() != "1":
+        self.run(["sudo", "-n", "sysctl", "-w", "net.ipv4.ip_forward=1"])
 
 
 def run_command(cmd: list[str]) -> tuple[int, str]:

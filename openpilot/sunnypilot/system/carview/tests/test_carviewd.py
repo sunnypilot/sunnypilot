@@ -191,8 +191,9 @@ def test_view_state_leaves_out_a_model_that_isnt_running():
 class FakeNet:
   """ip and iptables-legacy as the hotspot helper sees them, recording what it asks for."""
 
-  def __init__(self, tethering, car_address, nat, uplink="ppp0"):
+  def __init__(self, tethering, car_address, nat, uplink="ppp0", forwarding=True):
     self.tethering, self.car_address, self.nat, self.uplink, self.calls = tethering, car_address, nat, uplink, []
+    self.forwarding = forwarding
 
   def __call__(self, cmd):
     self.calls.append(cmd)
@@ -207,6 +208,8 @@ class FakeNet:
       return 0, f"default via 10.64.64.64 dev {self.uplink} metric 1000\n" if self.uplink else ""
     if "-C" in cmd:
       return (0 if self.nat else 1), ""
+    if cmd == ["cat", "/proc/sys/net/ipv4/ip_forward"]:
+      return 0, "1\n" if self.forwarding else "0\n"
     return 0, ""
 
   def asked(self, *words):
@@ -223,14 +226,28 @@ def test_hotspot_on_gets_the_car_address_and_internet_sharing():
 def test_hotspot_already_set_up_is_left_alone():
   net = FakeNet(tethering=True, car_address=True, nat=True)
   carviewd.Hotspot(net).update()
-  assert not net.asked("sudo", "add") and not net.asked("-A")
+  assert not net.asked("sudo", "add") and not net.asked("-A") and not net.asked("sysctl", "-w")
+
+
+def test_hotspot_switches_forwarding_on_when_it_is_off():
+  # seen on the comma: the sharing rule in place but forwarding off, so the car got no internet
+  net = FakeNet(tethering=True, car_address=True, nat=True, forwarding=False)
+  carviewd.Hotspot(net).update()
+  assert net.asked("sudo", "sysctl", "-w", "net.ipv4.ip_forward=1")
 
 
 def test_off_the_hotspot_the_car_address_is_taken_away():
   net = FakeNet(tethering=False, car_address=True, nat=False)
   carviewd.Hotspot(net).update()
   assert net.asked("sudo", "addr", "del", f"{carviewd.CAR_ADDRESS}/32", "lo")
-  assert not net.asked("iptables-legacy")
+  assert not net.asked("iptables-legacy") and not net.asked("sysctl") and not net.asked("/proc/sys/net/ipv4/ip_forward")
+
+
+def test_reads_nothing_it_cant_find_without_a_path():
+  # manager starts carviewd with no PATH: only /bin and /usr/bin resolve, the rest have to go through sudo
+  net = FakeNet(tethering=True, car_address=False, nat=False, forwarding=False)
+  carviewd.Hotspot(net).update()
+  assert all(c[0] in ("ip", "cat", "sudo") for c in net.calls)
 
 
 def test_no_uplink_means_no_sharing_rule():
