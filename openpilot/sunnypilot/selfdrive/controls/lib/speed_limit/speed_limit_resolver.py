@@ -120,10 +120,10 @@ class SpeedLimitResolver:
     self._process_map_data(sm)
 
   def _process_map_data(self, sm: messaging.SubMaster) -> None:
-    gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    gps_fix_age = time.monotonic() - gps_data.unixTimestampMillis * 1e-3
+    # recv_time is on the time.monotonic() clock; the fix's unixTimestampMillis is Unix time
+    gps_fix_age = time.monotonic() - sm.recv_time[self._gps_location_service]
     if gps_fix_age > LIMIT_MAX_MAP_DATA_AGE:
       return
 
@@ -133,19 +133,20 @@ class SpeedLimitResolver:
     self._calculate_map_data_limits(sm, speed_limit, next_speed_limit)
 
   def _calculate_map_data_limits(self, sm: messaging.SubMaster, speed_limit: float, next_speed_limit: float) -> None:
-    gps_data = sm[self._gps_location_service]
     map_data = sm['liveMapDataSP']
 
-    distance_since_fix = self.v_ego * (time.monotonic() - gps_data.unixTimestampMillis * 1e-3)
-    distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_fix)
+    # speedLimitAheadDistance was measured when mapd sent it (1 Hz)
+    distance_since_map_data = self.v_ego * (time.monotonic() - sm.recv_time['liveMapDataSP'])
+    distance_to_speed_limit_ahead = max(0., map_data.speedLimitAheadDistance - distance_since_map_data)
 
     self.limit_solutions[SpeedLimitSource.map] = speed_limit
     self.distance_solutions[SpeedLimitSource.map] = 0.
 
-    # FIXME-SP: this is not working as expected
-    if 0. < next_speed_limit < self.v_ego:
-      adapt_time = (next_speed_limit - self.v_ego) / LIMIT_ADAPT_ACC
-      adapt_distance = self.v_ego * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
+    # From the current limit too, so the switch holds once the car has slowed below the limit ahead
+    v_start = max(self.v_ego, speed_limit)
+    if 0. < next_speed_limit < v_start:
+      adapt_time = (next_speed_limit - v_start) / LIMIT_ADAPT_ACC
+      adapt_distance = v_start * adapt_time + 0.5 * LIMIT_ADAPT_ACC * adapt_time ** 2
 
       if distance_to_speed_limit_ahead <= adapt_distance:
         self.limit_solutions[SpeedLimitSource.map] = next_speed_limit

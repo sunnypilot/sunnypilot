@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import random
 import time
 
+from openpilot.common.constants import CV
 from openpilot.common.parameterized import parameterized
 
 from openpilot.cereal import custom
@@ -45,16 +46,13 @@ def setup_sm_mock(mocker):
     'speedLimitAheadValid': 0.,
     'speedLimitAheadDistance': 0.,
   }, mocker)
-  gps_data = create_mock({
-    'unixTimestampMillis': time.monotonic() * 1e3,
-  }, mocker)
   sm_mock = mocker.MagicMock()
   sm_mock.__getitem__.side_effect = lambda key: {
     'carState': car_state,
     'liveMapDataSP': live_map_data,
     'carStateSP': car_state_sp,
-    'gpsLocation': gps_data,
   }[key]
+  sm_mock.recv_time = {'gpsLocation': time.monotonic(), 'liveMapDataSP': time.monotonic()}
   return sm_mock
 
 
@@ -140,8 +138,31 @@ class TestSpeedLimitResolverValidation(OpenpilotTestCase):
   def test_old_map_data_ignored(self, resolver_class, policy, mocker):
     resolver = resolver_class()
     resolver.policy = policy
-    sm_mock = mocker.MagicMock()
-    sm_mock['gpsLocation'].unixTimestampMillis = (time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE) * 1e3
+    sm_mock = setup_sm_mock(mocker)
+    sm_mock.recv_time['gpsLocation'] = time.monotonic() - 2 * LIMIT_MAX_MAP_DATA_AGE
     resolver._get_from_map_data(sm_mock)
     assert resolver.limit_solutions[SpeedLimitSource.map] == 0.
     assert resolver.distance_solutions[SpeedLimitSource.map] == 0.
+
+  @parameterized.expand([
+    (80., 300., 0., 80., 0.),  # beyond the braking distance: still the current limit
+    (80., 50., 0., 50., 50.),  # within it: the lower limit ahead, with its distance
+    (80., 50., 1., 50., 50. - 80 * CV.KPH_TO_MS),  # less the distance driven since the map data was received
+    (45., 50., 0., 50., 50.),  # already slower than the limit ahead: it holds
+    (45., 300., 0., 80., 0.),  # but not before the braking distance from the current limit
+  ], names=["v_kph", "ahead_distance", "map_data_age", "limit_kph", "distance"])
+  def test_map_data_lower_limit_ahead(self, resolver_class, v_kph, ahead_distance, map_data_age, limit_kph, distance, mocker):
+    resolver = resolver_class()
+    resolver.policy = Policy.map_data_only
+    sm_mock = setup_sm_mock(mocker)
+    live_map_data = sm_mock['liveMapDataSP']
+    live_map_data.speedLimit = 80 * CV.KPH_TO_MS
+    live_map_data.speedLimitAhead = 50 * CV.KPH_TO_MS
+    live_map_data.speedLimitAheadValid = True
+    live_map_data.speedLimitAheadDistance = ahead_distance
+    sm_mock.recv_time['liveMapDataSP'] = time.monotonic() - map_data_age
+
+    resolver.update(v_kph * CV.KPH_TO_MS, sm_mock)
+    assert resolver.source == SpeedLimitSource.map
+    self.assertAlmostEqual(resolver.speed_limit, limit_kph * CV.KPH_TO_MS, places=5)
+    self.assertAlmostEqual(resolver.distance, distance, delta=0.1)
