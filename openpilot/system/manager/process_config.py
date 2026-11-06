@@ -10,7 +10,6 @@ from openpilot.system.manager.process import PythonProcess, NativeProcess, Daemo
 from openpilot.common.hardware.hw import Paths
 
 from openpilot.sunnypilot.mapd.mapd_manager import MAPD_PATH
-from openpilot.sunnypilot.system.carview.carviewd import enabled_path as carview_enabled_path
 
 from openpilot.sunnypilot.models.helpers import get_active_model_runner
 from openpilot.sunnypilot.sunnylink.utils import sunnylink_need_register, sunnylink_ready, use_sunnylink_uploader
@@ -71,9 +70,6 @@ def only_offroad(started: bool, params: Params, CP: car.CarParams) -> bool:
 
 def livestream(started: bool, params: Params, CP: car.CarParams) -> bool:
   return params.get_bool("IsLiveStreaming")
-
-def carview(started: bool, params: Params, CP: car.CarParams) -> bool:
-  return os.path.exists(carview_enabled_path())
 
 def use_copyparty(started, params, CP: car.CarParams) -> bool:
   return bool(params.get_bool("EnableCopyparty"))
@@ -190,9 +186,6 @@ procs += [
 
   # locationd
   NativeProcess("locationd_llk", "openpilot/sunnypilot/selfdrive/locationd", ["./locationd"], only_onroad),
-
-  # a page for the car's own browser, only while carview's enabled file exists
-  PythonProcess("carviewd", "openpilot.sunnypilot.system.carview.carviewd", carview),
 ]
 
 if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
