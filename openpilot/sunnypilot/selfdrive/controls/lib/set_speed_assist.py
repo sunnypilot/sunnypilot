@@ -74,14 +74,14 @@ class SetSpeedAssist:
     v_ego = sm['carState'].vEgo
     vel = np.asarray(md.velocity.x)
     yaw_rate = np.asarray(md.orientationRate.z)
-    curvatures = [md.action.desiredCurvature, sm['controlsState'].curvature]
+    curvature_now = sm['controlsState'].curvature
     if not (len(vel) == len(yaw_rate) == ModelConstants.IDX_N and
-            np.isfinite(np.concatenate([vel, yaw_rate, [v_ego, a_model, a_floor, *curvatures]])).all()):
+            np.isfinite(np.concatenate([vel, yaw_rate, [v_ego, a_model, a_floor, curvature_now]])).all()):
       self.lift = 0.
       return a_model
 
     # sharpest bend now or along the model's path, at the current speed
-    curvature = max(*np.abs(curvatures), np.max(np.abs(yaw_rate) / np.maximum(vel, 1.)))
+    curvature = max(abs(curvature_now), np.max(np.abs(yaw_rate) / np.maximum(vel, 1.)))
     lat_acc = curvature * v_ego ** 2
 
     self.gain = np.interp(a_model, GAIN_BP, [0., 1.]) * np.interp(v_ego, [MIN_SPEED, FULL_SPEED], [0., 1.])
