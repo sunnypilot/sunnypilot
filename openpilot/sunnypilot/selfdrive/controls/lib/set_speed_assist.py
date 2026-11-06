@@ -27,11 +27,19 @@ APPROACH_BP = [0., 4., 9., 14., 18., 25.]  # m/s
 APPROACH_V = [1.5, 1.75, 1.45, 1.05, 0.85, 0.65]  # m/s^2
 APPROACH_GAP_BP = [0., 1., 3., 5., 10.]  # m/s below the target speed
 APPROACH_GAP_FRACTION = [0.38, 0.47, 0.57, 0.72, 1.]
+# The table is Standard; Relaxed and Aggressive move it by AccelBoostSP's personality step.
+APPROACH_PERSONALITY_OFFSET = {
+  log.LongitudinalPersonality.relaxed: -0.15,
+  log.LongitudinalPersonality.standard: 0.,
+  log.LongitudinalPersonality.aggressive: 0.15,
+}  # m/s^2
 
 
-def approach_accel(v_ego: float, v_target: float) -> float:
-  """Max floor accel while closing on v_target."""
-  return float(np.interp(v_ego, APPROACH_BP, APPROACH_V) * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
+def approach_accel(v_ego: float, v_target: float, personality: int) -> float:
+  """Max floor accel while closing on v_target. personality: the enum's raw value (a capnp enum read
+  from a message compares equal to it but hashes differently)."""
+  ceiling = np.interp(v_ego, APPROACH_BP, APPROACH_V) + APPROACH_PERSONALITY_OFFSET[personality]
+  return float(ceiling * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
 
 
 class SetSpeedAssist:

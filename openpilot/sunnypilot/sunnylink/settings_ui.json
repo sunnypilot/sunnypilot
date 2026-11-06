@@ -643,6 +643,11 @@
                   "type": "capability",
                   "field": "has_longitudinal_control",
                   "equals": true
+                },
+                {
+                  "type": "param",
+                  "key": "SetSpeedAssist",
+                  "equals": false
                 }
               ]
             },

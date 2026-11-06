@@ -150,8 +150,6 @@ class CruiseLayout(Widget):
           self.icbm_toggle.set_description(new_desc)
           self.icbm_toggle.show_description(True)
 
-      self.accel_boost_toggle.action_item.set_enabled(has_long)
-
       if has_long or has_icbm:
         self.custom_acc_toggle.action_item.set_enabled(((has_long and not ui_state.CP.pcmCruise) or has_icbm) and ui_state.is_offroad())
         self.scc_v_toggle.action_item.set_enabled(True)
@@ -165,6 +163,8 @@ class CruiseLayout(Widget):
         self.scc_m_toggle.action_item.set_enabled(False)
 
       self.set_speed_assist_toggle.action_item.set_enabled(has_long)
+      # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+      self.accel_boost_toggle.action_item.set_enabled(has_long and not self.set_speed_assist_toggle.action_item.get_state())
 
     else:
       has_icbm = has_long = False

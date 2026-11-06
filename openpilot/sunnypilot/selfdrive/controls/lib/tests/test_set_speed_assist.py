@@ -24,6 +24,7 @@ V_EGO = 20.
 A_FLOOR = 0.5
 RISE = float(np.interp(V_EGO, J_CRUISE_BP, J_CRUISE_VALS))
 SETTLE = int(2. / (J_CRUISE_VALS[-1] * DT_MDL)) + 10
+STANDARD = log.LongitudinalPersonality.standard
 
 
 def build_sm(v_ego=V_EGO, yaw_rate=0., throttle_prob=1., lane_change=False):
@@ -115,8 +116,21 @@ class TestSetSpeedAssist(OpenpilotTestCase):
   def test_approach_closes_small_gaps_gently(self):
     assert all(np.diff(ssa.APPROACH_GAP_FRACTION) > 0) and ssa.APPROACH_GAP_FRACTION[-1] == 1.
     for v, ceiling in zip(ssa.APPROACH_BP, ssa.APPROACH_V, strict=True):
-      assert np.isclose(ssa.approach_accel(v, v + 10.), ceiling)
-      assert np.isclose(ssa.approach_accel(v, v), ssa.APPROACH_GAP_FRACTION[0] * ceiling)
+      assert np.isclose(ssa.approach_accel(v, v + 10., STANDARD), ceiling)
+      assert np.isclose(ssa.approach_accel(v, v, STANDARD), ssa.APPROACH_GAP_FRACTION[0] * ceiling)
+
+  def test_approach_follows_the_personality(self):
+    # read from a message as the planner does
+    def personality(name):
+      msg = messaging.new_message('selfdriveState')
+      msg.selfdriveState.personality = name
+      return msg.as_reader().selfdriveState.personality.raw
+    relaxed_p, standard_p, aggressive_p = (personality(n) for n in ('relaxed', 'standard', 'aggressive'))
+    for v in ssa.APPROACH_BP:
+      relaxed, standard, aggressive = (ssa.approach_accel(v, v + 10., p) for p in (relaxed_p, standard_p, aggressive_p))
+      assert np.isclose(relaxed, standard - 0.15) and np.isclose(aggressive, standard + 0.15)
+      # closer together near the target
+      assert ssa.approach_accel(v, v + 1., aggressive_p) - ssa.approach_accel(v, v + 1., standard_p) < 0.15
 
 
 class FakeSubMaster(dict):
@@ -131,10 +145,11 @@ def planner_sm():
   return sm
 
 
-def planner(mocker, enabled):
+def planner(mocker, enabled, accel_boost_sp=False):
   from opendbc.car.honda.interface import CarInterface
   from opendbc.car.honda.values import CAR
   Params().put_bool("SetSpeedAssist", enabled)
+  Params().put_bool("AccelBoostSP", accel_boost_sp)
   CP = CarInterface.get_non_essential_params(CAR.HONDA_CIVIC)
   CP.openpilotLongitudinalControl = True
   p = LongitudinalPlanner(CP, CarInterface.get_non_essential_params_sp(CP, CAR.HONDA_CIVIC), init_v=V_EGO)
@@ -163,7 +178,7 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
   def test_on_drives_to_the_set_speed(self, mocker):
     p = planner(mocker, True)
     # capped at the approach pace, below the cruise planner's
-    approach = ssa.approach_accel(V_EGO, p.output_v_target)
+    approach = ssa.approach_accel(V_EGO, p.output_v_target, planner_sm()['selfdriveState'].personality.raw)
     assert p.a_cruise > 1. > approach
     assert np.isclose(p.output_a_target, approach)
     assert np.isclose(p.set_speed_assist.lift, approach)
@@ -173,3 +188,9 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
     report = pm.send.call_args.args[1].longitudinalPlanSP.setSpeedAssist
     assert report.active
     assert np.isclose(report.lift, p.set_speed_assist.lift, rtol=1e-6)
+
+  def test_accel_boost_sp_only_without_the_assist(self, mocker):
+    p = planner(mocker, False, accel_boost_sp=True)
+    assert p.accel_boost is p.accel_boost_sp
+    p = planner(mocker, True, accel_boost_sp=True)
+    assert p.accel_boost is not p.accel_boost_sp

@@ -70,12 +70,16 @@ class LongitudinalPlannerSP:
     return self.output_v_target, self.output_a_target
 
   def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, a_mpc: float, a_cruise: float, reset_state: bool) -> float:
-    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target))
+    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target, sm['selfdriveState'].personality.raw))
     return self.set_speed_assist.update(sm, a_model, a_floor, reset_state)
 
   def update(self, sm: messaging.SubMaster) -> None:
-    if self.accel_boost_sp.update_params():
-      self.accel_boost = self.accel_boost_sp if self.accel_boost_sp.enabled and self.openpilot_longitudinal else AccelBoost()
+    self.accel_boost_sp.update_params()
+    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    use_boost_sp = self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled
+    if use_boost_sp != (self.accel_boost is self.accel_boost_sp):
+      self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
+      self.accel_boost = self.accel_boost_sp if use_boost_sp else AccelBoost()
 
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
