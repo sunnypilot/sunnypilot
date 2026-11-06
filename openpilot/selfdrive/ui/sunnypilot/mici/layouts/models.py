@@ -118,7 +118,8 @@ class ModelsLayoutMici(NavScroller):
       toggle_callback=self._enable_map_turns,
       description=tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
                      "Navigation waits for an active lane change to complete. " +
-                     "Requires a navigation-capable model, internet and a Mapbox token. " +
+                     "Needs internet and a Mapbox token. With any model it shapes slow signalled turns and their corner speed; " +
+                     "a navigation-capable model also gets the route as input. " +
                      "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
     self.main_items = [self.current_model_info, self.preparation_details_btn, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,

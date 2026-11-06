@@ -107,7 +107,8 @@ class ModelsLayout(Widget):
     self.map_turn_toggle = toggle_item_sp(tr("Signal Navigation (Experimental)"),
       tr("Signals can prepare a short street route while normal lane-change checks remain available. " +
          "Navigation waits for an active lane change to complete. " +
-         "Requires a navigation-capable model, internet and a Mapbox token. " +
+         "Needs internet and a Mapbox token. With any model it shapes slow signalled turns and their corner speed; " +
+         "a navigation-capable model also gets the route as input. " +
          "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."),
       callback=self._enable_map_turns, enabled=lambda: ui_state.is_offroad() and ui_state.active_runner_tinygrad,
       param="MapboxNextTurnEnabled")

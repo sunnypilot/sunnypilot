@@ -306,6 +306,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
     sccVision @1;
     sccMap @2;
     speedLimitAssist @3;
+    turnSpeed @4;  # a signalled turn's corner speed, from the route
   }
 
   struct E2eAlerts {
@@ -477,6 +478,11 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   blendfulLaneWidth @9 :Float32;
   actionCurvature @10 :Float32;  # action head curvature before the turn plan floor
   turnPlanCurvature @11 :Float32;  # plan curvature the turn floor compares against, 0 when no turn is requested
+  turnInHold @12 :Float32;  # 0-1, how much a crawl turn-in is held back until the plan's corner reaches the front bumper
+  turnBendDistance @13 :Float32;  # m from the front bumper to the plan's corner, -1 when there's none to measure
+  turnLead @14 :Float32;  # s of extra look-ahead the turn floor reads the plan with
+  turnRouteRemainingDeg @15 :Float32;  # turn the signal route still wants, -1 without one
+  turnRouteFactor @16 :Float32;  # how much the route scales the turn floor, 1 when it doesn't
 
   enum TurnDirection {
     none @0;

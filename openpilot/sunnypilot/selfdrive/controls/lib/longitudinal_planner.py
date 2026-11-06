@@ -19,6 +19,7 @@ from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAle
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
+from openpilot.sunnypilot.selfdrive.controls.lib.turn_speed import TurnSpeed
 from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
@@ -46,6 +47,7 @@ class LongitudinalPlannerSP:
     self.params = Params()
     self.params_frame = 0
     self.plan_long = self.params.get_bool("PlanLong")
+    self.turn_speed = TurnSpeed(self.params)
 
   def update_targets(self, sm: messaging.SubMaster, v_ego: float, a_ego: float, v_cruise: float) -> tuple[float, float]:
     CS = sm['carState']
@@ -71,6 +73,8 @@ class LongitudinalPlannerSP:
       LongitudinalPlanSource.sccVision: (self.scc.vision.output_v_target, self.scc.vision.output_a_target),
       LongitudinalPlanSource.sccMap: (self.scc.map.output_v_target, self.scc.map.output_a_target),
       LongitudinalPlanSource.speedLimitAssist: (self.sla.output_v_target, self.sla.output_a_target),
+      # a signalled turn's corner speed from the route: only ever lowers the target
+      LongitudinalPlanSource.turnSpeed: (self.turn_speed.update(CS.leftBlinker, CS.rightBlinker, v_ego), a_ego),
     }
 
     self.source = min(targets, key=lambda k: targets[k][0])

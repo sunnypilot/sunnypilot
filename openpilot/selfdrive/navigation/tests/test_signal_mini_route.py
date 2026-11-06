@@ -42,12 +42,17 @@ class SignalMiniRouteTests(unittest.TestCase):
     self.fresh(longitude=.000025, latitude=.001, heading=90.)
     self.engine.update()
 
-  def test_unsupported_model_never_discovers_or_installs(self):
+  def test_unsupported_model_still_gets_the_turn_marked_as_no_model_input(self):
+    # crawl-turn steering and the corner speed use a signalled turn's shape with any model; map inputs to the model
+    # itself stay gated on modelSupportsNavigation downstream
     self.params.values['NavModelState']['supported'] = False
-    self.engine.update()
-    self.assertEqual(self.params.values['MapboxTurnContext']['reason'], 'navigation_model_required')
-    self.assertEqual(self.executor.jobs, [])
-    self.assertIsNone(self.engine.route)
+    self.ready()
+    self.assertIs(self.params.values['MapboxTurnContext']['modelSupportsNavigation'], False)
+    self.assertIn('exitBearingDeg', self.params.values['MapboxTurnContext'])
+
+  def test_supported_model_context_says_so(self):
+    self.ready()
+    self.assertIs(self.params.values['MapboxTurnContext']['modelSupportsNavigation'], True)
 
   def test_delayed_context_write_cannot_resurrect_retired_route(self):
     pending, persist = [], self.params.put

@@ -171,6 +171,7 @@ class SignalTurnEngine:
     self.retry_at = 0.
     self.blocked = False
     self.passed = False
+    self.model_supports_navigation = False
     self.signal_blocked = False
     self.entered = False
     self.retained = False
@@ -203,7 +204,8 @@ class SignalTurnEngine:
 
   def _publish(self, now, status, **values):
     self.context = {'session': self.key[0], 'direction': self.key[1], 'status': status, 'updatedAt': now,
-                    'distanceM': None, 'locationValid': False, 'headingValid': False, **values}
+                    'distanceM': None, 'locationValid': False, 'headingValid': False,
+                    'modelSupportsNavigation': self.model_supports_navigation, **values}
     # route_pending is an internal proposal. Exposing it between every ready
     # update would intermittently clear valid model inputs. The RouteEngine
     # publishes ready only after the route and instruction are coherent.
@@ -276,9 +278,10 @@ class SignalTurnEngine:
       return self._publish(now, 'blocked', reason='explicit_destination')
     if self.retired_key == key:
       return self._publish(now, 'blocked', reason='manual_destination_preempted')
-    if not supported or intent.get('modelSupportsNavigation') is not True:
-      self.target = None
-      return self._publish(now, 'unavailable', reason='navigation_model_required')
+    # A model without navigation inputs still gets the turn's shape: crawl-turn steering and the corner speed read its
+    # bearings and distance (modeld_v2/turn_shaping.py, controls/lib/turn_speed.py). Map inputs to the model itself stay
+    # gated on modelSupportsNavigation (modeld_v2/navigation_input.py, the turn intent), as before.
+    self.model_supports_navigation = bool(supported and intent.get('modelSupportsNavigation') is True)
     if not lateral or intent.get('lateralActive') is not True:
       self.target = None
       return self._publish(now, 'unavailable', reason='lateral_inactive')

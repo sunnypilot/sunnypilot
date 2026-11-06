@@ -11,9 +11,11 @@ import numpy as np
 # curvature at low speed: logged turns put it at ~0.65-0.8x the plan below 4 m/s and ~0.85-0.9x above 6 m/s.
 # The plan reads tight against driven turns, so the floor stays below 1 and fades out where the action head is close.
 # 0.85 was too strong on Light Speed 2 (routes 85/89): below 4 m/s the floor set the command most of the time and every
-# hard driver push against the turn came while it did, mostly turning in early when pulling away from a stop.
+# hard driver push against the turn came while it did, mostly turning in early when pulling away from a stop. The early
+# turn-in is now held off until the plan's corner reaches the front bumper (turn_shaping.py), so from there the floor
+# can be the full plan: past the entrance, then a harder turn, so both wheels clear.
 TURN_PLAN_FLOOR_BP = [4., 8.]
-TURN_PLAN_FLOOR_V = [0.75, 0.]
+TURN_PLAN_FLOOR_V = [1.0, 0.]
 
 # The model's own state for the requested turn (meta.desireState) gates the floor. In rolling turns it sits at ~1.0
 # while the floor acts. After a wait at a stop it fades to ~0 and is only ~0.6 when pulling away, yet the plan still has
