@@ -13,26 +13,41 @@ from pathlib import Path
 from datetime import datetime, UTC
 
 
+_VERSION_REGEX = re.compile(r'^(?:\d+[a-zA-Z]+|\d+[vVbB]\d+|[vVbB]\d+|\d{4})$')
+_DECIMAL_VERSION_REGEX = re.compile(r'^([vVbB]?)(\d+(?:\.\d+)+)$')
+
+
+def _version(word: str) -> str | None:
+  match = _DECIMAL_VERSION_REGEX.match(word.strip('()[]{}.,;:'))
+  if match:
+    return match.group(1).upper() + match.group(2)
+  stripped = re.sub(r'[^a-zA-Z0-9]', '', word)
+  return stripped.upper() if _VERSION_REGEX.match(stripped) else None
+
+
+def _truncate(short_name: str) -> str:
+  return short_name[:8].rstrip('.')
+
+
 def create_short_name(full_name: str) -> str:
-  # Remove parentheses and extract alphanumeric words
+  # Remove parentheses and extract alphanumeric words, keeping decimals for versioning
   clean_name = re.sub(r'\([^)]*\)', '', full_name)
-  words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
+  words = [re.sub(r'[^a-zA-Z0-9.]', '', word) for word in clean_name.split()]
+  words = [word for word in words if word]
 
   if len(words) == 1:
-    return words[0][:8].upper()
+    return _truncate((_version(words[0]) or words[0]).upper())
 
-  # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1")
-  if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
-    return (words[0] + words[1])[:8].upper()
+  # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1", "Model v1.1" -> "ModelV1.1")
+  if len(words) == 2 and re.match(r'^[A-Za-z]?\d+$', words[1]):
+    return _truncate((words[0] + (_version(words[1]) or words[1])).upper())
 
   result = ""
   for word in words:
     # Version or number patterns
-    if (re.match(r'^\d+[a-zA-Z]+$', word) or
-        re.match(r'^\d+[vVbB]\d+$', word) or
-        re.match(r'^[vVbB]\d+$', word) or
-        re.match(r'^\d{4}$', word)):
-      result += word.upper()
+    version = _version(word)
+    if version:
+      result += version
     # All uppercase abbreviations (2-3 letters)
     elif re.match(r'^[A-Z]{2,3}$', word):
       result += word
@@ -45,7 +60,7 @@ def create_short_name(full_name: str) -> str:
       result += word
     else:
       result += word[0].upper()
-  return result[:8]
+  return _truncate(result)
 
 
 def create_pkl_name(full_name: str) -> str:
