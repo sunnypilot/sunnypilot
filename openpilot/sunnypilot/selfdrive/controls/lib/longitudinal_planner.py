@@ -9,6 +9,8 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
+from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
+from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import AccelBoostSP
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist, approach_accel
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
@@ -31,6 +33,8 @@ class LongitudinalPlannerSP:
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
     self.set_speed_assist = SetSpeedAssist()
+    self.accel_boost_sp = AccelBoostSP()
+    self.openpilot_longitudinal = CP.openpilotLongitudinalControl
 
     self.output_v_target = 0.
     self.output_a_target = 0.
@@ -70,6 +74,9 @@ class LongitudinalPlannerSP:
     return self.set_speed_assist.update(sm, a_model, a_floor, reset_state)
 
   def update(self, sm: messaging.SubMaster) -> None:
+    if self.accel_boost_sp.update_params():
+      self.accel_boost = self.accel_boost_sp if self.accel_boost_sp.enabled and self.openpilot_longitudinal else AccelBoost()
+
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
 
