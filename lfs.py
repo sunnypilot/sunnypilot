@@ -6,6 +6,7 @@ import concurrent.futures
 import contextlib
 import fcntl
 import fnmatch
+import functools
 import hashlib
 import http.client
 import io
@@ -183,16 +184,19 @@ def object_info(objects):
   return found
 
 
-def download_http(oid, size, path, span=None):
+def download_http(oid, size, path, span=None, url=None, headers=None):
   ranges = min(RANGES, max(1, (size + RANGE_MIN - 1) // RANGE_MIN))
   if span is None and ranges > 1:
     # each range writes its own slice of one preallocated file
     with path.open("wb") as out:
       out.truncate(size)
-    parallel(download_http, [(oid, size, path, (i * size // ranges, (i + 1) * size // ranges - 1)) for i in range(ranges)], ranges)
+    parallel(download_http, [(oid, size, path, (i * size // ranges, (i + 1) * size // ranges - 1), url, headers) for i in range(ranges)], ranges)
     return
 
-  request = hf_request(f"https://huggingface.co/buckets/{BUCKET}/resolve/sha256/{oid}")
+  if url is None:
+    request = hf_request(f"https://huggingface.co/buckets/{BUCKET}/resolve/sha256/{oid}")
+  else:
+    request = urllib.request.Request(url, headers=headers or {})
   if span is not None:
     request.add_header("Range", f"bytes={span[0]}-{span[1]}")
   expected_size = size if span is None else span[1] - span[0] + 1
@@ -216,6 +220,28 @@ def download_http(oid, size, path, span=None):
       time.sleep(2 ** attempt)
 
 
+@functools.cache
+def lfs_config(key):
+  # like stock git-lfs: git config first, then .lfsconfig
+  value = git("config", "--get", f"lfs.{key}", check=False).decode().strip()
+  return value or git("config", "-f", str(ROOT / ".lfsconfig"), "--get", f"lfs.{key}", check=False).decode().strip()
+
+
+def endpoint_objects(objects):
+  """oid -> (href, headers) for the objects the git-lfs server at lfs.url has. A fork's own objects aren't in the bucket."""
+  found = {}
+  items = list(objects.items())
+  for start in range(0, len(items), 100):
+    body = {"operation": "download", "transfers": ["basic"], "objects": [{"oid": oid, "size": size} for oid, size in items[start:start + 100]]}
+    request = urllib.request.Request(lfs_config("url").rstrip("/") + "/objects/batch", data=json.dumps(body).encode(),
+                                     headers={"Accept": "application/vnd.git-lfs+json", "Content-Type": "application/vnd.git-lfs+json"})
+    with urllib.request.urlopen(request, timeout=30) as response:
+      for item in json.load(response)["objects"]:
+        if download := item.get("actions", {}).get("download"):
+          found[item["oid"]] = (download["href"], download.get("header", {}))
+  return found
+
+
 def download_one(oid, size):
   dst = object_path(oid)
   with object_lock(oid):
@@ -225,7 +251,12 @@ def download_one(oid, size):
     dst.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f"{oid}-", dir=dst.parent) as directory:
       tmp = Path(directory) / "object"
-      download_http(oid, size, tmp)
+      try:
+        download_http(oid, size, tmp)
+      except urllib.error.HTTPError as error:
+        if error.code != 404 or not lfs_config("url") or oid not in (found := endpoint_objects({oid: size})):
+          raise
+        download_http(oid, size, tmp, url=found[oid][0], headers=found[oid][1])
       if tmp.stat().st_size != size or hash_file(tmp) != oid:
         raise RuntimeError(f"sha256 mismatch for {oid}")
       os.replace(tmp, dst)
@@ -280,7 +311,7 @@ def write_packets(source):
 
 
 def filter_process():
-  exclude = git("config", "--get", "lfs.fetchexclude", check=False).decode().strip()
+  exclude = lfs_config("fetchexclude")
   list(read_packets(sys.stdin.buffer))
   write_packets((b"git-filter-server\n", b"version=2\n"))
   capabilities = {line.rstrip(b"\n") for line in read_packets(sys.stdin.buffer)}
@@ -387,7 +418,7 @@ def pull(exclude=None):
   install()
   found = pointers_for_index()
   if exclude is None:
-    exclude = git("config", "--get", "lfs.fetchexclude", check=False).decode().strip()
+    exclude = lfs_config("fetchexclude")
   if exclude:
     found = {obj: kept for obj, paths in found.items() if (kept := [path for path in paths if not excluded(path, exclude)])}
   parallel(download_one, found)
@@ -494,6 +525,14 @@ def pre_push(remote):
   except urllib.error.HTTPError as error:
     if error.code not in (401, 403):
       raise
+    if lfs_config("url"):
+      # without write access to the bucket, a fork's objects only need to be on its own LFS server
+      in_bucket = object_info(dict(objects))  # upload() asked this too, but doesn't return it
+      pending = {oid: size for oid, size in objects if f"sha256/{oid}" not in in_bucket}
+      if missing := sorted(pending.keys() - endpoint_objects(pending).keys()):
+        sys.exit(f"lfs.py: {len(missing)} LFS objects are in neither {BUCKET} nor {lfs_config('url')}, push them first: " +
+                 f"git lfs push --object-id {remote} {' '.join(missing)}")
+      return
     sys.exit(f"lfs.py: uploading LFS objects to {BUCKET} needs a Hugging Face token with write access (hf auth login, or set HF_TOKEN)")
 
 
