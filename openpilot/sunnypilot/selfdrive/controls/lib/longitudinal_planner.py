@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import numpy as np
 
 from openpilot.cereal import messaging, custom
 from opendbc.car import structs
@@ -22,6 +23,8 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
+
+PLAN_LONG_BOOST_ACCEL = [-0.1, 0.]  # plan accel (m/s^2): with plan braking, no boost while the plan slows, full once it doesn't
 
 
 class LongitudinalPlannerSP:
@@ -83,6 +86,18 @@ class LongitudinalPlannerSP:
       self.plan_long = self.params.get_bool("PlanLong")
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
+
+  def update_accel_boost(self, sm: messaging.SubMaster, output_a_target_e2e: float, output_a_target_mpc: float, a_cruise: float) -> float:
+    if not self.plan_long:
+      return self.accel_boost.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise)
+    if isinstance(self.accel_boost, AccelBoostSP):
+      # plan braking slows early and gently on its own (lights, curves), well above where the boost fades out (-0.2 to -0.7),
+      # so only boost while the plan isn't slowing
+      not_slowing = float(np.interp(output_a_target_e2e, PLAN_LONG_BOOST_ACCEL, [0., 1.]))
+      return self.accel_boost.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise, want_scale=not_slowing)
+    # the stock boost latches on after a gas override and would cancel the plan's early slowing
+    self.accel_boost.total_boost = 0.0
+    return output_a_target_e2e
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')

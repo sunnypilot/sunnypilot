@@ -49,7 +49,7 @@ class AccelBoostSP:
     self.boost = self.total_boost = 0.0
     return True
 
-  def update(self, sm, output_a_target_e2e, output_a_target_mpc, a_cruise):
+  def update(self, sm, output_a_target_e2e, output_a_target_mpc, a_cruise, want_scale=1.0):
     model = sm['modelV2']
     brake_probs = model.meta.disengagePredictions.brakePressProbs
     gas_probs = model.meta.disengagePredictions.gasPressProbs
@@ -60,6 +60,7 @@ class AccelBoostSP:
     want = max(float(np.interp(brake_probs[1], BRAKE_PROB, [1.0, 0.0])), float(np.interp(gas_probs[1], GAS_PROB, [0.0, 1.0])))
     want = 0.0 if model.action.shouldStop else want
     want *= float(np.interp(abs(model.action.desiredCurvature) * sm['carState'].vEgo ** 2, CURVE_LAT_ACCEL, [1.0, 0.0]))
+    want *= want_scale  # the caller can hold the boost back; it still builds and releases at the limits below
     target = want * get_boost_max(sm['selfdriveState'].personality)
     self.boost = float(np.clip(target, self.boost - ACCEL_BOOST_RELEASE * DT_MDL, self.boost + ACCEL_BOOST_BUILD * DT_MDL))
     speed_scale = np.interp(sm['carState'].vEgo, [ACCEL_BOOST_MIN_SPEED, 2 * ACCEL_BOOST_MIN_SPEED], [0.0, 1.0])
