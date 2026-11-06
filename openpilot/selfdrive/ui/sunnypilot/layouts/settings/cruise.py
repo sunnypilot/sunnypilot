@@ -57,6 +57,13 @@ class CruiseLayout(Widget):
       description=tr("Use map data to estimate the appropriate speed to drive through turns ahead."),
       param="SmartCruiseControlMap")
 
+    self.set_speed_assist_toggle = toggle_item_sp(
+      title=tr("Set Speed Assist"),
+      description=tr("Accelerate up to the set speed, or the personality's following distance behind a lead, " +
+                     "when the driving model would drive slower. The model still decides when to slow down."),
+      param="SetSpeedAssist")
+    self._last_set_speed_assist = self.set_speed_assist_toggle.action_item.get_state()
+
     self.accel_boost_toggle = toggle_item_sp(
       title=tr("Acceleration Boost"),
       description=tr("Adds a small push on top of sunnypilot's own acceleration, stronger in Aggressive and gentler in Relaxed. " +
@@ -92,6 +99,7 @@ class CruiseLayout(Widget):
       self.icbm_toggle,
       self.scc_v_toggle,
       self.scc_m_toggle,
+      self.set_speed_assist_toggle,
       self.accel_boost_toggle,
       self.custom_acc_toggle,
       self.custom_acc_short_increment,
@@ -143,8 +151,6 @@ class CruiseLayout(Widget):
           self.icbm_toggle.set_description(new_desc)
           self.icbm_toggle.show_description(True)
 
-      self.accel_boost_toggle.action_item.set_enabled(has_long)
-
       if has_long or has_icbm:
         self.custom_acc_toggle.action_item.set_enabled(((has_long and not ui_state.CP.pcmCruise) or has_icbm) and ui_state.is_offroad())
         self.scc_v_toggle.action_item.set_enabled(True)
@@ -160,8 +166,18 @@ class CruiseLayout(Widget):
     else:
       has_icbm = has_long = False
       self.icbm_toggle.action_item.set_enabled(False)
-      self.accel_boost_toggle.action_item.set_enabled(False)
       self.icbm_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
+
+    # The quick toggles and sunnylink can also change SetSpeedAssist. Only copy the param into the
+    # toggle when it changes: ToggleSP saves in the background, so reading it every frame would
+    # briefly undo the user's own tap.
+    set_speed_assist = ui_state.params.get_bool("SetSpeedAssist")
+    if set_speed_assist != self._last_set_speed_assist:
+      self._last_set_speed_assist = set_speed_assist
+      self.set_speed_assist_toggle.action_item.set_state(set_speed_assist)
+    self.set_speed_assist_toggle.action_item.set_enabled(has_long)
+    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    self.accel_boost_toggle.action_item.set_enabled(has_long and not self.set_speed_assist_toggle.action_item.get_state())
 
     show_custom_acc_desc = False
 
