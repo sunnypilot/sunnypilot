@@ -194,7 +194,8 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
         base, at, nbytes = _address(argument_words[slot])
         args.append({"buffer": buffers.setdefault(base, len(buffers)), "offset": at, "nbytes": nbytes or base.max_numel() * base.dtype.itemsize, "dtype": u8})
     outs, ins = kernel[6]
-    calls.append({"kind": "program", "name": re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]), "lib": programs[image_alloc], "target": dataclasses.asdict(target),
+    device_target = dataclasses.asdict(dataclasses.replace(target, interface=target.interface.removeprefix("MOCK")))
+    calls.append({"kind": "program", "name": re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]), "lib": programs[image_alloc], "target": device_target,
                   "signature": [[f"data{i}", i, u8, [a.get("nbytes", 1)]] for i, a in enumerate(args)], "global_size": grid, "local_size": local,
                   "globals": list(range(len(args))), "outs": list(outs), "ins": list(ins), "args": args})
     needs_init |= {args[i]["buffer"] for i in ins if "buffer" in args[i] and args[i]["buffer"] not in written}

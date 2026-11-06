@@ -1,0 +1,18 @@
+name: Set up tinygrad's amd mock
+description: LLVM 20 and ROCm comgr, as tinygrad_repo/.github/actions/setup-tinygrad installs them for the mock gpu
+runs:
+  using: composite
+  steps:
+    - name: Install LLVM 20 and ROCm comgr
+      shell: bash
+      run: |
+        . /etc/os-release
+        curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+        echo "deb http://apt.llvm.org/$VERSION_CODENAME/ llvm-toolchain-$VERSION_CODENAME-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.1 $VERSION_CODENAME main" | sudo tee /etc/apt/sources.list.d/rocm.list
+        printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/rocm-pin-600
+        sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends libllvm20 clang-20 lld-20 comgr
+        printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf && sudo ldconfig
+        echo "/usr/lib/llvm-20/bin" >> "$GITHUB_PATH"
