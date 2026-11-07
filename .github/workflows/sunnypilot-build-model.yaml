@@ -196,13 +196,35 @@ jobs:
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
         uses: ./.github/workflows/chestnut-build-parity
 
-      - name: Install the qcom mock build dependencies and check the compiler
+      - name: Install the qcom mock build dependencies
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut'
+        id: qcom_deps
         run: |
           sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends qemu-user-static aria2
           python3 -m pip install -q numpy zstandard tinymesa==25.2.7.2
+          echo "qemu=$(dpkg-query -W -f='${Version}' qemu-user-static)" >> "$GITHUB_OUTPUT"
+
+      - name: Compiler check passed before with all of it identical?
+        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut'
+        id: qcom_compiler
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.qcom_compiler_parity.passed
+          key: qcom-compiler-parity-${{ steps.qcom_deps.outputs.qemu }}-${{ hashFiles('tinygrad_repo/test/device/qcom/compiler_parity.py', 'tinygrad_repo/test/mockgpu/qcom/a630_compiled.pkl.xz', 'tinygrad_repo/tinygrad/runtime/support/compiler_qcom.py') }}
+
+      - name: Check the off-device qcom compiler builds the a630's bytes
+        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.cache-hit != 'true'
+        run: |
           # every kernel an a630 has compiled must compile to the same bytes here before a model is built here
           PYTHONPATH="$TINYGRAD_PATH" python3 "$TINYGRAD_PATH/test/device/qcom/compiler_parity.py" check "$TINYGRAD_PATH/test/mockgpu/qcom/a630_compiled.pkl.xz"
+          touch ~/.qcom_compiler_parity.passed
+
+      - name: Remember the compiler check passed
+        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.qcom_compiler_parity.passed
+          key: ${{ steps.qcom_compiler.outputs.cache-primary-key }}
 
       - name: Set environment variables
         if: env.MOCK_BUILD != 'true'
@@ -257,7 +279,7 @@ jobs:
           CAMERA_RES=$(python3 -c "from openpilot.common.transformations.camera import _ar_ox_fisheye as a, _os_fisheye as o; print(f'{a.width}x{a.height} {o.width}x{o.height}')")
 
           MOCK=$([ "$MOCK_BUILD" = "true" ] && echo MOCK || true)
-          TG_FLAGS_QCOM="DEV=${MOCK}QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 OPENPILOT_HACKS=1"
+          TG_FLAGS_QCOM="DEV=${MOCK:+MOCK+}QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 OPENPILOT_HACKS=1"
           if [ "${{ inputs.target_hardware }}" == "chestnut" ]; then
             echo "CHESTNUT build"
             export CHESTNUT=1

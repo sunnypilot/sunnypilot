@@ -176,11 +176,34 @@ jobs:
           url=$(curl -sf -o /dev/null -w '%{redirect_url}' -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/$id/zip")
           sudo apt-get install -y -qq aria2 > /dev/null
           aria2c -q -x16 -s16 -k8M --max-tries=5 --file-allocation=none -o model.zip "$url" && unzip -q model.zip -d output && rm model.zip
+      - name: Key the gate by the built bytes and everything the replay depends on
+        id: key
+        shell: bash
+        run: |
+          pkl=output/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl
+          llvm=$([ -n "${LLVM_PATH:-}" ] && sha256sum "$LLVM_PATH" | cut -c1-16 || echo none)
+          echo "key=build-gate-${{ inputs.target_hardware }}-$(sha256sum "$pkl" | cut -c1-64)-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**', 'openpilot/sunnypilot/modeld_v2/*.py') }}-$llvm-$(python3 -c 'import platform; print(platform.python_version())')" >> "$GITHUB_OUTPUT"
+      - name: Gated these exact bytes before?
+        id: passed
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.build_gate.passed
+          key: ${{ steps.key.outputs.key }}
       - name: Replay its check frame on the mock and require the hardware's result bit for bit
+        if: steps.passed.outputs.cache-hit != 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
           DEV: ${{ inputs.target_hardware == 'chestnut' && 'MOCKUSB+AMD' || 'MOCK+QCOM' }}
         run: python3 -m openpilot.sunnypilot.modeld_v2.mock_parity check output/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl
+      - name: Remember the pass
+        if: steps.passed.outputs.cache-hit != 'true'
+        shell: bash
+        run: touch ~/.build_gate.passed
+      - if: steps.passed.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.build_gate.passed
+          key: ${{ steps.key.outputs.key }}
 
   publish_model:
     if: ${{ !cancelled() && needs.build_model.result == 'success' && contains(fromJSON('["success", "skipped"]'), needs.mock_parity.result) }}
