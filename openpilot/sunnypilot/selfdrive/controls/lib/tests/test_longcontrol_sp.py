@@ -12,7 +12,7 @@ from opendbc.car.structs import car
 from openpilot.common.realtime import DT_CTRL
 from openpilot.cereal import custom
 from openpilot.selfdrive.controls.lib.longcontrol import LongCtrlState
-from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol_sp import LongControlSP
+from openpilot.sunnypilot.selfdrive.controls.lib.longcontrol_sp import LongControlSP, MAX_JERK, TAPER_JERK, TAPER_MAX_DECEL
 
 SMOOTH_STOP_DECEL_RATE = 0.3
 
@@ -35,8 +35,9 @@ def make_cs(v_ego, standstill=False):
 
 
 def start_stopping(loc, a_target=-0.5):
-  loc.update(True, make_cs(0.5), a_target, False, LIMITS)
-  return loc.update(True, make_cs(0.3), a_target, True, LIMITS)
+  for _ in range(100):
+    loc.update(True, make_cs(0.5, a_target), a_target, False, LIMITS)
+  return loc.update(True, make_cs(0.3, a_target), a_target, True, LIMITS)
 
 
 def test_decel_ramps_at_stopping_rate():
@@ -50,8 +51,9 @@ def test_decel_ramps_at_stopping_rate():
 
 def test_no_step_at_handover():
   loc = make_control()
-  out = loc.update(True, make_cs(0.5), -0.5, False, LIMITS)
-  assert abs(start_stopping(loc) - out) <= SMOOTH_STOP_DECEL_RATE * DT_CTRL + 1e-6
+  for _ in range(100):
+    out = loc.update(True, make_cs(0.5, -0.5), -0.5, False, LIMITS)
+  assert abs(loc.update(True, make_cs(0.3, -0.5), -0.5, True, LIMITS) - out) <= SMOOTH_STOP_DECEL_RATE * DT_CTRL + 1e-6
 
 
 def test_decel_never_fades_to_zero_while_stopping():
@@ -96,3 +98,44 @@ def test_rate_comes_from_car_params(rate):
   loc = make_control(rate=rate)
   out = start_stopping(loc)
   assert loc.update(True, make_cs(0.1), -0.5, True, LIMITS) == pytest.approx(out - rate * DT_CTRL)
+
+
+def settle(loc, v, a_target, frames=600):
+  for _ in range(frames):
+    out = loc.update(True, make_cs(v, a_target), a_target, False, LIMITS)
+  return out
+
+
+def test_gentle_braking_fades_with_speed():
+  loc = make_control()
+  outs = [settle(loc, v, -0.6) for v in (1.0, 0.4, 0.15, 0.05)]
+  assert outs[0] < outs[1] < outs[2] < outs[3]
+  assert abs(outs[3]) < 0.2
+
+
+def test_decel_never_exceeds_profile_while_tapering():
+  loc = make_control()
+  for v in (0.8, 0.5, 0.2, 0.1):
+    assert settle(loc, v, -0.6) >= -((2.0 * TAPER_JERK * v) ** 0.5) - 1e-6
+
+
+def test_hard_braking_is_not_tapered():
+  loc = make_control()
+  target = -(TAPER_MAX_DECEL + 0.5)
+  assert settle(loc, 0.1, target) <= target
+
+
+def test_taper_off_without_smooth_stop():
+  loc = make_control(rate=0.0)
+  assert settle(loc, 0.1, -0.6) <= -0.6
+
+
+def test_taper_never_steps_the_output():
+  loc = make_control()
+  prev, v = None, 1.0
+  for target in [-1.2] * 30 + [-0.9] * 300:
+    v = max(v - 0.4 * DT_CTRL, 0.1)
+    out = loc.update(True, make_cs(v, -0.4), target, False, LIMITS)
+    if prev is not None:
+      assert abs(out - prev) <= MAX_JERK * DT_CTRL + 1e-6
+    prev = out
