@@ -22,9 +22,8 @@ runs:
         curl -fsSL --retry 3 -o "$work/big_driving_tinygrad.pkl" "$href"
         echo "$PKL_OID  $work/big_driving_tinygrad.pkl" | sha256sum -c -
         tg="$work/tinygrad" && git init -q "$tg" && git -C "$tg" fetch -q --depth 1 https://github.com/tinygrad/tinygrad "$TG_SHA" && git -C "$tg" checkout -q FETCH_HEAD
-        rm -rf "$tg/test/mockgpu" && cp -r "$GITHUB_WORKSPACE/tinygrad_repo/test/mockgpu" "$tg/test/mockgpu"
-        LLVM_PATH="${LLVM_PATH:-$(ls /usr/lib/llvm-20/lib/libLLVM.so* | head -1)}" DEV=MOCKUSB+AMD CHECK_OOB=0 GMMU=0 PYTHONPATH="$tg:$GITHUB_WORKSPACE" \
-          python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py "$work/big_driving_tinygrad.pkl" "$work/LS2.pkl"
+        CHECK_OOB=0 GMMU=0 PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo" python3 tinygrad_repo/test/mockgpu/usb_server.py \
+          env DEV=USB+AMD PYTHONPATH="$tg:$GITHUB_WORKSPACE" python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py "$work/big_driving_tinygrad.pkl" "$work/LS2.pkl"
         got=$(sha256sum "$work/LS2.pkl" | cut -d' ' -f1)
         if [ "$got" != "$WANT" ]; then
           echo "::error::the mock's LS2 build ($got) is not the chestnut runner's ($WANT): this runner's LLVM or the mock no longer builds what the chestnut does"

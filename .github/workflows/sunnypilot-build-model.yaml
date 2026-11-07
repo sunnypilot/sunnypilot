@@ -189,7 +189,6 @@ jobs:
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
         run: |
           python3 -m pip install -q numpy zstandard
-          echo "LLVM_PATH=$(ls /usr/lib/llvm-20/lib/libLLVM.so* | head -1)" >> "$GITHUB_ENV"  # the chestnut runner's LLVM, never a newer one
 
       - name: Check this runner builds what the chestnut runner does
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
@@ -275,11 +274,10 @@ jobs:
             echo "Converting commaai's precompiled model with tinygrad $TG_SHA"
             UPSTREAM_TG="${{ runner.temp }}/upstream_tinygrad"
             rm -rf "$UPSTREAM_TG" && git init -q "$UPSTREAM_TG" && git -C "$UPSTREAM_TG" fetch -q --depth 1 "$TG_URL" "$TG_SHA" && git -C "$UPSTREAM_TG" checkout -q FETCH_HEAD
-            if [ "$MOCK_BUILD" = "true" ]; then  # convert under commaai's tinygrad, on our mock: it is the one measured against a chestnut
-              rm -rf "$UPSTREAM_TG/test/mockgpu" && cp -r "$TINYGRAD_PATH/test/mockgpu" "$UPSTREAM_TG/test/mockgpu"
-            fi
+            ON_MOCK=""
+            if [ "$MOCK_BUILD" = "true" ]; then ON_MOCK="env PYTHONPATH=$TINYGRAD_PATH python3 $TINYGRAD_PATH/test/mockgpu/usb_server.py"; fi
             CONVERTED="${{ runner.temp }}/big_driving_tinygrad_plain.pkl"
-            env DEV=${MOCK}USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" $TASKSET python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
+            $ON_MOCK env DEV=USB+AMD PYTHONPATH="$UPSTREAM_TG:${{ github.workspace }}" $TASKSET python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py \
               "${{ env.MODELS_DIR }}/big_driving_tinygrad.pkl" "$CONVERTED"
             mv "$CONVERTED" "$OUTPUT_PKL"
           elif NEW_ARCH_ONNX=$(find "${{ env.MODELS_DIR }}" -maxdepth 1 -name "${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}*driving*.onnx" -print -quit) &&
