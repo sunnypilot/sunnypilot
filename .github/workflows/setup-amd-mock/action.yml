@@ -45,10 +45,16 @@ runs:
         done
         echo "::error::could not fetch the chestnut's firmware from gitlab"; exit 1
 
+    - name: runner cpu
+      if: inputs.emu_cache != ''
+      id: cpu
+      shell: bash
+      run: echo "cpu=$( (grep -m1 '^model name' /proc/cpuinfo; grep -m1 '^flags' /proc/cpuinfo) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
     - name: Keep the emulator's compiled kernels between runs
       if: inputs.emu_cache != ''
       uses: actions/cache@v4
       with:
         path: ~/.cache/tinygrad/cache.db
-        key: emu-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-${{ inputs.emu_cache }}
-        restore-keys: emu-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-
+        key: emu-${{ steps.cpu.outputs.cpu }}-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-${{ inputs.emu_cache }}
+        restore-keys: emu-${{ steps.cpu.outputs.cpu }}-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-
