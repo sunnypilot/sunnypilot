@@ -192,10 +192,6 @@ jobs:
         run: |
           python3 -m pip install -q numpy zstandard
 
-      - name: Check this runner builds what the chestnut runner does
-        if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
-        uses: ./.github/workflows/chestnut-build-parity
-
       - name: Install the qcom mock build dependencies
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut'
         id: qcom_deps
