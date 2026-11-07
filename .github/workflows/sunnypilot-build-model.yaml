@@ -366,6 +366,13 @@ jobs:
             fi
           fi
 
+      - name: Replay its check frame on the mock and require the result bit for bit
+        if: env.MOCK_BUILD == 'true'
+        env:
+          DEV: ${{ inputs.target_hardware == 'chestnut' && 'MOCKUSB+AMD' || 'MOCK+QCOM' }}
+          PYTHONPATH: ${{ env.TINYGRAD_PATH }}:${{ github.workspace }}
+        run: python3 -m openpilot.sunnypilot.modeld_v2.mock_parity check "${{ env.MODELS_DIR }}/${{ inputs.target_hardware == 'chestnut' && 'big_' || '' }}driving_tinygrad.pkl"
+
       - name: Prepare Output
         run: |
           sudo rm -rf ${{ env.OUTPUT_DIR }}
