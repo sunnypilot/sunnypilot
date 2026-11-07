@@ -1,5 +1,11 @@
 name: Set up tinygrad's amd mock
 description: LLVM 20 and ROCm comgr, as tinygrad_repo/.github/actions/setup-tinygrad installs them for the mock gpu
+inputs:
+  emu_cache:
+    description: >-
+      Keep tinygrad's cache db (the emulator's compiled kernels and gate results) between runs under this name, e.g. the model's file name.
+      Empty: no cache.
+    default: ''
 runs:
   using: composite
   steps:
@@ -38,3 +44,11 @@ runs:
           sleep $((i * 10))
         done
         echo "::error::could not fetch the chestnut's firmware from gitlab"; exit 1
+
+    - name: Keep the emulator's compiled kernels between runs
+      if: inputs.emu_cache != ''
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/tinygrad/cache.db
+        key: emu-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-${{ inputs.emu_cache }}
+        restore-keys: emu-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-

@@ -155,6 +155,8 @@ jobs:
           submodules: true
       - uses: ./.github/workflows/setup-amd-mock
         if: inputs.target_hardware == 'chestnut'
+        with:
+          emu_cache: build-gate
       - uses: actions/setup-python@v5
         if: inputs.target_hardware != 'chestnut'
         with:

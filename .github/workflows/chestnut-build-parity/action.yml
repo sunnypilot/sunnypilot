@@ -5,7 +5,22 @@ description: >-
 runs:
   using: composite
   steps:
+    - name: Key this check by everything its result depends on
+      id: key
+      shell: bash
+      env:
+        SOURCES: ${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**', 'openpilot/sunnypilot/modeld_v2/*.py', '.github/workflows/chestnut-build-parity/action.yml') }}
+      run: echo "key=chestnut-build-parity-$SOURCES-$(sha256sum "$LLVM_PATH" | cut -c1-16)-$(python3 -c 'import platform; print(platform.python_version())')" >> "$GITHUB_OUTPUT"
+
+    - name: Passed before with all of it identical?
+      id: passed
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.chestnut_build_parity.passed
+        key: ${{ steps.key.outputs.key }}
+
     - name: Rebuild LS2 on the mock and require the chestnut runner's artifact byte for byte
+      if: steps.passed.outputs.cache-hit != 'true'
       shell: bash
       env:
         REF: b92fc4828664f8767bce5e92f1630ed319cbe509  # commaai/openpilot: precompiled big_driving_tinygrad.pkl, pins tinygrad ec91b74b5b
@@ -30,3 +45,17 @@ runs:
           exit 1
         fi
         echo "LS2 rebuilt on the mock: byte-identical to the chestnut runner's build"
+        touch ~/.chestnut_build_parity.passed
+
+    - name: Remember the pass
+      if: steps.passed.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.chestnut_build_parity.passed
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Already passed
+      if: steps.passed.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        echo "LS2 rebuild skipped: it already matched the chestnut runner's build with this exact mock, converter, LLVM and python"

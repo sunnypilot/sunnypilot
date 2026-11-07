@@ -148,6 +148,8 @@ jobs:
         with:
           submodules: true
       - uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: ${{ matrix.artifact.file_name }}
       - run: python3 -m pip install -q numpy
       - name: Download model
         env:
@@ -206,5 +208,7 @@ jobs:
         with:
           submodules: true
       - uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: chestnut-build-parity
       - run: python3 -m pip install -q numpy zstandard
       - uses: ./.github/workflows/chestnut-build-parity

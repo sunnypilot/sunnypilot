@@ -184,6 +184,8 @@ jobs:
       - name: Install LLVM 20 and ROCm comgr for the amd mock
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
         uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: build
 
       - name: Install the amd mock build dependencies
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware == 'chestnut'
