@@ -235,6 +235,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SunnylinkEnabled", {PERSISTENT, BOOL, "1"}},
     {"SunnylinkTempFault", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL, "0"}},
 
+    {"SunnylinkLocalApps", {PERSISTENT, JSON}},
+    {"SunnylinkLocalAppsMeta", {PERSISTENT, JSON}},
+    {"SunnylinkLocalEnabled", {PERSISTENT, BOOL, "1"}},
+    {"SunnylinkLocalRevoke", {CLEAR_ON_MANAGER_START, STRING}},
+    {"SunnylinkLocalEnroll", {CLEAR_ON_MANAGER_START, STRING}},
+    {"SunnylinkLocalCloudRevoke", {CLEAR_ON_MANAGER_START, STRING}},
+
     // Backup Manager params
     {"BackupManager_CreateBackup", {PERSISTENT, BOOL}},
     {"BackupManager_RestoreVersion", {PERSISTENT, STRING}},
