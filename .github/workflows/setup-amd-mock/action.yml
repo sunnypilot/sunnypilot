@@ -16,6 +16,6 @@ runs:
         sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends libllvm20 clang-20 lld-20 comgr
         printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf && sudo ldconfig
         echo "/usr/lib/llvm-20/bin" >> "$GITHUB_PATH"
-        llvm=$(ls /usr/lib/llvm-20/lib/libLLVM*.so* /usr/lib/*-linux-gnu/libLLVM-20.so* 2>/dev/null | head -1)
+        llvm=$(ls /usr/lib/llvm-20/lib/libLLVM*.so* /usr/lib/*-linux-gnu/libLLVM-20.so* 2>/dev/null | head -1 || true)
         [ -n "$llvm" ] || { echo "::error::libLLVM 20 not found"; exit 1; }
         echo "LLVM_PATH=$llvm" >> "$GITHUB_ENV"
