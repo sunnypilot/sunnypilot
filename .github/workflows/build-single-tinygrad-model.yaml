@@ -155,6 +155,10 @@ jobs:
           submodules: true
       - uses: ./.github/workflows/setup-amd-mock
         if: inputs.target_hardware == 'chestnut'
+      - uses: actions/setup-python@v5
+        if: inputs.target_hardware != 'chestnut'
+        with:
+          python-version: '3.12'
       - run: python3 -m pip install -q numpy ${{ inputs.target_hardware != 'chestnut' && 'tinymesa==25.2.7.2' || '' }}
       - name: Download artifact name file
         uses: actions/download-artifact@v4

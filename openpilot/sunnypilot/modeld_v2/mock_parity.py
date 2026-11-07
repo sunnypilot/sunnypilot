@@ -108,7 +108,8 @@ def check(path: str) -> None:
       want = _array(blob, stored)
       if g.shape != want.shape or not np.array_equal(g.view(np.uint8), want.view(np.uint8)):
         n = int(np.count_nonzero(g != want)) if g.shape == want.shape else -1
-        raise ParityError(f"part {key} output {i}: the {'mock' if ON_MOCK else 'device'}'s check frame differs from the stored one in {n} of {want.size} values")
+        where = "mock" if ON_MOCK else "device"
+        raise ParityError(f"part {key} output {i}: the {where}'s check frame differs from the stored one in {n} of {want.size} values")
 
 
 def record(path: str, out: str) -> None:
