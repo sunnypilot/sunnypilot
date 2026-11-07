@@ -19,3 +19,22 @@ runs:
         llvm=$(ls /usr/lib/llvm-20/lib/libLLVM*.so* /usr/lib/*-linux-gnu/libLLVM-20.so* 2>/dev/null | head -1 || true)
         [ -n "$llvm" ] || { echo "::error::libLLVM 20 not found"; exit 1; }
         echo "LLVM_PATH=$llvm" >> "$GITHUB_ENV"
+
+    - name: Cache the chestnut's firmware
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/tinygrad/downloads/fw
+        key: chestnut-fw-${{ hashFiles('tinygrad_repo/tinygrad/runtime/autogen/am/fw.py') }}
+
+    - name: Fetch the chestnut's firmware (gitlab times out now and then; the mock boots from it)
+      shell: bash
+      run: |
+        for i in 1 2 3 4 5; do
+          PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo" python3 -c "
+        from tinygrad.helpers import fetch_fw
+        from tinygrad.runtime.autogen.am import fw
+        for n, h in fw.hashes.items():
+          if n.startswith(('psp_14_0_2_', 'smu_14_0_2.', 'sdma_7_0_0.', 'gc_12_0_0_')): fetch_fw('amdgpu', n, h)" && exit 0
+          sleep $((i * 10))
+        done
+        echo "::error::could not fetch the chestnut's firmware from gitlab"; exit 1
