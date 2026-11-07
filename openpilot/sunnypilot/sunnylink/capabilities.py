@@ -44,6 +44,7 @@ CAPABILITY_FIELDS = (
   "device_type",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "hyundai_radar_tracks_available",
   "toyota_tss2",
   "custom_model_active",
 )
@@ -68,6 +69,7 @@ CAPABILITY_LABELS: dict[str, str] = {
   "device_type": "Device type",
   "subaru_has_sng": "Subaru Stop-and-Go available",
   "hyundai_alpha_long_available": "Hyundai Alpha Longitudinal available",
+  "hyundai_radar_tracks_available": "Hyundai radar tracks available",
   "toyota_tss2": "Toyota TSS2 platform",
   "custom_model_active": "Non-Default model selected",
 }
@@ -88,6 +90,7 @@ CAR_CAPABILITY_FIELDS = (
   "has_stop_and_go",
   "subaru_has_sng",
   "hyundai_alpha_long_available",
+  "hyundai_radar_tracks_available",
   "toyota_tss2",
 )
 
@@ -122,6 +125,7 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP) -> None:
         cloudlog.exception(f"capabilities: unknown hyundai platform {bundle_platform!r}")
     elif CP is not None:
       caps["hyundai_alpha_long_available"] = bool(CP.alphaLongitudinalAvailable)
+      caps["hyundai_radar_tracks_available"] = not CP.radarUnavailable
 
   elif brand == "subaru":
     if bundle_platform:

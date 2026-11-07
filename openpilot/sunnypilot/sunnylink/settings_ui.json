@@ -2232,6 +2232,37 @@
               "equals": true
             }
           ]
+        },
+        {
+          "key": "RadarTracks",
+          "widget": "multiple_button",
+          "title": "Radar Tracks",
+          "options": [
+            {
+              "value": 0,
+              "label": "Off"
+            },
+            {
+              "value": 1,
+              "label": "Lead Only"
+            },
+            {
+              "value": 2,
+              "label": "Full Radar"
+            }
+          ],
+          "visibility": [
+            {
+              "type": "capability",
+              "field": "hyundai_radar_tracks_available",
+              "equals": true
+            }
+          ],
+          "enablement": [
+            {
+              "type": "offroad_only"
+            }
+          ]
         }
       ]
     },

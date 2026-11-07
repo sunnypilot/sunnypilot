@@ -15,6 +15,7 @@ from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP, ModelRendererSP
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import draw_radar_lead_connectors, radar_lead_track_colors
 
 CLIP_MARGIN = 500
 MIN_DRAW_DISTANCE = 10.0
@@ -46,6 +47,9 @@ class ModelPoints:
 class LeadVehicle:
   def __init__(self):
     self.bar = np.empty((0, 2), dtype=np.float32)
+    self.position: tuple[float, float] | None = None
+    self.radar_track_id: int = -1
+    self.radar: bool = False
     self.d_filter = FirstOrderFilter(0.0, 0.2, 1 / gui_app.target_fps, initialized=False)
     self.y_filter = FirstOrderFilter(0.0, 0.2, 1 / gui_app.target_fps, initialized=False)
     self.fade_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
@@ -126,7 +130,8 @@ class ModelRenderer(Widget, ModelRendererSP):
 
     # Update model data when needed
     model_updated = sm.updated['modelV2']
-    if model_updated or sm.updated['radarState'] or self._transform_dirty:
+    transform_updated = self._transform_dirty
+    if model_updated or sm.updated['radarState'] or transform_updated:
       if model_updated:
         self._update_raw_points(model)
 
@@ -143,8 +148,33 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._draw_path()
       self.blendful.draw(self._rect)
 
+    radar_matched_positions = {}
+    radar_highlighted_tracks = {}
+    if ui_state.draw_radar_tracks and sm.valid['radarTracks'] and sm.recv_frame['radarTracks'] >= ui_state.started_frame:
+      if (sm.updated['radarTracks'] or sm.updated['extrinsicsCalibration'] or transform_updated or
+          not self.radar_tracks.projection_initialized):
+        self.radar_tracks.update_radar_tracks(
+          sm['radarTracks'], self._map_to_screen, self._path_offset_z,
+        )
+      radar_highlighted_tracks = radar_lead_track_colors(radar_state) if render_lead_indicator else {}
+      radar_matched_positions = self.radar_tracks.draw_cached_radar_tracks(
+        screen_offset=(self._rect.x, self._rect.y),
+        highlighted_tracks=radar_highlighted_tracks,
+      )
+    else:
+      self.radar_tracks.clear_projection()
+
     if render_lead_indicator:
       self._update_leads(sm)
+      plan = sm['longitudinalPlan']
+      if plan.longitudinalPlanSource != log.LongitudinalPlan.LongitudinalPlanSource.e2e:
+        for lead_vehicle, lead in zip(self._lead_vehicles, (radar_state.leadOne, radar_state.leadTwo), strict=True):
+          lead_vehicle.radar_track_id = int(lead.radarTrackId)
+          lead_vehicle.radar = lead.radar
+      draw_radar_lead_connectors(
+        self._lead_vehicles, radar_matched_positions, radar_highlighted_tracks,
+        screen_offset=(self._rect.x, self._rect.y),
+      )
       self._draw_lead_indicator()
     else:
       self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
@@ -188,6 +218,7 @@ class ModelRenderer(Widget, ModelRendererSP):
       lead.fade_filter.update(opacity if visible else 0.0)
       if visible:
         lead.bar = self._get_lead_bar(lane, lead.d_filter.update(d_rel), lead.y_filter.update(y_rel))
+        lead.position = tuple(lead.bar.mean(axis=0))
 
   def _get_lead_bar(self, lane, d_rel, y_rel):
     # bar on the road behind the lead, following the lane
@@ -340,6 +371,21 @@ class ModelRenderer(Widget, ModelRendererSP):
     offset = np.array([self._rect.x, self._rect.y], dtype=np.float32)
     for lead in self._lead_vehicles:
       draw_polygon(self._rect, lead.bar + offset, rl.Color(255, 255, 255, int(255 * lead.fade_filter.x)))
+
+  def _map_to_screen(self, in_x, in_y, in_z):
+    input_pt = np.array([in_x, in_y, in_z])
+    pt = self._car_space_transform @ input_pt
+
+    if abs(pt[2]) < 1e-6:
+      return None
+
+    x, y = pt[0] / pt[2], pt[1] / pt[2]
+
+    clip = self._clip_region
+    if not (clip.x <= x + self._rect.x <= clip.x + clip.width and clip.y <= y + self._rect.y <= clip.y + clip.height):
+      return None
+
+    return (x, y)
 
   @staticmethod
   def _get_path_length_idx(pos_x_array: np.ndarray, path_height: float) -> int:

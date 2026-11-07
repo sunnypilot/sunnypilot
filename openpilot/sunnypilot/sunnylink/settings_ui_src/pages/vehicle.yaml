@@ -27,6 +27,22 @@ sections:
     enablement:
     - $ref: '#/macros/offroad'
     - $ref: '#/macros/longitudinal'
+  - key: RadarTracks
+    widget: multiple_button
+    title: Radar Tracks
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: Lead Only
+    - value: 2
+      label: Full Radar
+    visibility:
+    - type: capability
+      field: hyundai_radar_tracks_available
+      equals: true
+    enablement:
+    - $ref: '#/macros/offroad'
 - id: subaru
   title: Subaru Settings
   description: ''

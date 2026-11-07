@@ -8,6 +8,7 @@ from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.blendful import BlendfulRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.chevron_metrics import ChevronMetrics
+from openpilot.selfdrive.ui.sunnypilot.onroad.radar_tracks import RadarTracks
 from openpilot.selfdrive.ui.sunnypilot.onroad.rainbow_path import RainbowPath
 from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 from openpilot.system.ui.lib.application import gui_app
@@ -17,6 +18,7 @@ class ModelRendererSP:
   def __init__(self):
     self.rainbow_path = RainbowPath()
     self.chevron_metrics = ChevronMetrics()
+    self.radar_tracks = RadarTracks()
     self.blendful = BlendfulRenderer(readout=False)
     self._width_filter = FirstOrderFilter(0.9, 0.1, 1 / gui_app.target_fps)
 
