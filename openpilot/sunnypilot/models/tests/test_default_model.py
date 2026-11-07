@@ -10,7 +10,7 @@ import subprocess
 
 from openpilot.sunnypilot import get_file_hash
 from openpilot.sunnypilot.models.default_model import MODEL_HASH_PATH, SUPERCOMBO_ONNX_PATH, BIG_MODEL_HASH_PATH, \
-                                                      BIG_SUPERCOMBO_ONNX_PATH, _read_model_name_fields
+                                                      BIG_DRIVING_PKL_PATH, _read_model_name_fields
 import hashlib
 from openpilot.common.test import OpenpilotTestCase
 
@@ -36,12 +36,9 @@ class TestDefaultModel(OpenpilotTestCase):
 
     assert combined_hash == current_hash, "Run openpilot/sunnypilot/models/default_model.py to update the default model name and hash"
 
-  def test_compare_big_onnx_hashes(self):
-    if not os.path.exists(BIG_SUPERCOMBO_ONNX_PATH):
-      self.skipTest("big_driving_supercombo.onnx not present")
-
+  def test_compare_big_pkl_hashes(self):
     fields = _read_model_name_fields()
-    oid = _get_lfs_oid(os.path.relpath(BIG_SUPERCOMBO_ONNX_PATH, os.getcwd()))
+    oid = _get_lfs_oid(os.path.relpath(BIG_DRIVING_PKL_PATH, os.getcwd()))
     big_fingerprint = f"{oid}:{fields.get('DEFAULT_BIG_MODEL', '')}:{fields.get('DEFAULT_BIG_MODEL_REF', '')}"
     combined_hash = hashlib.sha256(big_fingerprint.encode()).hexdigest()
 

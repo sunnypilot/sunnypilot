@@ -268,7 +268,7 @@ sections:
       spot.
     enablement:
     - type: capability
-      field: enable_bsm
+      field: has_bsm
       equals: true
     - type: param_compare
       key: AutoLaneChangeTimer

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-CHESTNUT_FW_VERSION = "ed4e39b7"
+CHESTNUT_FW_VERSION = "8516b768"
 CHESTNUT_USB_IDS = ((0xADD1, 0x0001), (0x3801, 0x0001))
 CHESTNUT_ROM_USB_IDS = ((0x174C, 0x2464), (0x174C, 0x2463))
 CHESTNUT_USB_PRODUCT = f"custom {CHESTNUT_FW_VERSION}-CLEAN"
@@ -34,6 +34,10 @@ def read_int(path: Path, base: int = 10) -> int:
     return int(path.read_text(), base)
   except (OSError, ValueError, TypeError):
     return 0
+
+
+def cable_connected() -> bool:
+  return read_int(TYPEC_CC_ORIENTATION_PATH) != 0
 
 
 def usb_devices() -> list[Path]:
@@ -91,3 +95,4 @@ def set_usb_state(device_state, devices: list[dict]) -> None:
       chestnut_present = True
 
   device_state.chestnutPresent = chestnut_present
+  device_state.usbState.connected = cable_connected()

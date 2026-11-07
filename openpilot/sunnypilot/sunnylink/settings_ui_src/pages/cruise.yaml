@@ -11,19 +11,6 @@ sections:
   title: ''
   description: ''
   items:
-  - key: ExperimentalMode
-    widget: toggle
-    title: Experimental Mode
-    enablement:
-    - $ref: '#/macros/longitudinal'
-  - key: DynamicExperimentalControl
-    widget: toggle
-    title: Dynamic Experimental Control
-    description: Let the model decide when to use sunnypilot ACC or sunnypilot End to End Longitudinal.
-    visibility:
-    - $ref: '#/macros/longitudinal'
-    enablement:
-    - $ref: '#/macros/longitudinal'
   - key: DisengageOnAccelerator
     widget: toggle
     title: Disengage Cruise on Accelerator Pedal
@@ -41,6 +28,12 @@ sections:
       label: Standard
     - value: 2
       label: Relaxed
+    enablement:
+    - $ref: '#/macros/longitudinal'
+  - key: AccelBoostSP
+    widget: toggle
+    title: Acceleration Boost
+    description: "Adds a small push on top of sunnypilot's own acceleration, stronger in Aggressive and gentler in Relaxed. Eases off in curves and when sunnypilot slows or stops. Never goes past your set speed, and lead-car following still comes first."
     enablement:
     - $ref: '#/macros/longitudinal'
   - key: IntelligentCruiseButtonManagement
