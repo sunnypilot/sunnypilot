@@ -49,6 +49,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
+from openpilot.sunnypilot.modeld_v2.turn_desire_refresh import TurnDesireRefresh, desire_input
 from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
@@ -404,6 +405,8 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
+  turn_refresh = TurnDesireRefresh()
+  yaw_rate = 0.  # the model's own, last frame (cameraOdometry.rot[2]); this car's carState.yawRate is always 0
   meta_constants = load_meta_constants()
   RELC = RoadEdgeLaneChangeController()
   blendful = Blendful()
@@ -470,9 +473,8 @@ def main(demo=False):
     traffic_convention = np.zeros(2)
     traffic_convention[int(is_rhd)] = 1
 
-    vec_desire = np.zeros(model.constants.DESIRE_LEN, dtype=np.float32)
-    if desire >= 0 and desire < model.constants.DESIRE_LEN:
-      vec_desire[desire] = 1
+    # a held turn is re-pulsed before it leaves the model's 5 s history, and on pulling away from a stop
+    vec_desire = desire_input(desire, model.constants.DESIRE_LEN, turn_refresh.update(desire, v_ego, yaw_rate))
 
     # tracked dropped frames
     vipc_dropped_frames = max(0, meta_main.frame_id - last_vipc_frame_id - 1)
@@ -543,6 +545,7 @@ def main(demo=False):
       assert small_model is not None
       model = small_model
       signal_route_guard.reset()
+      turn_refresh.reset()  # the small model pulses a held turn on its first frame
       navigation_state.publish(now=time.monotonic(), supported=model.navigation_supported, active=False,
                                reason=model.navigation_capability_reason, model_name=model.model_name, force=True)
       if chestnut_state is not None:
@@ -604,6 +607,7 @@ def main(demo=False):
       drivingdata_send.drivingModelData.meta.laneChangeDirection = DH.lane_change_direction
 
       fill_pose_msg(posenet_send, model_output, meta_main.frame_id, vipc_dropped_frames, meta_main.timestamp_eof, live_calib_seen)
+      yaw_rate = float(model_output['pose'][0, 5])
       pm.send('modelV2', modelv2_send)
       pm.send('drivingModelData', drivingdata_send)
       pm.send('cameraOdometry', posenet_send)
