@@ -49,6 +49,7 @@ from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.frame_fusion import fused_with_warp
 from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
+from openpilot.sunnypilot.modeld_v2.steering_smoothing import lat_smooth_seconds
 from openpilot.sunnypilot.modeld_v2.turn_desire_refresh import TurnDesireRefresh, desire_input
 from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
@@ -399,6 +400,9 @@ def main(demo=False):
   else:
     CP = messaging.log_from_bytes(params.get("CarParams", block=True), car.CarParams)
   cloudlog.info("modeld got CarParams: %s", CP.brand)
+  for m in (model, small_model):
+    if m is not None:
+      m.LAT_SMOOTH_SECONDS = lat_smooth_seconds(m.LAT_SMOOTH_SECONDS, CP.steerControlType)
 
   # TODO Move smooth seconds to action function
   long_delay = CP.longitudinalActuatorDelay + model.LONG_SMOOTH_SECONDS
