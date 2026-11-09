@@ -42,6 +42,10 @@ RULE_SPEEDS = (3.0, 8.0)  # m/s: the FSD turns it was fitted on; below, its craw
 # First road test: a quarter of FSD's turns replayed 20%+ over FSD's own peak (corners the speed rule can't see), and
 # 10-20% too much already felt like far too much on the road, so the rule is taken 8% low: an under-turn can be helped.
 PEAK_SCALE = 0.92
+# Past the half-heading point the model sees the street the turn goes into, and on b2/b3 its action unwound in time
+# while the profile kept turning (rights ended at 91 and 96 deg, the left at 91, of ~85-90 deg corners). Over this
+# long after the middle the command hands over to the action wherever the action turns less.
+HANDOVER_S = 1.0
 MIN_TURN = np.radians(45.)  # heading change that makes it a turn (as the labels)
 MIN_TURN_NO_CUE = np.radians(60.)
 MAX_SPEED = 9.0  # m/s
@@ -149,6 +153,9 @@ class FsdTurnProfile:
       need = max(self.total - self.done, 0.)
       if left > need:
         level *= need / max(left, 1e-6)
+    if self.past_mid:
+      handover = min(self.since_mid / max(self.v_mid, TIMING_SPEED) / HANDOVER_S, 1.)
+      level = (1. - handover) * level + handover * min(level, max(self.direction * action, 0.))
     self.last = self.direction * level
     if self.mode == MODE_MAX:  # the action keeps its own timing where it leads; the profile lifts it to FSD's turn
       self.last = self.direction * max(level, self.direction * action)

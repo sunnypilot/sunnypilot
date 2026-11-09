@@ -46,7 +46,7 @@ def test_a_cued_right_turn_follows_the_speed_rule_and_completes():
 def test_rights_are_shorter_and_sharper_than_lefts_and_both_complete():
   right, right_heading, _ = drive(turn=RIGHT_90, cue=1.)
   left, left_heading, _ = drive(turn=-RIGHT_90, cue=-1.)
-  assert np.max(right) > -np.min(left)
+  assert np.max(right) > -np.min(left)  # FSD's rights are sharper
   assert np.sum(right > 0.25 * right.max()) < np.sum(-left > 0.25 * -left.min())
   assert np.degrees(right_heading) == pytest.approx(90., abs=8.) and np.degrees(left_heading) == pytest.approx(-90., abs=8.)
 
@@ -88,3 +88,13 @@ def test_pulling_away_from_a_stop_winds_in_before_the_car_is_moving():
   for _ in range(40):  # stopped 4 m from the corner with the turn cued
     command = controller.update(x, y, yaw, 0., 0.2, DT, 0., 1.)
   assert command > 0.03
+
+
+def test_past_the_middle_it_never_steers_more_than_the_action_once_handed_over():
+  controller = ftp.FsdTurnProfile()
+  x, y, yaw, _ = corner_plan(10., RIGHT_90, 5.)
+  for _ in range(20):
+    controller.update(x, y, yaw, 0., 5., DT, 0.02, 1.)
+  controller.past_mid, controller.v_mid, controller.since_mid, controller.done = True, 5., 10., RIGHT_90 * 0.6
+  command = controller.update(x, y, yaw, 0.3, 5., DT, 0.01, 1.)
+  assert command <= 0.01 + 1e-9
