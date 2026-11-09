@@ -125,10 +125,10 @@ class ModelsLayoutMici(NavScroller):
                                                            "while the model still sets the cruising speed. Turns off the accel boost. " +
                                                            "Needs openpilot longitudinal. Not available with the Default model."))
 
-    self.path_steering_toggle = BigParamControl(tr("turn correction (alpha)"), "TurnInHold",
-      description=tr("In slow turns, corrects the model's steering toward the line FSD and you take, with a correction learned for " +
-                     "that model from your drives. It can only move steering within the range the model's own plan allows. A model " +
-                     "without a learned correction is only kept from turning tighter than its planned line at your speed. " +
+    self.path_steering_toggle = BigParamControl(tr("FSD-timed turns (alpha)"), "TurnInHold",
+      description=tr("In turns the model's plan shows (under about 20 mph), steers when and how hard FSD does: the model says where " +
+                     "the corner is and how far it turns, FSD's own turns set when to start and the peak for your speed, a little " +
+                     "under FSD for now. Outside those turns, a slow turn is kept from going tighter than the model's planned line. " +
                      "Not available with the Default model."))
 
     self.map_turn_toggle = BigParamControl(tr("signal navigation (experimental)"), "MapboxNextTurnEnabled",
