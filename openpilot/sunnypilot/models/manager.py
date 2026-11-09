@@ -26,6 +26,7 @@ from openpilot.common.hardware.hw import Paths
 
 from openpilot.cereal import messaging, custom
 from openpilot.sunnypilot.models.fetcher import ModelFetcher
+from openpilot.sunnypilot.models.local_model import LOCAL_BUILD_REF, manifest_for_artifact
 from openpilot.sunnypilot.models.navigation_model import BUILD_REF, MANIFEST_NAME, installed_bundle
 from openpilot.sunnypilot.models.helpers import (ACTIVE_BUNDLE_KEYS, get_active_bundle, get_selected_bundle,
                                                   resolve_bundle_by_ref, validate_active_bundles, verify_file)
@@ -439,6 +440,72 @@ class ModelManagerSP:
       if process is not None:
         _stop_job(process)
 
+  def _build_local_models(self) -> None:
+    # A build job for staged local models (local_model.py), never an activation; reported like navigation preparation.
+    bundle = custom.ModelManagerSP.ModelBundle()
+    bundle.ref = LOCAL_BUILD_REF
+    bundle.models = [{'type': 'chunked', 'artifact': {'fileName': 'local_onnx'}}]
+    self.selected_bundle = bundle
+    artifact = bundle.models[0].artifact
+    status = custom.ModelManagerSP.DownloadStatus
+
+    def update(payload):
+      stage = payload.get('stage', 'checking')
+      bundle.internalName = stage
+      bundle.displayName = payload.get('message', 'Building local models')[:2048]
+      bundle.status = status.failed if stage == 'failed' else status.downloaded if stage == 'ready' else status.downloading
+      artifact.downloadProgress.status = status.verifying if bundle.status == status.downloading else bundle.status
+      artifact.downloadProgress.progress = payload.get('progress', 0)
+      artifact.downloadProgress.speed = 0
+      artifact.downloadProgress.eta = 0
+      self._report_status()
+
+    process = None
+    try:
+      update({'stage': 'checking', 'message': 'Checking local model build requirements'})
+      if not self.params.get_bool('IsOffroad') or not self.chestnut_present:
+        update({'stage': 'failed', 'message': 'Park the device with a connected supported Chestnut GPU before building local models.'})
+        return
+      from openpilot.common.basedir import BASEDIR
+      root = Path(Paths.model_root())
+      with tempfile.TemporaryDirectory(prefix='.local-build-', dir=root) as temporary, (root / 'local_models_build.log').open('w') as log:
+        status_path = Path(temporary) / 'status.json'
+        command = [sys.executable, '-u', '-m', 'openpilot.sunnypilot.models.build_local_model', '--queued', '--status-file', str(status_path)]
+        process = subprocess.Popen(command, cwd=BASEDIR, start_new_session=True, stdout=log, stderr=subprocess.STDOUT)
+        previous = None
+        started = time.monotonic()
+        while process.poll() is None:
+          if not self.params.get_bool('IsOffroad') or self._download_interrupted():
+            artifact.downloadProgress.canceling = True
+            raise DownloadCancelled('Build stopped: device is not offroad.' if not self.params.get_bool('IsOffroad') else
+                                    'Local model build canceled.')
+          try:
+            payload = status_path.read_text()
+            if payload != previous:
+              update(json.loads(payload))
+              previous = payload
+          except (OSError, ValueError):
+            pass
+          if previous is None and time.monotonic() - started >= NAV_PREPARE_STARTUP_TIMEOUT:
+            raise RuntimeError('Build worker did not report startup within 30 seconds. See local_models_build.log.')
+          time.sleep(.2)
+        if status_path.exists():
+          update(json.loads(status_path.read_text()))
+        if not self.params.get_bool('IsOffroad') or self._download_interrupted():
+          raise DownloadCancelled('Build stopped before completion; park and build again.')
+        if process.returncode:
+          if bundle.status != status.failed:
+            update({'stage': 'failed', 'message': f'Local model build failed (exit {process.returncode}). See local_models_build.log.'})
+        else:
+          self.source_models['chestnut'] = self.model_fetcher.get_bundles_for_source('chestnut')
+          self.available_models = self.source_models[ModelFetcher.active_source(self.chestnut_present)]
+          update({'stage': 'ready', 'message': bundle.displayName, 'progress': 100})
+    except Exception as error:
+      update({'stage': 'failed', 'message': str(error)})
+    finally:
+      if process is not None:
+        _stop_job(process)
+
   def _process_download_requests(self) -> None:
     # loops so a ref queued during a download starts in the same tick, without
     # the bar dropping to idle for a tick between the two transfers
@@ -451,6 +518,15 @@ class ModelManagerSP:
         self._download_ref = ref_to_download
         try:
           self._prepare_navigation()
+        except Exception as e:
+          cloudlog.exception(e)
+        finally:
+          self._release_download_ref()
+        continue
+      if ref_to_download in (LOCAL_BUILD_REF, LOCAL_BUILD_REF.encode()):
+        self._download_ref = ref_to_download
+        try:
+          self._build_local_models()
         except Exception as e:
           cloudlog.exception(e)
         finally:
@@ -514,6 +590,9 @@ class ModelManagerSP:
     if local_navigation and local_navigation['models'][0]['artifact']['file_name'] in active_files:
       # Its descriptor is part of the installed local bundle, not a remote catalog cache.
       active_files.append(MANIFEST_NAME)
+    for file_name in list(active_files):
+      if local_manifest := manifest_for_artifact(model_dir, file_name):
+        active_files.append(local_manifest)
     try:
       for filename in os.listdir(model_dir):
         if filename not in active_files:

@@ -15,13 +15,14 @@ from openpilot.cereal import custom
 
 
 def _with_local_navigation(bundles, source):
+  """The catalog plus the locally built Chestnut models: RL Navigation and local fine-tuned builds (local_model.py)."""
   if source == 'chestnut':
     from openpilot.common.hardware.hw import Paths
+    from openpilot.sunnypilot.models.local_model import installed_bundles
     from openpilot.sunnypilot.models.navigation_model import installed_bundle
-    local = installed_bundle(Paths.model_root())
-    if local is not None:
-      parsed = ModelParser._parse_bundle(local)
-      return [bundle for bundle in bundles if bundle.ref != parsed.ref] + [parsed]
+    local = [installed_bundle(Paths.model_root())] + installed_bundles(Paths.model_root())
+    for parsed in [ModelParser._parse_bundle(bundle) for bundle in local if bundle is not None]:
+      bundles = [bundle for bundle in bundles if bundle.ref != parsed.ref] + [parsed]
   return bundles
 
 

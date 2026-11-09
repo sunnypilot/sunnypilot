@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD_REF = 'local-prepare-rl-navigation-80eedcdd'
+LOCAL_BUILD_REF = 'local-build-staged-models'
 DS = NS(downloading=1, verifying=2, failed=3, downloaded=4, cached=5)
 SOURCES = ((ROOT/'layouts/settings/models.py', 'ModelsLayout'), (ROOT/'mici/layouts/models.py', 'ModelsLayoutMici'))
 
@@ -15,13 +16,14 @@ SOURCES = ((ROOT/'layouts/settings/models.py', 'ModelsLayout'), (ROOT/'mici/layo
 def load_methods(path, name):
   tree = ast.parse(path.read_text())
   cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == name)
-  names = {'_prepare_navigation_model', '_handle_navigation_preparation', '_download_row_state', '_set_item_note', '_show_navigation_preparation_details'}
+  names = {'_prepare_navigation_model', '_build_local_models', '_handle_navigation_preparation', '_download_row_state', '_set_item_note',
+           '_show_navigation_preparation_details'}
   cls.body = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
   cls.bases = []
   ui = NS(is_offroad=Mock(return_value=True), params=Mock())
   ui.params.get.return_value = None
   ui.params.get_bool.return_value = False
-  env = {'BUILD_REF': BUILD_REF, 'ui_state': ui, 'custom': NS(ModelManagerSP=NS(DownloadStatus=DS)),
+  env = {'BUILD_REF': BUILD_REF, 'LOCAL_BUILD_REF': LOCAL_BUILD_REF, 'ui_state': ui, 'custom': NS(ModelManagerSP=NS(DownloadStatus=DS)),
          'escape': escape, 'gui_app': Mock(), 'SettingDescriptionDialog': lambda title, message: NS(title=title, message=message),
          'device': Mock(), 'tr': lambda s: s, 'ON_COLOR': 'green', 'rl': NS(RED='red', GRAY='gray', WHITE='white')}
   exec(compile(ast.Module(body=[cls], type_ignores=[]), str(path), 'exec'), env)
@@ -179,3 +181,29 @@ class NavigationPreparationUiTests(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+
+
+class LocalBuildUiTests(unittest.TestCase):
+  PATH, NAME = ROOT/'mici/layouts/models.py', 'ModelsLayoutMici'
+
+  def test_build_button_queues_the_local_build_ref_only_when_idle_offroad(self):
+    obj, ui = load_methods(self.PATH, self.NAME)
+    obj._build_local_models()
+    ui.params.put.assert_called_once_with('ModelManager_DownloadRef', LOCAL_BUILD_REF)
+    for offroad, queued, clearing in ((False, None, False), (True, 'other', False), (True, None, True)):
+      with self.subTest(offroad=offroad, queued=queued, clearing=clearing):
+        obj, ui = load_methods(self.PATH, self.NAME)
+        ui.is_offroad.return_value = offroad
+        ui.params.get.return_value = queued
+        ui.params.get_bool.return_value = clearing
+        obj._build_local_models()
+        ui.params.put.assert_not_called()
+
+  def test_local_build_progress_is_labelled_as_a_local_build(self):
+    obj, ui = load_methods(self.PATH, self.NAME)
+    obj.cancel_download_btn = Mock()
+    obj.current_model_info = Mock()
+    self.assertTrue(obj._handle_navigation_preparation(bundle(DS.downloading, ref=LOCAL_BUILD_REF, text='Building FF')))
+    obj.current_model_info.current_model_header.set_text.assert_called_with('local model build')
+    obj.cancel_download_btn.set_text.assert_called_with('cancel build')
+    obj._show_navigation_preparation_details()

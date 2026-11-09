@@ -11,12 +11,14 @@ import pyray as rl
 from openpilot.cereal import custom
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog, SettingDescriptionDialog
 from openpilot.sunnypilot.models.helpers import ACTIVE_BUNDLE_KEYS, get_selected_bundle
+from openpilot.sunnypilot.models.local_model import LOCAL_BUILD_REF, staged_models
 from openpilot.sunnypilot.models.navigation_model import BUILD_REF
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigParamControl
 from openpilot.selfdrive.ui.ui_state import ui_state, device
 from openpilot.selfdrive.ui.sunnypilot.model_info import (active_source, big_model_state, bundles_for_source, carrying_model,
                                                            default_model_name, model_cache_size_mb, model_info, queued_name,
                                                            refresh_in_progress, refresh_model_list)
+from openpilot.common.hardware.hw import Paths
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
@@ -93,6 +95,15 @@ class ModelsLayoutMici(NavScroller):
     self.preparation_details_btn.set_click_callback(self._show_navigation_preparation_details)
     self.preparation_details_btn.set_visible(False)
     self._navigation_preparation_message = ""
+    self._preparation_is_local = False
+
+    self.build_local_btn = BigButton(tr("build local models"),
+      description=tr("Builds the models copied to this device for testing, such as a fine-tuned driving model. Keep the device " +
+                     "parked with the Chestnut GPU connected. When ready, select it from Big Model; building does not change the active model."))
+    self.build_local_btn.set_click_callback(self._build_local_models)
+    self.build_local_btn.set_visible(False)
+    self._staged_count = 0
+    self._staged_time = 0.0
 
     self.refresh_btn = BigButton(tr("refresh models"))
     self.refresh_btn.set_click_callback(self._refresh_models)
@@ -122,7 +133,8 @@ class ModelsLayoutMici(NavScroller):
                      "a navigation-capable model also gets the route as input. " +
                      "Early fast turn signals and slow lane changes can be ambiguous; this is experimental."))
 
-    self.main_items = [self.current_model_info, self.preparation_details_btn, self.select_model_btn, self.prepare_navigation_btn, self.cancel_download_btn,
+    self.main_items = [self.current_model_info, self.preparation_details_btn, self.select_model_btn, self.prepare_navigation_btn, self.build_local_btn,
+                       self.cancel_download_btn,
                        self.refresh_btn, self.clear_cache_btn,
                        self.blendful_toggle, self.plan_long_toggle, self.map_turn_toggle]
     self._scroller.add_widgets(self.main_items)
@@ -132,15 +144,24 @@ class ModelsLayoutMici(NavScroller):
         not ui_state.params.get_bool("ModelManager_ClearCache")):
       ui_state.params.put("ModelManager_DownloadRef", BUILD_REF)
 
+  def _build_local_models(self):
+    if (ui_state.is_offroad() and ui_state.params.get("ModelManager_DownloadRef") is None and
+        not ui_state.params.get_bool("ModelManager_ClearCache")):
+      ui_state.params.put("ModelManager_DownloadRef", LOCAL_BUILD_REF)
+
   def _show_navigation_preparation_details(self):
     if self._navigation_preparation_message:
-      gui_app.push_widget(SettingDescriptionDialog(tr("Navigation model preparation"), self._navigation_preparation_message))
+      title = tr("Local model build") if getattr(self, '_preparation_is_local', False) else tr("Navigation model preparation")
+      gui_app.push_widget(SettingDescriptionDialog(title, self._navigation_preparation_message))
 
   def _handle_navigation_preparation(self, bundle):
-    self.preparation_details_btn.set_visible(bundle is not None and bundle.ref == BUILD_REF)
-    if bundle is None or bundle.ref != BUILD_REF:
+    """Progress of a build job: navigation model preparation or local model builds."""
+    job = bundle is not None and bundle.ref in (BUILD_REF, LOCAL_BUILD_REF)
+    self.preparation_details_btn.set_visible(job)
+    if not job:
       self._navigation_preparation_message = ""
       return False
+    local = self._preparation_is_local = bundle.ref == LOCAL_BUILD_REF
     self._navigation_preparation_message = bundle.displayName
     ds = custom.ModelManagerSP.DownloadStatus
     downloading = bundle.status == ds.downloading
@@ -148,11 +169,11 @@ class ModelsLayoutMici(NavScroller):
     stage = bundle.internalName
     canceling = any(p.canceling for p in progresses)
     self.cancel_download_btn.set_visible(downloading and ui_state.params.get("ModelManager_DownloadRef") is not None)
-    self.cancel_download_btn.set_text(tr("cancel preparation"))
-    self.current_model_info.current_model_header.set_text(tr("navigation model preparation"))
+    self.cancel_download_btn.set_text(tr("cancel build") if local else tr("cancel preparation"))
+    self.current_model_info.current_model_header.set_text(tr("local model build") if local else tr("navigation model preparation"))
     self.current_model_info.current_model_text.set_text(bundle.displayName)
     self.current_model_info.current_model_header._shimmer = downloading
-    self.current_model_info.info_header.set_text(tr("progress") if downloading else tr("navigation model"))
+    self.current_model_info.info_header.set_text(tr("progress") if downloading else tr("local models") if local else tr("navigation model"))
     progress = sum(p.progress for p in progresses) / len(progresses) if progresses else 0.
     detail = {
       'checking': tr("checking requirements"), 'downloading': f"{progress:.1f}%", 'building': tr("building; keep the device parked"),
@@ -321,6 +342,13 @@ class ModelsLayoutMici(NavScroller):
     clearing = ui_state.params.get_bool("ModelManager_ClearCache")
     self.clear_cache_btn.set_enabled(ui_state.is_offroad() and not is_downloading and not clearing)
     self.prepare_navigation_btn.set_enabled(
+      ui_state.is_offroad() and not is_downloading and not clearing and ui_state.params.get("ModelManager_DownloadRef") is None)
+    if (now := time.monotonic()) - self._staged_time > 2.0:  # a few small JSON reads, never hashing
+      self._staged_time = now
+      self._staged_count = len(staged_models(Paths.model_root())) if ui_state.is_offroad() else 0
+    self.build_local_btn.set_visible(self._staged_count > 0)
+    self.build_local_btn.set_value(f"{self._staged_count} waiting" if self._staged_count else "")
+    self.build_local_btn.set_enabled(
       ui_state.is_offroad() and not is_downloading and not clearing and ui_state.params.get("ModelManager_DownloadRef") is None)
     if clearing:
       self.clear_cache_btn.set_value(tr("clearing..."))
