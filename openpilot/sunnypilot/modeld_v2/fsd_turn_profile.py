@@ -15,15 +15,28 @@ import numpy as np
 # A turn's profile here is the rule's peak at the car's speed, the template stretched in time so the turn adds up to
 # the heading the plan (plus what is already turned) says it needs, placed at the plan's half-heading point.
 TAU = np.arange(-5.0, 5.01, 0.1)  # s from the half-heading point
-TEMPLATE = np.array([
-  0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.002, 0.006, 0.008, 0.008, 0.008, 0.008, 0.014, 0.027, 0.043,
-  0.046, 0.048, 0.051, 0.056, 0.072, 0.089, 0.109, 0.133, 0.172, 0.212, 0.261, 0.309, 0.359, 0.414, 0.454, 0.488, 0.523,
-  0.575, 0.644, 0.683, 0.733, 0.784, 0.824, 0.871, 0.889, 0.915, 0.928, 0.940, 0.954, 0.956, 0.966, 0.972, 0.979, 0.985,
-  0.986, 0.989, 0.978, 0.973, 0.956, 0.929, 0.894, 0.857, 0.814, 0.779, 0.738, 0.696, 0.649, 0.607, 0.581, 0.552, 0.509,
-  0.465, 0.445, 0.397, 0.345, 0.315, 0.288, 0.260, 0.230, 0.198, 0.167, 0.139, 0.115, 0.099, 0.085, 0.072, 0.062, 0.058,
-  0.054, 0.045, 0.038, 0.029, 0.022, 0.021, 0.017, 0.013, 0.010, 0.009, 0.009, 0.008, 0.000, 0.000, 0.000, 0.000])
-TEMPLATE /= TEMPLATE.max()
-TEMPLATE_WIDTH = float(np.trapezoid(TEMPLATE, TAU))  # s: the integral of curvature/peak over time
+# Per direction (curvature and yaw + right): FSD's rights rise later and end sooner than its lefts (25% of peak from
+# 2.0 s before to 2.2 s after the middle, vs 2.3 s and 2.5 s) and peak 4% higher. One shared template turned the rights
+# in early on route b2 (the driver held back at the peak) while the lefts were fine.
+_RIGHT_FACTOR = 1.037
+_TEMPLATE_RIGHT = np.array([
+  0.000, 0.000, 0.000, 0.000, 0.003, 0.006, 0.003, 0.000, 0.002, 0.008, 0.014, 0.019, 0.022, 0.027, 0.033, 0.041, 0.050,
+  0.061, 0.072, 0.085, 0.099, 0.114, 0.130, 0.146, 0.162, 0.176, 0.189, 0.203, 0.217, 0.231, 0.261, 0.300, 0.340, 0.383,
+  0.427, 0.473, 0.551, 0.644, 0.704, 0.753, 0.808, 0.848, 0.874, 0.896, 0.920, 0.940, 0.959, 0.971, 0.987, 0.992, 0.997,
+  0.999, 1.000, 0.993, 0.983, 0.965, 0.938, 0.905, 0.866, 0.820, 0.771, 0.717, 0.658, 0.598, 0.554, 0.515, 0.479, 0.445,
+  0.410, 0.374, 0.339, 0.306, 0.275, 0.238, 0.192, 0.158, 0.138, 0.120, 0.103, 0.089, 0.076, 0.065, 0.055, 0.047, 0.038,
+  0.032, 0.027, 0.022, 0.018, 0.013, 0.012, 0.011, 0.010, 0.010, 0.009, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000,
+])
+_LEFT_FACTOR = 1.003
+_TEMPLATE_LEFT = np.array([
+  0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.002, 0.002, 0.003, 0.007, 0.006, 0.004, 0.005, 0.009, 0.021, 0.022,
+  0.025, 0.029, 0.036, 0.050, 0.067, 0.086, 0.108, 0.135, 0.171, 0.217, 0.269, 0.326, 0.386, 0.448, 0.508, 0.565, 0.621,
+  0.673, 0.726, 0.796, 0.853, 0.882, 0.914, 0.942, 0.968, 0.989, 0.997, 1.000, 0.988, 0.984, 0.984, 0.987, 0.994, 0.994,
+  0.994, 0.993, 0.991, 0.979, 0.959, 0.932, 0.902, 0.868, 0.832, 0.794, 0.755, 0.716, 0.673, 0.635, 0.605, 0.573, 0.526,
+  0.485, 0.456, 0.414, 0.389, 0.360, 0.330, 0.300, 0.271, 0.242, 0.218, 0.200, 0.182, 0.166, 0.153, 0.136, 0.113, 0.091,
+  0.074, 0.061, 0.054, 0.049, 0.046, 0.042, 0.037, 0.033, 0.030, 0.028, 0.026, 0.025, 0.009, 0.000, 0.000, 0.000,
+])
+TEMPLATES = {1.: (_TEMPLATE_RIGHT / _TEMPLATE_RIGHT.max(), _RIGHT_FACTOR), -1.: (_TEMPLATE_LEFT / _TEMPLATE_LEFT.max(), _LEFT_FACTOR)}
 RULE_INTERCEPT, RULE_SLOPE = 0.190, -0.018  # 1/m, 1/m per m/s
 RULE_SPEEDS = (3.0, 8.0)  # m/s: the FSD turns it was fitted on; below, its crawl value, above, its lateral accel
 # First road test: a quarter of FSD's turns replayed 20%+ over FSD's own peak (corners the speed rule can't see), and
@@ -49,13 +62,32 @@ def rule_peak(v_ego: float) -> float:
   return PEAK_SCALE * peak
 
 
-def _width(v_ego: float, total: float) -> float:
-  return float(np.clip(total / (max(v_ego, 1.0) * rule_peak(v_ego)), 1.5, 8.0))  # s, so the profile adds up to the turn
+def _shape(direction: float):
+  template, factor = TEMPLATES[1. if direction >= 0. else -1.]
+  width = float(np.trapezoid(template, TAU))  # s: the integral of curvature / peak over time
+  return template, factor, width, np.concatenate([[0.], np.cumsum((template[1:] + template[:-1]) / 2 * np.diff(TAU))])
 
 
-def profile(tau: float, v_ego: float, total: float) -> float:
+def turn_peak(v_ego: float, direction: float) -> float:
+  return _shape(direction)[1] * rule_peak(v_ego)
+
+
+def _width(v_ego: float, total: float, direction: float) -> float:
+  return float(np.clip(total / (max(v_ego, 1.0) * turn_peak(v_ego, direction)), 1.5, 8.0))  # s, so it adds up to the turn
+
+
+def profile(tau: float, v_ego: float, total: float, direction: float = 1.) -> float:
   """Curvature toward the turn tau s from its half-heading point, for a turn of `total` rad at v_ego."""
-  return rule_peak(v_ego) * float(np.interp(tau * TEMPLATE_WIDTH / _width(v_ego, total), TAU, TEMPLATE, left=0., right=0.))
+  template, _, width, _ = _shape(direction)
+  return turn_peak(v_ego, direction) * float(np.interp(tau * width / _width(v_ego, total, direction), TAU, template,
+                                                       left=0., right=0.))
+
+
+def heading_left(tau: float, v_ego: float, total: float, direction: float = 1.) -> float:
+  """Heading (rad) the profile still turns from tau s to its end."""
+  _, _, width, cumulative = _shape(direction)
+  scale = width / _width(v_ego, total, direction)
+  return turn_peak(v_ego, direction) * max(v_ego, 1.0) * float(cumulative[-1] - np.interp(tau * scale, TAU, cumulative)) / scale
 
 
 class FsdTurnProfile:
@@ -107,12 +139,21 @@ class FsdTurnProfile:
       to_mid = float(np.interp(half, heading[:reach[0] + 1], arc[:reach[0] + 1])) if len(reach) and reach[0] > 0 else (
         0. if len(reach) else float(arc[-1]))
       tau = -to_mid / max(v_ego, TIMING_SPEED)
-    level = profile(tau + lead, self.v_mid if self.past_mid else v_ego, self.total)
+    v_profile = self.v_mid if self.past_mid else v_ego
+    level = profile(tau + lead, v_profile, self.total, self.direction)
+    if self.past_mid:
+      # past the middle the plan sees the street the turn goes into, so what the turn still needs is known: the rest of
+      # the profile may not turn more than that (route b2: on two right turns it kept turning ~1 s after the action
+      # unwound and ended 4-8 deg past the turn, until the driver pulled it back). It only ever lowers the profile.
+      left = heading_left(tau + lead, v_profile, self.total, self.direction)
+      need = max(self.total - self.done, 0.)
+      if left > need:
+        level *= need / max(left, 1e-6)
     self.last = self.direction * level
     if self.mode == MODE_MAX:  # the action keeps its own timing where it leads; the profile lifts it to FSD's turn
       self.last = self.direction * max(level, self.direction * action)
     self.weight = min(self.weight + dt / BLEND_IN_S, 1.)
-    ended = self.past_mid and level < END_LEVEL * rule_peak(self.v_mid)
+    ended = self.past_mid and level < END_LEVEL * turn_peak(self.v_mid, self.direction)
     phantom = not self.past_mid and self.direction * remaining < PHANTOM and self.done < PHANTOM
     if ended or phantom or v_ego > MAX_SPEED + 2.:
       self.active, self.confirm, self.direction = False, 0, 0.

@@ -38,15 +38,17 @@ def drive(turn=RIGHT_90, v=5., start=40., cue=1., steps=400, action=None):
 
 def test_a_cued_right_turn_follows_the_speed_rule_and_completes():
   commands, heading, controller = drive()
-  assert np.max(commands) == pytest.approx(ftp.rule_peak(5.), rel=0.1)
+  assert np.max(commands) == pytest.approx(ftp.turn_peak(5., 1.), rel=0.1)
   assert np.degrees(heading) == pytest.approx(90., abs=8.)
   assert not controller.active and abs(commands[-1]) < 0.01
 
 
-def test_left_turns_mirror_right_turns():
-  right, _, _ = drive(turn=np.radians(90.), cue=1.)
-  left, _, _ = drive(turn=np.radians(-90.), cue=-1.)
-  assert np.allclose(left, -right, atol=1e-6)
+def test_rights_are_shorter_and_sharper_than_lefts_and_both_complete():
+  right, right_heading, _ = drive(turn=RIGHT_90, cue=1.)
+  left, left_heading, _ = drive(turn=-RIGHT_90, cue=-1.)
+  assert np.max(right) > -np.min(left)
+  assert np.sum(right > 0.25 * right.max()) < np.sum(-left > 0.25 * -left.min())
+  assert np.degrees(right_heading) == pytest.approx(90., abs=8.) and np.degrees(left_heading) == pytest.approx(-90., abs=8.)
 
 
 def test_no_cue_needs_a_bigger_turn():
