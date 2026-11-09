@@ -52,6 +52,7 @@ from openpilot.sunnypilot.modeld_v2.model_adapters import get_model_adapter
 from openpilot.sunnypilot.modeld_v2.steering_smoothing import lat_smooth_seconds
 from openpilot.sunnypilot.modeld_v2.turn_desire_refresh import TurnDesireRefresh, desire_input
 from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
+from openpilot.sunnypilot.modeld_v2 import path_steering
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
@@ -245,7 +246,8 @@ class ModelState(ModelStateBase):
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
                             blendful: Callable[[float], float] | None = None, turn_sign: float = 0.,
-                            plan_long: PlanLong | None = None) -> log.ModelDataV2.Action:
+                            plan_long: PlanLong | None = None, a_ego: float = 0.,
+                            path_steering_enabled: bool = False) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       if plan_long is not None:
@@ -271,6 +273,12 @@ class ModelState(ModelStateBase):
         self.turn_plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
                                                            self.constants.T_IDXS, v_ego, lat_action_t)
         desired_curvature = apply_turn_plan_floor(desired_curvature, self.turn_plan_curvature, turn_sign)
+      if path_steering_enabled and path_steering.path_weight(v_ego) > 0.:
+        plan = model_output['plan'][0]
+        path = path_steering.path_curvature(plan[:, Plan.POSITION][:, 0], plan[:, Plan.POSITION][:, 1],
+                                            plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[0, Plan.ORIENTATION_RATE][2],
+                                            v_ego, a_ego, lat_action_t)
+        desired_curvature = path_steering.apply_path_steering(desired_curvature, path, v_ego)
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
@@ -417,6 +425,7 @@ def main(demo=False):
   blendful_enabled = False
   plan_long = PlanLong()
   plan_long_enabled = False
+  path_steering_enabled = False
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -462,6 +471,7 @@ def main(demo=False):
       camera_offset_helper.set_offset(params.get("CameraOffset", return_default=True))
       blendful_enabled = params.get_bool("Blendful")
       plan_long_enabled = params.get_bool("PlanLong")
+      path_steering_enabled = params.get_bool(path_steering.PARAM)
       if not plan_long_enabled:
         plan_long.reset()
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
@@ -579,7 +589,8 @@ def main(demo=False):
       turn_sign = 1. if desire == log.Desire.turnRight else -1. if desire == log.Desire.turnLeft else 0.  # curvature + is right
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
                                            partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled),
-                                           turn_sign=turn_sign, plan_long=plan_long if plan_long_enabled else None)
+                                           turn_sign=turn_sign, plan_long=plan_long if plan_long_enabled else None,
+                                           a_ego=sm["carState"].aEgo, path_steering_enabled=path_steering_enabled)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
