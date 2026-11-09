@@ -203,24 +203,31 @@ jobs:
       - name: Compiler check passed before with all of it identical?
         if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut'
         id: qcom_compiler
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/.qcom_compiler_parity.passed
-          key: qcom-compiler-parity-${{ steps.qcom_deps.outputs.qemu }}-${{ hashFiles('tinygrad_repo/test/device/qcom/compiler_parity.py', 'tinygrad_repo/test/mockgpu/qcom/a630_compiled.pkl.xz', 'tinygrad_repo/tinygrad/runtime/support/compiler_qcom.py') }}
+        env:
+          KEY: qcom-compiler-parity-${{ steps.qcom_deps.outputs.qemu }}-${{ hashFiles('tinygrad_repo/test/device/qcom/compiler_parity.py', 'tinygrad_repo/test/mockgpu/qcom/a630_compiled.pkl.xz', 'tinygrad_repo/tinygrad/runtime/support/compiler_qcom.py') }}
+        run: |
+          MARKER="ci/qcom-compiler-parity/$(printf '%s' "$KEY" | tr -c 'A-Za-z0-9._-' '_').txt"
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' -I -L "https://huggingface.co/datasets/sunnypilot/sunnypilot_models_v1/resolve/main/$MARKER")
+          echo "$MARKER: HTTP $CODE"
+          { echo "key=$KEY"; echo "marker=$MARKER"; echo "passed=$([ "$CODE" = 200 ] && echo true || echo false)"; } >> "$GITHUB_OUTPUT"
 
       - name: Check the off-device qcom compiler builds the a630's bytes
-        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.cache-hit != 'true'
+        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.passed != 'true'
         run: |
           # every kernel an a630 has compiled must compile to the same bytes here before a model is built here
           PYTHONPATH="$TINYGRAD_PATH" python3 "$TINYGRAD_PATH/test/device/qcom/compiler_parity.py" check "$TINYGRAD_PATH/test/mockgpu/qcom/a630_compiled.pkl.xz"
-          touch ~/.qcom_compiler_parity.passed
 
       - name: Remember the compiler check passed
-        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.qcom_compiler_parity.passed
-          key: ${{ steps.qcom_compiler.outputs.cache-primary-key }}
+        if: env.MOCK_BUILD == 'true' && inputs.target_hardware != 'chestnut' && steps.qcom_compiler.outputs.passed != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          KEY: ${{ steps.qcom_compiler.outputs.key }}
+          MARKER: ${{ steps.qcom_compiler.outputs.marker }}
+        run: |
+          python3 -m pip install -q --upgrade "huggingface_hub>=0.34"
+          printf '%s\n%s\n' "$KEY" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$RUNNER_TEMP/marker.txt"
+          hf upload --repo-type dataset sunnypilot/sunnypilot_models_v1 "$RUNNER_TEMP/marker.txt" "$MARKER" \
+            --commit-message "qcom compiler parity passed: $KEY" || echo "::warning::could not record the pass, the next build checks again"
 
       - name: Set environment variables
         if: env.MOCK_BUILD != 'true'
