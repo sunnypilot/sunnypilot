@@ -44,13 +44,15 @@ class LocalSunnylinkd(Sunnylinkd):
     self.discovery = discovery if discovery is not None else LocalDiscovery()
     self.backoffs: dict[str, float] = {}
     self.failures: dict[str, int] = {}
+    self._session_apps: dict[str, str] = {}
+    self._session_sockets: dict[str, WebSocket] = {}
     self._last_unknown_beacons: set[str] = set()
     self.stop_event = threading.Event()
     self._state_lock = threading.Lock()
     self._workers: dict[str, threading.Thread] = {}
 
   def enrolled(self) -> bool:
-    return bool(local_auth_daemon.grants()) or local_auth_daemon.pending_enrollment() is not None
+    return bool(local_auth_daemon.grants()) or bool(local_auth_daemon.pending_enrollments())
 
   def saveParams(self, params_to_update: dict[str, str], compression: bool = False) -> None:
     allowed = {k: v for k, v in params_to_update.items() if not is_local_param(k)}
@@ -86,10 +88,26 @@ class LocalSunnylinkd(Sunnylinkd):
 
   def known_app_ids(self) -> set[str]:
     ids = {g["app_id"] for g in local_auth_daemon.grants()}
-    pending = local_auth_daemon.pending_enrollment()
-    if pending is not None:
-      ids.add(pending["app_id"])
+    ids.update(local_auth_daemon.pending_app_ids())
     return ids
+
+  def granted_app_ids(self) -> set[str]:
+    return {g["app_id"] for g in local_auth_daemon.grants()}
+
+  def pending_app_ids(self) -> set[str]:
+    return set(local_auth_daemon.pending_app_ids())
+
+  def _session_app(self, endpoint: str) -> str | None:
+    with self._state_lock:
+      return self._session_apps.get(endpoint)
+
+  def stop_session(self, endpoint: str) -> bool:
+    with self._state_lock:
+      ws = self._session_sockets.get(endpoint)
+    if ws is None:
+      return False
+    close_quietly(ws)
+    return True
 
   def pick_targets(self) -> list[str]:
     """Every endpoint worth dialing right now, a phone that is still PAIRING ahead of the rest.
@@ -102,8 +120,8 @@ class LocalSunnylinkd(Sunnylinkd):
     if not self.enrolled():
       return []
     known = self.known_app_ids()
-    pending = local_auth_daemon.pending_enrollment()
-    pending_app_id = pending["app_id"] if pending is not None else None
+    granted = self.granted_app_ids()
+    pending_ids = self.pending_app_ids()
     self.forget_absent_endpoints(set(pinned_endpoints(self.discovery.fresh_endpoints(BACKOFF_FORGET_S))))
     now = time.monotonic()
     pairing: list[str] = []
@@ -114,9 +132,15 @@ class LocalSunnylinkd(Sunnylinkd):
         unknown.append(app_id)
         continue
       pinned = pinned_endpoint(endpoint)
-      if pinned is None or self.is_backed_off(pinned, now) or self.has_session(pinned):
+      if pinned is None or self.is_backed_off(pinned, now):
         continue
-      (pairing if app_id == pending_app_id else others).append(pinned)
+      if self.has_session(pinned):
+        session_app = self._session_app(pinned)
+        if session_app is None or session_app in granted:
+          continue
+        self.stop_session(pinned)
+        continue
+      (pairing if app_id in pending_ids else others).append(pinned)
     if unknown:
       seen = {a[:8] for a in unknown}
       if seen != self._last_unknown_beacons:
@@ -237,8 +261,8 @@ class LocalSunnylinkd(Sunnylinkd):
       raise AuthorizationError("enrollment unavailable")
 
     with authority.lock:
-      pending_key_id = authority.pending.app_id if authority.pending is not None else None
-      candidates = list(dict.fromkeys(([pending_key_id] if pending_key_id is not None else []) + list(authority.grants)))
+      pending_keys = list(authority.pending)
+      candidates = list(dict.fromkeys(pending_keys + list(authority.grants)))
 
     ws: WebSocket | None = None
     matched: str | None = None
@@ -254,25 +278,35 @@ class LocalSunnylinkd(Sunnylinkd):
     if ws is None or matched is None:
       raise last_error or AuthorizationError("no enrolled app at this endpoint")
 
+    with self._state_lock:
+      self._session_apps[endpoint] = matched
+      self._session_sockets[endpoint] = ws
+
     session: AuthorizedSession | None = None
     try:
       self.authenticate_phone(ws, authority, matched)
-      if pending_key_id is not None and matched == pending_key_id:
+      if matched in pending_keys:
         try:
           local_auth_daemon.confirm_enrollment_tls(matched)
         except Exception:
           cloudlog.exception("sunnylinkd.local.confirm_failed")
-          local_auth_daemon.clear_pending_enrollment()
+          local_auth_daemon.clear_pending_enrollment(matched)
           raise
       with authority.lock:
         grant = authority.grants.get(matched)
       if grant is None:
         raise AuthorizationError("peer is not enrolled")
       session = authority.session(grant, matched)
+      session.bind_transport(lambda: close_quietly(ws))
       local_auth_daemon.note_grant_seen(grant.app_id)
       cloudlog.event("sunnylinkd.local.session_opened", endpoint=endpoint, app_id=grant.app_id)
       self.serve_rpc(ws, self.session_methods(session), exit_event)
     finally:
+      with self._state_lock:
+        if self._session_sockets.get(endpoint) is ws:
+          self._session_sockets.pop(endpoint, None)
+        if self._session_apps.get(endpoint) == matched:
+          self._session_apps.pop(endpoint, None)
       if session is not None:
         session.close()
       if ws is not None:

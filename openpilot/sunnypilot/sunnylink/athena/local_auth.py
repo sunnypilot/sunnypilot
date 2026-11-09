@@ -146,7 +146,8 @@ class LocalAuthority:
     self.device_key_id = key_id(device_private_key.public_key())
     self.persist = persist
     self.lock = threading.RLock()
-    self.pending: Grant | None = None
+    self.pending: dict[str, Grant] = {}
+    self.sessions: dict[str, set[AuthorizedSession]] = {}
     self.grants = _load_grants(registry)
 
   def enroll(self, raw: str, origin: Origin) -> Grant:
@@ -176,25 +177,26 @@ class LocalAuthority:
         if stored.public_key != public:
           raise AuthorizationError("key mismatch")
         return stored
-      if self.pending is not None:
-        if (self.pending.public_key, self.pending.app_name) != (public, name):
+      staged = self.pending.get(app_id)
+      if staged is not None:
+        if (staged.public_key, staged.app_name) != (public, name):
           raise AuthorizationError("enrollment in progress")
-        return self.pending
-      if len(self.grants) >= MAX_GRANTS:
+        return staged
+      if len(self.grants) + len(self.pending) >= MAX_GRANTS:
         raise AuthorizationError("grant limit")
-      self.pending = Grant(app_id, public, name)
-      return self.pending
+      self.pending[app_id] = Grant(app_id, public, name)
+      return self.pending[app_id]
 
   def confirm(self, grant: Grant, tls_peer_key_id: str) -> Grant:
     with self.lock:
       if not secrets.compare_digest(grant.app_id, tls_peer_key_id):
         raise AuthorizationError("wrong TLS peer")
-      if self.pending != grant:
+      if self.pending.get(grant.app_id) != grant:
         raise AuthorizationError("no pending enrollment")
       updated = self.grants | {grant.app_id: grant}
       self.persist(_registry(updated))
       self.grants = updated
-      self.pending = None
+      self.pending.pop(grant.app_id, None)
       return grant
 
   def authenticate_device(self, phone_key_id: str, challenge: str) -> dict[str, str]:
@@ -241,29 +243,45 @@ class LocalAuthority:
   def revoke_all(self) -> int:
     with self.lock:
       removed = len(self.grants)
+      sessions = [session for group in self.sessions.values() for session in group]
+      self.sessions = {}
+      self.pending = {}
       if removed == 0:
         return 0
       self.persist(_registry({}))
       self.grants = {}
-      self.pending = None
-      return removed
+    for session in sessions:
+      session.close()
+    return removed
 
   def revoke(self, app_id: str) -> bool:
     with self.lock:
-      if self.pending is not None and self.pending.app_id == app_id:
-        self.pending = None
+      self.pending.pop(app_id, None)
       if app_id not in self.grants:
         return False
       updated = {k: g for k, g in self.grants.items() if k != app_id}
       self.persist(_registry(updated))
       self.grants = updated
-      return True
+      sessions = list(self.sessions.pop(app_id, ()))
+    for session in sessions:
+      session.close()
+    return True
 
   def session(self, grant: Grant, tls_peer_key_id: str) -> AuthorizedSession:
     with self.lock:
       if self.grants.get(grant.app_id) != grant or not secrets.compare_digest(grant.app_id, tls_peer_key_id):
         raise AuthorizationError("unauthorized peer")
-      return AuthorizedSession(self, grant)
+      session = AuthorizedSession(self, grant)
+      self.sessions.setdefault(grant.app_id, set()).add(session)
+      return session
+
+  def forget_session(self, session: AuthorizedSession) -> None:
+    with self.lock:
+      group = self.sessions.get(session.grant.app_id)
+      if group is not None:
+        group.discard(session)
+        if not group:
+          self.sessions.pop(session.grant.app_id, None)
 
 
 def _registry(grants: Mapping[str, Grant]) -> dict[str, Any]:
@@ -292,10 +310,27 @@ class AuthorizedSession:
     self.authority = authority
     self.grant = grant
     self.closed = False
+    self.transport_closer: Callable[[], None] | None = None
+
+  def bind_transport(self, closer: Callable[[], None]) -> None:
+    with self.authority.lock:
+      self.transport_closer = closer
+      closed = self.closed
+    if closed:
+      closer()
 
   def close(self) -> None:
     with self.authority.lock:
+      if self.closed:
+        return
       self.closed = True
+      closer = self.transport_closer
+      self.authority.forget_session(self)
+    if closer is not None:
+      try:
+        closer()
+      except Exception:
+        pass
 
   def invoke(self, method: str, handler: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
     with self.authority.lock:

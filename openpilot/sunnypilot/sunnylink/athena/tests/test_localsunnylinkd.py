@@ -100,6 +100,9 @@ class _FakeSession:
     self.calls.append(method)
     return {"ok": True}
 
+  def bind_transport(self, closer):
+    self.transport_closer = closer
+
   def close(self):
     self.closed = True
 
@@ -138,18 +141,25 @@ class _Daemon(localsunnylinkd.LocalSunnylinkd):
   """A local daemon with scripted trust state, so target selection is testable in isolation."""
 
   def __init__(self, endpoints=(), enrolled=True, discovery=None, known=("grant-key",),
-               app_ids=None, **params):
+               granted=None, app_ids=None, **params):
     fake_discovery = discovery if discovery is not None else _FakeDiscovery(endpoints, app_ids=app_ids)
     super().__init__(params=cast(Params, _FakeParams(**params)),
                      discovery=cast(LocalDiscovery, fake_discovery))
     self._enrolled = enrolled
     self._known = set(known)
+    self._granted = set(self._known if granted is None else granted)
 
   def enrolled(self):
     return self._enrolled
 
   def known_app_ids(self):
     return set(self._known)
+
+  def granted_app_ids(self):
+    return set(self._granted)
+
+  def pending_app_ids(self):
+    return set()
 
 
 def _challenge(phone_key_id: str) -> str:
@@ -337,14 +347,33 @@ class TestLocalTargets(OpenpilotTestCase):
       holding.set()
     self.assertTrue(_await(lambda: not daemon._workers, description="session threads to exit"))
 
+  def test_a_session_left_by_a_revoked_grant_never_blocks_the_redial(self):
+    daemon = _Daemon(endpoints=["ws://10.0.0.7:8443"], known=("phone",),
+                     app_ids={"ws://10.0.0.7:8443": "phone"}, granted=())
+    endpoint = "wss://10.0.0.7:8443"
+    socket = _FakeWs()
+    daemon._session_apps[endpoint] = "phone"
+    daemon._session_sockets[endpoint] = socket
+
+    with mock.patch.object(daemon, "has_session", lambda pinned: True):
+      self.assertIsNone(daemon.pick_target())
+    self.assertTrue(socket.closed)
+
+    with mock.patch.object(daemon, "has_session", lambda pinned: False):
+      self.assertEqual(endpoint, daemon.pick_target())
+
+  def test_granted_app_ids_come_from_the_registry(self):
+    daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
+    with mock.patch.object(local_auth_daemon, "grants", lambda: [{"app_id": "phone"}]):
+      self.assertEqual({"phone"}, daemon.granted_app_ids())
+
   def test_the_phone_that_is_still_pairing_is_dialed_first(self):
     """A phone being paired must not queue behind phones that are already paired."""
     discovery = _FakeDiscovery(["ws://10.0.0.7:8443", "ws://10.0.0.8:8443"],
                                app_ids={"ws://10.0.0.7:8443": "iphone", "ws://10.0.0.8:8443": "android"})
     daemon = _Daemon(discovery=discovery, known=("iphone", "android"))
 
-    with mock.patch.object(local_auth_daemon, "pending_enrollment",
-                           return_value={"app_id": "android"}):
+    with mock.patch.object(daemon, "pending_app_ids", lambda: {"android"}):
       self.assertEqual(["wss://10.0.0.8:8443", "wss://10.0.0.7:8443"], daemon.pick_targets())
 
   def test_the_run_loop_serves_every_known_phone_at_once(self):
@@ -462,7 +491,7 @@ class TestLocalDial(OpenpilotTestCase):
   def test_the_dial_confirms_a_pending_enrollment_before_serving(self):
     pending = SimpleNamespace(app_id="pending-key")
     grant = SimpleNamespace(app_id="pending-key")
-    authority = SimpleNamespace(lock=threading.RLock(), pending=pending, grants={},
+    authority = SimpleNamespace(lock=threading.RLock(), pending={"pending-key": pending}, grants={},
                                 authenticate_device=lambda phone, challenge: {"phone_key_id": phone,
                                                                               "challenge": challenge})
     session = _FakeSession("pending-key")
@@ -489,7 +518,7 @@ class TestLocalDial(OpenpilotTestCase):
 
   def test_a_dial_without_an_enrolled_peer_never_serves(self):
     daemon = localsunnylinkd.LocalSunnylinkd(params=cast(Params, _FakeParams()))
-    authority = SimpleNamespace(lock=threading.RLock(), pending=None, grants={})
+    authority = SimpleNamespace(lock=threading.RLock(), pending={}, grants={})
     with mock.patch.object(local_auth_daemon, "get_authority", lambda: authority), \
          mock.patch.object(localsunnylinkd, "connect_pinned",
                            mock.Mock(side_effect=AuthorizationError("wrong TLS peer"))):
@@ -546,9 +575,9 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     params = _FakeParams({ENROLL: _enrollment_json(self.authority, self.app_key)})
     local_auth_daemon.claim_cloud_commands(cast(Params, params))
 
-    self.assertIsNotNone(self.authority.pending)
-    self.assertEqual("Test phone", self.authority.pending.app_name)
-    self.assertEqual(key_id(self.app_key.public_key()), self.authority.pending.app_id)
+    staged = self.authority.pending[key_id(self.app_key.public_key())]
+    self.assertEqual("Test phone", staged.app_name)
+    self.assertEqual(key_id(self.app_key.public_key()), staged.app_id)
     # Staged, not yet authorized, and never replayable.
     self.assertEqual([], self.persisted)
     self.assertNotIn(ENROLL, params)
@@ -557,7 +586,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
     params = _FakeParams({ENROLL: "not an enrollment"})
     local_auth_daemon.claim_cloud_commands(cast(Params, params))
 
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
     self.assertNotIn(ENROLL, params)
 
   def test_a_revocation_drops_the_phones_own_grant(self):
@@ -577,7 +606,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
   def test_no_command_means_no_work(self):
     params = _FakeParams()
     local_auth_daemon.claim_cloud_commands(cast(Params, params))
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_the_command_round_trips_through_the_real_library(self):
     """The declared param is a STRING, so the JSON the app pushes is what the claim reads."""
@@ -592,7 +621,7 @@ class TestCloudCommandClaim(OpenpilotTestCase):
 
     local_auth_daemon.claim_cloud_commands(params)
 
-    self.assertIsNotNone(self.authority.pending)
+    self.assertIn(key_id(self.app_key.public_key()), self.authority.pending)
     self.assertEqual(b"", params.get(ENROLL) or b"")
 
   def test_local_param_policy(self):

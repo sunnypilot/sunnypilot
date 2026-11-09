@@ -205,17 +205,21 @@ def claim_cloud_commands(params: Params | None = None) -> None:
     cloudlog.event(f"sunnylinkd.local_auth.{key}_accepted", app_name=summary.get("app_name"))
 
 
-def clear_pending_enrollment() -> None:
+def clear_pending_enrollment(app_key_id: str | None = None) -> None:
   authority = get_authority()
   if authority is not None:
     with authority.lock:
-      authority.pending = None
+      if app_key_id is None:
+        authority.pending.clear()
+      else:
+        authority.pending.pop(app_key_id, None)
 
 
 def confirm_enrollment_tls(grant_key_id: str) -> dict[str, Any]:
   authority = _require_authority("enrollment")
-  pending = authority.pending
-  if pending is None or pending.app_id != grant_key_id:
+  with authority.lock:
+    pending = authority.pending.get(grant_key_id)
+  if pending is None:
     raise AuthorizationError("no pending enrollment for this key")
   committed = authority.confirm(pending, grant_key_id)
   return {"app_id": committed.app_id, "app_name": committed.app_name}
@@ -285,7 +289,16 @@ def app_rows() -> list[LocalAppRow]:
   return build_local_app_rows(read_granted_apps(), read_grant_meta(), time.monotonic())
 
 
-def pending_enrollment() -> dict[str, str] | None:
+def pending_enrollments() -> list[dict[str, str]]:
   authority = get_authority()
-  pending = authority.pending if authority is not None else None
-  return pending.to_dict() if pending is not None else None
+  return [staged.to_dict() for staged in authority.pending.values()] if authority is not None else []
+
+
+def pending_app_ids() -> list[str]:
+  authority = get_authority()
+  return list(authority.pending) if authority is not None else []
+
+
+def pending_enrollment() -> dict[str, str] | None:
+  staged = pending_enrollments()
+  return staged[-1] if staged else None

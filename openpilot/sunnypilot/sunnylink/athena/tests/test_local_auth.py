@@ -80,7 +80,7 @@ class TestV3Enrollment(OpenpilotTestCase):
     self.assert_session_denied(self.authority, grant, grant.app_id)
     # Nothing durable either: the grant does not exist until the TLS dial.
     self.assertEqual([], self.writes)
-    self.assertIsNotNone(self.authority.pending)
+    self.assertIn(self.app_id, self.authority.pending)
 
   def test_confirming_without_a_matching_enrollment_refuses(self):
     stranger = Grant("no-such-phone", _spki(self.app_key), "Nobody")
@@ -103,7 +103,7 @@ class TestV3Enrollment(OpenpilotTestCase):
     """The staged path is cloud-only: a phone on the LAN cannot enroll itself mid-session."""
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(), Origin.LOCAL)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_there_is_no_pairing_window_to_arm(self):
     """Pairing needs no on-screen step anymore: the authority has no window surface at all."""
@@ -116,34 +116,34 @@ class TestV3Enrollment(OpenpilotTestCase):
     data["v"] = 2
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(json.dumps(data), Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_a_pairing_session_field_is_rejected(self):
     data = json.loads(self.enrollment())
     data["pairing_session"] = "some-old-nonce"
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(json.dumps(data), Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_a_malformed_envelope_is_rejected(self):
     for raw in ("not json", "[1, 2]", json.dumps({"v": VERSION, "v2": VERSION}),
                 "x" * 4097, json.dumps({"v": "3"}), json.dumps({"v": True})):
       with self.assertRaises(AuthorizationError):
         self.authority.enroll(raw, Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_the_device_ignores_a_request_that_does_not_name_it(self):
     """A push meant for another car stages nothing here."""
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(comma_device_id="some-other-car"), Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_an_enrollment_cannot_be_replayed_against_another_car(self):
     other = LocalAuthority("cloud-other", "comma-other",
                            ec.generate_private_key(ec.SECP256R1()), lambda registry: None)
     with self.assertRaises(AuthorizationError):
       other.enroll(self.enrollment(), Origin.CLOUD)
-    self.assertIsNone(other.pending)
+    self.assertEqual({}, other.pending)
 
   def test_same_installation_key_can_enroll_on_another_device(self):
     """One phone, two cars: the same installation key enrolls independently on each device."""
@@ -162,13 +162,18 @@ class TestV3Enrollment(OpenpilotTestCase):
     self.assertEqual(1, len(self.writes))
     self.authority.session(again, again.app_id)
 
-  def test_a_second_pending_enrollment_is_refused(self):
+  def test_two_phones_can_be_staged_at_once(self):
     self.authority.enroll(self.enrollment(), Origin.CLOUD)
     other_key = ec.generate_private_key(ec.SECP256R1())
+    second = self.authority.enroll(self.enrollment(key=other_key), Origin.CLOUD)
+    self.assertEqual({self.app_id, second.app_id}, set(self.authority.pending))
+    self.assertEqual(second, self.authority.confirm(second, second.app_id))
+
+  def test_restaging_a_staged_phone_must_agree_with_the_staged_one(self):
+    self.authority.enroll(self.enrollment(), Origin.CLOUD)
     with self.assertRaises(AuthorizationError):
-      self.authority.enroll(self.enrollment(key=other_key), Origin.CLOUD)
-    # The first phone's enrollment is undisturbed and still committable.
-    self.assertEqual(self.app_id, self.authority.pending.app_id)
+      self.authority.enroll(self.enrollment(app_name="Renamed phone"), Origin.CLOUD)
+    self.assertEqual([self.app_id], list(self.authority.pending))
 
   def test_a_signature_that_covers_anything_else_is_rejected(self):
     """The signature binds every field: changing anything after signing voids the enrollment."""
@@ -177,7 +182,7 @@ class TestV3Enrollment(OpenpilotTestCase):
       raw[field] = "tampered"
       with self.assertRaises(AuthorizationError):
         self.authority.enroll(json.dumps(raw), Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_staging_a_second_phone_does_not_disturb_the_first(self):
     first = self.committed()
@@ -196,7 +201,7 @@ class TestV3Enrollment(OpenpilotTestCase):
     extra = ec.generate_private_key(ec.SECP256R1())
     with self.assertRaises(AuthorizationError):
       self.authority.enroll(self.enrollment(key=extra), Origin.CLOUD)
-    self.assertIsNone(self.authority.pending)
+    self.assertEqual({}, self.authority.pending)
 
   def test_the_statement_can_be_read_backwards_from_the_wire(self):
     proof = statement("enroll", "cloud", "comma", "device-key", "key", "key-id", "Name")
@@ -270,6 +275,31 @@ class TestAuthorizedSession(OpenpilotTestCase):
     self.authority.revoke(self.app_id)
     with self.assertRaises(AuthorizationError):
       session.invoke("getParams", mock.Mock())
+
+  def test_revoking_ends_the_sessions_transport(self):
+    session = self.authority.session(self.grant, self.app_id)
+    closed: list[int] = []
+    session.bind_transport(lambda: closed.append(1))
+    self.authority.revoke(self.app_id)
+    self.assertEqual([1], closed)
+    self.assertEqual({}, self.authority.sessions)
+
+  def test_revoke_all_ends_every_sessions_transport(self):
+    first = self.authority.session(self.grant, self.app_id)
+    second = self.authority.session(self.grant, self.app_id)
+    closed: list[int] = []
+    first.bind_transport(lambda: closed.append(1))
+    second.bind_transport(lambda: closed.append(2))
+    self.authority.revoke_all()
+    self.assertCountEqual([1, 2], closed)
+    self.assertEqual({}, self.authority.sessions)
+
+  def test_a_transport_bound_after_the_revoke_is_closed_at_once(self):
+    session = self.authority.session(self.grant, self.app_id)
+    self.authority.revoke(self.app_id)
+    closed: list[int] = []
+    session.bind_transport(lambda: closed.append(1))
+    self.assertEqual([1], closed)
 
 
 class TestGrantPersistence(OpenpilotTestCase):
