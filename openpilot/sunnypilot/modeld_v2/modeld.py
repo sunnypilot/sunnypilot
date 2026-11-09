@@ -44,6 +44,7 @@ from openpilot.sunnypilot.modeld_v2.blendful import Blendful
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.light_frame import get_light_warp_matrix
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
@@ -171,7 +172,7 @@ class ModelState(ModelStateBase):
       np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
     self.prev_desire[:] = inputs[desire_key]
 
-    for key in ('traffic_convention', 'lateral_control_params', 'action_t'):
+    for key in ('traffic_convention', 'lateral_control_params', 'action_t', 'speed_limit'):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
@@ -179,6 +180,8 @@ class ModelState(ModelStateBase):
       for i, key in enumerate(self._vision_input_names):
         if key in transforms:
           self.numpy_inputs['tfm'][i] = transforms[key].reshape(3, 3)
+      if 'light_tfm' in self.numpy_inputs and 'light' in transforms:
+        self.numpy_inputs['light_tfm'][0] = transforms['light'].reshape(3, 3)
     else:
       self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
       self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
@@ -338,7 +341,7 @@ def main(demo=False):
   pub_socks = ["modelV2", "drivingModelData", "cameraOdometry", "modelDataV2SP"] + (["chestnutGpuState"] if CHESTNUT else [])
   pm = PubMaster(pub_socks)
   sm = SubMaster(["deviceState", "carState", "narrowRoadCameraState", "extrinsicsCalibration", "driverMonitoringState",
-                  "carControl", "controlsState", "lateralDelay"])
+                  "carControl", "controlsState", "lateralDelay", "longitudinalPlanSP"])
 
   publish_state = PublishState()
   chestnut_state = ChestnutGpuState(pm, model.chestnut) if CHESTNUT else None
@@ -351,6 +354,7 @@ def main(demo=False):
 
   model_transform_main = np.zeros((3, 3), dtype=np.float32)
   model_transform_extra = np.zeros((3, 3), dtype=np.float32)
+  model_transform_light = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
@@ -425,6 +429,7 @@ def main(demo=False):
       model_transform_main = get_warp_matrix(device_from_calib_euler, main_intrinsics, False).astype(np.float32)
       model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.wide_road.intrinsics, True).astype(np.float32)
       model_transform_main, model_transform_extra = camera_offset_helper.update(model_transform_main, model_transform_extra, sm, main_wide_camera)
+      model_transform_light = get_light_warp_matrix(device_from_calib_euler, main_intrinsics)
       live_calib_seen = True
 
     traffic_convention = np.zeros(2)
@@ -446,6 +451,7 @@ def main(demo=False):
 
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
+    transforms['light'] = model_transform_light
 
     frame_delay = DT_MDL # compensate for time passed since the frame was captured: current_time - timestamp_eof is 50ms on average
     action_delay = DT_MDL / 2 # middle of the interval between model output (current state) and next frame (expected state)
@@ -462,6 +468,10 @@ def main(demo=False):
 
     if 'action_t' in model.numpy_inputs:
       inputs['action_t'] = np.array([lat_action_t, long_action_t], dtype=np.float32)
+
+    if 'speed_limit' in model.numpy_inputs:
+      resolver = sm['longitudinalPlanSP'].speedLimit.resolver
+      inputs['speed_limit'] = np.array([resolver.speedLimitFinal if resolver.speedLimitValid else 0.0], dtype=np.float32)
 
     mt1 = time.perf_counter()
     try:

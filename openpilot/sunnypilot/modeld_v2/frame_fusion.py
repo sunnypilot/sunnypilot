@@ -20,6 +20,11 @@ def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, in
   return offsets | {"frames": offset}, offset + 2 * frame_size
 
 
+def host_shapes(input_shapes: dict[str, tuple], states) -> dict[str, tuple]:
+  shapes = {name: shape for name, shape in input_shapes.items() if name not in states and name not in ("new_img", "light_img")}
+  return shapes | ({"light_tfm": (1, 3, 3)} if "light_img" in input_shapes else {})
+
+
 class _Blobs:  # the model's and the warp's blobs as one address space, for a part whose ranges span both files
   def __init__(self, *blobs):
     self.blobs, self.starts = blobs, list(itertools.accumulate([0] + [len(blob) for blob in blobs[:-1]]))
@@ -30,18 +35,23 @@ class _Blobs:  # the model's and the warp's blobs as one address space, for a pa
 
 
 def fused_with_warp(cam_w: int, cam_h: int, chestnut: bool):  # load_model's extend: a native model runs upload, warp and model as one submit
-  return partial(frame_part, f"{BASEDIR}/openpilot/sunnypilot/modeld_v2/models/{'big_' if chestnut else ''}driving_warp_{cam_w}x{cam_h}_tinygrad.pkl")
+  models = f"{BASEDIR}/openpilot/sunnypilot/modeld_v2/models"
+  return partial(frame_part, f"{models}/{'big_' if chestnut else ''}driving_warp_{cam_w}x{cam_h}_tinygrad.pkl",
+                 light_warp_path=f"{models}/driving_lightwarp_{cam_w}x{cam_h}_tinygrad.pkl")
 
 
-def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
+def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str | None = None) -> dict:
   if "input_specs" not in extras:  # a legacy model warps in its own parts
     return {}
   (model, model_blob), (warp, warp_blob) = parts["run"], read_parts(warp_path)[0]["run"]
   states = sorted(name for name in extras["input_specs"] if f"next_{name}" in extras["metadata"]["output_shapes"])
-  host = {name: shape for name, (shape, _, _) in extras["input_specs"].items() if name not in states and name != "new_img"}
+  host = host_shapes({name: shape for name, (shape, _, _) in extras["input_specs"].items()}, states)
+  light = "light_img" in extras["input_specs"]
+  light_warp, light_blob = read_parts(light_warp_path)[0]["run"] if light else ({"buffers": [], "calls": [], "inputs": []}, memoryview(b""))
   frame_size = next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2
   offsets, packed = pack_layout(host, frame_size)
-  shift, upload, u8 = len(model_blob), len(model["buffers"]) + len(warp["buffers"]), repr(_dtype("dtypes.uint8"))
+  shift, light_shift = len(model_blob), len(model_blob) + len(warp_blob)
+  upload, u8 = len(model["buffers"]) + len(warp["buffers"]) + len(light_warp["buffers"]), repr(_dtype("dtypes.uint8"))
 
   def view(name: str, nbytes: int, dtype: str) -> dict:
     return {"buffer": upload, "offset": offsets[name], "nbytes": nbytes, "dtype": dtype}
@@ -49,12 +59,15 @@ def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
   names = sorted(["host", *states])
   slots = {s["slot"]: names.index(s["name"]) for s in model["inputs"] if s["name"] in states} | \
           {slot: len(names) + i for i, slot in enumerate(outputs)}
-  returned = warp["returns"]["tensors"][0]
+  def warped(part: dict, base: int) -> dict:
+    returned = part["returns"]["tensors"][0]
+    return {k: v for k, v in returned.items() if k != "shape"} | {"buffer": returned["buffer"] + base}
   model_inputs = {s["slot"]: {"input": slots[s["slot"]]} if s["slot"] in slots else
-                  {k: v for k, v in returned.items() if k != "shape"} | {"buffer": returned["buffer"] + len(model["buffers"])} if s["name"] == "new_img" else
+                  warped(warp, len(model["buffers"])) if s["name"] == "new_img" else
+                  warped(light_warp, len(model["buffers"]) + len(warp["buffers"])) if s["name"] == "light_img" else
                   view(s["name"], s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in model["inputs"]}
-  warp_inputs = {s["slot"]: view("frames" if s["name"] == "input_frame" else "tfm", s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"])
-                 for s in warp["inputs"]}
+  def warp_inputs(part: dict, tfm: str) -> dict:
+    return {s["slot"]: view("frames" if s["name"] == "input_frame" else tfm, s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in part["inputs"]}
 
   def remap(calls: list, inputs: dict, buffers: int, lib: int) -> list:
     return [call | ({"lib": [call["lib"][0] + lib, call["lib"][1] + lib]} if "lib" in call else {}) |
@@ -62,8 +75,11 @@ def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
   header = {"input_names": names, "returns": {"kind": "NoneType", "tensors": []}, "check": None,
             "inputs": [{"slot": names.index("host"), "name": "host", "dtype": u8, "numel": packed, "device": "NPY"}] +
                       [s | {"slot": slots[s["slot"]]} for s in model["inputs"] if s["slot"] in slots],
-            "buffers": model["buffers"] + [b | ({"init": [b["init"][0] + shift, b["init"][1] + shift]} if "init" in b else {}) for b in warp["buffers"]] +
+            "buffers": model["buffers"] + [b | ({"init": [b["init"][0] + d, b["init"][1] + d]} if "init" in b else {})
+                                           for part, d in ((warp, shift), (light_warp, light_shift)) for b in part["buffers"]] +
                        [{"nbytes": packed, "device": model["inputs"][0]["device"], "dtype": u8}],
             "calls": [{"kind": "copy", "args": [{"buffer": upload, "offset": 0, "nbytes": packed, "dtype": u8}, {"input": names.index("host")}]}] +
-                     remap(warp["calls"], warp_inputs, len(model["buffers"]), shift) + remap(model["calls"], model_inputs, 0, 0)}
-  return {"run": (header, _Blobs(model_blob, warp_blob))}  # replaces the model's run: one set of buffers, no separate warp
+                     remap(warp["calls"], warp_inputs(warp, "tfm"), len(model["buffers"]), shift) +
+                     remap(light_warp["calls"], warp_inputs(light_warp, "light_tfm"), len(model["buffers"]) + len(warp["buffers"]), light_shift) +
+                     remap(model["calls"], model_inputs, 0, 0)}
+  return {"run": (header, _Blobs(model_blob, warp_blob, light_blob) if light else _Blobs(model_blob, warp_blob))}

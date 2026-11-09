@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.sunnypilot.modeld_v2.frame_fusion import pack_layout
+from openpilot.sunnypilot.modeld_v2.frame_fusion import host_shapes, pack_layout
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
@@ -172,7 +172,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
 
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
                          for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
-    shapes = {name: shape for name, (shape, _) in self.input_shapes.items() if name not in self.state_pairs and name != 'new_img'}
+    shapes = host_shapes({name: shape for name, (shape, _) in self.input_shapes.items()}, self.state_pairs)
     offsets, packed = pack_layout(shapes, self.warp_frame_size)
     self.packed_input = np.zeros(packed, dtype=np.uint8)
     self.host = Tensor(self.packed_input, device='NPY')
