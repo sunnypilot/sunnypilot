@@ -373,6 +373,9 @@ def main(demo=False):
   prev_action = log.ModelDataV2.Action()
 
   DH = DesireHelper()
+  desire_frames = [q.shape[0] for m in (model, small_model) if m is not None for name, q in m.adapter.input_queues.items() if 'desire' in name]
+  if desire_frames:
+    DH.turn_repulse = min(desire_frames) - 2
   meta_constants = load_meta_constants()
   RELC = RoadEdgeLaneChangeController()
   blendful = Blendful()
