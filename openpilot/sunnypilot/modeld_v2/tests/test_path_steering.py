@@ -50,3 +50,10 @@ def test_weight_is_full_when_slow_and_gone_by_the_blend_end():
   assert 0. < ps.path_weight((ps.FULL_SPEED + ps.BLEND_END) / 2) < 1.
   assert ps.apply_path_steering(0.2, 0.14, 3.) == pytest.approx(0.14)
   assert ps.apply_path_steering(0.2, 0.14, 10.) == pytest.approx(0.2)
+
+
+def test_it_only_ever_steers_less():
+  assert ps.apply_path_steering(0.1, 0.2, 3.) == 0.1  # an under-committed action is not raised to the plan
+  assert ps.apply_path_steering(-0.1, -0.2, 3.) == -0.1
+  assert ps.apply_path_steering(0.1, -0.05, 3.) == 0.1  # nor reversed
+  assert ps.apply_path_steering(-0.2, -0.14, 3.) == pytest.approx(-0.14)

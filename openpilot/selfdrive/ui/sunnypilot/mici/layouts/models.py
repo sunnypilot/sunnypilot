@@ -126,8 +126,9 @@ class ModelsLayoutMici(NavScroller):
                                                            "Needs openpilot longitudinal. Not available with the Default model."))
 
     self.path_steering_toggle = BigParamControl(tr("slow-turn path steering (alpha)"), "TurnInHold",
-      description=tr("Below about 15 mph, steers along the model's planned line at your actual speed instead of the speed the model " +
-                     "expects, so a slow turn is not taken tighter than planned. Fades out by 15 mph. Not available with the Default model."))
+      description=tr("Below about 15 mph, limits steering to the model's planned line at your actual speed instead of the speed the " +
+                     "model expects, so a slow turn is not taken tighter than planned. Only ever steers less. Fades out by 15 mph. " +
+                     "Not available with the Default model."))
 
     self.map_turn_toggle = BigParamControl(tr("signal navigation (experimental)"), "MapboxNextTurnEnabled",
       toggle_callback=self._enable_map_turns,

@@ -11,8 +11,8 @@ import numpy as np
 # (route af, ff_turns_600: pulling away from ~2 m/s), the plan expected 4-6 m/s a second later while the car did
 # 2.5-3.5, and the action asked 0.209/0.248 1/m (~440 deg) where FSD and the driver use a median 282 deg. Taking the
 # plan's heading at the arc length the car itself covers in action_t gave 0.143/0.162 there (~300/285 deg), the same
-# as the action at 5+ m/s, and more than Light Speed 2's under-committed action on its slow turns (route b0).
-# Below FULL_SPEED the command follows the plan's line that way; it blends back to the normal command by BLEND_END.
+# as the action at 5+ m/s. Below FULL_SPEED the command is capped at the plan's line taken that way (never raised to
+# it); the cap fades out by BLEND_END.
 PARAM = "TurnInHold"  # reuses the removed late turn-in toggle's key, so the prebuilt params library needs no rebuild
 FULL_SPEED = 4.5  # m/s
 BLEND_END = 7.0  # m/s
@@ -36,6 +36,10 @@ def path_weight(v_ego: float) -> float:
 
 
 def apply_path_steering(command: float, path: float, v_ego: float) -> float:
-  """The command (action, with the turn plan floor) blended toward the plan's line at the car's own speed."""
+  """The command (action, with the turn plan floor) blended toward the plan's line at the car's own speed, only where
+  that steers less: a cap, never a boost. Raising Light Speed 2's slow turns to its plan's line (route b0 replay
+  0.087 -> 0.134, 0.145 -> 0.265) steered far too much on the road, Nov 9; its plan reads tighter than turns driven."""
+  if command * path < 0. or abs(path) >= abs(command):
+    return command
   weight = path_weight(v_ego)
   return weight * path + (1. - weight) * command
