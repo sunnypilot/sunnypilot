@@ -53,6 +53,7 @@ from openpilot.sunnypilot.modeld_v2.steering_smoothing import lat_smooth_seconds
 from openpilot.sunnypilot.modeld_v2.turn_desire_refresh import TurnDesireRefresh, desire_input
 from openpilot.sunnypilot.modeld_v2.turn_plan_floor import apply_turn_plan_floor
 from openpilot.sunnypilot.modeld_v2 import path_steering
+from openpilot.sunnypilot.modeld_v2.turn_correction import apply_turn_correction, correction_for
 from openpilot.sunnypilot.modeld_v2.plan_long import PlanLong
 from openpilot.sunnypilot.modeld_v2.navigation_input import (NavigationInputBuffer, NavigationStatePublisher, SignalRouteGuard,
                                                           destination_route_context, navigation_capability)
@@ -106,6 +107,7 @@ class ModelState(ModelStateBase):
       model_bundle = get_active_bundle(chestnut=chestnut)
     self.generation = model_bundle.generation if model_bundle is not None else None
     self.model_name = model_bundle.displayName if model_bundle is not None else ''
+    self.turn_correction = correction_for(model_bundle.ref) if model_bundle is not None else None
     overrides = {override.key: override.value for override in model_bundle.overrides} if model_bundle else {}
 
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
@@ -267,18 +269,26 @@ class ModelState(ModelStateBase):
                                          action_accel=desired_accel)
       desired_curvature = model_output['action'][0, 0] / (max(1.0, v_ego))**2
       self.action_curvature, self.turn_plan_curvature = desired_curvature, 0.
-      if turn_sign:
-        # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
-        plan = model_output['plan'][0]
+      plan = model_output['plan'][0]
+      if path_steering_enabled and self.turn_correction is not None:
+        # this model has a learned turn correction toward the FSD/driver line; it replaces the floor and the path cap
         self.turn_plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
                                                            self.constants.T_IDXS, v_ego, lat_action_t)
-        desired_curvature = apply_turn_plan_floor(desired_curvature, self.turn_plan_curvature, turn_sign)
-      if path_steering_enabled and path_steering.path_weight(v_ego) > 0.:
-        plan = model_output['plan'][0]
         path = path_steering.path_curvature(plan[:, Plan.POSITION][:, 0], plan[:, Plan.POSITION][:, 1],
                                             plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[0, Plan.ORIENTATION_RATE][2],
                                             v_ego, a_ego, lat_action_t)
-        desired_curvature = path_steering.apply_path_steering(desired_curvature, path, v_ego)
+        desired_curvature = apply_turn_correction(self.turn_correction, desired_curvature, self.turn_plan_curvature, path, v_ego)
+      else:
+        if turn_sign:
+          # the action head under-commits in slow turns while the model's own plan has the turn; use the plan as a floor
+          self.turn_plan_curvature = get_curvature_from_plan(plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[:, Plan.ORIENTATION_RATE][:, 2],
+                                                             self.constants.T_IDXS, v_ego, lat_action_t)
+          desired_curvature = apply_turn_plan_floor(desired_curvature, self.turn_plan_curvature, turn_sign)
+        if path_steering_enabled and path_steering.path_weight(v_ego) > 0.:
+          path = path_steering.path_curvature(plan[:, Plan.POSITION][:, 0], plan[:, Plan.POSITION][:, 1],
+                                              plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], plan[0, Plan.ORIENTATION_RATE][2],
+                                              v_ego, a_ego, lat_action_t)
+          desired_curvature = path_steering.apply_path_steering(desired_curvature, path, v_ego)
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
 
