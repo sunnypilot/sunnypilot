@@ -267,6 +267,7 @@ def manager_namespace():
                'time': time, 'threading': __import__('threading'), 'requests': requests,
                'custom': NS(ModelManagerSP=NS(ModelBundle=Bundle, DownloadStatus=status)),
                'BUILD_REF': nav.BUILD_REF, 'MANIFEST_NAME': nav.MANIFEST_NAME, 'installed_bundle': Mock(return_value={'valid': True}),
+               'LOCAL_BUILD_REF': 'local-build-staged-models', 'manifest_for_artifact': lambda _root, _file_name: None,
                'Paths': NS(model_root=lambda: ''), 'cloudlog': Mock()}
   namespace['ModelFetcher'] = NS(active_source=lambda _present: 'chestnut')
   exec(compile(tree, str(SOURCE / 'manager.py'), 'exec'), namespace)
