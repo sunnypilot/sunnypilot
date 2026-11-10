@@ -205,3 +205,15 @@ def test_status_summaries():
   assert by_id["first_light"].summary() == "done"
   assert by_id["regular"].summary() == "locked · 0 / 7 days"
   assert by_id["linked_up"].summary() == "locked"
+
+
+def test_last_step_for_the_community_log():
+  e = AchievementEngine(State())
+  wall = 1_762_000_000.0
+  e.update(Sample(t=0.0, v_ego=20.0, op_active=True, wall=wall))
+  e.update(Sample(t=0.5, v_ego=20.0, op_active=True, wall=wall + 0.5))
+  assert e.last_step.dt_s == 0.5 and e.last_step.engaged_m == 10.0 and e.last_step.day is not None
+  e.update(Sample(t=1.0, v_ego=20.0, op_active=False, wall=wall + 1.0))
+  assert e.last_step.dt_s == 0.5 and e.last_step.engaged_m == 0.0
+  e.update(Sample(t=9.0, v_ego=20.0, op_active=True, wall=None))  # a gap and no clock
+  assert e.last_step.dt_s == 0.0 and e.last_step.day is None

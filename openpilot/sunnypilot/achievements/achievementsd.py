@@ -9,7 +9,10 @@ achievementsd: counts driving stats and unlocks achievements while onroad.
 
 Read-only toward the car: it only subscribes to messages, never publishes
 controls. Progress is saved to a JSON file on the device (see engine.state_path)
-every SAVE_INTERVAL_S and when the drive ends. Nothing leaves the device.
+every SAVE_INTERVAL_S and when the drive ends. The community log (map tiles,
+stops, daily totals; see community.py) is saved next to it, and when the drive
+ends a dry-run preview of what would be shared is written to preview/.
+Nothing leaves the device.
 """
 import datetime
 import time
@@ -19,8 +22,10 @@ from openpilot.common.params import Params
 from openpilot.common.realtime import Ratekeeper
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.time_helpers import system_time_valid
+from openpilot.sunnypilot.achievements.community import CommunityLog, Settings
 from openpilot.sunnypilot.achievements.engine import (AchievementEngine, MAX_GPS_ACCURACY_M, Sample, load_state,
                                                       save_state)
+from openpilot.sunnypilot.achievements.preview import write_preview
 
 RATE_HZ = 10.
 SAVE_INTERVAL_S = 30.
@@ -70,6 +75,53 @@ def _gps_fix(sm: messaging.SubMaster, now: float) -> tuple[float | None, float |
   return None, None
 
 
+def _car_platform(params: Params) -> str | None:
+  try:
+    from opendbc.car.structs import car
+    cp_bytes = params.get("CarParams")
+    if not cp_bytes:
+      return None
+    return messaging.log_from_bytes(cp_bytes, car.CarParams).carFingerprint or None
+  except Exception:
+    return None
+
+
+def _open_community() -> CommunityLog | None:
+  try:
+    community = CommunityLog()
+    _ = community.regions  # load the region table now, not mid-drive
+    return community
+  except Exception:
+    cloudlog.exception("achievementsd: could not open the community log")
+    return None
+
+
+def _community_step(community: CommunityLog, sample: Sample, engine: AchievementEngine, save: bool) -> CommunityLog | None:
+  """Feed one sample. On any error the community log is off until the next drive; achievements keep working."""
+  try:
+    community.update(sample, engine.last_step)
+    if save:
+      community.flush()
+    return community
+  except Exception:
+    cloudlog.exception("achievementsd: community log failed, off until the next drive")
+    community.close()
+    return None
+
+
+def _finish_community(community: CommunityLog, engine: AchievementEngine, params: Params) -> None:
+  """Save where the drive ended and write the dry-run preview. Must stay well under the manager's 5 s stop timeout."""
+  try:
+    community.end_drive(engine.utc_offset_h)
+    if system_time_valid():
+      today = engine.local_date(datetime.datetime.now(datetime.UTC).timestamp())
+      write_preview(community, engine.state, today, _car_platform(params), Settings.load())
+  except Exception:
+    cloudlog.exception("achievementsd: community log or preview failed")
+  finally:
+    community.close()
+
+
 def _wall_time(valid: bool) -> float | None:
   return datetime.datetime.now(datetime.UTC).timestamp() if valid else None
 
@@ -79,6 +131,7 @@ def main():
   sm = messaging.SubMaster(SERVICES, ignore_alive=['gpsLocation', 'gpsLocationExternal'],
                            ignore_valid=['gpsLocation', 'gpsLocationExternal'])
   engine = AchievementEngine(load_state())
+  community = _open_community()
   rk = Ratekeeper(RATE_HZ, print_delay_threshold=None)
 
   dev_build = _dev_build()
@@ -117,15 +170,20 @@ def main():
       for uid in engine.update(sample):
         cloudlog.event("achievement unlocked", id=uid)
 
-      if now - last_save > SAVE_INTERVAL_S:
+      save = now - last_save > SAVE_INTERVAL_S
+      if save:
         last_save = now
         save_state(engine.state)
+      if community is not None:
+        community = _community_step(community, sample, engine, save)
 
       rk.keep_time()
   finally:
     # the manager stops us with SIGINT when the drive ends
     engine.end_drive()
     save_state(engine.state)
+    if community is not None:
+      _finish_community(community, engine, params)
 
 
 if __name__ == "__main__":

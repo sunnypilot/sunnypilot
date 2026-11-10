@@ -120,6 +120,14 @@ class Sample:
 
 
 @dataclass
+class Step:
+  """What the last update counted, for the community log (see community.py)."""
+  dt_s: float = 0.0          # trusted seconds since the previous sample (0 after a gap or a bad reading)
+  engaged_m: float = 0.0     # meters driven engaged in this step
+  day: str | None = None     # local calendar day; None until the clock is valid
+
+
+@dataclass
 class State:
   version: int = STATE_VERSION
   salt: str = field(default_factory=lambda: secrets.token_hex(16))
@@ -183,8 +191,13 @@ class AchievementEngine:
     self._last_lane_change = 0
     self._utc_offset_h: float | None = None  # from GPS longitude, see local_date
     self._southern = False
+    self.last_step = Step()
 
   # --- time ---
+
+  @property
+  def utc_offset_h(self) -> float | None:
+    return self._utc_offset_h
 
   def local_date(self, wall: float) -> dt.date:
     """Calendar day for streaks and Road Trip.
@@ -211,9 +224,11 @@ class AchievementEngine:
       self._utc_offset_h = round(s.lon / 15.0)
       self._southern = s.lat < 0
 
+    day = self.local_date(s.wall).isoformat() if s.wall is not None else None
+    self.last_step = Step(dt_s=dt_s, engaged_m=s.v_ego * dt_s if s.engaged else 0.0, day=day)
+
     if s.engaged and dt_s > 0.0:
       dist = s.v_ego * dt_s
-      day = self.local_date(s.wall).isoformat() if s.wall is not None else None
       if day is not None and day != st.today:
         st.best_day_m = max(st.best_day_m, st.today_m)
         st.today, st.today_m = day, 0.0
