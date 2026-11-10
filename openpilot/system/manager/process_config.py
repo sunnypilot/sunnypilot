@@ -186,6 +186,9 @@ procs += [
 
   # locationd
   NativeProcess("locationd_llk", "openpilot/sunnypilot/selfdrive/locationd", ["./locationd"], only_onroad),
+
+  # achievements: read-only stats and unlocks, saved on the device
+  PythonProcess("achievementsd", "openpilot.sunnypilot.achievements.achievementsd", only_onroad),
 ]
 
 if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
