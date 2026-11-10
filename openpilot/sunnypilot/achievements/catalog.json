@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "achievements": [
+    {
+      "id": "first_light",
+      "name": "First Light",
+      "description": "Your first engaged drive with sunnypilot.",
+      "metric": "engaged_km",
+      "unit": "km",
+      "tiers": [{"tier": "single", "threshold": 0.1}]
+    },
+    {
+      "id": "odometer",
+      "name": "Odometer",
+      "description": "Distance driven with sunnypilot engaged.",
+      "metric": "engaged_km",
+      "unit": "km",
+      "tiers": [
+        {"tier": "bronze", "threshold": 100},
+        {"tier": "silver", "threshold": 1000},
+        {"tier": "gold", "threshold": 10000},
+        {"tier": "platinum", "threshold": 50000}
+      ]
+    },
+    {
+      "id": "captains_hours",
+      "name": "Captain's Hours",
+      "description": "Time spent with sunnypilot engaged.",
+      "metric": "engaged_h",
+      "unit": "h",
+      "tiers": [
+        {"tier": "bronze", "threshold": 10},
+        {"tier": "silver", "threshold": 100},
+        {"tier": "gold", "threshold": 1000}
+      ]
+    },
+    {
+      "id": "regular",
+      "name": "Regular",
+      "description": "Different days you drove with sunnypilot engaged.",
+      "metric": "active_days",
+      "unit": "days",
+      "tiers": [
+        {"tier": "bronze", "threshold": 7},
+        {"tier": "silver", "threshold": 30},
+        {"tier": "gold", "threshold": 100},
+        {"tier": "platinum", "threshold": 365}
+      ]
+    },
+    {
+      "id": "streak",
+      "name": "Streak",
+      "description": "Engaged on this many days in a row.",
+      "metric": "best_streak_days",
+      "unit": "days",
+      "tiers": [
+        {"tier": "bronze", "threshold": 7},
+        {"tier": "silver", "threshold": 30}
+      ]
+    },
+    {
+      "id": "steady_hands",
+      "name": "Steady Hands",
+      "description": "Distance with MADS steering on its own, without sunnypilot's cruise.",
+      "metric": "mads_km",
+      "unit": "km",
+      "tiers": [
+        {"tier": "bronze", "threshold": 100},
+        {"tier": "silver", "threshold": 1000}
+      ]
+    },
+    {
+      "id": "smooth_merger",
+      "name": "Smooth Merger",
+      "description": "Assisted lane changes completed.",
+      "metric": "lane_changes",
+      "unit": "changes",
+      "tiers": [
+        {"tier": "bronze", "threshold": 10},
+        {"tier": "silver", "threshold": 100},
+        {"tier": "gold", "threshold": 1000}
+      ]
+    },
+    {
+      "id": "road_trip",
+      "name": "Road Trip",
+      "description": "Engaged distance in a single day. Take breaks along the way.",
+      "metric": "best_day_km",
+      "unit": "km",
+      "tiers": [{"tier": "single", "threshold": 500}]
+    },
+    {
+      "id": "explorer",
+      "name": "Explorer",
+      "description": "Different areas (about 5 km across) driven engaged. Areas are kept as anonymous hashes on this device.",
+      "metric": "areas",
+      "unit": "areas",
+      "tiers": [
+        {"tier": "bronze", "threshold": 5},
+        {"tier": "silver", "threshold": 25},
+        {"tier": "gold", "threshold": 100}
+      ]
+    },
+    {
+      "id": "model_hopper",
+      "name": "Model Hopper",
+      "description": "Driving models you have driven at least 50 km engaged.",
+      "metric": "models_50km",
+      "unit": "models",
+      "tiers": [
+        {"tier": "bronze", "threshold": 3},
+        {"tier": "silver", "threshold": 5},
+        {"tier": "gold", "threshold": 10}
+      ]
+    },
+    {
+      "id": "dev_branch_brave",
+      "name": "Dev Branch Brave",
+      "description": "Engaged distance on a development or staging build.",
+      "metric": "dev_km",
+      "unit": "km",
+      "tiers": [{"tier": "single", "threshold": 100}]
+    },
+    {
+      "id": "attentive",
+      "name": "Attentive",
+      "description": "Engaged time in a row without a red driver monitoring alert.",
+      "metric": "attentive_best_h",
+      "unit": "h",
+      "tiers": [
+        {"tier": "bronze", "threshold": 10},
+        {"tier": "silver", "threshold": 50},
+        {"tier": "gold", "threshold": 100}
+      ]
+    },
+    {
+      "id": "seasons",
+      "name": "Four Seasons",
+      "description": "Engaged drives in spring, summer, fall and winter.",
+      "metric": "seasons",
+      "unit": "seasons",
+      "tiers": [{"tier": "single", "threshold": 4}]
+    },
+    {
+      "id": "linked_up",
+      "name": "Linked Up",
+      "description": "Turn on sunnylink on this device.",
+      "metric": "sunnylink_linked",
+      "unit": "",
+      "tiers": [{"tier": "single", "threshold": 1}]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""
+Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
+
+This file is part of sunnypilot and is licensed under the MIT License.
+See the LICENSE.md file in the root directory for more details.
+
+achievementsd: counts driving stats and unlocks achievements while onroad.
+
+Read-only toward the car: it only subscribes to messages, never publishes
+controls. Progress is saved to a JSON file on the device (see engine.state_path)
+every SAVE_INTERVAL_S and when the drive ends. Nothing leaves the device.
+"""
+import datetime
+import time
+
+from openpilot.cereal import messaging
+from openpilot.common.params import Params
+from openpilot.common.realtime import Ratekeeper
+from openpilot.common.swaglog import cloudlog
+from openpilot.common.time_helpers import system_time_valid
+from openpilot.sunnypilot.achievements.engine import (AchievementEngine, MAX_GPS_ACCURACY_M, Sample, load_state,
+                                                      save_state)
+
+RATE_HZ = 10.
+SAVE_INTERVAL_S = 30.
+SLOW_POLL_S = 30.  # model, build and sunnylink checks
+GPS_MAX_AGE_S = 2.
+UNREGISTERED_SUNNYLINK_DONGLE_ID = "UnregisteredDevice"
+
+SERVICES = ['carState', 'selfdriveState', 'selfdriveStateSP', 'modelV2', 'driverMonitoringState',
+            'gpsLocation', 'gpsLocationExternal']
+
+
+def _dev_build() -> bool:
+  try:
+    from openpilot.common.version import get_build_metadata
+    bm = get_build_metadata()
+    return "staging" in bm.channel or not (bm.release_channel or bm.release_sp_channel)
+  except Exception:
+    return False
+
+
+def _active_model() -> tuple[str, str]:
+  try:
+    from openpilot.sunnypilot.models.helpers import get_active_bundle
+    bundle = get_active_bundle()
+    if bundle is None:
+      return "default", "Default"
+    return bundle.ref or bundle.internalName, bundle.displayName or bundle.internalName
+  except Exception:
+    cloudlog.exception("achievementsd: could not read the active model")
+    return "", ""
+
+
+def _sunnylink_linked(params: Params) -> bool:
+  try:
+    dongle = params.get("SunnylinkDongleId")
+    return bool(params.get_bool("SunnylinkEnabled")) and dongle not in (None, "", UNREGISTERED_SUNNYLINK_DONGLE_ID)
+  except Exception:
+    return False
+
+
+def _gps_fix(sm: messaging.SubMaster, now: float) -> tuple[float | None, float | None]:
+  for svc in ('gpsLocation', 'gpsLocationExternal'):
+    if sm.seen[svc] and now - sm.recv_time[svc] < GPS_MAX_AGE_S:
+      g = sm[svc]
+      if g.hasFix and 0 < g.horizontalAccuracy < MAX_GPS_ACCURACY_M:
+        return g.latitude, g.longitude
+  return None, None
+
+
+def _wall_time(valid: bool) -> float | None:
+  return datetime.datetime.now(datetime.UTC).timestamp() if valid else None
+
+
+def main():
+  params = Params()
+  sm = messaging.SubMaster(SERVICES, ignore_alive=['gpsLocation', 'gpsLocationExternal'],
+                           ignore_valid=['gpsLocation', 'gpsLocationExternal'])
+  engine = AchievementEngine(load_state())
+  rk = Ratekeeper(RATE_HZ, print_delay_threshold=None)
+
+  dev_build = _dev_build()
+  model_ref, model_name = _active_model()
+  last_save = last_slow = time.monotonic()
+  clock_ok = system_time_valid()
+  engine.set_sunnylink_linked(_sunnylink_linked(params), _wall_time(clock_ok))
+
+  try:
+    while True:
+      sm.update(0)
+      now = time.monotonic()
+
+      if now - last_slow > SLOW_POLL_S:
+        last_slow = now
+        model_ref, model_name = _active_model()
+        clock_ok = system_time_valid()
+        for uid in engine.set_sunnylink_linked(_sunnylink_linked(params), _wall_time(clock_ok)):
+          cloudlog.event("achievement unlocked", id=uid)
+
+      lat, lon = _gps_fix(sm, now)
+      sample = Sample(
+        t=now,
+        v_ego=sm['carState'].vEgo,
+        op_active=sm['selfdriveState'].active,
+        mads_active=sm['selfdriveStateSP'].mads.active,
+        lane_change_state=sm['modelV2'].meta.laneChangeState.raw,
+        dm_alert_level=sm['driverMonitoringState'].alertLevel.raw,
+        lat=lat,
+        lon=lon,
+        model_ref=model_ref,
+        model_name=model_name,
+        dev_build=dev_build,
+        wall=_wall_time(clock_ok),
+      )
+      for uid in engine.update(sample):
+        cloudlog.event("achievement unlocked", id=uid)
+
+      if now - last_save > SAVE_INTERVAL_S:
+        last_save = now
+        save_state(engine.state)
+
+      rk.keep_time()
+  finally:
+    # the manager stops us with SIGINT when the drive ends
+    engine.end_drive()
+    save_state(engine.state)
+
+
+if __name__ == "__main__":
+  main()
