@@ -9,6 +9,8 @@ from openpilot.selfdrive.ui.mici.layouts.settings.settings import SettingsBigBut
 from openpilot.selfdrive.ui.mici.layouts.settings.device.device_layout import DeviceLayoutMici
 from openpilot.selfdrive.ui.mici.widgets.button import BigCircleButton
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog, BigDialog
+from openpilot.selfdrive.ui.sunnypilot.achievements_store import achievements_store
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.achievements import AchievementsLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.sunnylink import SunnylinkLayoutMici
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.models import ModelsLayoutMici
 from openpilot.selfdrive.ui.ui_state import ui_state
@@ -50,6 +52,11 @@ class SettingsLayoutSP(OP.SettingsLayout):
     models_btn = SettingsBigButton(tr("models"), "", gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_models.png", ICON_SIZE, ICON_SIZE))
     models_btn.set_click_callback(lambda: gui_app.push_widget(models_panel))
 
+    achievements_panel = AchievementsLayoutMici()
+    self._achievements_btn = SettingsBigButton(tr("achievements"), "",
+                                               gui_app.texture("../../sunnypilot/selfdrive/assets/icons_mici/achievements.png", ICON_SIZE, ICON_SIZE))
+    self._achievements_btn.set_click_callback(lambda: gui_app.push_widget(achievements_panel))
+
     # onroad: enable button sits at the front (left of toggles)
     self._enable_offroad_btn_onroad = BigCircleButton(self.icon_offroad_enable, red=True)
     self._enable_offroad_btn_onroad.set_click_callback(lambda: self._handle_always_offroad(True))
@@ -72,6 +79,7 @@ class SettingsLayoutSP(OP.SettingsLayout):
     # front slots (only one ever visible at a time): exit-always-offroad, then enable-onroad
     items.insert(0, self._enable_offroad_btn_onroad)
     items.insert(0, self._disable_offroad_btn)
+    items.append(self._achievements_btn)
     # end slot: enable-offroad (right of developer)
     items.append(self._enable_offroad_btn_offroad)
 
@@ -81,6 +89,11 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
   def _update_state(self):
     super()._update_state()
+    achievements_store.refresh()
+    new = len(achievements_store.new_ids())
+    value = tr("{} new").format(new) if new else ""
+    if value != self._achievements_btn.get_value():
+      self._achievements_btn.set_value(value)
 
   def _handle_always_offroad(self, enable: bool):
 

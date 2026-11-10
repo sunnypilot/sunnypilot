@@ -14,3 +14,8 @@ openpilot/sunnypilot/modeld_v2/models/*.pkl filter=lfs diff=lfs merge=lfs -text
 
 openpilot/selfdrive/car/tests/test_models_segs.txt filter=lfs diff=lfs merge=lfs -text
 openpilot/common/hardware/comma/updater filter=lfs diff=lfs merge=lfs -text
+
+# Achievements icons are kept out of LFS on this dev branch (no push access to the LFS store).
+# Move them into LFS before this goes upstream.
+openpilot/sunnypilot/selfdrive/assets/icons_mici/achievements.png -filter binary
+openpilot/sunnypilot/selfdrive/assets/offroad/icon_achievements.png -filter binary
