@@ -11,7 +11,7 @@ from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.widgets import DialogResult
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
-from opendbc.car.toyota.values import ToyotaFlags
+from opendbc.car.toyota.values import CAR, ToyotaFlags
 from opendbc.sunnypilot.car.toyota.values import ToyotaFlagsSP
 
 
@@ -189,13 +189,12 @@ class ToyotaSettings(BrandSettings):
           self.stop_and_go_hack.show_description(True)
 
       # Enhanced BSM needs the radar diagnostic address, which is only in the TX allowlist for
-      # TSS2 cars without SecOC, or for TSS-P cars whose smartDSU lets sunnypilot control
-      # longitudinal. Enforcing factory longitudinal control rules both of those out.
-      sdsu_bsm_supported = (longitudinal and ui_state.CP_SP is not None and
+      # TSS2 cars without SecOC, or for TSS-P cars with a smartDSU. Both need openpilot long.
+      sdsu_bsm_supported = (ui_state.CP_SP is not None and
                             bool(ui_state.CP_SP.flags & ToyotaFlagsSP.SMART_DSU))
       bsm_supported = (not bool(ui_state.CP.flags & ToyotaFlags.SECOC) and
                        (bool(ui_state.CP.flags & ToyotaFlags.TSS2) or sdsu_bsm_supported))
-      bsm_available = bsm_supported and not enforce_stock
+      bsm_available = bsm_supported and longitudinal and not enforce_stock
       self.enhanced_bsm.action_item.set_enabled(bsm_available and not ui_state.engaged)
 
       bsm_desc = tr(DESCRIPTIONS["enhanced_bsm"])
@@ -205,7 +204,10 @@ class ToyotaSettings(BrandSettings):
       elif enforce_stock:
         self.enhanced_bsm.action_item.set_state(False)
         bsm_desc = "<b>" + tr(BSM_STOCK_LONG_UNAVAILABLE) + "</b>\n\n" + bsm_desc
-      elif ui_state.CP_SP is not None and ui_state.CP_SP.flags & ToyotaFlagsSP.SP_NEED_DEBUG_BSM:
+      elif not longitudinal:
+        self.enhanced_bsm.action_item.set_state(False)
+        bsm_desc = "<b>" + tr(SNG_HACK_UNAVAILABLE) + "</b>\n\n" + bsm_desc
+      elif ui_state.CP.carFingerprint == CAR.TOYOTA_PRIUS_TSS2:
         bsm_desc = "<b>" + tr(BSM_REQUIRED) + "</b>\n\n" + bsm_desc
 
       if self.enhanced_bsm.description != bsm_desc:

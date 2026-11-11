@@ -149,10 +149,11 @@ def _resolve_brand_capabilities(caps: dict, bundle_platform: str, CP, CP_SP=None
         cloudlog.exception(f"capabilities: unknown toyota platform {bundle_platform!r}")
     elif CP is not None:
       caps["toyota_tss2"] = bool(CP.flags & ToyotaFlags.TSS2)
-      # same gate as _initialize_toyota: TSS2 without SecOC, or TSS-P with a smartDSU and openpilot
-      # longitudinal control (the bundle path can't see 0x2FF, so it stays TSS2-only)
-      sdsu_bsm = CP_SP is not None and bool(CP_SP.flags & ToyotaFlagsSP.SMART_DSU) and bool(CP.openpilotLongitudinalControl)
-      caps["toyota_enhanced_bsm_available"] = (not bool(CP.flags & ToyotaFlags.SECOC) and
+      # same gate as _initialize_toyota: openpilot longitudinal, not SecOC, and either TSS2 or a
+      # smartDSU. The bundle path can't see 0x2FF or longitudinal, so it stays TSS2-only.
+      sdsu_bsm = CP_SP is not None and bool(CP_SP.flags & ToyotaFlagsSP.SMART_DSU)
+      caps["toyota_enhanced_bsm_available"] = (bool(CP.openpilotLongitudinalControl) and
+                                               not bool(CP.flags & ToyotaFlags.SECOC) and
                                                (bool(CP.flags & ToyotaFlags.TSS2) or sdsu_bsm))
 
 
