@@ -207,6 +207,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.packed_input[:] = 0
     self.frame_inputs.clear()
     self._blob_cache.clear()
+    self.run_model.__dict__.pop('_bound', None)  # warmup's uploaded frames: drop their bindings with them
     for key in self.state_pairs:
       self.input_queues[key].assign(0).realize()
 
