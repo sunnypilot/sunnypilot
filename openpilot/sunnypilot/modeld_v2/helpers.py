@@ -270,7 +270,7 @@ def _program_uop(call: dict, lib: bytes):
                                UOp(Ops.SOURCE, arg=""), UOp(Ops.BINARY, arg=lib)), arg=info)
 
 
-def _input_key(args: tuple, kwargs: dict) -> tuple | None:  # the realized buffers a call binds, by name; None when it can't be reused
+def _input_key(args: tuple, kwargs: dict) -> tuple | None:
   from tinygrad import Tensor
   if args:
     return None
@@ -337,7 +337,7 @@ class PlainJit(_Jit):
         calls.append(_program_uop(call, bytes(blob[slice(*call["lib"])])).call(*arguments))
       else:
         calls.append(arguments[0].store_call(arguments[1]))
-    # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
+    # allocate gpu buffers
     stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
                                        _dtype(spec["dtype"])) for slot, spec in inputs.items()}
     input_uops = tuple(stand_ins.get(slot, next(iter(stand_ins.values()), None)) for slot in range(max(stand_ins, default=-1) + 1))
