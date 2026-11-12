@@ -7,6 +7,8 @@ from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoad
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
 from openpilot.selfdrive.ui.body.layouts.onroad import BodyLayout
+from openpilot.selfdrive.ui.sunnypilot.layouts.ccnc_port_eol import CcncPortEolGate
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.ccnc_port_eol import MiciCcncPortEolNotice
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.application import gui_app
@@ -63,6 +65,8 @@ class MiciMainLayout(Scroller):
     self._onboarding_window = OnboardingWindow(lambda: gui_app.pop_widgets_to(self))
     if not self._onboarding_window.completed:
       gui_app.push_widget(self._onboarding_window)
+
+    self._ccnc_port_eol = CcncPortEolGate(self, MiciCcncPortEolNotice)
 
     # initialize correct onroad layout
     self._on_body_changed()

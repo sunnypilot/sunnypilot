@@ -1,4 +1,8 @@
 {
+  "Offroad_CcncPortEol": {
+    "text": "This branch will not receive any more functional updates. ccNC support is moving to master. See the ccNC Port topic on community.sunnypilot.ai for what you need to do.",
+    "severity": 1
+  },
   "Offroad_TemperatureTooHigh": {
     "text": "Device temperature too high. System cooling down before starting. Current internal component temperature: %1",
     "severity": 0

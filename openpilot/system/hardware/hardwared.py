@@ -252,6 +252,7 @@ def hardware_thread(end_event, hw_queue) -> None:
   chestnut = Chestnut()
   chestnut_status = ChestnutStatus()
   branch = get_short_branch()
+  set_offroad_alert("Offroad_CcncPortEol", True)
 
   while not end_event.is_set():
     sm.update(PANDA_STATES_TIMEOUT)
@@ -353,6 +354,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get_bool("DisableUpdates") or params.get_bool("SnoozeUpdate")
     startup_conditions["no_excessive_actuation"] = params.get("Offroad_ExcessiveActuation") is None
+    startup_conditions["ccnc_port_eol_ack"] = params.get_bool("CcncPortEolAck")
     startup_conditions["not_uninstalling"] = not params.get_bool("DoUninstall")
     startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
     startup_conditions["accepted_terms_sp"] = params.get("HasAcceptedTermsSP") == terms_version_sp
