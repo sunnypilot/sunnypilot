@@ -12,15 +12,14 @@ from functools import partial
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.helpers import _dtype, read_parts
 
+SPLIT_FRAMES = ("big_frame", "frame")
+
 
 def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, int], int]:
   offsets, offset = {}, 0
   for name, shape in ({"tfm": (2, 3, 3)} | shapes).items():
     offsets[name], offset = offset, offset + -(-math.prod(shape) * 4 // 128) * 128
   return offsets | {"frames": offset}, offset + 2 * frame_size
-
-
-SPLIT_FRAMES = ("big_frame", "frame")  # a --split-frames warp: one input per camera, bound by pointer, not packed into host
 
 
 class _Blobs:  # the model's and the warp's blobs as one address space, for a part whose ranges span both files
