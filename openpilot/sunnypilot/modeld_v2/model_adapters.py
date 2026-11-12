@@ -180,7 +180,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.host = Tensor(self.packed_input, device='NPY')
     self.numpy_inputs = {name: np.ndarray(shape, dtype=np.float32, buffer=self.packed_input, offset=offsets[name])
                          for name, shape in ({'tfm': (2, 3, 3)} | shapes).items()}
-    self.frames = None if self.split else self.packed_input[offsets['frames']:].reshape(2, self.warp_frame_size)
+    self.frames = self.packed_input[offsets['frames']:].reshape(2, -1)
 
     self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
     for name, next_name in self.state_pairs.items():
