@@ -42,8 +42,7 @@ def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
   states = sorted(name for name in extras["input_specs"] if f"next_{name}" in extras["metadata"]["output_shapes"])
   host = {name: shape for name, (shape, _, _) in extras["input_specs"].items() if name not in states and name != "new_img"}
   frame_specs = {s["name"]: s for s in warp["inputs"] if s["name"] in SPLIT_FRAMES}
-  frame_size = next(s["numel"] for s in warp["inputs"] if s["name"] in ("input_frame", "frame")) // (1 if frame_specs else 2)
-  offsets, packed = pack_layout(host, 0 if frame_specs else frame_size)
+  offsets, packed = pack_layout(host, 0 if frame_specs else next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2)
   shift, upload, u8 = len(model_blob), len(model["buffers"]) + len(warp["buffers"]), repr(_dtype("dtypes.uint8"))
 
   def view(name: str, nbytes: int, dtype: str) -> dict:

@@ -270,42 +270,33 @@ def _program_uop(call: dict, lib: bytes):
                                UOp(Ops.SOURCE, arg=""), UOp(Ops.BINARY, arg=lib)), arg=info)
 
 
-def _input_key(args: tuple, kwargs: dict) -> tuple | None:
+def _input_tensors(kwargs: dict) -> list:  # in _prepare_jit_inputs' order
   from tinygrad import Tensor
-  if args:
-    return None
-  key = []
-  for name, value in sorted(kwargs.items()):
-    if not isinstance(value, (Tensor, dict)):
-      return None
-    for sub, tensor in [(None, value)] if isinstance(value, Tensor) else sorted(value.items()):
-      if not isinstance(tensor, Tensor) or not tensor.uop.is_realized:
-        return None
-      key.append((name, sub, tensor.uop))
-  return tuple(key)
+  tensors = [t for _, t in sorted(kwargs.items()) if t.__class__ is Tensor]
+  for value in kwargs.values():
+    tensors += [t for t in (value.values() if isinstance(value, dict) else value if isinstance(value, (tuple, list)) else ())
+                if t.__class__ is Tensor and not any(t is y for y in tensors)]
+  return tensors
 
 
 class _Jit:
   def __init__(self, captured, input_names: list, buffers: list):
     self.captured, self.input_names, self.buffers = captured, input_names, buffers
 
-  def __getstate__(self):
-    return {k: v for k, v in self.__dict__.items() if k != "_bound"}
-
   def __call__(self, *args, **kwargs):
     import tinygrad.engine.jit as jit
-    # modeld binds the same buffers every frame (the camera buffers cycle through a few): bind each set once, not per call
-    bound, key = self.__dict__.setdefault("_bound", {}), _input_key(args, kwargs)
-    if key is None or (hit := bound.get(key)) is None:
-      input_uops, var_vals, names, _ = jit._prepare_jit_inputs(args, kwargs)
-      if names != self.input_names:
-        raise ValueError(f"expected inputs {self.input_names}, got {names}")
-      hit = (input_uops, var_vals)
-      if key is not None:
-        if len(bound) >= 16:
-          bound.clear()
-        bound[key] = hit
-    return self.captured(*hit)
+    from tinygrad.uop.ops import Ops
+    # same names, no variables: the binding is the tensors' own uops, without _prepare_jit_inputs' graph rewrites
+    if not args and self.__dict__.get("_names") == sorted(kwargs):
+      tensors = _input_tensors(kwargs)
+      if all(t.uop.is_realized for t in tensors):
+        return self.captured([t.uop.src[0] if t.uop.op is Ops.UNSHARD else t.uop for t in tensors], {})
+    input_uops, var_vals, names, _ = jit._prepare_jit_inputs(args, kwargs)
+    if names != self.input_names:
+      raise ValueError(f"expected inputs {self.input_names}, got {names}")
+    if not args and not var_vals:
+      self._names = sorted(kwargs)
+    return self.captured(input_uops, var_vals)
 
 
 class PlainJit(_Jit):

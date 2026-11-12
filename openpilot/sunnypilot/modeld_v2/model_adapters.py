@@ -169,7 +169,7 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.warp_frame_size = self.frame_copy_size
     self._init_common()
     self.run_model = self.jits['run']
-    self.split = [name for name in SPLIT_FRAMES if name in self.run_model.input_names]  # the warp reads the camera buffers in place
+    self.split = [name for name in SPLIT_FRAMES if name in self.run_model.input_names]
     self.frame_inputs: dict[str, Tensor] = {}
 
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
@@ -195,10 +195,10 @@ class NativeTinygradAdapter(BaseModelAdapter):
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
         np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
       elif (name := ('frame', 'big_frame')[i]) in self.split:
-        if not hasattr(bufs[key], 'data'):  # a numpy frame (warmup, tests): cached memory the GPU must not read in place, so upload it
+        if isinstance(bufs[key], np.ndarray):  # cached memory: the GPU would read stale lines in place
           self.frame_inputs[name] = Tensor(np.ascontiguousarray(bufs[key][:self.warp_frame_size]), device=self.model_device).realize()
           continue
-        ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data  # visionipc buffers are coherent: map once per buffer, no copy
+        ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data  # visionipc buffers are coherent
         if (key, ptr) not in self._blob_cache:
           self._blob_cache[(key, ptr)] = Tensor.from_blob(ptr, (self.warp_frame_size,), dtype='uint8', device=self.model_device)
         self.frame_inputs[name] = self._blob_cache[(key, ptr)]
@@ -207,7 +207,6 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.packed_input[:] = 0
     self.frame_inputs.clear()
     self._blob_cache.clear()
-    self.run_model.__dict__.pop('_bound', None)  # warmup's uploaded frames: drop their bindings with them
     for key in self.state_pairs:
       self.input_queues[key].assign(0).realize()
 

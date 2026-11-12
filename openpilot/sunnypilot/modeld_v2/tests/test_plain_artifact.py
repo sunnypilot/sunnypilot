@@ -156,7 +156,7 @@ class TestPlainArtifact(OpenpilotTestCase):
     out = {"outputs": Tensor.zeros(OUT).contiguous().realize(), "next_state_feat_q": Tensor.zeros(STATE).contiguous().realize()}
     split["run"](host=Tensor(host, device="NPY"), frame=Tensor(frames.numpy()[0]).realize(), big_frame=Tensor(frames.numpy()[1]).realize(),
                  state_feat_q=expected["state_feat_q"], output_buffers=out)
-    for name in ("outputs", "next_state_feat_q"):  # the camera buffers bound in place give the packed upload's result exactly
+    for name in ("outputs", "next_state_feat_q"):
       assert np.array_equal(out[name].numpy(), expected["output_buffers"][name].numpy()), name
 
   def test_tinygrad_api_the_loader_reads(self):
