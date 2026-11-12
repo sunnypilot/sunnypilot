@@ -45,6 +45,7 @@ from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
 from openpilot.sunnypilot.modeld_v2.light_frame import get_light_warp_matrix
+from openpilot.sunnypilot.modeld_v2.turn_frame import get_turn_warp_matrix
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
@@ -182,6 +183,8 @@ class ModelState(ModelStateBase):
           self.numpy_inputs['tfm'][i] = transforms[key].reshape(3, 3)
       if 'light_tfm' in self.numpy_inputs and 'light' in transforms:
         self.numpy_inputs['light_tfm'][0] = transforms['light'].reshape(3, 3)
+      if 'turn_tfm' in self.numpy_inputs and 'turn' in transforms:
+        self.numpy_inputs['turn_tfm'][0] = transforms['turn'].reshape(3, 3)
     else:
       self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
       self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
@@ -355,6 +358,7 @@ def main(demo=False):
   model_transform_main = np.zeros((3, 3), dtype=np.float32)
   model_transform_extra = np.zeros((3, 3), dtype=np.float32)
   model_transform_light = np.zeros((3, 3), dtype=np.float32)
+  model_transform_turn = np.zeros((3, 3), dtype=np.float32)
   live_calib_seen = False
   buf_main, buf_extra = None, None
   meta_main = FrameMeta()
@@ -433,6 +437,7 @@ def main(demo=False):
       model_transform_extra = get_warp_matrix(device_from_calib_euler, dc.wide_road.intrinsics, True).astype(np.float32)
       model_transform_main, model_transform_extra = camera_offset_helper.update(model_transform_main, model_transform_extra, sm, main_wide_camera)
       model_transform_light = get_light_warp_matrix(device_from_calib_euler, main_intrinsics)
+      model_transform_turn = get_turn_warp_matrix(device_from_calib_euler, dc.wide_road.intrinsics)
       live_calib_seen = True
 
     traffic_convention = np.zeros(2)
@@ -455,6 +460,7 @@ def main(demo=False):
     bufs = {name: buf_extra if 'big' in name else buf_main for name in model.vision_input_names}
     transforms = {name: model_transform_extra if 'big' in name else model_transform_main for name in model.vision_input_names}
     transforms['light'] = model_transform_light
+    transforms['turn'] = model_transform_turn
 
     frame_delay = DT_MDL # compensate for time passed since the frame was captured: current_time - timestamp_eof is 50ms on average
     action_delay = DT_MDL / 2 # middle of the interval between model output (current state) and next frame (expected state)

@@ -18,14 +18,16 @@ def main():
   parser.add_argument("--warp-to", required=True, help="model input WxH")
   parser.add_argument("--output", required=True)
   parser.add_argument("--light", action="store_true")
+  parser.add_argument("--turn", action="store_true")
   args = parser.parse_args()
 
   from examples.openpilot.compile_warp import make_frame_prepare, parse_frame, parse_size
   from tinygrad import Device, Tensor, TinyJit
   frame = parse_frame(args.frame)
   warp = make_frame_prepare(frame, *parse_size(args.warp_to))
-  n = 1 if args.light else 2
-  run = TinyJit(lambda input_frame, M_inv: Tensor.stack(*(warp(input_frame[i], M_inv[i]) for i in range(n))), prune=True)
+  n = 1 if args.light or args.turn else 2
+  cams = [1] if args.turn else list(range(n))
+  run = TinyJit(lambda input_frame, M_inv: Tensor.stack(*(warp(input_frame[c], M_inv[i]) for i, c in enumerate(cams))), prune=True)
   rng = np.random.default_rng(42)
   inputs = {"input_frame": Tensor(rng.integers(0, 256, (2, frame.size), dtype=np.uint8), device=Device.DEFAULT).realize(),
             "M_inv": Tensor((rng.standard_normal((n, 3, 3)) * 8).astype(np.float32), device=Device.DEFAULT).realize()}
