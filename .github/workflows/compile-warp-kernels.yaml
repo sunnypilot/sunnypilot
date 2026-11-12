@@ -42,7 +42,7 @@ jobs:
             WARP_PKL="openpilot/sunnypilot/modeld_v2/models/driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $WARP_PKL on QCOM"
             taskset -c 7 env DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1 python3 openpilot/sunnypilot/modeld_v2/compile_warp.py \
-              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --output "${WARP_PKL}"
+              --frame ${FRAME_PARAM} --warp-to ${MODEL_SIZE} --split-frames --output "${WARP_PKL}"
 
             BIG_WARP_PKL="openpilot/sunnypilot/modeld_v2/models/big_driving_warp_${res}_tinygrad.pkl"
             echo "Compiling $BIG_WARP_PKL on AMD"
