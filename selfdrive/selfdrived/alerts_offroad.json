@@ -1,4 +1,8 @@
 {
+  "Offroad_BranchEol": {
+    "text": "This branch will not receive any more functional updates. Switch to hkg-angle-steering-2025. See the angle steering topic on community.sunnypilot.ai for what you need to do.",
+    "severity": 1
+  },
   "Offroad_TemperatureTooHigh": {
     "text": "Device temperature too high. System cooling down before starting. Current internal component temperature: %1",
     "severity": 0

@@ -6,6 +6,8 @@ from openpilot.selfdrive.ui.mici.layouts.offroad_alerts import MiciOffroadAlerts
 from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import AugmentedRoadView
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.selfdrive.ui.mici.layouts.onboarding import OnboardingWindow
+from openpilot.selfdrive.ui.sunnypilot.layouts.branch_eol import BranchEolGate
+from openpilot.selfdrive.ui.sunnypilot.mici.layouts.branch_eol import MiciBranchEolNotice
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.scroller import Scroller
 from openpilot.system.ui.lib.application import gui_app
@@ -58,6 +60,8 @@ class MiciMainLayout(Scroller):
     self._onboarding_window = OnboardingWindow(lambda: gui_app.pop_widgets_to(self))
     if not self._onboarding_window.completed:
       gui_app.push_widget(self._onboarding_window)
+
+    self._branch_eol = BranchEolGate(self, MiciBranchEolNotice)
 
   def _setup_callbacks(self):
     self._home_layout.set_callbacks(

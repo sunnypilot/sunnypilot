@@ -9,6 +9,7 @@ from openpilot.selfdrive.ui.onroad.augmented_road_view import AugmentedRoadView
 from openpilot.selfdrive.ui.ui_state import device, ui_state
 from openpilot.system.ui.widgets import Widget
 from openpilot.selfdrive.ui.layouts.onboarding import OnboardingWindow
+from openpilot.selfdrive.ui.sunnypilot.layouts.branch_eol import BranchEolGate, BranchEolNotice
 
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.layouts.settings.settings import SettingsLayoutSP as SettingsLayout
@@ -45,6 +46,8 @@ class MainLayout(Widget):
     self._onboarding_window = OnboardingWindow()
     if not self._onboarding_window.completed:
       gui_app.push_widget(self._onboarding_window)
+
+    self._branch_eol = BranchEolGate(self, BranchEolNotice)
 
   def _render(self, _):
     self._handle_onroad_transition()

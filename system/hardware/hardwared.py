@@ -210,6 +210,7 @@ def hardware_thread(end_event, hw_queue) -> None:
   thermal_config = HARDWARE.get_thermal_config()
 
   fan_controller = FanController(int(1./DT_HW))
+  set_offroad_alert("Offroad_BranchEol", True)
 
   while not end_event.is_set():
     sm.update(PANDA_STATES_TIMEOUT)
@@ -301,6 +302,7 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     startup_conditions["up_to_date"] = params.get("Offroad_ConnectivityNeeded") is None or params.get_bool("DisableUpdates") or params.get_bool("SnoozeUpdate")
     startup_conditions["no_excessive_actuation"] = params.get("Offroad_ExcessiveActuation") is None
+    startup_conditions["branch_eol_ack"] = params.get_bool("BranchEolAck")
     startup_conditions["not_uninstalling"] = not params.get_bool("DoUninstall")
     startup_conditions["accepted_terms"] = params.get("HasAcceptedTerms") == terms_version
     startup_conditions["accepted_terms_sp"] = params.get("HasAcceptedTermsSP") == terms_version_sp
