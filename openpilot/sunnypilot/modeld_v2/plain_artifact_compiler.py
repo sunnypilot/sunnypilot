@@ -80,7 +80,8 @@ def serialize_jit(jit, kernel_linear, check: dict | None = None) -> tuple[dict, 
     if ast.op is Ops.PROGRAM:
       elf, info = ast.to_elf(), ast.arg
       global_size, local_size = info.launch_dims({})
-      calls.append({"kind": "program", "name": elf.name, "lib": blob.add(bytes(elf.lib)), "target": dataclasses.asdict(elf.target),
+      device_target = dataclasses.asdict(dataclasses.replace(elf.target, interface=elf.target.interface.removeprefix("MOCK")))
+      calls.append({"kind": "program", "name": elf.name, "lib": blob.add(bytes(elf.lib)), "target": device_target,
                     "signature": kernel_signature(ast, elf),
                     "global_size": [int(x) for x in global_size], "local_size": [int(x) for x in local_size],
                     "globals": list(info.globals), "outs": list(info.outs), "ins": list(info.ins), "args": arguments})

@@ -17,16 +17,29 @@ def main():
   parser.add_argument("--frame", required=True, help="width,height,stride,y_height,uv_height,buffer_size")
   parser.add_argument("--warp-to", required=True, help="model input WxH")
   parser.add_argument("--output", required=True)
+  parser.add_argument("--light", action="store_true")
+  parser.add_argument("--turn", action="store_true")
+  parser.add_argument("--split-frames", action="store_true", help="one input per camera (frame, big_frame), bound to the camera buffers by pointer")
   args = parser.parse_args()
 
   from examples.openpilot.compile_warp import make_frame_prepare, parse_frame, parse_size
   from tinygrad import Device, Tensor, TinyJit
   frame = parse_frame(args.frame)
   warp = make_frame_prepare(frame, *parse_size(args.warp_to))
-  run = TinyJit(lambda input_frame, M_inv: Tensor.stack(*(warp(input_frame[i], M_inv[i]) for i in range(2))), prune=True)
+  n = 1 if args.light or args.turn else 2
+  cams = [1] if args.turn else list(range(n))
   rng = np.random.default_rng(42)
-  inputs = {"input_frame": Tensor(rng.integers(0, 256, (2, frame.size), dtype=np.uint8), device=Device.DEFAULT).realize(),
-            "M_inv": Tensor((rng.standard_normal((2, 3, 3)) * 8).astype(np.float32), device=Device.DEFAULT).realize()}
+  frames = rng.integers(0, 256, (2, frame.size), dtype=np.uint8)
+  m_inv = Tensor((rng.standard_normal((n, 3, 3)) * 8).astype(np.float32), device=Device.DEFAULT).realize()
+  if args.split_frames:
+    names = [("frame", "big_frame")[c] for c in cams]
+    run = TinyJit(lambda M_inv, **f: Tensor.stack(*(warp(f[nm], M_inv[i]) for i, nm in enumerate(names))), prune=True)
+    inputs = {nm: Tensor(frames[c], device=Device.DEFAULT).realize() for nm, c in zip(names, cams, strict=True)} | {"M_inv": m_inv}
+    specs = {nm: ((frame.size,), "|u1", Device.DEFAULT) for nm in names} | {"M_inv": ((n, 3, 3), "<f4", Device.DEFAULT)}  # noqa: C420
+  else:
+    run = TinyJit(lambda input_frame, M_inv: Tensor.stack(*(warp(input_frame[c], M_inv[i]) for i, c in enumerate(cams))), prune=True)
+    inputs = {"input_frame": Tensor(frames, device=Device.DEFAULT).realize(), "M_inv": m_inv}
+    specs = {"input_frame": ((2, frame.size), "|u1", Device.DEFAULT), "M_inv": ((n, 3, 3), "<f4", Device.DEFAULT)}
   with record_kernel_linear() as recorded:
     run(**inputs)
     run(**inputs)
@@ -34,7 +47,6 @@ def main():
   assert len(recorded) == 1, f"expected one captured kernel list, got {len(recorded)}"
   part = serialize_jit(run, recorded[0], check)
   PlainJit(*part)
-  specs = {"input_frame": ((2, frame.size), "|u1", Device.DEFAULT), "M_inv": ((2, 3, 3), "<f4", Device.DEFAULT)}
   write_bundle(args.output, {"run": part}, {"input_specs": specs, "metadata": {}})
   print(f"Saved warp to {args.output} ({len(part[0]['calls'])} kernels)")
 

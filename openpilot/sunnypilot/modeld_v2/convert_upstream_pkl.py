@@ -10,6 +10,7 @@ import dataclasses
 import inspect
 import itertools
 import mmap
+import os
 import re
 import struct
 import tempfile
@@ -194,7 +195,8 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
         base, at, nbytes = _address(argument_words[slot])
         args.append({"buffer": buffers.setdefault(base, len(buffers)), "offset": at, "nbytes": nbytes or base.max_numel() * base.dtype.itemsize, "dtype": u8})
     outs, ins = kernel[6]
-    calls.append({"kind": "program", "name": re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]), "lib": programs[image_alloc], "target": dataclasses.asdict(target),
+    device_target = dataclasses.asdict(dataclasses.replace(target, interface=target.interface.removeprefix("MOCK")))
+    calls.append({"kind": "program", "name": re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]), "lib": programs[image_alloc], "target": device_target,
                   "signature": [[f"data{i}", i, u8, [a.get("nbytes", 1)]] for i, a in enumerate(args)], "global_size": grid, "local_size": local,
                   "globals": list(range(len(args))), "outs": list(outs), "ins": list(ins), "args": args})
     needs_init |= {args[i]["buffer"] for i in ins if "buffer" in args[i] and args[i]["buffer"] not in written}
@@ -235,14 +237,16 @@ def main():
   frame, _ = capture_frame(artifact["run"], kwargs, "output_buffers")
   part = convert(artifact["run"], kwargs, frame, Device[Device.DEFAULT].renderer.target)
 
-  plain = PlainJit(*part)  # replays the frame, within tolerance
-  replay = {path[0]: Tensor(array, device=device).realize() for path, array, device in frame["inputs"] if len(path) == 1}
-  replay["output_buffers"] = {path[1]: Tensor(array, device=device).realize() for path, array, device in frame["inputs"] if len(path) == 2}
-  flatten(plain(**replay))
-  for index, (got, expected) in enumerate(zip([t.numpy() for t in replay["output_buffers"].values()], frame["outputs"], strict=True)):
-    assert np.array_equal(got, expected), f"output {index} of the plain artifact differs from the pickle"
+  if not os.getenv("MOCKUSB_SOCKET"):
+    plain = PlainJit(*part)
+    replay = {path[0]: Tensor(array, device=device).realize() for path, array, device in frame["inputs"] if len(path) == 1}
+    replay["output_buffers"] = {path[1]: Tensor(array, device=device).realize() for path, array, device in frame["inputs"] if len(path) == 2}
+    flatten(plain(**replay))
+    for index, (got, expected) in enumerate(zip([t.numpy() for t in replay["output_buffers"].values()], frame["outputs"], strict=True)):
+      assert np.array_equal(got, expected), f"output {index} of the plain artifact differs from the pickle"
   write_bundle(args.output, {"run": part}, {key: artifact[key] for key in ("metadata", "input_specs", "output_specs")})
-  print(f"converted {len(part[0]['calls'])} kernels, bit-exact with the pickle: {args.output}")
+  checked = "left to mock_parity" if os.getenv("MOCKUSB_SOCKET") else "bit-exact with the pickle"
+  print(f"converted {len(part[0]['calls'])} kernels, {checked}: {args.output}")
 
 
 if __name__ == "__main__":

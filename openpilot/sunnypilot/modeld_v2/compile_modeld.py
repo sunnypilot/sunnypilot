@@ -371,7 +371,7 @@ def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_ru
 
 
 if __name__ == "__main__":
-  if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
+  if ('USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT')) and not os.getenv('DEV', '').startswith('MOCK'):
     from openpilot.system.hardware.chestnut.flash import link_up
     for _ in range(10):
       if link_up():
