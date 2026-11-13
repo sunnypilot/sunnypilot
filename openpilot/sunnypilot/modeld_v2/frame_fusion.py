@@ -20,6 +20,7 @@ def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, in
   return offsets | {"frames": offset}, offset + 2 * frame_size
 
 EXTRA_WARPS = {"light_img": "light_tfm", "turn_img": "turn_tfm"}
+SPLIT_FRAMES = ("big_frame", "frame")
 
 def host_shapes(input_shapes: dict[str, tuple], states) -> dict[str, tuple]:
   shapes = {name: shape for name, shape in input_shapes.items() if name not in states and name != "new_img" and name not in EXTRA_WARPS}
@@ -50,8 +51,9 @@ def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str |
   host = host_shapes({name: shape for name, (shape, _, _) in extras["input_specs"].items()}, states)
   paths = {"light_img": light_warp_path, "turn_img": turn_warp_path}
   extra = [(img, tfm, *read_parts(paths[img])[0]["run"]) for img, tfm in EXTRA_WARPS.items() if img in extras["input_specs"]]
-  frame_size = next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2
-  offsets, packed = pack_layout(host, frame_size)
+  split = any(s["name"] in SPLIT_FRAMES for s in warp["inputs"])
+  assert all(any(s["name"] in SPLIT_FRAMES for s in part["inputs"]) == split for _, _, part, _ in extra), "camera and extra warps must share a frame layout"
+  offsets, packed = pack_layout(host, 0 if split else next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2)
   shift = len(model_blob)
   buf_base, blob_base = [len(model["buffers"]) + len(warp["buffers"])], [len(model_blob) + len(warp_blob)]
   for _, _, part, blob in extra:
@@ -62,7 +64,8 @@ def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str |
   def view(name: str, nbytes: int, dtype: str) -> dict:
     return {"buffer": upload, "offset": offsets[name], "nbytes": nbytes, "dtype": dtype}
   outputs = sorted(s["slot"] for s in model["inputs"] if s["name"] is None)
-  names = sorted(["host", *states])
+  frame_specs = {s["name"]: s for _, _, part, _ in [(None, None, warp, None), *extra] for s in part["inputs"] if s["name"] in SPLIT_FRAMES}
+  names = sorted(["host", *states, *frame_specs])
   slots = {s["slot"]: names.index(s["name"]) for s in model["inputs"] if s["name"] in states} | \
           {slot: len(names) + i for i, slot in enumerate(outputs)}
   def warped(part: dict, base: int) -> dict:
@@ -73,14 +76,16 @@ def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str |
                   warped(extra_at[s["name"]][0], extra_at[s["name"]][1]) if s["name"] in extra_at else
                   view(s["name"], s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in model["inputs"]}
   def warp_inputs(part: dict, tfm: str) -> dict:
-    return {s["slot"]: view("frames" if s["name"] == "input_frame" else tfm, s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in part["inputs"]}
+    return {s["slot"]: {"input": names.index(s["name"])} if s["name"] in frame_specs else
+            view("frames" if s["name"] == "input_frame" else tfm, s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in part["inputs"]}
 
   def remap(calls: list, inputs: dict, buffers: int, lib: int) -> list:
     return [call | ({"lib": [call["lib"][0] + lib, call["lib"][1] + lib]} if "lib" in call else {}) |
             {"args": [dict(inputs[a["input"]]) if "input" in a else a | {"buffer": a["buffer"] + buffers} for a in call["args"]]} for call in calls]
   header = {"input_names": names, "returns": {"kind": "NoneType", "tensors": []}, "check": None,
             "inputs": [{"slot": names.index("host"), "name": "host", "dtype": u8, "numel": packed, "device": "NPY"}] +
-                      [s | {"slot": slots[s["slot"]]} for s in model["inputs"] if s["slot"] in slots],
+                      [s | {"slot": slots[s["slot"]]} for s in model["inputs"] if s["slot"] in slots] +
+                      [s | {"slot": names.index(name)} for name, s in frame_specs.items()],
             "buffers": model["buffers"] + [b | ({"init": [b["init"][0] + d, b["init"][1] + d]} if "init" in b else {})
                                            for part, d in ((warp, shift), *((p, bb) for p, _, bb, _ in extra_at.values())) for b in part["buffers"]] +
                        [{"nbytes": packed, "device": model["inputs"][0]["device"], "dtype": u8}],
