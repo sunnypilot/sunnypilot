@@ -37,6 +37,12 @@ CCNC_PORT_SUPPORTED: dict[str, tuple[str, set[bytes]]] = {
     b'\xf1\x00NX4__               1.00 1.02 99110N7100          ',
     b'\xf1\x00NX4__               1.00 1.03 99110N7100          ',
   }),
+  "HYUNDAI_KONA_2ND_GEN": ("Hyundai Kona 2024-25", {
+    b'\xf1\x00SX2 MFC  AT USA LHD 1.00 1.03 99211-BE000 230517',
+    b'\xf1\x00SX2 MFC  AT USA LHD 1.00 1.07 99211-BE000 240611',
+    b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE000         ',
+    b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE500         ',
+  }),
 }
 
 
