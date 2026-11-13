@@ -44,6 +44,7 @@ class UIStateSP:
     self.screensaver = ScreenSaverSP(params=self.params)
     self.screensaver_enabled: bool = False
 
+    self.accel_boost: bool = False
     self.active_bundle = None
     self.model_runner_tinygrad: bool = False
     self.active_runner_tinygrad: bool = False
@@ -171,6 +172,7 @@ class UIStateSP:
     # stock only counts the default big model's compiled pkl. a downloaded big bundle runs on the
     # chestnut just the same, so ChestnutState has to see it as available too.
     self.chestnut_compiled = self.chestnut_compiled or self.model_runner_tinygrad
+    self.accel_boost = self.params.get_bool("AccelBoostSP")
     self.blindspot = self.params.get_bool("BlindSpot")
     self.chevron_metrics = self.params.get("ChevronInfo")
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
