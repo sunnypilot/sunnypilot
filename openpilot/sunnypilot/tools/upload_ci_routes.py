@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 
 import argparse
+import glob
 import os
 import tempfile
 
@@ -19,13 +20,27 @@ from openpilot.tools.lib.route import Route
 REPO_ID = os.environ.get("SUNNYPILOT_CAR_SEGMENTS_REPO_ID", "sunnypilot/sunnypilotCarSegments")
 
 
-def upload_route(route_name: str, dry_run: bool = False) -> None:
-  route = Route(route_name)
-  log_paths = route.log_paths()
-  valid_segments = [(i, url) for i, url in enumerate(log_paths) if url is not None]
+def local_segments(route_name: str, local_dir: str) -> list[tuple[int, str]]:
+  log_id = route_name.replace("|", "/").split("/")[-1]
+  segments = []
+  for seg_dir in glob.glob(os.path.join(local_dir, f"{log_id}--*")):
+    rlogs = sorted(glob.glob(os.path.join(seg_dir, "rlog.*")))
+    if rlogs:
+      segments.append((int(seg_dir.rsplit("--", 1)[1]), rlogs[0]))
+  return sorted(segments)
+
+
+def upload_route(route_name: str, dry_run: bool = False, local_dir: str | None = None) -> None:
+  if local_dir is not None:
+    valid_segments = local_segments(route_name, local_dir)
+    total = valid_segments[-1][0] + 1 if valid_segments else 0
+  else:
+    log_paths = Route(route_name).log_paths()
+    valid_segments = [(i, url) for i, url in enumerate(log_paths) if url is not None]
+    total = len(log_paths)
 
   print(f"Route: {route_name}")
-  print(f"Segments: {len(valid_segments)}/{len(log_paths)}")
+  print(f"Segments: {len(valid_segments)}/{total}")
 
   if not valid_segments:
     print("No segments found.")
@@ -34,14 +49,17 @@ def upload_route(route_name: str, dry_run: bool = False) -> None:
   api = HfApi()
 
   with tempfile.TemporaryDirectory() as tmpdir:
-    for seg_idx, url in tqdm(valid_segments, desc="Uploading"):
-      filename = url.split("?")[0].rsplit("/", 1)[-1]
-      local_path = os.path.join(tmpdir, f"{seg_idx}_{filename}")
-      resp = requests.get(url, stream=True)
-      resp.raise_for_status()
-      with open(local_path, "wb") as f:
-        for chunk in resp.iter_content(chunk_size=8192):
-          f.write(chunk)
+    for seg_idx, src in tqdm(valid_segments, desc="Uploading"):
+      filename = src.split("?")[0].rsplit("/", 1)[-1]
+      if local_dir is not None:
+        local_path = src
+      else:
+        local_path = os.path.join(tmpdir, f"{seg_idx}_{filename}")
+        resp = requests.get(src, stream=True)
+        resp.raise_for_status()
+        with open(local_path, "wb") as f:
+          for chunk in resp.iter_content(chunk_size=8192):
+            f.write(chunk)
 
       repo_path = f"segments/{route_name.replace('|', '/')}/{seg_idx}/{filename}"
 
@@ -63,6 +81,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Upload route rlogs to sunnypilot HuggingFace dataset")
   parser.add_argument("route", help="Route ID (e.g. 5beb9b58bd12b691/0000010a--a51155e496)")
   parser.add_argument("--dry-run", action="store_true", help="Download and show sizes without uploading")
+  parser.add_argument("--local", metavar="DIR", help="Upload rlogs from DIR/<log id>--<segment>/ instead of the comma API")
   args = parser.parse_args()
 
-  upload_route(args.route, dry_run=args.dry_run)
+  upload_route(args.route, dry_run=args.dry_run, local_dir=args.local)
