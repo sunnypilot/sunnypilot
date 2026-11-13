@@ -270,15 +270,32 @@ def _program_uop(call: dict, lib: bytes):
                                UOp(Ops.SOURCE, arg=""), UOp(Ops.BINARY, arg=lib)), arg=info)
 
 
+def _input_tensors(kwargs: dict) -> list:  # in _prepare_jit_inputs' order
+  from tinygrad import Tensor
+  tensors = [t for _, t in sorted(kwargs.items()) if t.__class__ is Tensor]
+  for value in kwargs.values():
+    tensors += [t for t in (value.values() if isinstance(value, dict) else value if isinstance(value, (tuple, list)) else ())
+                if t.__class__ is Tensor and not any(t is y for y in tensors)]
+  return tensors
+
+
 class _Jit:
   def __init__(self, captured, input_names: list, buffers: list):
     self.captured, self.input_names, self.buffers = captured, input_names, buffers
 
   def __call__(self, *args, **kwargs):
     import tinygrad.engine.jit as jit
+    from tinygrad.uop.ops import Ops
+    # same names, no variables: the binding is the tensors' own uops, without _prepare_jit_inputs' graph rewrites
+    if not args and self.__dict__.get("_names") == sorted(kwargs):
+      tensors = _input_tensors(kwargs)
+      if all(t.uop.is_realized for t in tensors):
+        return self.captured([t.uop.src[0] if t.uop.op is Ops.UNSHARD else t.uop for t in tensors], {})
     input_uops, var_vals, names, _ = jit._prepare_jit_inputs(args, kwargs)
     if names != self.input_names:
       raise ValueError(f"expected inputs {self.input_names}, got {names}")
+    if not args and not var_vals:
+      self._names = sorted(kwargs)
     return self.captured(input_uops, var_vals)
 
 
@@ -311,7 +328,7 @@ class PlainJit(_Jit):
         calls.append(_program_uop(call, bytes(blob[slice(*call["lib"])])).call(*arguments))
       else:
         calls.append(arguments[0].store_call(arguments[1]))
-    # stand-ins for JIT inputs: copy staging to GPU is decided from the input buffers, the real ones bind per call
+    # allocate gpu buffers
     stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
                                        _dtype(spec["dtype"])) for slot, spec in inputs.items()}
     input_uops = tuple(stand_ins.get(slot, next(iter(stand_ins.values()), None)) for slot in range(max(stand_ins, default=-1) + 1))
