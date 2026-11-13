@@ -11,6 +11,7 @@ from functools import partial
 import gc
 import os
 os.environ['GMMU'] = '0'
+os.environ['QCOM_PRIORITY'] = '1'
 from tinygrad.device import Device
 import numpy as np
 import threading
