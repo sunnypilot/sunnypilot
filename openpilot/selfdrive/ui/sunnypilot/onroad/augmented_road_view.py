@@ -19,6 +19,8 @@ class AugmentedRoadViewSP:
   def __init__(self):
     self._fade_texture = gui_app.texture("icons_mici/onroad/onroad_fade.png")
     self._fade_alpha_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
+    # a tap on the Set Speed Assist button must not also toggle the sidebar
+    self.set_touch_valid_callback(lambda: not self._hud_renderer.user_interacting())
 
   def update_fade_out_bottom_overlay(self, _content_rect):
     # Fade out bottom of overlays for looks (only when engaged)

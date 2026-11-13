@@ -58,6 +58,7 @@ class UIStateSP:
     self.rainbow_path: bool = False
     self.road_name_toggle: bool = False
     self.rocket_fuel: bool = False
+    self.speed_assist: bool = False
     self.speed_limit_mode = None
     self.standstill_timer: bool = False
     self.sunnylink_enabled: bool = False
@@ -101,6 +102,16 @@ class UIStateSP:
         self.onroad_brightness_timer = 15 * gui_app.target_fps
       else:
         self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
+
+  @property
+  def speed_assist_active(self) -> bool:
+    return self.has_longitudinal_control and self.speed_assist
+
+  def toggle_speed_assist(self) -> None:
+    """The quick toggles: mici home's long press and the tizi onroad button."""
+    if self.has_longitudinal_control:
+      self.speed_assist = not self.speed_assist
+      self.params.put_bool("SetSpeedAssist", self.speed_assist, block=True)
 
   @property
   def onroad_brightness_timer_expired(self) -> bool:
@@ -181,6 +192,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.road_name_toggle = self.params.get_bool("RoadNameToggle")
     self.rocket_fuel = self.params.get_bool("RocketFuel")
+    self.speed_assist = self.params.get_bool("SetSpeedAssist")
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
     self.standstill_timer = self.params.get_bool("StandstillTimer")
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
