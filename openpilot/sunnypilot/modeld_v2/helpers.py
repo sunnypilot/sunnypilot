@@ -10,6 +10,7 @@ import builtins
 import contextlib
 import dataclasses
 import functools
+import gc
 import hashlib
 import io
 import itertools
@@ -111,17 +112,21 @@ def read_parts(path: str) -> tuple[dict, dict]:
   return parts, _MetadataUnpickler(io.BytesIO(bytes(blob[slice(*header["extras"])]))).load()
 
 
-def _extended(path: str, extend) -> tuple[dict, dict, str]:
+def _extended(path: str, extend) -> tuple[dict, dict, str, dict]:
   parts, extras = read_parts(path)
   added = extend(parts, extras) if extend else {}
-  return parts | added, extras, _parts_digest(added) if added else ""
+  return parts | added, extras, _parts_digest(added) if added else "", {key: parts[key] for key in added if key in parts}
 
 
 def load_model(path: str, device_map: dict | None = None, verify: bool = True, cache: bool = True, extend=None) -> dict:
-  parts, extras, extra = _extended(path, extend)
+  parts, extras, extra, replaced = _extended(path, extend)
   if cache and (cached := _read_cache(path, parts, device_map, extra)) is not None:
     return extras | cached
   shared: dict = {}
+  if verify and replaced:
+    for header, blob in replaced.values():
+      PlainJit(header, blob, device_map, verify, shared)
+    gc.collect()
   jits = {key: PlainJit(header, blob, device_map, verify, shared) for key, (header, blob) in parts.items()}
   if cache:
     _write_cache(path, jits, device_map, extra)
