@@ -41,6 +41,7 @@ from openpilot.selfdrive.modeld.modeld import ChestnutGpuState
 from openpilot.sunnypilot.modeld_v2.fill_model_msg import fill_model_msg, fill_pose_msg, PublishState, get_curvature_from_output
 from openpilot.sunnypilot.modeld_v2.parse_model_outputs import Parser
 from openpilot.sunnypilot.modeld_v2.blendful import Blendful
+from openpilot.sunnypilot.modeld_v2 import recent_paths
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
@@ -142,6 +143,9 @@ class ModelState(ModelStateBase):
       self.constants = ModelConstants()
 
     self.parser = Parser()
+    self.recent_paths = recent_paths.SignalSteer(self.constants.T_IDXS)  # path steering (the PathSteering toggle)
+    self.turn_pulse_age = 1e3  # s since the model was last given a turn pulse
+    self.path_share = 0.0      # how far the steering has moved over to path steering
     self.prev_desire = np.zeros(self.constants.DESIRE_LEN, dtype=np.float32)
 
   def warmup(self) -> None:
@@ -169,8 +173,10 @@ class ModelState(ModelStateBase):
 
     desire_key = self.desire_key
     inputs[desire_key][0] = 0
-    (self.numpy_inputs[desire_key].flat if self.adapter.is_native else self.numpy_inputs[desire_key])[:] = \
-      np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
+    pulse = np.where(inputs[desire_key] - self.prev_desire > .99, inputs[desire_key], 0)
+    (self.numpy_inputs[desire_key].flat if self.adapter.is_native else self.numpy_inputs[desire_key])[:] = pulse
+    # a turn counts as signalled while its pulse is still in the model's own cue history (recent_paths.py)
+    self.turn_pulse_age = 0. if float(np.max(np.ravel(pulse)[1:3])) > 0. else self.turn_pulse_age + DT_MDL
     self.prev_desire[:] = inputs[desire_key]
 
     for key in ('traffic_convention', 'lateral_control_params', 'action_t', 'speed_limit'):
@@ -237,7 +243,8 @@ class ModelState(ModelStateBase):
 
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
-                            blendful: Callable[[float], float] | None = None) -> log.ModelDataV2.Action:
+                            blendful: Callable[[float], float] | None = None,
+                            path_steering: bool = False) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
@@ -251,6 +258,16 @@ class ModelState(ModelStateBase):
       desired_curvature = model_output['action'][0, 0] / (max(2.5, v_ego))**2
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
+    if 'action' in model_output and 'plan' in model_output:
+      # path steering (recent_paths.py): kept up to date on every frame, so the toggle can come on mid-drive, and
+      # moved over to gradually when it does
+      path_plan = model_output['plan'][0]
+      from_paths = self.recent_paths.update(path_plan[:, Plan.ORIENTATION_RATE][:, 2], path_plan[:, Plan.VELOCITY][:, 0],
+                                            desired_curvature, self.turn_pulse_age < recent_paths.CUE_S,
+                                            v_ego, lat_action_t, DT_MDL)
+      most = DT_MDL / recent_paths.FADE
+      self.path_share += float(np.clip((1. if path_steering else 0.) - self.path_share, -most, most))
+      desired_curvature = self.path_share * from_paths + (1. - self.path_share) * desired_curvature
 
     stop = v_ego < 0.3 and desired_accel < 0.1
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
@@ -384,6 +401,7 @@ def main(demo=False):
   RELC = RoadEdgeLaneChangeController()
   blendful = Blendful()
   blendful_enabled = False
+  path_steering = False
 
   while True:
     # Keep receiving frames until we are at least 1 frame ahead of previous extra frame
@@ -428,6 +446,10 @@ def main(demo=False):
       model.PLANPLUS_CONTROL = params.get("PlanplusControl", return_default=True)
       camera_offset_helper.set_offset(params.get("CameraOffset", return_default=True))
       blendful_enabled = params.get_bool("Blendful")
+      try:
+        path_steering = params.get_bool("PathSteering")
+      except Exception:  # the key is unknown until the build that adds it has run
+        path_steering = False
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -511,7 +533,8 @@ def main(demo=False):
         prev_action.desiredCurvature = sm['controlsState'].curvature
       blendful_active = desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
-                                           partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled))
+                                           partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled),
+                                           path_steering=path_steering)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,

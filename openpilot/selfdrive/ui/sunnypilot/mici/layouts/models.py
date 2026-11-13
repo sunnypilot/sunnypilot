@@ -99,8 +99,17 @@ class ModelsLayoutMici(NavScroller):
                                            description=tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when " +
                                                           "lane lines are clear. Yields around obstacles. Not available with the Default model."))
 
+    # path steering (openpilot/sunnypilot/modeld_v2/recent_paths.py); left out while the key is unknown to the build
+    self.path_steering_toggle = None
+    try:
+      ui_state.params.get_bool("PathSteering")
+      self.path_steering_toggle = BigParamControl(tr("path steering (alpha)"), "PathSteering",
+                                                  description=tr("In town, steers from an average of the model's recent paths: while a turn is signalled the paths lead, otherwise they only smooth the model's own steering. A calmer wheel at low speed. Not available with the Default model."))
+    except Exception:
+      pass
+
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
-                       self.blendful_toggle]
+                       self.blendful_toggle] + ([self.path_steering_toggle] if self.path_steering_toggle is not None else [])
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -213,6 +222,8 @@ class ModelsLayoutMici(NavScroller):
   def show_event(self):
     super().show_event()
     self.blendful_toggle.refresh()
+    if self.path_steering_toggle is not None:
+      self.path_steering_toggle.refresh()
 
   def _update_state(self):
     super()._update_state()
@@ -232,6 +243,11 @@ class ModelsLayoutMici(NavScroller):
     blendful_value = "" if blendful_allowed else tr("custom model only")
     if self.blendful_toggle.value != blendful_value:
       self.blendful_toggle.set_value(blendful_value)
+    if self.path_steering_toggle is not None:
+      self.path_steering_toggle.set_checked(blendful_allowed and ui_state.params.get_bool("PathSteering"))
+      self.path_steering_toggle.set_enabled(blendful_allowed)
+      if self.path_steering_toggle.value != blendful_value:
+        self.path_steering_toggle.set_value(blendful_value)
 
     manager = self.model_manager
     self._download_frame += 1
