@@ -107,9 +107,19 @@ class ModelsLayoutMici(NavScroller):
                                                   description=tr("In town, steers from an average of the model's recent paths: while a turn is signalled the paths lead, otherwise they only smooth the model's own steering. A calmer wheel at low speed. Not available with the Default model."))
     except Exception:
       pass
+    # its two switches (recent_paths.py), shown the same way
+    self.path_extra_toggles = []
+    for key, title, about in (
+        ("PathSteeringPursuit", "path steering: pursuit", "With path steering on, signalled turns steer at a point a few metres ahead on each recent path, as seen from where the car is now. Pulls the car back when it has drifted wide or tight in a turn."),
+        ("PathSteeringGeometry", "path steering: shape", "With path steering on, reads how hard the path turns from its shape instead of its yaw rate and planned speed. Steadier when the plan expects to creep through a corner.")):
+      try:
+        ui_state.params.get_bool(key)
+        self.path_extra_toggles.append(BigParamControl(tr(title), key, description=tr(about)))
+      except Exception:
+        pass
 
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
-                       self.blendful_toggle] + ([self.path_steering_toggle] if self.path_steering_toggle is not None else [])
+                       self.blendful_toggle] + ([self.path_steering_toggle] if self.path_steering_toggle is not None else []) + self.path_extra_toggles
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -224,6 +234,8 @@ class ModelsLayoutMici(NavScroller):
     self.blendful_toggle.refresh()
     if self.path_steering_toggle is not None:
       self.path_steering_toggle.refresh()
+    for toggle in self.path_extra_toggles:
+      toggle.refresh()
 
   def _update_state(self):
     super()._update_state()
@@ -248,6 +260,9 @@ class ModelsLayoutMici(NavScroller):
       self.path_steering_toggle.set_enabled(blendful_allowed)
       if self.path_steering_toggle.value != blendful_value:
         self.path_steering_toggle.set_value(blendful_value)
+    for toggle in self.path_extra_toggles:
+      toggle.set_checked(blendful_allowed and ui_state.params.get_bool(toggle.param))
+      toggle.set_enabled(blendful_allowed)
 
     manager = self.model_manager
     self._download_frame += 1

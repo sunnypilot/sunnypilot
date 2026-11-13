@@ -244,7 +244,7 @@ class ModelState(ModelStateBase):
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
                             blendful: Callable[[float], float] | None = None,
-                            path_steering: bool = False) -> log.ModelDataV2.Action:
+                            path_steering: bool = False, car_curvature: float = 0.0) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
@@ -264,7 +264,8 @@ class ModelState(ModelStateBase):
       path_plan = model_output['plan'][0]
       from_paths = self.recent_paths.update(path_plan[:, Plan.ORIENTATION_RATE][:, 2], path_plan[:, Plan.VELOCITY][:, 0],
                                             desired_curvature, self.turn_pulse_age < recent_paths.CUE_S,
-                                            v_ego, lat_action_t, DT_MDL)
+                                            v_ego, lat_action_t, DT_MDL, path_plan[:, Plan.POSITION],
+                                            path_plan[:, Plan.T_FROM_CURRENT_EULER][:, 2], car_curvature)
       most = DT_MDL / recent_paths.FADE
       self.path_share += float(np.clip((1. if path_steering else 0.) - self.path_share, -most, most))
       desired_curvature = self.path_share * from_paths + (1. - self.path_share) * desired_curvature
@@ -450,6 +451,11 @@ def main(demo=False):
         path_steering = params.get_bool("PathSteering")
       except Exception:  # the key is unknown until the build that adds it has run
         path_steering = False
+      for key, attr in (("PathSteeringPursuit", "pursuit"), ("PathSteeringGeometry", "geometric")):
+        try:
+          setattr(model.recent_paths, attr, params.get_bool(key))
+        except Exception:  # as above
+          setattr(model.recent_paths, attr, False)
     lat_delay = model.lat_delay + model.LAT_SMOOTH_SECONDS
     if sm.updated["extrinsicsCalibration"] and sm.seen['narrowRoadCameraState'] and sm.seen['deviceState']:
       device_from_calib_euler = np.array(sm["extrinsicsCalibration"].rpyCalib, dtype=np.float32)
@@ -534,7 +540,7 @@ def main(demo=False):
       blendful_active = desire == log.Desire.none and DH.lane_change_state == log.LaneChangeState.off
       action = model.get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
                                            partial(blendful.update, model_output, v_ego, blendful_active, enabled=blendful_enabled),
-                                           path_steering=path_steering)
+                                           path_steering=path_steering, car_curvature=sm['controlsState'].curvature)
       prev_action = action
       fill_model_msg(drivingdata_send, modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,
