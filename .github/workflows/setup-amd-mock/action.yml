@@ -1,0 +1,60 @@
+name: Set up tinygrad's amd mock
+description: LLVM 20 and ROCm comgr, as tinygrad_repo/.github/actions/setup-tinygrad installs them for the mock gpu
+inputs:
+  emu_cache:
+    description: >-
+      Keep tinygrad's cache db (the emulator's compiled kernels and gate results) between runs under this name, e.g. the model's file name.
+      Empty: no cache.
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install LLVM 20 and ROCm comgr
+      shell: bash
+      run: |
+        . /etc/os-release
+        curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+        echo "deb http://apt.llvm.org/$VERSION_CODENAME/ llvm-toolchain-$VERSION_CODENAME-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+        sudo mkdir -p /etc/apt/keyrings
+        curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
+        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.1 $VERSION_CODENAME main" | sudo tee /etc/apt/sources.list.d/rocm.list
+        printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/rocm-pin-600
+        sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends libllvm20 clang-20 lld-20 comgr
+        printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf && sudo ldconfig
+        echo "/usr/lib/llvm-20/bin" >> "$GITHUB_PATH"
+        llvm=$(ls /usr/lib/llvm-20/lib/libLLVM*.so* /usr/lib/*-linux-gnu/libLLVM-20.so* 2>/dev/null | head -1 || true)
+        [ -n "$llvm" ] || { echo "::error::libLLVM 20 not found"; exit 1; }
+        echo "LLVM_PATH=$llvm" >> "$GITHUB_ENV"
+
+    - name: Cache the chestnut's firmware
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/tinygrad/downloads/fw
+        key: chestnut-fw-${{ hashFiles('tinygrad_repo/tinygrad/runtime/autogen/am/fw.py') }}
+
+    - name: Fetch the chestnut's firmware (gitlab times out now and then; the mock boots from it)
+      shell: bash
+      run: |
+        for i in 1 2 3 4 5; do
+          PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo" python3 -c "
+        from tinygrad.helpers import fetch_fw
+        from tinygrad.runtime.autogen.am import fw
+        for n, h in fw.hashes.items():
+          if n.startswith(('psp_14_0_2_', 'smu_14_0_2.', 'sdma_7_0_0.', 'gc_12_0_0_')): fetch_fw('amdgpu', n, h)" && exit 0
+          sleep $((i * 10))
+        done
+        echo "::error::could not fetch the chestnut's firmware from gitlab"; exit 1
+
+    - name: runner cpu
+      if: inputs.emu_cache != ''
+      id: cpu
+      shell: bash
+      run: echo "cpu=$( (grep -m1 '^model name' /proc/cpuinfo; grep -m1 '^flags' /proc/cpuinfo) | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+    - name: Keep the emulator's compiled kernels between runs
+      if: inputs.emu_cache != ''
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/tinygrad/cache.db
+        key: emu-${{ steps.cpu.outputs.cpu }}-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-${{ inputs.emu_cache }}
+        restore-keys: emu-${{ steps.cpu.outputs.cpu }}-${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**') }}-

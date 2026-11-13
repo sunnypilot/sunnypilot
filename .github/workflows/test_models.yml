@@ -28,18 +28,7 @@ jobs:
         env:
           DEV: CPU
         run: tools/op.sh test -v openpilot/sunnypilot/modeld_v2/tests/test_plain_artifact.py
-      - name: Install LLVM 20 and ROCm comgr for the amd mock, as tinygrad_repo/.github/actions/setup-tinygrad does
-        run: |
-          . /etc/os-release
-          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
-          echo "deb http://apt.llvm.org/$VERSION_CODENAME/ llvm-toolchain-$VERSION_CODENAME-20 main" | sudo tee /etc/apt/sources.list.d/llvm.list
-          sudo mkdir -p /etc/apt/keyrings
-          curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/rocm.gpg > /dev/null
-          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/7.1 $VERSION_CODENAME main" | sudo tee /etc/apt/sources.list.d/rocm.list
-          printf 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600\n' | sudo tee /etc/apt/preferences.d/rocm-pin-600
-          sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends libllvm20 clang-20 lld-20 comgr
-          printf '/opt/rocm/lib\n/opt/rocm/lib64\n' | sudo tee /etc/ld.so.conf.d/rocm.conf && sudo ldconfig
-          echo "/usr/lib/llvm-20/bin" >> "$GITHUB_PATH"
+      - uses: ./.github/workflows/setup-amd-mock
       - name: Convert a pickled USB+AMD jit and replay it under tinygrad's amd mock
         env:
           DEV: MOCKUSB+AMD
@@ -80,6 +69,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       models: ${{ steps.set-matrix.outputs.models }}
+      chestnut: ${{ steps.set-matrix.outputs.chestnut }}
+      qcom: ${{ steps.set-matrix.outputs.qcom }}
     steps:
       - uses: actions/checkout@v4
       - name: Fetch and Parse json
@@ -91,16 +82,22 @@ jobs:
           with open("openpilot/sunnypilot/models/fetcher.py", "r") as f:
             urls = re.findall(r"MODEL_URL(?:_CHESTNUT)?\s*=\s*[\"'"'"']([^\"'"'"']+)[\"'"'"']", f.read())
 
-          artifacts = []
+          artifacts, chestnut, qcom = [], [], []
           for url in urls:
             data = json.loads(urllib.request.urlopen(url).read())
             for bundle in data.get("bundles", []):
               for model in bundle.get("models", []):
                 if "artifact" in model:
                   artifacts.append(model["artifact"])
+                  if "chestnut" in url:
+                    chestnut.append(model["artifact"])
+                  elif "tinygrad" in model["artifact"]["file_name"]:
+                    qcom.append(model["artifact"])
 
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
             f.write(f"models={json.dumps(artifacts)}\n")
+            f.write(f"chestnut={json.dumps(chestnut)}\n")
+            f.write(f"qcom={json.dumps(qcom)}\n")
           '
 
   test-model:
@@ -137,3 +134,81 @@ jobs:
           export PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo:$GITHUB_WORKSPACE:$PYTHONPATH"
           python3 -m pip uninstall -y tinygrad || uv pip uninstall -y tinygrad --system || true
           python3 -m pytest openpilot/sunnypilot/modeld_v2/tests/test_models.py
+
+  chestnut-mock-parity:
+    name: Mock parity ${{ matrix.artifact.file_name }}
+    needs: generate-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: ${{ fromJson(needs.generate-matrix.outputs.chestnut) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: ${{ matrix.artifact.file_name }}
+      - run: python3 -m pip install -q numpy
+      - name: Download model
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODEL_URL: ${{ matrix.artifact.download_uri.url }}
+          MODEL_SHA: ${{ matrix.artifact.download_uri.sha256 }}
+        shell: bash
+        run: |
+          AUTH=()
+          if [ -n "$HF_TOKEN" ]; then AUTH=(-H "Authorization: Bearer $HF_TOKEN"); fi
+          curl --retry 3 --retry-all-errors -s -S -f -L "${AUTH[@]}" -o "$RUNNER_TEMP/model.pkl" "$MODEL_URL"
+          if [ -n "$MODEL_SHA" ]; then echo "$MODEL_SHA  $RUNNER_TEMP/model.pkl" | sha256sum -c -; fi
+      - name: Replay its check frame on the amd mock and require the chestnut's result bit for bit
+        env:
+          PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
+        run: python3 -m openpilot.sunnypilot.modeld_v2.mock_parity check "$RUNNER_TEMP/model.pkl"
+
+  qcom-mock-parity:
+    name: QCOM mock parity ${{ matrix.artifact.file_name }}
+    needs: generate-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact: ${{ fromJson(needs.generate-matrix.outputs.qcom) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m pip install -q numpy tinymesa==25.2.7.2
+      - name: Download model
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          MODEL_URL: ${{ matrix.artifact.download_uri.url }}
+          MODEL_SHA: ${{ matrix.artifact.download_uri.sha256 }}
+        shell: bash
+        run: |
+          AUTH=()
+          if [ -n "$HF_TOKEN" ]; then AUTH=(-H "Authorization: Bearer $HF_TOKEN"); fi
+          curl --retry 3 --retry-all-errors -s -S -f -L "${AUTH[@]}" -o "$RUNNER_TEMP/model.pkl" "$MODEL_URL"
+          if [ -n "$MODEL_SHA" ]; then echo "$MODEL_SHA  $RUNNER_TEMP/model.pkl" | sha256sum -c -; fi
+      - name: Replay its check frame on the qcom mock and require the comma device's result bit for bit
+        env:
+          DEV: MOCK+QCOM
+          PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
+        run: python3 -m openpilot.sunnypilot.modeld_v2.mock_parity check "$RUNNER_TEMP/model.pkl"
+
+  chestnut-mock-build-parity:
+    name: Chestnut build on the amd mock = chestnut runner build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: chestnut-build-parity
+      - run: python3 -m pip install -q numpy zstandard
+      - uses: ./.github/workflows/chestnut-build-parity

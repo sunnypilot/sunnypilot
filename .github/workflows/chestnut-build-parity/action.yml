@@ -1,0 +1,61 @@
+name: Chestnut mock build parity
+description: >-
+  Convert one commaai precompiled chestnut model (LS2) on this runner under tinygrad's amd mock, as a hosted chestnut build does, and require the
+  exact bytes the chestnut runner built (the published artifact). Needs setup-amd-mock, numpy and zstandard; tinygrad_repo checked out.
+runs:
+  using: composite
+  steps:
+    - name: Key this check by everything its result depends on
+      id: key
+      shell: bash
+      env:
+        SOURCES: ${{ hashFiles('tinygrad_repo/tinygrad/**/*.py', 'tinygrad_repo/test/mockgpu/**', 'openpilot/sunnypilot/modeld_v2/*.py', '.github/workflows/chestnut-build-parity/action.yml') }}
+      run: echo "key=chestnut-build-parity-$SOURCES-$(sha256sum "$LLVM_PATH" | cut -c1-16)-$(python3 -c 'import platform; print(platform.python_version())')" >> "$GITHUB_OUTPUT"
+
+    - name: Passed before with all of it identical?
+      id: passed
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.chestnut_build_parity.passed
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Rebuild LS2 on the mock and require the chestnut runner's artifact byte for byte
+      if: steps.passed.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        REF: b92fc4828664f8767bce5e92f1630ed319cbe509  # commaai/openpilot: precompiled big_driving_tinygrad.pkl, pins tinygrad ec91b74b5b
+        PKL_OID: b4dead3ee091d66ab002a6b8e716c26f4f79e3c931e4be5f48e017ba92f6e960
+        PKL_SIZE: "767228907"
+        TG_SHA: ec91b74b5b6b0fc924b72d3f27689679ca2438b9
+        WANT: 680a8d629785f2b1d1a2b0e40d0dfbcd0f7291c21e20c51259f1d768a22ec217  # driving_light_speed_2_november_04_2026_tinygrad.pkl, recompiled46
+      run: |
+        set -euo pipefail
+        work="$RUNNER_TEMP/chestnut_parity" && rm -rf "$work" && mkdir -p "$work"
+        href=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" \
+          https://huggingface.co/commaai/openpilot-lfs.git/info/lfs/objects/batch \
+          -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$PKL_OID\",\"size\":$PKL_SIZE}]}" | jq -r '.objects[0].actions.download.href')
+        curl -fsSL --retry 3 -o "$work/big_driving_tinygrad.pkl" "$href"
+        echo "$PKL_OID  $work/big_driving_tinygrad.pkl" | sha256sum -c -
+        tg="$work/tinygrad" && git init -q "$tg" && git -C "$tg" fetch -q --depth 1 https://github.com/tinygrad/tinygrad "$TG_SHA" && git -C "$tg" checkout -q FETCH_HEAD
+        CHECK_OOB=0 GMMU=0 PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo" python3 tinygrad_repo/test/mockgpu/usb_server.py \
+          env DEV=USB+AMD PYTHONPATH="$tg:$GITHUB_WORKSPACE" python3 openpilot/sunnypilot/modeld_v2/convert_upstream_pkl.py "$work/big_driving_tinygrad.pkl" "$work/LS2.pkl"
+        got=$(sha256sum "$work/LS2.pkl" | cut -d' ' -f1)
+        if [ "$got" != "$WANT" ]; then
+          echo "::error::the mock's LS2 build ($got) is not the chestnut runner's ($WANT): this runner's LLVM or the mock no longer builds what the chestnut does"
+          exit 1
+        fi
+        echo "LS2 rebuilt on the mock: byte-identical to the chestnut runner's build"
+        touch ~/.chestnut_build_parity.passed
+
+    - name: Remember the pass
+      if: steps.passed.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.chestnut_build_parity.passed
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Already passed
+      if: steps.passed.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        echo "LS2 rebuild skipped: it already matched the chestnut runner's build with this exact mock, converter, LLVM and python"
