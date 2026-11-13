@@ -28,6 +28,12 @@ CCNC_PORT_SUPPORTED: dict[str, tuple[str, set[bytes]]] = {
     b'\xf1\x00DN8HMFC  AT USA LHD 1.00 1.02 99211-L1800 250613',
     b'\xf1\x00DN8_ RDR -----      1.00 1.00 99110-L1800         ',
   }),
+  "HYUNDAI_SONATA_2024": ("Hyundai Sonata 2024-26", {
+    b'\xf1\x00DN8 MFC  AT KOR LHD 1.00 1.01 99211-L1800 230512',
+    b'\xf1\x00DN8 MFC  AT USA LHD 1.00 1.01 99211-L1800 230512',
+    b'\xf1\x00DN8 MFC  AT USA LHD 1.00 1.02 99211-L1800 250613',
+    b'\xf1\x00DN8_ RDR -----      1.00 1.00 99110-L1800         ',
+  }),
   "HYUNDAI_TUCSON_HEV_2025": ("Hyundai Tucson Hybrid 2025-26", {
     b'\xf1\x00NX4 FR_CMR AT EUR LHD 1.00 1.00 99211-N7030 C55',
     b'\xf1\x00NX4 FR_CMR AT USA LHD 1.00 1.00 99211-N7030 C55',
