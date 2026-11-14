@@ -35,7 +35,7 @@ class LongIndicator(Widget):
 
   @staticmethod
   def _long_engaged() -> bool:
-    # sunnypilot: ui_state.engaged includes MADS lateral-only, which is not driving longitudinal
+    # ui_state.engaged includes MADS lateral-only
     return ui_state.started and ui_state.sm['selfdriveState'].enabled
 
   def _render(self, rect: rl.Rectangle) -> None:

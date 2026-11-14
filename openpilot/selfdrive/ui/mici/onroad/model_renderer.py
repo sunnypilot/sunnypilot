@@ -38,7 +38,7 @@ class ModelRenderer(BaseModelRenderer, ModelRendererSP):
 
   def __init__(self):
     super().__init__()
-    ModelRendererSP.__init__(self)  # mici's rainbow path and rect-relative blendful
+    ModelRendererSP.__init__(self)
     self._lead_bars = [LeadVehicle(), LeadVehicle()]
     self._torque_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
 

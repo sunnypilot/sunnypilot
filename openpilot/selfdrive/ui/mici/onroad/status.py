@@ -13,8 +13,7 @@ from openpilot.system.ui.lib.application import gui_app
 STATUS_FADE_RC = 0.25
 OVERRIDE_HOLD = 0.3
 STATUSES = tuple(UIStatus)
-# sunnypilot: MADS lateral-only steers, so it draws as engaged. Longitudinal-only draws as disengaged
-# wherever a caller doesn't name it
+# MADS lateral-only steers, so it draws as engaged
 MADS_FOLD = {UIStatus.LAT_ONLY: UIStatus.ENGAGED}
 
 
@@ -52,11 +51,11 @@ class StatusFade:
     return float(self._update()[STATUSES.index(status)])
 
   def color(self, colors: dict[UIStatus, rl.Color]) -> rl.Color:
-    # sunnypilot: a MADS status the caller doesn't name draws as disengaged
+    # callers may leave out the MADS statuses
     fallback = colors[UIStatus.DISENGAGED]
     rgba = sum(w * np.array([c.r, c.g, c.b, c.a], dtype=float) for w, c in zip(self._update(), (colors.get(s, fallback) for s in STATUSES), strict=True))
     return rl.Color(*np.round(rgba).astype(int).tolist())
 
 
 status_fade = StatusFade()
-status_fade_mads = StatusFade(fold=False)  # sunnypilot: the confidence ball's own lateral-only and longitudinal-only colors
+status_fade_mads = StatusFade(fold=False)  # confidence ball, which has its own MADS colors

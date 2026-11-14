@@ -26,10 +26,8 @@ RIGHT_UNITS = ("m", "km/h", "mph", "m/s^2")
 
 
 def load_text_texture(font: rl.Font, text: str, font_size: int, x: int, y: int, clip: rl.Rectangle) -> rl.Texture | None:
-  """White text as a texture, so it can be drawn rotated with draw_texture_pro. raylib draws on the CPU,
-  straight into the screen, with no render textures: draw the text at (x, y), copy it out and put the pixels
-  back. Call it during a frame, with `clip` the scissor in force. None if the text would not land whole inside
-  it and the screen, since a clipped copy would be cached blank; try again where it does."""
+  """White text as a texture, to draw rotated. raylib draws on the CPU with no render textures, so the text is drawn
+  on the screen and copied out. None unless it lands whole inside clip and the screen: a clipped copy would be blank."""
   size = measure_text_cached(font, text, font_size)
   if not (max(clip.x, 0) <= x and x + size.x <= min(clip.x + clip.width, gui_app.width) and
           max(clip.y, 0) <= y and y + size.y <= min(clip.y + clip.height, gui_app.height)):
@@ -49,7 +47,7 @@ def load_text_texture(font: rl.Font, text: str, font_size: int, x: int, y: int, 
   texture = rl.load_texture_from_image(rl.Image(rgba, rgba.shape[1], rgba.shape[0], 1, rl.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8))
   rl.set_texture_filter(texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
   rl.set_texture_wrap(texture, rl.TextureWrap.TEXTURE_WRAP_CLAMP)
-  texture.width, texture.height = math.ceil(size.x), math.ceil(size.y)  # drawn at the text's size, whatever the window's scale
+  texture.width, texture.height = math.ceil(size.x), math.ceil(size.y)  # text size, not the window's pixel scale
   return texture
 
 
@@ -72,7 +70,7 @@ class DeveloperUiRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self.dev_ui_mode = DeveloperUiState.OFF
-    # rotated units (raylib_nb has no draw_text_pro), rasterized where they are first drawn
+    # raylib_nb has no draw_text_pro, so the rotated units are cached textures
     self._unit_textures: dict[str, rl.Texture] = {}
 
     self.rel_dist_elem = RelDistElement()

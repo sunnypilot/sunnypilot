@@ -228,7 +228,7 @@ def lfs_config(key):
 
 
 def endpoint_objects(objects):
-  """oid -> (href, headers) for the objects the git-lfs server at lfs.url has. A fork's own objects aren't in the bucket."""
+  """oid -> (href, headers) for the objects the git-lfs server at lfs.url has"""
   found = {}
   items = list(objects.items())
   for start in range(0, len(items), 100):

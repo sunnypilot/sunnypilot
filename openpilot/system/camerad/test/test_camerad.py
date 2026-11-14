@@ -82,7 +82,7 @@ class TestCamerad(OpenpilotTestCase):
   def setUpClass(cls):
     super().setUpClass()
     # Panda generates camera FSIN, including the cabin camera's 25ms stagger.
-    # sunnypilot's flash_panda only flashes out of date firmware, and raises if the panda doesn't come up
+    # flash_panda skips up to date firmware and raises if the panda doesn't come up
     for serial in Panda.list():
       flash_panda(serial)
     cls.logs, cls.images = _camera_session()
