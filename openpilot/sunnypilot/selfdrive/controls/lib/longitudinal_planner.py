@@ -9,7 +9,6 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
-from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import AccelBoostSP
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist, approach_accel
@@ -76,14 +75,17 @@ class LongitudinalPlannerSP:
   def update(self, sm: messaging.SubMaster) -> None:
     self.accel_boost_sp.update_params()
     self.set_speed_assist.update_params()
-    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
-    use_boost_sp = self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled
-    if use_boost_sp != (self.accel_boost is self.accel_boost_sp):
-      self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
-      self.accel_boost = self.accel_boost_sp if use_boost_sp else AccelBoost()
 
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
+
+  def update_accel_boost(self, sm: messaging.SubMaster, output_a_target_e2e: float, output_a_target_mpc: float, a_cruise: float) -> float:
+    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    if self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled:
+      return float(self.accel_boost_sp.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise))
+    # off holds the boost at zero, so it builds from nothing when it comes back
+    self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
+    return output_a_target_e2e
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')

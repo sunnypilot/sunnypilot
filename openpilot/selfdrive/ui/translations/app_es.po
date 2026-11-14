@@ -120,7 +120,7 @@ msgstr "CONECTAR"
 
 #: system/ui/widgets/network.py
 msgid "CONNECTING..."
-msgstr "CONECTAR"
+msgstr "CONECTANDO..."
 
 #: system/ui/widgets/confirm_dialog.py
 #: system/ui/widgets/keyboard.py
@@ -131,7 +131,7 @@ msgstr "Cancelar"
 
 #: system/ui/widgets/network.py
 msgid "Cellular Metered"
-msgstr "Medición celular"
+msgstr "Red celular medida"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Change Language"
@@ -147,7 +147,7 @@ msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
-msgstr "Haz clic en \"añadir nuevo dispositivo\" y escanea el código QR de la derecha"
+msgstr "Haz clic en \"add new device\" y escanea el código QR de la derecha"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"
@@ -307,7 +307,7 @@ msgstr "El modo experimental no está disponible actualmente en este coche, ya q
 
 #: system/ui/widgets/network.py
 msgid "FORGETTING..."
-msgstr "OLVIDAR..."
+msgstr "OLVIDANDO..."
 
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Finish Setup"

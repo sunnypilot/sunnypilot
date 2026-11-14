@@ -7,13 +7,13 @@ See the LICENSE.md file in the root directory for more details.
 import math
 
 import numpy as np
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.system.ui.lib.application import TextAlignment, TextAlignmentVertical
 
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
+from openpilot.system.ui.lib.polygon import draw_polygon, Gradient
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP

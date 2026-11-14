@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 
 from dataclasses import dataclass
 from enum import StrEnum
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.cereal import custom
 from openpilot.common.constants import CV
@@ -233,11 +233,11 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     center = rl.Vector2(rect.x + rect.width / 2, rect.y + rect.height / 2)
     radius = (rect.width + 18) / 2
 
-    white = rl.color_alpha(Colors.WHITE, alpha)
-    red = rl.color_alpha(Colors.RED, alpha)
-    black = rl.color_alpha(Colors.BLACK, alpha)
-    dark_grey = rl.color_alpha(Colors.DARK_GREY, alpha)
-    text_color = rl.color_alpha(color, alpha)
+    white = rl.fade(Colors.WHITE, alpha)
+    red = rl.fade(Colors.RED, alpha)
+    black = rl.fade(Colors.BLACK, alpha)
+    dark_grey = rl.fade(Colors.DARK_GREY, alpha)
+    text_color = rl.fade(color, alpha)
 
     rl.draw_circle_v(center, radius, white)
     rl.draw_ring(center, radius * 0.75, radius, 0, 360, 36, red)
@@ -256,10 +256,10 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       self._draw_text_centered(self.font_bold, sub, int(s_radius * 2 * font_scale), s_center, white)
 
   def _render_mutcd(self, rect, val, sub, color, has_limit, alpha=1.0):
-    white = rl.color_alpha(Colors.WHITE, alpha)
-    black = rl.color_alpha(Colors.BLACK, alpha)
-    dark_grey = rl.color_alpha(Colors.DARK_GREY, alpha)
-    text_color = rl.color_alpha(color, alpha)
+    white = rl.fade(Colors.WHITE, alpha)
+    black = rl.fade(Colors.BLACK, alpha)
+    dark_grey = rl.fade(Colors.DARK_GREY, alpha)
+    text_color = rl.fade(color, alpha)
 
     rl.draw_rectangle_rounded(rect, 0.35, 10, white)
 

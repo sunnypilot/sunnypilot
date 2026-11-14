@@ -4,9 +4,9 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.onroad.alert_renderer import AlertRenderer, AlertSize, ALERT_FONT_MEDIUM, ALERT_FONT_BIG, \
-  ALERT_FONT_SMALL, ALERT_MARGIN, ALERT_HEIGHTS, ALERT_PADDING, Alert
+  ALERT_FONT_SMALL, ALERT_MARGIN, ALERT_HEIGHTS, ALERT_PADDING, Alert, get_alert
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.lib.wrap_text import wrap_text
@@ -77,7 +77,7 @@ class AlertRendererSP(AlertRenderer):
                         h - ALERT_MARGIN * 2)
 
   def _calculate_dynamic_height(self, size: int, width: int) -> int:
-    alert = self.get_alert(ui_state.sm)
+    alert = get_alert(ui_state.sm)
     if not alert:
       return ALERT_HEIGHTS.get(size, 271)
 

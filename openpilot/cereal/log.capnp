@@ -100,6 +100,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     startupNoControl @62;
     startupNoSecOcKey @63;
     startupMaster @64;
+    startupCruiseCanceled @105;
     fcw @65;
     steerSaturated @66;
     belowEngageSpeed @67;
@@ -120,10 +121,7 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     steerTimeLimit @83;
     vehicleSensorsInvalid @84;
     locationdTemporaryError @85;
-    locationdPermanentError @86;
     paramsdTemporaryError @87;
-    paramsdPermanentError @88;
-    actuatorsApiUnavailable @89;
     espActive @90;
     personalityChanged @91;
     aeb @92;
@@ -139,6 +137,9 @@ struct OnroadEvent @0xc4fa6047f024e718 {
     usbErrorDEPRECATED @78;
     audioFeedbackDEPRECATED @97;
     bigModelReadyDEPRECATED @101;
+    locationdPermanentErrorDEPRECATED @86;
+    paramsdPermanentErrorDEPRECATED @88;
+    actuatorsApiUnavailableDEPRECATED @89;
   }
 }
 
@@ -590,25 +591,29 @@ struct PandaState @0xa7649e2575e4591e {
     interruptRateGmlanDEPRECATED @6;
     interruptRateInterrupts @7;
     interruptRateSpiDma @8;
-    interruptRateSpiCs @9;
-    interruptRateUart1 @10;
-    interruptRateUart2 @11;
-    interruptRateUart3 @12;
-    interruptRateUart5 @13;
-    interruptRateUartDma @14;
+    selfTestCpu @9;
+    selfTestRam @10;
+    selfTestFlash @11;
+    ecc @12;
+    outputReadback @13;
+    dma @14;
     interruptRateUsb @15;
-    interruptRateTim1 @16;
-    interruptRateTim3 @17;
+    clock @16;
+    interruptMissing @17;
     registerDivergent @18;
     interruptRateKlineInit @19;
     interruptRateClockSource @20;
     interruptRateTick @21;
     interruptRateExti @22;
     interruptRateSpi @23;
-    interruptRateUart7 @24;
+    adc @24;
     sirenMalfunction @25;
     heartbeatLoopWatchdog @26;
-    # Update max fault type in boardd when adding faults
+    interruptRateSoundDma @27;
+    mpu @28;
+    timer @29;
+    safetyRedundancy @30;
+    # Update max fault type in pandad when adding faults
   }
 
   enum PandaType @0x8a58adf93e5b3751 {
@@ -832,7 +837,8 @@ struct SelfdriveState {
     refuse @3;
 
     warningSoft @4;
-    warningImmediate @5;
+    warningImmediateSystem @5;
+    warningImmediateUser @11;
 
     prompt @6;
     promptRepeat @7;
@@ -1240,7 +1246,6 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
   shouldStop @37: Bool;
   allowThrottle @38: Bool;
   allowBrake @39: Bool;
-  accelBoost @40 :Float32;
 
 
   solverExecutionTime @35 :Float32;
@@ -1282,6 +1287,7 @@ struct LongitudinalPlan @0xe00b5b3eba12876c {
     gpsTrajectory @12 :Deprecated.GpsTrajectory;
     gpsPlannerActive @19 :Bool;
     personality @36 :LongitudinalPersonality;
+    accelBoost @40 :Float32;
   }
 }
 struct UiPlan {

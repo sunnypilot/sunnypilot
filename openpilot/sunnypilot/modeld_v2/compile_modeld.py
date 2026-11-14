@@ -8,6 +8,8 @@ See the LICENSE.md file in the root directory for more details.
 
 import argparse
 import codecs
+import ctypes
+import fcntl
 import gc
 import math
 import multiprocessing as mp
@@ -370,11 +372,31 @@ def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_ru
   write_bundle(result_path, {(cam_w, cam_h): compiled_jit}, {'device': Device.DEFAULT})
 
 
+def chestnut_link_up() -> bool:
+  # asm enumerates on USB-C alone, gpu is only usable once pcie link is up
+  from openpilot.system.hardware.chestnut.flash import USBDEVFS_CONTROL, Ctrl, find_chestnut, open_device
+  try:
+    path, _, _ = find_chestnut()
+    if path is None:
+      return False
+    fd = open_device(path)
+  except (OSError, RuntimeError):
+    return False
+  try:
+    fcntl.ioctl(fd, USBDEVFS_CONTROL, Ctrl(0x40, 0xF3, 1, 0, 0, 2000, None))
+    buf = (ctypes.c_ubyte * 1)()
+    fcntl.ioctl(fd, USBDEVFS_CONTROL, Ctrl(0xC0, 0xE4, 0xB450, 0, 1, 1000, ctypes.cast(buf, ctypes.c_void_p)))
+    return buf[0] == 0x78  # LTSSM L0
+  except OSError:
+    return False
+  finally:
+    os.close(fd)
+
+
 if __name__ == "__main__":
   if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
-    from openpilot.system.hardware.chestnut.flash import link_up
     for _ in range(10):
-      if link_up():
+      if chestnut_link_up():
         break
       time.sleep(1)
     else:

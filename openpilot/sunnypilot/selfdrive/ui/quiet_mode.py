@@ -4,15 +4,16 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from opendbc.car.structs import car
+from openpilot.cereal import log
 
 from openpilot.common.params import Params
 
-AudibleAlert = car.CarControl.HUDControl.AudibleAlert
+AudibleAlert = log.SelfdriveState.AudibleAlert
 
 ALERTS_ALWAYS_PLAY = {
   AudibleAlert.warningSoft,
-  AudibleAlert.warningImmediate,
+  AudibleAlert.warningImmediateSystem,
+  AudibleAlert.warningImmediateUser,
   AudibleAlert.promptDistracted,
   AudibleAlert.promptRepeat,
 }

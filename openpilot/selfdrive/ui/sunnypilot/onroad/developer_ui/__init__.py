@@ -4,9 +4,11 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
 from enum import IntEnum
 
-import pyray as rl
+import numpy as np
+import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
   UiElement, RelDistElement, RelSpeedElement, SteeringAngleElement,
@@ -17,6 +19,38 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
+
+
+RIGHT_UNIT_SIZE = 28
+RIGHT_UNITS = ("m", "km/h", "mph", "m/s^2")
+
+
+def load_text_texture(font: rl.Font, text: str, font_size: int, x: int, y: int, clip: rl.Rectangle) -> rl.Texture | None:
+  """White text as a texture, so it can be drawn rotated with draw_texture_pro. raylib draws on the CPU,
+  straight into the screen, with no render textures: draw the text at (x, y), copy it out and put the pixels
+  back. Call it during a frame, with `clip` the scissor in force. None if the text would not land whole inside
+  it and the screen, since a clipped copy would be cached blank; try again where it does."""
+  size = measure_text_cached(font, text, font_size)
+  if not (max(clip.x, 0) <= x and x + size.x <= min(clip.x + clip.width, gui_app.width) and
+          max(clip.y, 0) <= y and y + size.y <= min(clip.y + clip.height, gui_app.height)):
+    return None
+  screen = rl.cpu.screen()  # rows bottom-up, at the window's scale
+  px = screen.shape[1] / gui_app.width
+  left, right = math.floor(x * px), math.ceil((x + size.x) * px)
+  top, bottom = math.floor(y * px), math.ceil((y + size.y) * px)
+  area = screen[screen.shape[0] - bottom:screen.shape[0] - top, left:right]
+  saved = area.copy()
+  area[:] = 0
+  rl.draw_text_ex(font, text, rl.Vector2(x, y), font_size, 0, rl.WHITE)
+  rgba = np.full((*area.shape[:2], 4), 255, dtype=np.uint8)
+  rgba[..., 3] = area[::-1, :, 0]
+  area[:] = saved
+
+  texture = rl.load_texture_from_image(rl.Image(rgba, rgba.shape[1], rgba.shape[0], 1, rl.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8))
+  rl.set_texture_filter(texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
+  rl.set_texture_wrap(texture, rl.TextureWrap.TEXTURE_WRAP_CLAMP)
+  texture.width, texture.height = math.ceil(size.x), math.ceil(size.y)  # drawn at the text's size, whatever the window's scale
+  return texture
 
 
 def get_bottom_dev_ui_offset():
@@ -38,6 +72,8 @@ class DeveloperUiRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self.dev_ui_mode = DeveloperUiState.OFF
+    # rotated units (raylib_nb has no draw_text_pro), rasterized where they are first drawn
+    self._unit_textures: dict[str, rl.Texture] = {}
 
     self.rel_dist_elem = RelDistElement()
     self.rel_speed_elem = RelSpeedElement()
@@ -98,15 +134,14 @@ class DeveloperUiRenderer(Widget):
 
     current_y = y
     for element in elements:
-      current_y += self._draw_right_dev_ui_element(x, current_y, element)
+      current_y += self._draw_right_dev_ui_element(x, current_y, element, rect)
 
-  def _draw_right_dev_ui_element(self, x: int, y: int, element: UiElement) -> int:
+  def _draw_right_dev_ui_element(self, x: int, y: int, element: UiElement, clip: rl.Rectangle) -> int:
     x += 0
     y += 230
     container_width = 184
     label_size = 28
     value_size = 60
-    unit_size = 28
     label_width = measure_text_cached(self._font_bold, element.label, label_size, 0).x
     centered_label_x = x + (container_width - label_width) / 2
     rl.draw_text_ex(self._font_bold, element.label, rl.Vector2(centered_label_x, y), label_size, 0, rl.WHITE)
@@ -116,13 +151,16 @@ class DeveloperUiRenderer(Widget):
     centered_value_x = x + (container_width - value_width) / 2
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
-    if element.unit:
-      units_height = measure_text_cached(self._font_bold, element.unit, unit_size, 0).x
-
+    if element.unit and element.unit not in self._unit_textures:
+      unit_texture = load_text_texture(self._font_bold, element.unit, RIGHT_UNIT_SIZE, x, y, clip)
+      if unit_texture is not None:
+        self._unit_textures[element.unit] = unit_texture
+    if unit_texture := self._unit_textures.get(element.unit):
       units_x = x + container_width
-      units_y = y + (value_size / 2) + (units_height / 2)
-
-      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
+      units_y = y + (value_size / 2) + (unit_texture.width / 2)
+      src = rl.Rectangle(0, 0, unit_texture.width, unit_texture.height)
+      dst = rl.Rectangle(units_x, units_y, unit_texture.width, unit_texture.height)
+      rl.draw_texture_pro(unit_texture, src, dst, rl.Vector2(0, 0), -90.0, rl.WHITE)
 
     return 130
 

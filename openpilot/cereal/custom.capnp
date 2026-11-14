@@ -80,7 +80,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     refuse @3;
 
     warningSoft @4;
-    warningImmediate @5;
+    warningImmediateSystem @5;
 
     prompt @6;
     promptRepeat @7;
@@ -89,7 +89,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     # unused, these are reserved for upstream events so we don't collide
     reserved9 @9;
     reserved10 @10;
-    reserved11 @11;
+    warningImmediateUser @11;
     reserved12 @12;
     reserved13 @13;
     reserved14 @14;

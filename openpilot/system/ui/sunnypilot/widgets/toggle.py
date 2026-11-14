@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from collections.abc import Callable
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import MousePos
 from openpilot.system.ui.widgets.toggle import Toggle

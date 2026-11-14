@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from dataclasses import dataclass, field
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.params import Params
 from openpilot.system.ui.lib.application import TextAlignment
 from openpilot.system.ui.lib.application import FontWeight
@@ -70,7 +70,7 @@ class TreeItemWidget(Button):
 
   def _handle_mouse_release(self, mouse_pos):
     star_rect = rl.Rectangle(self._rect.x + self._rect.width - 90 - 40, self._rect.y + self._rect.height / 2 - 40, 80, 80)
-    if not self.is_folder and self._favorite_callback and rl.check_collision_point_rec(mouse_pos, star_rect):
+    if not self.is_folder and self._favorite_callback and rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), star_rect):
       self._favorite_callback()
       return True
     return super()._handle_mouse_release(mouse_pos)
@@ -239,9 +239,7 @@ class TreeOptionDialog(MultiOptionDialog):
     cy = input_rect.y + input_rect.height / 2 - 5
     radius = min(input_rect.height * 0.28, 26)
 
-    circle_thickness = 4
-    for i in range(circle_thickness):
-      rl.draw_circle_lines(int(cx), int(cy), radius - i, icon_color)
+    rl.draw_ring(rl.Vector2(cx, cy), radius - 4, radius, 0, 360, 36, icon_color)
 
     handle_thickness = 5
     inner_x = cx + radius * 0.65
@@ -278,14 +276,14 @@ class TreeOptionDialog(MultiOptionDialog):
     self.select_button.render(select_rect)
 
   def _handle_mouse_press(self, mouse_pos):
-    if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+    if self._search_rect and rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), self._search_rect):
       self._search_pressed = True
       return True
     return super()._handle_mouse_press(mouse_pos)
 
   def _handle_mouse_release(self, mouse_pos):
     clicked_search = False
-    if self._search_rect and rl.check_collision_point_rec(mouse_pos, self._search_rect):
+    if self._search_rect and rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), self._search_rect):
       clicked_search = self._search_pressed
 
     self._search_pressed = False

@@ -153,14 +153,12 @@ procs = [
   PythonProcess("lateral_maneuversd", "openpilot.tools.lateral_maneuvers.lateral_maneuversd", lat_maneuver),
   PythonProcess("radard", "openpilot.selfdrive.controls.radard", only_onroad),
   PythonProcess("hardwared", "openpilot.system.hardware.hardwared", always_run),
-  PythonProcess("modem", "openpilot.common.hardware.comma.modem", always_run, enabled=COMMA_HARDWARE),
   PythonProcess("tombstoned", "openpilot.system.tombstoned", always_run, enabled=not PC),
   PythonProcess("updated", "openpilot.system.updated.updated", only_offroad, enabled=not PC),
   PythonProcess("uploader", "openpilot.system.loggerd.uploader", uploader_ready),
   PythonProcess("statsd", "openpilot.sunnypilot.system.statsd", always_run),
 
   # debug procs
-  NativeProcess("bridge", "openpilot/cereal/messaging", ["./bridge"], notcar),
   PythonProcess("webrtcd", "openpilot.system.webrtc.webrtcd", or_(livestream, notcar)),
   PythonProcess("joystick", "openpilot.tools.joystick.joystick_control", and_(joystick, iscar)),
 

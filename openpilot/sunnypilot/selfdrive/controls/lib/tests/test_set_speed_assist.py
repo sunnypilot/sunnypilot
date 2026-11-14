@@ -194,16 +194,20 @@ class TestSetSpeedAssistPlanner(OpenpilotTestCase):
     assert report.active
     assert np.isclose(report.lift, p.set_speed_assist.lift, rtol=1e-6)
 
-  def test_accel_boost_sp_only_without_the_assist(self, mocker):
-    p = planner(mocker, False, accel_boost_sp=True)
-    assert p.accel_boost is p.accel_boost_sp
-    p = planner(mocker, True, accel_boost_sp=True)
-    assert p.accel_boost is not p.accel_boost_sp
+  @parameterized.expand([(False,), (True,)], names=["enabled"])
+  def test_accel_boost_sp_only_without_the_assist(self, mocker, enabled):
+    p = planner(mocker, enabled, accel_boost_sp=True)
+    boost = mocker.patch.object(p.accel_boost_sp, 'update', wraps=p.accel_boost_sp.update)
+    p.update(planner_sm())
+    assert boost.called != enabled
 
   def test_switching_the_assist_on_drops_the_boost_the_same_frame(self, mocker):
     p = planner(mocker, False, accel_boost_sp=True)
+    boost = mocker.patch.object(p.accel_boost_sp, 'update', wraps=p.accel_boost_sp.update)
     Params().put_bool("SetSpeedAssist", True)
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL) + 1):
+      boost.reset_mock()
       p.update(planner_sm())
-      assert (p.accel_boost is p.accel_boost_sp) != p.set_speed_assist.enabled
+      assert boost.called != p.set_speed_assist.enabled
     assert p.set_speed_assist.enabled
+    assert p.accel_boost_sp.total_boost == 0.

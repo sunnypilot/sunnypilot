@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 import base64
 import time
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.params import Params
 from openpilot.common.qrcode import make_texture
 from openpilot.common.swaglog import cloudlog
