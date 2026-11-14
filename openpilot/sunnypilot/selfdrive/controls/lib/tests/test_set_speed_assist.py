@@ -26,6 +26,7 @@ A_FLOOR = 0.5
 RISE = float(np.interp(V_EGO, J_CRUISE_BP, J_CRUISE_VALS))
 SETTLE = int(2. / (J_CRUISE_VALS[-1] * DT_MDL)) + 10
 STANDARD = log.LongitudinalPersonality.standard
+FAR = 40.  # m/s under the target: the arrival pace is past every ceiling
 
 
 def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False):
@@ -118,11 +119,31 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     assert assist.lift == 0.
 
 
-  def test_approach_closes_small_gaps_gently(self):
-    assert all(np.diff(ssa.APPROACH_GAP_FRACTION) > 0) and ssa.APPROACH_GAP_FRACTION[-1] == 1.
+  def test_approach_is_the_ceiling_far_under(self):
     for v, ceiling in zip(ssa.APPROACH_BP, ssa.APPROACH_V, strict=True):
-      assert np.isclose(ssa.approach_accel(v, v + 10., STANDARD), ceiling)
-      assert np.isclose(ssa.approach_accel(v, v, STANDARD), ssa.APPROACH_GAP_FRACTION[0] * ceiling)
+      assert np.isclose(ssa.approach_accel(v, v + FAR, STANDARD), ceiling)
+
+  @parameterized.expand([(5.,), (15.,), (25.,)])
+  def test_approach_is_continuous_at_the_target(self, v):
+    # no step where the car reaches the target: the pace falls smoothly through 0
+    gaps = np.linspace(-1., 10., 11001)
+    paces = np.array([ssa.approach_accel(v - g, v, STANDARD) for g in gaps])
+    assert all(np.diff(paces) >= 0.)
+    assert max(np.diff(paces)) <= np.sqrt(2 * ssa.APPROACH_JERK * (gaps[1] - gaps[0])) + 1e-9
+    assert ssa.approach_accel(v, v, STANDARD) == 0.
+
+  @parameterized.expand([(0.01,), (0.1,)])
+  def test_approach_is_the_gap_near_the_target(self, gap):
+    # within 2 * jerk the pace is the gap at 1 /s, under the root
+    for v in ssa.APPROACH_BP:
+      assert np.isclose(ssa.approach_accel(v - gap, v, STANDARD), gap)
+    assert np.isclose(ssa.approach_accel(V_EGO - 0.2, V_EGO, STANDARD), np.sqrt(2 * ssa.APPROACH_JERK * 0.2))
+
+  @parameterized.expand([(0.,), (0.5,), (5.,)])
+  def test_approach_pulls_back_over_the_target(self, over):
+    for p in (log.LongitudinalPersonality.relaxed, STANDARD, log.LongitudinalPersonality.aggressive):
+      for v in ssa.APPROACH_BP:
+        assert np.isclose(ssa.approach_accel(v + over, v, p), -over)
 
   def test_approach_follows_the_personality(self):
     # read from a message as the planner does
@@ -132,10 +153,10 @@ class TestSetSpeedAssist(OpenpilotTestCase):
       return msg.as_reader().selfdriveState.personality
     relaxed_p, standard_p, aggressive_p = (personality(n) for n in ('relaxed', 'standard', 'aggressive'))
     for v in ssa.APPROACH_BP:
-      relaxed, standard, aggressive = (ssa.approach_accel(v, v + 10., p) for p in (relaxed_p, standard_p, aggressive_p))
+      relaxed, standard, aggressive = (ssa.approach_accel(v, v + FAR, p) for p in (relaxed_p, standard_p, aggressive_p))
       assert np.isclose(relaxed, standard - 0.15) and np.isclose(aggressive, standard + 0.15)
-      # closer together near the target
-      assert ssa.approach_accel(v, v + 1., aggressive_p) - ssa.approach_accel(v, v + 1., standard_p) < 0.15
+      # the same near the target, where the arrival pace is under every ceiling
+      assert ssa.approach_accel(v, v + 1., relaxed_p) == ssa.approach_accel(v, v + 1., aggressive_p)
 
 
 class FakeSubMaster(dict):

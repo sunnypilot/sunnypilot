@@ -4,6 +4,8 @@ Copyright (c) 2026-, Zeph Leggett, sunnypilot, and a number of other contributor
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import math
+
 import numpy as np
 
 import openpilot.cereal.messaging as messaging
@@ -22,20 +24,26 @@ FULL_SPEED = 8.  # m/s. Full assist from this speed up.
 GAIN_BP = [-0.3, -0.1]  # Model accel over which the assist fades out as the model slows down.
 FADE_LAT_ACC_BP = [0.6, 1.0]  # Lat acc of the sharpest bend ahead over which the assist fades out.
 LIFT_FALL = 2.4  # m/s^3. The slowest the lift eases off, e.g. on a lane change or a bend.
-# Stock ACC approach to the target speed, gentler than the cruise planner's: max accel by speed,
-# scaled by the shortfall.
+# Stock ACC approach to the target speed, gentler than the cruise planner's: max accel by speed.
 APPROACH_BP = [0., 4., 9., 14., 18., 25.]  # m/s
 APPROACH_V = [1.5, 1.75, 1.45, 1.05, 0.85, 0.65]  # m/s^2
-APPROACH_GAP_BP = [0., 1., 3., 5., 10.]  # m/s below the target speed
-APPROACH_GAP_FRACTION = [0.38, 0.47, 0.57, 0.72, 1.]
+# Under that ceiling, the accel that eases off at this jerk and reaches the target with none left.
+APPROACH_JERK = 0.065  # m/s^3
+
+
+def approach_ceiling(v_ego: float, personality) -> float:
+  """The most the approach asks for at v_ego, a long way under the target. The table is Standard;
+  the other personalities move it by Acceleration Boost's step between them."""
+  step = get_boost_max(personality) - get_boost_max(log.LongitudinalPersonality.standard)
+  return float(np.interp(v_ego, APPROACH_BP, APPROACH_V) + step)
 
 
 def approach_accel(v_ego: float, v_target: float, personality) -> float:
-  """Max floor accel while closing on v_target. The table is Standard; the other personalities move
-  it by Acceleration Boost's step between them."""
-  step = get_boost_max(personality) - get_boost_max(log.LongitudinalPersonality.standard)
-  ceiling = np.interp(v_ego, APPROACH_BP, APPROACH_V) + step
-  return float(ceiling * np.interp(v_target - v_ego, APPROACH_GAP_BP, APPROACH_GAP_FRACTION))
+  """Max floor accel while closing on v_target, sqrt(2 * jerk * gap) up to the ceiling. Within
+  2 * APPROACH_JERK of the target it is the gap itself, a 1 s line that goes negative over the
+  target, so the floor settles on it without relying on the cruise candidate."""
+  gap = v_target - v_ego
+  return min(math.sqrt(2. * APPROACH_JERK * max(gap, 0.)), gap, approach_ceiling(v_ego, personality))
 
 
 class SetSpeedAssist:
