@@ -33,6 +33,11 @@ class LongIndicator(Widget):
   def set_should_draw(self, should_draw: bool):
     self._should_draw = should_draw
 
+  @staticmethod
+  def _long_engaged() -> bool:
+    # sunnypilot: ui_state.engaged includes MADS lateral-only, which is not driving longitudinal
+    return ui_state.started and ui_state.sm['selfdriveState'].enabled
+
   def _render(self, rect: rl.Rectangle) -> None:
     sm = ui_state.sm
     # offroad shows the disengaged state
@@ -44,7 +49,7 @@ class LongIndicator(Widget):
 
     # grayed out while disengaged, with the lit bars at the dimmed icon alpha
     visible = self._should_draw
-    dim = self._dim_filter.update(1.0 if ui_state.engaged else DIMMED_ICON_ALPHA / 0.9)
+    dim = self._dim_filter.update(1.0 if self._long_engaged() else DIMMED_ICON_ALPHA / 0.9)
     alpha = self._alpha_filter.update(visible) * dim
     self._draw_lead_car(rect, alpha)
     self._draw_distance_bars(rect, alpha, visible)
@@ -53,11 +58,11 @@ class LongIndicator(Widget):
     sm = ui_state.sm
     plan = sm['longitudinalPlan']
     # static and filled in while disengaged, like the lit distance bars
-    has_lead = ui_state.engaged and sm.alive['longitudinalPlan'] and plan.hasLead
+    has_lead = self._long_engaged() and sm.alive['longitudinalPlan'] and plan.hasLead
 
     e2e = has_lead and plan.longitudinalPlanSource == log.LongitudinalPlan.LongitudinalPlanSource.e2e
     white_f, green_f = self._lead_car_filters
-    white_alpha = white_f.update(0.0 if e2e else 0.9 if has_lead or not ui_state.engaged else 0.35)
+    white_alpha = white_f.update(0.0 if e2e else 0.9 if has_lead or not self._long_engaged() else 0.35)
     green_alpha = green_f.update(float(e2e))
 
     white, green = self._txt_lead_car
