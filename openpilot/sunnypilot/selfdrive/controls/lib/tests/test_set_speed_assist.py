@@ -26,11 +26,11 @@ A_FLOOR = 0.5
 RISE = float(np.interp(V_EGO, J_CRUISE_BP, J_CRUISE_VALS))
 SETTLE = int(2. / (min(ssa.REENGAGE_JERK, J_CRUISE_VALS[-1]) * DT_MDL)) + 10  # frames to close a 2 m/s^2 gap
 STANDARD = log.LongitudinalPersonality.standard
-FAR = 40.  # m/s under the target: the arrival pace is past every ceiling
+FAR = 40.  # m/s under the target, past every ceiling
 
 
 def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False, plan_v=None, lead=None):
-  """plan_v and yaw_rate take a scalar or a trajectory on T_IDXS. lead: (dRel, vRel) of a present leadOne."""
+  """lead is (dRel, vRel); plan_v and yaw_rate are scalars or trajectories on T_IDXS"""
   cs = messaging.new_message('carState')
   cs.carState.vEgo = v_ego
   cs.carState.vCruise = (V_EGO + 5.) * 3.6
@@ -48,12 +48,10 @@ def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False, plan_v=None, lead=None
 
 
 def plan_ramp(drop, v_ego=V_EGO):
-  """The model's plan easing from v_ego down by drop over its horizon."""
   return v_ego - drop * T_IDXS / T_IDXS[-1]
 
 
 def bend_ahead(lat_acc):
-  """Yaw rates for a bend 5-8 s out that takes lat_acc m/s^2 at V_EGO."""
   return np.where((T_IDXS >= 5.) & (T_IDXS <= 8.), lat_acc / V_EGO, 0.)
 
 
@@ -75,14 +73,13 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     assert run(SetSpeedAssist(), SETTLE, build_sm(), a_model=0.1) == 0.1
 
   def test_lifts_from_the_first_frame_on_the_jerk_budget(self, assist):
-    # the gap holds still, so the lift moves only with its authority, at the re-engage budget
+    # fixed gap, so the lift moves only with its authority
     lifts = [run(assist, 1, build_sm(), a_floor=1.5) for _ in range(SETTLE)]
     assert np.isclose(lifts[0], ssa.REENGAGE_JERK * DT_MDL)
     assert max(np.diff([0.] + lifts)) <= ssa.REENGAGE_JERK * DT_MDL + 1e-9
     assert np.isclose(lifts[-1], 1.5)
 
   def test_rises_at_the_cruise_jerk_with_the_floor(self, assist):
-    # at full authority, a floor that steps up is followed no faster than the cruise planner's jerk
     run(assist, SETTLE, build_sm(), a_floor=0.1)
     lifts = [run(assist, 1, build_sm(), a_floor=1.5) for _ in range(SETTLE)]
     assert np.isclose(lifts[0], 0.1 + RISE * DT_MDL)
@@ -91,7 +88,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(0.7, A_FLOOR, 0.7), (0.2, -0.3, 0.2), (-1.5, A_FLOOR, -1.5)], names=["a_model", "a_floor", "expected"])
   def test_never_lowers_the_model(self, assist, a_model, a_floor, expected):
-    # above the floor, over the set speed, or braking: the model's own answer
+    # above the floor, over the set speed, braking
     assert run(assist, SETTLE, build_sm(), a_model=a_model, a_floor=a_floor) == expected
 
   def test_gain_fades_as_the_model_slows(self, assist):
@@ -103,21 +100,19 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(0., 1.), (1., 1.), (2., 0.5), (3., 0.), (8., 0.)], names=["drop", "gain"])
   def test_a_planned_slowdown_fades_the_lift(self, assist, drop, gain):
-    # a gentle coast, inside the gain's band, toward a stop or a light: the lift lets it coast
     a_model = -0.05
     run(assist, SETTLE, build_sm(plan_v=plan_ramp(drop)), a_model=a_model)
     assert np.isclose(assist.gain, gain)
     assert np.isclose(assist.lift, gain * (A_FLOOR - a_model))
 
   def test_far_plan_flicker_does_not_move_the_lift(self, assist):
-    # the plan's far end flickering on a straight road, up to where the fade starts
+    # far end flicker just short of the fade
     run(assist, SETTLE, build_sm())
     dip = 0.99 * -ssa.GAIN_BP[1] * ssa.HORIZON
     lifts = [run(assist, 1, build_sm(plan_v=plan_ramp(dip if (i // 5) % 2 else 0.))) for i in range(100)]
     assert np.ptp(lifts) == 0.
 
   def test_coast_toward_a_stop_lets_go_at_once(self, assist):
-    # lifted on an open road, then the plan starts ending at a stop: the lift goes, never below the model
     run(assist, SETTLE, build_sm())
     drops = np.linspace(0., 6., 60)
     out = [run(assist, 1, build_sm(plan_v=plan_ramp(d)), a_model=-0.05) for d in drops]
@@ -148,8 +143,6 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(0.5,), (1.5,)], names=["a_floor"])
   def test_bend_flicker_moves_the_lift_on_the_jerk_budget(self, assist, a_floor):
-    # the path's sharpest bend flickering frame to frame across the fade's band: the lift follows
-    # on the fade's budget, not at the frame rate
     run(assist, SETTLE, build_sm(), a_floor=a_floor)
     lifts = [assist.lift]
     for i in range(200):
@@ -171,7 +164,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   def test_the_models_braking_passes_straight_through(self, assist):
     run(assist, SETTLE, build_sm())
-    # halfway into the fade, the lift drops to its new value in one frame instead of easing off
+    # halfway into the gain's fade, the lift drops in one frame
     a_model = sum(ssa.GAIN_BP) / 2
     run(assist, 1, build_sm(), a_model=a_model)
     assert np.isclose(assist.lift, 0.5 * (A_FLOOR - a_model))
@@ -201,7 +194,6 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(5.,), (15.,), (25.,)])
   def test_approach_is_continuous_at_the_target(self, v):
-    # no step where the car reaches the target: the pace falls smoothly through 0
     gaps = np.linspace(-1., 10., 11001)
     paces = np.array([ssa.approach_accel(v - g, v, STANDARD) for g in gaps])
     assert all(np.diff(paces) >= 0.)
@@ -210,7 +202,6 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(0.01,), (0.1,)])
   def test_approach_is_the_gap_near_the_target(self, gap):
-    # within 2 * jerk the pace is the gap at 1 /s, under the root
     for v in ssa.APPROACH_BP:
       assert np.isclose(ssa.approach_accel(v - gap, v, STANDARD), gap)
     assert np.isclose(ssa.approach_accel(V_EGO - 0.2, V_EGO, STANDARD), np.sqrt(2 * ssa.APPROACH_JERK * 0.2))
@@ -222,7 +213,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
         assert np.isclose(ssa.approach_accel(v + over, v, p), -over)
 
   def test_approach_follows_the_personality(self):
-    # read from a message as the planner does
+    # the planner reads it from a message
     def personality(name):
       msg = messaging.new_message('selfdriveState')
       msg.selfdriveState.personality = name
@@ -231,7 +222,7 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     for v in ssa.APPROACH_BP:
       relaxed, standard, aggressive = (ssa.approach_accel(v, v + FAR, p) for p in (relaxed_p, standard_p, aggressive_p))
       assert np.isclose(relaxed, standard - 0.15) and np.isclose(aggressive, standard + 0.15)
-      # the same near the target, where the arrival pace is under every ceiling
+      # near the target, under every ceiling
       assert ssa.approach_accel(v, v + 1., relaxed_p) == ssa.approach_accel(v, v + 1., aggressive_p)
 
 
@@ -256,7 +247,7 @@ def planner(mocker, enabled, accel_boost_sp=False):
   CP.openpilotLongitudinalControl = True
   p = LongitudinalPlanner(CP, CarInterface.get_non_essential_params_sp(CP, CAR.HONDA_CIVIC), init_v=V_EGO)
 
-  # no lead: the MPC chases its synthetic lead far ahead, well above the cruise candidate
+  # no lead: the MPC is well above the cruise candidate
   mpc = p.mpc
   def mpc_update(radarstate, personality=None):
     mpc.v_solution = mpc.x0[1] + 2. * T_IDXS_MPC
