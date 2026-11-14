@@ -24,7 +24,7 @@ T_IDXS = np.asarray(ModelConstants.T_IDXS)
 V_EGO = 20.
 A_FLOOR = 0.5
 RISE = float(np.interp(V_EGO, J_CRUISE_BP, J_CRUISE_VALS))
-SETTLE = int(2. / (J_CRUISE_VALS[-1] * DT_MDL)) + 10
+SETTLE = int(2. / (min(ssa.REENGAGE_JERK, J_CRUISE_VALS[-1]) * DT_MDL)) + 10  # frames to close a 2 m/s^2 gap
 STANDARD = log.LongitudinalPersonality.standard
 FAR = 40.  # m/s under the target: the arrival pace is past every ceiling
 
@@ -52,6 +52,11 @@ def plan_ramp(drop, v_ego=V_EGO):
   return v_ego - drop * T_IDXS / T_IDXS[-1]
 
 
+def bend_ahead(lat_acc):
+  """Yaw rates for a bend 5-8 s out that takes lat_acc m/s^2 at V_EGO."""
+  return np.where((T_IDXS >= 5.) & (T_IDXS <= 8.), lat_acc / V_EGO, 0.)
+
+
 def run(ctl, frames, sm, a_model=0., a_floor=A_FLOOR, reset_state=False):
   out = a_model
   for _ in range(frames):
@@ -69,12 +74,20 @@ class TestSetSpeedAssist(OpenpilotTestCase):
   def test_off_passes_the_model_through(self):
     assert run(SetSpeedAssist(), SETTLE, build_sm(), a_model=0.1) == 0.1
 
-  def test_rises_at_the_cruise_jerk_to_the_floor(self, assist):
-    sm = build_sm()
-    lifts = [run(assist, 1, sm) for _ in range(SETTLE)]
-    assert np.isclose(lifts[0], RISE * DT_MDL)
-    assert max(np.diff([0.] + lifts)) <= RISE * DT_MDL + 1e-9
-    assert np.isclose(lifts[-1], A_FLOOR)
+  def test_lifts_from_the_first_frame_on_the_jerk_budget(self, assist):
+    # the gap holds still, so the lift moves only with its authority, at the re-engage budget
+    lifts = [run(assist, 1, build_sm(), a_floor=1.5) for _ in range(SETTLE)]
+    assert np.isclose(lifts[0], ssa.REENGAGE_JERK * DT_MDL)
+    assert max(np.diff([0.] + lifts)) <= ssa.REENGAGE_JERK * DT_MDL + 1e-9
+    assert np.isclose(lifts[-1], 1.5)
+
+  def test_rises_at_the_cruise_jerk_with_the_floor(self, assist):
+    # at full authority, a floor that steps up is followed no faster than the cruise planner's jerk
+    run(assist, SETTLE, build_sm(), a_floor=0.1)
+    lifts = [run(assist, 1, build_sm(), a_floor=1.5) for _ in range(SETTLE)]
+    assert np.isclose(lifts[0], 0.1 + RISE * DT_MDL)
+    assert max(np.diff([0.1] + lifts)) <= RISE * DT_MDL + 1e-9
+    assert np.isclose(lifts[-1], 1.5)
 
   @parameterized.expand([(0.7, A_FLOOR, 0.7), (0.2, -0.3, 0.2), (-1.5, A_FLOOR, -1.5)], names=["a_model", "a_floor", "expected"])
   def test_never_lowers_the_model(self, assist, a_model, a_floor, expected):
@@ -129,10 +142,27 @@ class TestSetSpeedAssist(OpenpilotTestCase):
 
   @parameterized.expand([(0.4, 1.), (0.8, 0.5), (1.2, 0.)], names=["lat_acc", "fade"])
   def test_a_bend_ahead_fades_the_lift(self, assist, lat_acc, fade):
-    bend = np.where((T_IDXS >= 5.) & (T_IDXS <= 8.), lat_acc / V_EGO, 0.)
-    run(assist, SETTLE, build_sm(yaw_rate=bend))
+    run(assist, SETTLE, build_sm(yaw_rate=bend_ahead(lat_acc)))
     assert np.isclose(assist.fade, fade)
     assert np.isclose(assist.lift, fade * A_FLOOR)
+
+  @parameterized.expand([(0.5,), (1.5,)], names=["a_floor"])
+  def test_bend_flicker_moves_the_lift_on_the_jerk_budget(self, assist, a_floor):
+    # the path's sharpest bend flickering frame to frame across the fade's band: the lift follows
+    # on the fade's budget, not at the frame rate
+    run(assist, SETTLE, build_sm(), a_floor=a_floor)
+    lifts = [assist.lift]
+    for i in range(200):
+      lat_acc = 0.9 if i % 2 else 0.7
+      lifts.append(run(assist, 1, build_sm(yaw_rate=bend_ahead(lat_acc)), a_floor=a_floor))
+    assert max(np.abs(np.diff(lifts))) <= ssa.FADE_JERK * DT_MDL + 1e-9
+    assert 0.25 * a_floor - 1e-9 <= assist.lift <= 0.75 * a_floor + 1e-9  # inside the flicker's fades
+
+  def test_bend_ahead_eases_the_lift_off_on_the_jerk_budget(self, assist):
+    run(assist, SETTLE, build_sm(), a_floor=1.5)
+    lifts = [run(assist, 1, build_sm(yaw_rate=bend_ahead(1.2)), a_floor=1.5) for _ in range(SETTLE)]
+    assert np.isclose(lifts[0], 1.5 - ssa.FADE_JERK * DT_MDL)
+    assert lifts[-1] == 0.
 
   def test_lets_go_fast(self, assist):
     run(assist, SETTLE, build_sm())
