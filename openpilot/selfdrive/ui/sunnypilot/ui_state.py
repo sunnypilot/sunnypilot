@@ -291,11 +291,10 @@ class DeviceSP:
 
   @staticmethod
   def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float, auto_floor: float, backlight_min: float) -> float:
-    """The onroad brightness setting applied to the auto brightness. auto_floor is upstream's own lowest
-    auto level: an alert never shows darker than that, whatever the setting or the timer."""
     if not awake or not _ui_state.started:
       return cur_brightness
 
+    # alerts never show darker than upstream's lowest auto level
     if _ui_state.sm['selfdriveState'].alertSize != log.SelfdriveState.AlertSize.none:
       return max(auto_floor, cur_brightness)
 
@@ -317,12 +316,9 @@ class DeviceSP:
 
   @staticmethod
   def backlight_and_dim(brightness: float, backlight_min: float, dims: bool) -> tuple[int, float]:
-    """(backlight, UI dim) for a brightness. Where upstream dims the UI below the backlight's floor (mici,
-    whose panel can't show a lower backlight), sunnypilot's darker settings do the same. Elsewhere (tizi,
-    which upstream never dims) they drive the backlight itself, without drawing a full-screen overlay every
-    frame. 0 is screen off: the backlight off, nothing to dim."""
     if brightness <= 0:
       return 0, 0.0
+    # like upstream, dim the UI where the panel can't go below backlight_min (mici), else lower the backlight
     if dims:
       return round(max(brightness, backlight_min)), max(0.0, 1 - brightness / backlight_min)
     return round(brightness), 0.0
