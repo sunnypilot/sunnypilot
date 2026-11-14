@@ -29,17 +29,27 @@ STANDARD = log.LongitudinalPersonality.standard
 FAR = 40.  # m/s under the target: the arrival pace is past every ceiling
 
 
-def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False):
+def build_sm(v_ego=V_EGO, yaw_rate=0., lane_change=False, plan_v=None, lead=None):
+  """plan_v and yaw_rate take a scalar or a trajectory on T_IDXS. lead: (dRel, vRel) of a present leadOne."""
   cs = messaging.new_message('carState')
   cs.carState.vEgo = v_ego
   cs.carState.vCruise = (V_EGO + 5.) * 3.6
   md = messaging.new_message('modelV2')
-  md.modelV2.velocity.x = np.full(len(T_IDXS), v_ego).tolist()
+  md.modelV2.velocity.x = np.broadcast_to(np.asarray(v_ego if plan_v is None else plan_v, dtype=float), T_IDXS.shape).tolist()
   md.modelV2.orientationRate.z = np.broadcast_to(np.asarray(yaw_rate, dtype=float), T_IDXS.shape).tolist()
   md.modelV2.meta.laneChangeState = log.LaneChangeState.laneChangeStarting if lane_change else log.LaneChangeState.off
   ctrl = messaging.new_message('controlsState')
   ctrl.controlsState.longControlState = LongCtrlState.pid
-  return {'carState': cs.carState, 'modelV2': md.modelV2, 'controlsState': ctrl.controlsState}
+  rs = messaging.new_message('radarState')
+  if lead is not None:
+    rs.radarState.leadOne.present = True
+    rs.radarState.leadOne.dRel, rs.radarState.leadOne.vRel = lead
+  return {'carState': cs.carState, 'modelV2': md.modelV2, 'controlsState': ctrl.controlsState, 'radarState': rs.radarState}
+
+
+def plan_ramp(drop, v_ego=V_EGO):
+  """The model's plan easing from v_ego down by drop over its horizon."""
+  return v_ego - drop * T_IDXS / T_IDXS[-1]
 
 
 def run(ctl, frames, sm, a_model=0., a_floor=A_FLOOR, reset_state=False):
@@ -77,6 +87,42 @@ class TestSetSpeedAssist(OpenpilotTestCase):
     assert np.isclose(assist.lift, 0.5 * (A_FLOOR - a_model))
     run(assist, SETTLE, build_sm(), a_model=ssa.GAIN_BP[0])
     assert assist.lift == 0.
+
+  @parameterized.expand([(0., 1.), (1., 1.), (2., 0.5), (3., 0.), (8., 0.)], names=["drop", "gain"])
+  def test_a_planned_slowdown_fades_the_lift(self, assist, drop, gain):
+    # a gentle coast, inside the gain's band, toward a stop or a light: the lift lets it coast
+    a_model = -0.05
+    run(assist, SETTLE, build_sm(plan_v=plan_ramp(drop)), a_model=a_model)
+    assert np.isclose(assist.gain, gain)
+    assert np.isclose(assist.lift, gain * (A_FLOOR - a_model))
+
+  def test_far_plan_flicker_does_not_move_the_lift(self, assist):
+    # the plan's far end flickering on a straight road, up to where the fade starts
+    run(assist, SETTLE, build_sm())
+    dip = 0.99 * -ssa.GAIN_BP[1] * ssa.HORIZON
+    lifts = [run(assist, 1, build_sm(plan_v=plan_ramp(dip if (i // 5) % 2 else 0.))) for i in range(100)]
+    assert np.ptp(lifts) == 0.
+
+  def test_coast_toward_a_stop_lets_go_at_once(self, assist):
+    # lifted on an open road, then the plan starts ending at a stop: the lift goes, never below the model
+    run(assist, SETTLE, build_sm())
+    drops = np.linspace(0., 6., 60)
+    out = [run(assist, 1, build_sm(plan_v=plan_ramp(d)), a_model=-0.05) for d in drops]
+    assert min(out) >= -0.05
+    assert all(o == -0.05 for o, d in zip(out, drops, strict=True) if d >= -ssa.GAIN_BP[0] * ssa.HORIZON)
+
+  @parameterized.expand([
+    ((60., 0.), 1.),     # steady lead
+    ((30., -3.), 0.),    # closing hard, 10 s to contact
+    ((60., -3.), 0.75),  # closing hard, 20 s to contact
+    ((150., -3.), 1.),   # 50 s to contact
+    ((20., -2.), 0.5),   # closing gently, 10 s to contact
+    ((60., 2.), 1.),     # pulling away
+  ], names=["lead", "gain"])
+  def test_a_closing_lead_fades_the_lift(self, assist, lead, gain):
+    run(assist, SETTLE, build_sm(lead=lead))
+    assert np.isclose(assist.gain, gain)
+    assert np.isclose(assist.lift, gain * A_FLOOR)
 
   def test_stop_and_go_stays_the_models(self, assist):
     assert run(assist, SETTLE, build_sm(v_ego=ssa.MIN_SPEED - 1.), a_model=-0.05) == -0.05

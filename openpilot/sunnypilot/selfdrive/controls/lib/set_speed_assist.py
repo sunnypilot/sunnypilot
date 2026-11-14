@@ -22,6 +22,12 @@ LaneChangeState = log.LaneChangeState
 MIN_SPEED = 5.  # m/s. No assist below this, so stop-and-go stays with the model.
 FULL_SPEED = 8.  # m/s. Full assist from this speed up.
 GAIN_BP = [-0.3, -0.1]  # Model accel over which the assist fades out as the model slows down.
+# A slowdown the model plans fades the assist out the same way, read as a mean decel over its plan:
+# 1-3 m/s of drop, above the ~1 m/s its far end flickers on a straight road. A closing lead counts
+# too, since the lead planner still accelerates while it is far and the plan often shows no slowdown
+# yet: in full under 15 s to contact, not at all past 25 s.
+HORIZON = ModelConstants.T_IDXS[-1]  # s
+LEAD_TTC_BP = [15., 25.]  # s
 FADE_LAT_ACC_BP = [0.6, 1.0]  # Lat acc of the sharpest bend ahead over which the assist fades out.
 LIFT_FALL = 2.4  # m/s^3. The slowest the lift eases off, e.g. on a lane change or a bend.
 # Stock ACC approach to the target speed, gentler than the cruise planner's: max accel by speed.
@@ -46,11 +52,21 @@ def approach_accel(v_ego: float, v_target: float, personality) -> float:
   return min(math.sqrt(2. * APPROACH_JERK * max(gap, 0.)), gap, approach_ceiling(v_ego, personality))
 
 
+def planned_slowdown(v_ego: float, plan_v: np.ndarray, lead) -> float:
+  """m/s the model plans to shed: down to its plan's lowest speed, or a closing lead's closing speed
+  as it nears contact."""
+  drop = v_ego - float(np.min(plan_v))
+  if lead.present and math.isfinite(lead.vRel) and math.isfinite(lead.dRel) and lead.vRel < 0.:
+    ttc = max(lead.dRel, 0.) / -lead.vRel
+    drop = max(drop, -lead.vRel * float(np.interp(ttc, LEAD_TTC_BP, [1., 0.])))
+  return drop
+
+
 class SetSpeedAssist:
   """
   The driving model doesn't know the set speed, so it often drives below it, or further back from
   a lead than the personality's gap. This adds acceleration to the model's, up to what the lead and
-  cruise planners would do, while the model isn't slowing down. It never takes any away.
+  cruise planners would do, while the model isn't slowing down or planning to. It never takes any away.
   """
   def __init__(self):
     # the assist builds at the cruise planner's jerk; imported here because longitudinal_planner imports this module
@@ -94,7 +110,9 @@ class SetSpeedAssist:
     curvature = max(abs(curvature_now), np.max(np.abs(yaw_rate) / np.maximum(vel, 1.)))
     lat_acc = curvature * v_ego ** 2
 
-    self.gain = np.interp(a_model, GAIN_BP, [0., 1.]) * np.interp(v_ego, [MIN_SPEED, FULL_SPEED], [0., 1.])
+    # the model's decision, now and over its plan: a gentle coast toward a stop still lets go
+    plan_gain = np.interp(-planned_slowdown(v_ego, vel, sm['radarState'].leadOne) / HORIZON, GAIN_BP, [0., 1.])
+    self.gain = min(np.interp(a_model, GAIN_BP, [0., 1.]), plan_gain) * np.interp(v_ego, [MIN_SPEED, FULL_SPEED], [0., 1.])
     self.fade = np.interp(lat_acc, FADE_LAT_ACC_BP, [1., 0.])
     self.active = self.enabled and md.meta.laneChangeState == LaneChangeState.off
 
