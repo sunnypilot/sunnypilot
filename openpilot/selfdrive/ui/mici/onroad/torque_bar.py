@@ -191,8 +191,7 @@ class TorqueBar(Widget):
 
     # animate alpha and angle span
     self._torque_line_alpha_filter.update(ui_state.status not in (UIStatus.DISENGAGED, UIStatus.LONG_ONLY) and not self._hidden)
-    # MADS lateral-only is steering: as bright as engaged
-    engaged = status_fade.weight(UIStatus.ENGAGED) + status_fade.weight(UIStatus.LAT_ONLY)
+    engaged = status_fade.weight(UIStatus.ENGAGED)
 
     # dimmer while not engaged
     torque_line_bg_alpha = 0.15 + (np.interp(abs(self._torque_filter.x), [0.5, 1.0], [0.25, 0.5]) - 0.15) * engaged

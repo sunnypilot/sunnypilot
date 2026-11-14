@@ -9,8 +9,8 @@ from openpilot.selfdrive.ui.ui_state import UIStatus
 from openpilot.selfdrive.ui.sunnypilot.onroad.blendful import BlendfulRenderer
 from openpilot.selfdrive.ui.sunnypilot.onroad.rainbow_path import RainbowPath
 
+# lateral-only draws as engaged already (mici's status fade)
 LANE_LINE_COLORS_SP = {
-  UIStatus.LAT_ONLY: rl.Color(0, 255, 64, 255),
   UIStatus.LONG_ONLY: rl.Color(0, 255, 64, 255),
 }
 

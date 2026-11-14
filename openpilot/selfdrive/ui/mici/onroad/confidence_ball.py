@@ -1,7 +1,7 @@
 import numpy as np
 import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
-from openpilot.selfdrive.ui.mici.onroad.status import status_fade
+from openpilot.selfdrive.ui.mici.onroad.status import status_fade_mads
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.polygon import Gradient, draw_polygon
@@ -73,7 +73,7 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
     override = (rl.Color(255, 255, 255, 255), rl.Color(82, 82, 82, 255))
     disengaged = (rl.Color(102, 102, 102, 255), rl.Color(26, 26, 26, 255))
     lat_only, long_only = self.get_lat_long_dot_colors()
-    top_dot_color, bottom_dot_color = (status_fade.color({UIStatus.ENGAGED: e, UIStatus.OVERRIDE: o, UIStatus.DISENGAGED: d,
+    top_dot_color, bottom_dot_color = (status_fade_mads.color({UIStatus.ENGAGED: e, UIStatus.OVERRIDE: o, UIStatus.DISENGAGED: d,
                                                           UIStatus.LAT_ONLY: lat_only, UIStatus.LONG_ONLY: long_only})
                                        for e, o, d in zip(engaged, override, disengaged, strict=True))
 
