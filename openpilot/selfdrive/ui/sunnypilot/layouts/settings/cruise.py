@@ -168,15 +168,13 @@ class CruiseLayout(Widget):
       self.icbm_toggle.action_item.set_enabled(False)
       self.icbm_toggle.set_description(tr(ONROAD_ONLY_DESCRIPTION))
 
-    # The quick toggles and sunnylink can also change SetSpeedAssist. Only copy the param into the
-    # toggle when it changes: ToggleSP saves in the background, so reading it every frame would
-    # briefly undo the user's own tap.
+    # also set by the quick toggles and sunnylink. Sync on change only: ToggleSP saves in the background
     set_speed_assist = ui_state.params.get_bool("SetSpeedAssist")
     if set_speed_assist != self._last_set_speed_assist:
       self._last_set_speed_assist = set_speed_assist
       self.set_speed_assist_toggle.action_item.set_state(set_speed_assist)
     self.set_speed_assist_toggle.action_item.set_enabled(has_long)
-    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    # the boost would stack on Set Speed Assist
     self.accel_boost_toggle.action_item.set_enabled(has_long and not self.set_speed_assist_toggle.action_item.get_state())
 
     show_custom_acc_desc = False

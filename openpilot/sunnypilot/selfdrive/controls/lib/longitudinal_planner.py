@@ -76,7 +76,7 @@ class LongitudinalPlannerSP:
   def update(self, sm: messaging.SubMaster) -> None:
     self.accel_boost_sp.update_params()
     self.set_speed_assist.update_params()
-    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    # the boost would stack on Set Speed Assist
     use_boost_sp = self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled
     if use_boost_sp != (self.accel_boost is self.accel_boost_sp):
       self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
