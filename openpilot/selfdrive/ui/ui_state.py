@@ -385,11 +385,12 @@ class Device(DeviceSP):
     brightness = self._brightness_filter.update(clipped_brightness)
 
     if gui_app.sunnypilot_ui():
-      brightness = DeviceSP.set_onroad_brightness(ui_state, self._awake, brightness)
-
-    # below the backlight's floor the UI is dimmed instead; 0 is screen off
-    gui_app.set_dim(1 - brightness / BACKLIGHT_MIN)
-    brightness = round(max(brightness, BACKLIGHT_MIN)) if brightness > 0 else 0
+      brightness = DeviceSP.set_onroad_brightness(ui_state, self._awake, brightness, BRIGHTNESS_MIN, BACKLIGHT_MIN)
+      brightness, dim = DeviceSP.backlight_and_dim(brightness, BACKLIGHT_MIN, dims=BRIGHTNESS_MIN < BACKLIGHT_MIN)
+      gui_app.set_dim(dim)
+    else:
+      gui_app.set_dim(1 - brightness / BACKLIGHT_MIN)
+      brightness = round(max(brightness, BACKLIGHT_MIN))
     if not self._awake:
       brightness = 0
 
