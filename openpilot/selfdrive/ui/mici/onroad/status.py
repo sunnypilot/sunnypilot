@@ -47,7 +47,9 @@ class StatusFade:
     return float(self._update()[STATUSES.index(status)])
 
   def color(self, colors: dict[UIStatus, rl.Color]) -> rl.Color:
-    rgba = sum(w * np.array([c.r, c.g, c.b, c.a], dtype=float) for w, c in zip(self._update(), (colors[s] for s in STATUSES), strict=True))
+    # sunnypilot: a status the caller doesn't name (MADS lateral-only, longitudinal-only) draws as disengaged
+    fallback = colors[UIStatus.DISENGAGED]
+    rgba = sum(w * np.array([c.r, c.g, c.b, c.a], dtype=float) for w, c in zip(self._update(), (colors.get(s, fallback) for s in STATUSES), strict=True))
     return rl.Color(*np.round(rgba).astype(int).tolist())
 
 
