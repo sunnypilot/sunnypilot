@@ -18,7 +18,7 @@ import time
 from setproctitle import setproctitle
 
 import openpilot.cereal.messaging as messaging
-from openpilot.common.hardware import COMMA_HARDWARE
+from openpilot.common.hardware import COMMA_HARDWARE, HARDWARE
 from openpilot.selfdrive.modeld.helpers import chestnut_present, wait_for_chestnut
 from openpilot.cereal import log
 from opendbc.car.structs import car
@@ -44,6 +44,7 @@ from openpilot.sunnypilot.modeld_v2.blendful import Blendful
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
 from openpilot.sunnypilot.modeld_v2.meta_helper import load_meta_constants
 from openpilot.sunnypilot.modeld_v2.camera_offset_helper import CameraOffsetHelper
+from openpilot.sunnypilot.modeld_v2.frame_resize import SOURCE_SIZE, TARGET_SIZE, scale_transform
 from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
@@ -112,13 +113,19 @@ class ModelState(ModelStateBase):
 
   def _init_combined(self, pkl_path, cam_w, cam_h, bundle):
     cloudlog.warning(f"loading combined pkl: {pkl_path}")
-    jits = load_model(pkl_path, extend=fused_with_warp(cam_w, cam_h, self.chestnut))
+    self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
+    self.QUEUE_DEV = self.DEV
+    resize_frames = (COMMA_HARDWARE and self.DEV == 'AMD' and (cam_w, cam_h) == SOURCE_SIZE
+                     and HARDWARE.get_device_type() == 'tizi')
+    warp_w, warp_h = TARGET_SIZE if resize_frames else (cam_w, cam_h)
+    jits = load_model(pkl_path, extend=fused_with_warp(warp_w, warp_h, self.chestnut))
 
     metadata = jits['metadata']
     self.WARP_DEV = metadata.get('warp_dev', 'QCOM') if COMMA_HARDWARE else 'CPU'
-    self.DEV = ('AMD' if self.chestnut else 'QCOM') if COMMA_HARDWARE else 'CPU'
-    self.QUEUE_DEV = self.DEV
-    self.adapter = get_model_adapter(jits, cam_w, cam_h, self.DEV, self.QUEUE_DEV, self.WARP_DEV, self.chestnut)
+    self.adapter = get_model_adapter(jits, cam_w, cam_h, self.DEV, self.QUEUE_DEV, self.WARP_DEV, self.chestnut,
+                                     resize_frames=resize_frames)
+    if self.adapter.frame_resize is not None:
+      cloudlog.warning(f"Comma 3X AMD frame resize: {cam_w}x{cam_h} -> {TARGET_SIZE[0]}x{TARGET_SIZE[1]}")
     self.vision_output_slices = self.adapter.vision_output_slices
     self.policy_output_slices = self.adapter.policy_output_slices
     self._policy_slices_list = self.adapter._policy_slices_list
@@ -175,13 +182,19 @@ class ModelState(ModelStateBase):
       if key in self.numpy_inputs and key in inputs:
         self.numpy_inputs[key][:] = inputs[key]
 
+    resize = self.adapter.frame_resize is not None
     if self.adapter.is_native:
       for i, key in enumerate(self._vision_input_names):
         if key in transforms:
           self.numpy_inputs['tfm'][i] = transforms[key].reshape(3, 3)
+          if resize:
+            scale_transform(self.numpy_inputs['tfm'][i])
     else:
       self.numpy_inputs['tfm'][:, :] = transforms[self._road_key].reshape(3, 3)
       self.numpy_inputs['big_tfm'][:, :] = transforms[self._wide_key].reshape(3, 3)
+      if resize:
+        for key in ('tfm', 'big_tfm'):
+          scale_transform(self.numpy_inputs[key])
 
     raw_outputs = self.adapter.run()
     if self.chestnut and (err := Device[self.DEV].error_state.host.view(fmt='q')[0]):
