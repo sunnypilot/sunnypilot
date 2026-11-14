@@ -26,8 +26,7 @@ from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 SLA_ACTIVE_COLOR = rl.Color(0x91, 0x9b, 0x95, 0xff)
 
-# the experimental mode button's place and size, before upstream retired chill mode
-SPEED_ASSIST_BUTTON_SIZE = 192
+SPEED_ASSIST_BUTTON_SIZE = 192  # px
 
 
 class HudRendererSP(HudRenderer):

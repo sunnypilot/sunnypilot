@@ -3,13 +3,6 @@ Copyright (c) 2026-, Zeph Leggett, sunnypilot, and a number of other contributor
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
-
-Set Speed Assist's mark: a half dial with its needle parked on the set speed. While the assist lifts the
-model's acceleration, the arc fills green from the left toward the needle, reaching it at the most the
-personality's approach pace allows; the needle turns green as the fill arrives.
-
-Sized off mici's side panel at scale 1: the dial is the lead car's 35 px wide with the car's 4 px line
-weight, and a teardrop needle that stops short of the arc so the two never merge at this size.
 """
 import math
 from functools import lru_cache
@@ -25,35 +18,34 @@ from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import approac
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.polygon import draw_polygon
 
-# at scale 1, about the dial's center (raylib degrees: 0 right, clockwise, so 270 is straight up)
-STROKE = 4.0                            # the car's roof and pillars are 3-4 px
-DIAL_WIDTH = 35.0                       # the car's
-RADIUS = (DIAL_WIDTH - STROKE) / 2      # of the stroke's center line
-ARC_FROM, ARC_TO = 180.0, 360.0         # a half dial, its round caps level with the hub
-NEEDLE_DEG = 315.0                      # the set speed, up and to the right
+# px at scale 1, matching mici's lead car. Degrees are raylib's, clockwise from the right
+STROKE = 4.0
+DIAL_WIDTH = 35.0
+RADIUS = (DIAL_WIDTH - STROKE) / 2
+ARC_FROM, ARC_TO = 180.0, 360.0
+NEEDLE_DEG = 315.0
 HUB_RADIUS = 3.5
 NEEDLE_TIP_RADIUS = 1.25
-NEEDLE_CLEARANCE = 2.0                  # tip to the arc's inner edge: half the stroke, so they never touch
-NEEDLE_LENGTH = RADIUS - STROKE / 2 - NEEDLE_CLEARANCE  # center to the tip's end
-DIAL_HEIGHT = RADIUS + STROKE / 2 + HUB_RADIUS  # ink: the arc's top to the hub's bottom
-ARRIVAL = (0.85, 1.0)                   # the lift over which the needle turns green
+NEEDLE_CLEARANCE = 2.0  # tip to the arc's inner edge
+NEEDLE_LENGTH = RADIUS - STROKE / 2 - NEEDLE_CLEARANCE
+DIAL_HEIGHT = RADIUS + STROKE / 2 + HUB_RADIUS
+ARRIVAL = (0.85, 1.0)  # lift over which the needle turns green
 SEGMENTS_PER_DEG = 1 / 5
-FILL_STEP = 0.5                         # degrees: the fill's end snaps to this so its outlines cache (0.14 px at scale 1)
+FILL_STEP = 0.5  # degrees, so the fill outlines cache
 
 GREEN = WHEEL_GREEN
 IDLE = rl.Color(255, 255, 255, round(255 * 0.35))  # an unlit distance bar
 NEEDLE = rl.Color(255, 255, 255, round(255 * 0.9))  # a lit one
-LIFT_RC = 0.3  # the lift lets go fast; ease it so the fill doesn't flicker
+LIFT_RC = 0.3  # the lift lets go fast, so ease the fill
 
 
 def _ring(r: float, angles: np.ndarray) -> np.ndarray:
   return np.column_stack((r * np.cos(angles), r * np.sin(angles)))
 
 
-# a fill sweep is about 270 snapped ends per scale, and only one device UI's scale runs at a time
-@lru_cache(maxsize=320)
+@lru_cache(maxsize=320)  # ~270 snapped fill ends per scale
 def arc_outline(scale: float, a1: float) -> np.ndarray:
-  """the arc's stroke from its start to a1 degrees about the dial's center, round caps at both ends"""
+  """Stroke outline from ARC_FROM to a1 degrees about the dial's center, with round caps"""
   r, h = RADIUS * scale, STROKE * scale / 2
   angles = np.radians(np.linspace(ARC_FROM, a1, max(2, math.ceil((a1 - ARC_FROM) * SEGMENTS_PER_DEG) + 1)))
   cap = np.linspace(0, math.pi, 9)
@@ -64,7 +56,7 @@ def arc_outline(scale: float, a1: float) -> np.ndarray:
 
 @lru_cache(maxsize=8)
 def needle_outline(scale: float) -> np.ndarray:
-  """the needle and hub as one teardrop: the hub's back half, tangents to the tip, the tip's front half"""
+  """Needle and hub as one teardrop outline"""
   a = math.radians(NEEDLE_DEG)
   hub, tip_r = HUB_RADIUS * scale, NEEDLE_TIP_RADIUS * scale
   d = (NEEDLE_LENGTH - NEEDLE_TIP_RADIUS) * scale  # center to the tip's center
@@ -81,7 +73,6 @@ def _faded(color: rl.Color, alpha: float) -> rl.Color:
 
 
 def fill_to(lift: float) -> float:
-  """where the green ends, in degrees: from the arc's start to the needle"""
   return ARC_FROM + (NEEDLE_DEG - ARC_FROM) * float(np.clip(lift, 0.0, 1.0))
 
 
@@ -91,7 +82,7 @@ def needle_level(lift: float) -> float:
 
 def draw_dial(cx: float, top: float, scale: float = 1.0, lift: float = 0.0, alpha: float = 1.0,
               track: rl.Color = IDLE, needle: rl.Color = NEEDLE, lit: rl.Color = GREEN) -> None:
-  """The dial with its ink's top center at (cx, top)."""
+  """Draws the dial with its top center at (cx, top)."""
   if alpha < 1e-2:
     return
   screen = rl.Rectangle(0, 0, gui_app.width, gui_app.height)
@@ -104,14 +95,13 @@ def draw_dial(cx: float, top: float, scale: float = 1.0, lift: float = 0.0, alph
 
 
 def lift_fraction() -> float:
-  """The lift on the model's acceleration over the personality's approach ceiling, 0..1. Only while
-  openpilot drives longitudinal: not under MADS lateral-only."""
+  """The lift over the personality's approach ceiling, 0..1, while openpilot controls longitudinal"""
   sm = ui_state.sm
   long_engaged = ui_state.has_longitudinal_control and ui_state.started and sm['selfdriveState'].enabled
   if not long_engaged or not sm.valid['longitudinalPlanSP']:
     return 0.0
   lift = sm['longitudinalPlanSP'].setSpeedAssist.lift
-  # the lift never goes negative, and the ceiling's floor is 0.5 m/s^2
+  # the ceiling is at least 0.5 m/s^2
   return float(np.clip(lift / approach_ceiling(sm['carState'].vEgo, sm['selfdriveState'].personality), 0.0, 1.0))
 
 

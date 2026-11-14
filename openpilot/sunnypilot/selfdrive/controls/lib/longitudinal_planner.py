@@ -80,10 +80,10 @@ class LongitudinalPlannerSP:
     self.e2e_alerts_helper.update(sm, self.events_sp)
 
   def update_accel_boost(self, sm: messaging.SubMaster, output_a_target_e2e: float, output_a_target_mpc: float, a_cruise: float) -> float:
-    # Set Speed Assist already lifts the model toward the set speed, so the boost would stack on it
+    # the boost would stack on Set Speed Assist
     if self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled:
       return float(self.accel_boost_sp.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise))
-    # off holds the boost at zero, so it builds from nothing when it comes back
+    # held at zero, so it builds from zero when it comes back
     self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
     return output_a_target_e2e
 

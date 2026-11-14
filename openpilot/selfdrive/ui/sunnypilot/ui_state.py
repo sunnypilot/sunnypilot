@@ -108,7 +108,6 @@ class UIStateSP:
     return self.has_longitudinal_control and self.speed_assist
 
   def toggle_speed_assist(self) -> None:
-    """The quick toggles: mici home's long press and the tizi onroad button."""
     if self.has_longitudinal_control:
       self.speed_assist = not self.speed_assist
       self.params.put_bool("SetSpeedAssist", self.speed_assist, block=True)

@@ -3,10 +3,6 @@ Copyright (c) 2026-, Zeph Leggett, sunnypilot, and a number of other contributor
 
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
-
-The tizi onroad Set Speed Assist button, in the corner and size of the experimental mode button
-upstream retired with chill mode: mici's dial, dimmed with the assist off, in a green ring with it on
-and filling with the lift, so the button names what it switches either way.
 """
 import raylib_nb as rl
 
@@ -17,7 +13,7 @@ from openpilot.system.ui.widgets import Widget
 DIAL_SCALE = 3.0  # 105 px wide, inside the ring
 OFF_ALPHA = 0.35
 RING_WIDTH = 8
-RING_COLOR = rl.Color(0x16, 0x7F, 0x40, 0xFF)  # the engaged border's green (augmented_road_view)
+RING_COLOR = rl.Color(0x16, 0x7F, 0x40, 0xFF)  # the engaged border's green
 
 
 class SpeedAssistButton(Widget):
@@ -26,8 +22,7 @@ class SpeedAssistButton(Widget):
     self._engageable: bool = False
     self._black_bg: rl.Color = rl.Color(0, 0, 0, 166)
     self._rect = rl.Rectangle(0, 0, button_size, button_size)
-    # The road view handles taps after this button and ignores them while it is pressed. This delay
-    # keeps a quick tap (press and release in one frame) from also toggling the sidebar.
+    # keeps a one-frame tap from also toggling the sidebar
     self._click_delay = 0.075
     self._lift = SpeedAssistLift()
 
