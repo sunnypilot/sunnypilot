@@ -5,16 +5,16 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 
 The tizi onroad Set Speed Assist button, in the corner and size of the experimental mode button
-upstream retired with chill mode: the gauge dimmed with the assist off, bright in a green ring with
-it on.
+upstream retired with chill mode: mici's dial, dimmed with the assist off, in a green ring with it on
+and filling with the lift, so the button names what it switches either way.
 """
-import pyray as rl
+import raylib_nb as rl
 
-from openpilot.selfdrive.ui.sunnypilot.onroad.speed_assist_badge import draw_gauge_on_dial
+from openpilot.selfdrive.ui.sunnypilot.onroad.speed_assist_dial import DIAL_HEIGHT, SpeedAssistLift, draw_dial
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.widgets import Widget
 
-GAUGE_HEIGHT = 96  # concentric with the button: the swoosh's outer edge ~60 px from its center, inside the ring
+DIAL_SCALE = 3.0  # 105 px wide, inside the ring
 OFF_ALPHA = 0.35
 RING_WIDTH = 8
 RING_COLOR = rl.Color(0x16, 0x7F, 0x40, 0xFF)  # the engaged border's green (augmented_road_view)
@@ -29,6 +29,7 @@ class SpeedAssistButton(Widget):
     # The road view handles taps after this button and ignores them while it is pressed. This delay
     # keeps a quick tap (press and release in one frame) from also toggling the sidebar.
     self._click_delay = 0.075
+    self._lift = SpeedAssistLift()
 
   def set_rect(self, rect: rl.Rectangle) -> None:
     self._rect.x, self._rect.y = rect.x, rect.y
@@ -48,6 +49,10 @@ class SpeedAssistButton(Widget):
 
     radius = self._rect.width / 2
     rl.draw_circle(center_x, center_y, radius, self._black_bg)
+    top = center_y - DIAL_HEIGHT * DIAL_SCALE / 2
+    lift = self._lift.update()  # 0 with the assist off
     if ui_state.speed_assist:
-      rl.draw_ring(rl.Vector2(center_x, center_y), radius - RING_WIDTH, radius, 0, 360, 96, rl.color_alpha(RING_COLOR, alpha))
-    draw_gauge_on_dial(center_x, center_y, GAUGE_HEIGHT, alpha if ui_state.speed_assist else OFF_ALPHA * alpha)
+      rl.draw_ring(rl.Vector2(center_x, center_y), radius - RING_WIDTH, radius, 0, 360, 96, rl.fade(RING_COLOR, alpha))
+      draw_dial(center_x, top, DIAL_SCALE, lift=lift, alpha=alpha)
+    else:
+      draw_dial(center_x, top, DIAL_SCALE, alpha=OFF_ALPHA * alpha, track=rl.WHITE, needle=rl.WHITE)
