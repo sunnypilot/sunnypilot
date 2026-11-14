@@ -366,9 +366,6 @@ def hardware_thread(end_event, hw_queue) -> None:
 
     startup_conditions["not_flashing_chestnut"] = not chestnut.flashing
 
-    # ensure device is fully booted
-    startup_conditions["device_booted"] = startup_conditions.get("device_booted", False) or HARDWARE.booted()
-
     # user-forced status
     offroad_mode = params.get_bool("OffroadMode")
     startup_conditions["not_always_offroad"] = not offroad_mode
