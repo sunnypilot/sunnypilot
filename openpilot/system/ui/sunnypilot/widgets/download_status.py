@@ -13,7 +13,7 @@ from openpilot.system.ui.lib.application import TextAlignment, TextAlignmentVert
 
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
+from openpilot.system.ui.lib.polygon import draw_polygon, Gradient
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.lib.styles import style
 from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP

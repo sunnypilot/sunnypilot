@@ -25,28 +25,36 @@ RIGHT_UNIT_SIZE = 28
 RIGHT_UNITS = ("m", "km/h", "mph", "m/s^2")
 
 
-def load_text_texture(font: rl.Font, text: str, font_size: int) -> rl.Texture:
-  """Rasterize white text into a texture, so it can be drawn rotated with draw_texture_pro."""
+def rasterize_text(font: rl.Font, text: str, font_size: int, x: int, y: int) -> np.ndarray:
+  """White text's coverage, at the window's scale. raylib draws on the CPU, straight into the screen, and has
+  no render textures: draw the text on the screen at (x, y), copy it out and put the pixels back. Call it
+  during a frame (the window's scale is set there), with (x, y) inside any scissor."""
   size = measure_text_cached(font, text, font_size)
-  width, height = math.ceil(size.x), math.ceil(size.y)
-  target = rl.load_render_texture(width, height)
-  rl.begin_texture_mode(target)
-  rl.clear_background(rl.BLANK)
-  rl.draw_text_ex(font, text, rl.Vector2(0, 0), font_size, 0, rl.WHITE)
-  rl.end_texture_mode()
+  screen = rl.cpu.screen()  # rows bottom-up
+  px = screen.shape[1] / gui_app.width
+  left, right = math.floor(x * px), math.ceil((x + size.x) * px)
+  top, bottom = math.floor(y * px), math.ceil((y + size.y) * px)
+  area = screen[screen.shape[0] - bottom:screen.shape[0] - top, left:right]
+  saved = area.copy()
+  area[:] = 0
+  rl.draw_text_ex(font, text, rl.Vector2(x, y), font_size, 0, rl.WHITE)
+  coverage = area[::-1, :, 0].copy()
+  area[:] = saved
+  return coverage
 
-  image = rl.load_image_from_texture(target.texture)
-  pixels = np.frombuffer(image.to_bytes(width * height * 4), dtype=np.uint8).reshape(height, width, 4)
-  rl.unload_image(image)
-  rl.unload_render_texture(target)
 
-  # Blending onto a transparent target leaves the coverage in rgb and squares the alpha; rebuild straight alpha.
-  # Render textures are stored bottom-up, so flip the rows.
+def load_text_texture(font: rl.Font, text: str, font_size: int, x: int, y: int) -> rl.Texture:
+  """Rasterize white text into a texture, so it can be drawn rotated with draw_texture_pro."""
+  coverage = rasterize_text(font, text, font_size, x, y)
+  height, width = coverage.shape
   rgba = np.full((height, width, 4), 255, dtype=np.uint8)
-  rgba[..., 3] = pixels[::-1, :, 0]
+  rgba[..., 3] = coverage
   texture = rl.load_texture_from_image(rl.Image(rgba, width, height, 1, rl.PixelFormat.PIXELFORMAT_UNCOMPRESSED_R8G8B8A8))
   rl.set_texture_filter(texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
   rl.set_texture_wrap(texture, rl.TextureWrap.TEXTURE_WRAP_CLAMP)
+  # drawn at the text's size, whatever the window's scale
+  size = measure_text_cached(font, text, font_size)
+  texture.width, texture.height = math.ceil(size.x), math.ceil(size.y)
   return texture
 
 
@@ -69,8 +77,8 @@ class DeveloperUiRenderer(Widget):
     self._font_bold: rl.Font = gui_app.font(FontWeight.BOLD)
     self._font_semi_bold: rl.Font = gui_app.font(FontWeight.SEMI_BOLD)
     self.dev_ui_mode = DeveloperUiState.OFF
-    # rotated units (raylib_nb has no draw_text_pro), built outside the frame since onroad renders inside a scissor
-    self._unit_textures = {unit: load_text_texture(self._font_bold, unit, RIGHT_UNIT_SIZE) for unit in RIGHT_UNITS}
+    # rotated units (raylib_nb has no draw_text_pro), rasterized where they are first drawn
+    self._unit_textures: dict[str, rl.Texture] = {}
 
     self.rel_dist_elem = RelDistElement()
     self.rel_speed_elem = RelSpeedElement()
@@ -149,6 +157,8 @@ class DeveloperUiRenderer(Widget):
     rl.draw_text_ex(self._font_bold, element.value, rl.Vector2(centered_value_x, y), value_size, 0, element.color)
 
     if element.unit:
+      if element.unit not in self._unit_textures:
+        self._unit_textures[element.unit] = load_text_texture(self._font_bold, element.unit, RIGHT_UNIT_SIZE, x, y)
       unit_texture = self._unit_textures[element.unit]
       units_x = x + container_width
       units_y = y + (value_size / 2) + (unit_texture.width / 2)

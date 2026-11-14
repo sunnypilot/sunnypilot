@@ -12,7 +12,7 @@ from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.ui_state import UIStateSP
 from openpilot.sunnypilot.modeld_v2.blendful import LANE_WIDTH_CLIP, LOOKAHEAD_TIME, MIN_LOOKAHEAD
 from openpilot.system.ui.lib.application import gui_app, FontWeight
-from openpilot.system.ui.lib.shader_polygon import draw_polygon
+from openpilot.system.ui.lib.polygon import draw_polygon
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 
 BLENDFUL_COLOR = (0, 200, 255)
