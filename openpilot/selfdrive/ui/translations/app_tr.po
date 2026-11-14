@@ -120,7 +120,7 @@ msgstr "BAĞLAN"
 
 #: system/ui/widgets/network.py
 msgid "CONNECTING..."
-msgstr "BAĞLAN"
+msgstr "BAĞLANIYOR..."
 
 #: system/ui/widgets/confirm_dialog.py
 #: system/ui/widgets/keyboard.py
@@ -147,7 +147,7 @@ msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
-msgstr "\"yeni cihaz ekle\"ye tıklayın ve sağdaki QR kodunu tarayın"
+msgstr "\"add new device\" düğmesine tıklayın ve sağdaki QR kodunu tarayın"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"

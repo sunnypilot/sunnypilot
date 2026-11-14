@@ -9,6 +9,7 @@ from openpilot.selfdrive.ui.onroad.alert_renderer import Alert, get_alert
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.common.filter_simple import BounceFilter, FirstOrderFilter
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 
@@ -16,7 +17,9 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.speed_limit import SpeedLimitAlert
 
 AlertStatus = log.SelfdriveState.AlertStatus
 
-ALERT_MARGIN = 18
+ALERT_MARGIN = 20
+ALERT_TITLE_LETTER_SPACING = -0.02
+ALERT_TITLE_MIN_FONT = 64
 
 ALERT_FONT_SMALL = 66 - 50
 ALERT_FONT_BIG = 88 - 40
@@ -57,7 +60,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
     SpeedLimitAlertRenderer.__init__(self)
 
     self._alert_text1_label = UnifiedLabel(text="", font_size=ALERT_FONT_BIG, font_weight=FontWeight.DISPLAY, line_height=0.86,
-                                           letter_spacing=-0.02)
+                                           letter_spacing=ALERT_TITLE_LETTER_SPACING)
     self._alert_text2_label = UnifiedLabel(text="", font_size=ALERT_FONT_SMALL, font_weight=FontWeight.ROMAN, line_height=0.86,
                                            letter_spacing=0.025)
 
@@ -141,7 +144,7 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
 
     # create text rect based on icon presence
     text_x = self._rect.x + ALERT_MARGIN
-    text_width = self._rect.width - ALERT_MARGIN
+    text_width = self._rect.width - 2 * ALERT_MARGIN
     if icon_side == 'left':
       text_x = self._rect.x + self._txt_turn_signal_right.width
       text_width = self._rect.width - ALERT_MARGIN - self._txt_turn_signal_right.width
@@ -256,6 +259,13 @@ class AlertRenderer(Widget, SpeedLimitAlertRenderer):
 
     if icon_side is not None:
       font_size -= 10
+
+    # keep one-line titles on one line next to the confidence ball
+    if '\n' not in alert_text1 and ' ' in alert_text1:
+      font = gui_app.font(FontWeight.DISPLAY)
+      while font_size > ALERT_TITLE_MIN_FONT and \
+            measure_text_cached(font, alert_text1, font_size, font_size * ALERT_TITLE_LETTER_SPACING).x > alert_layout.text_rect.width:
+        font_size -= 2
 
     color = rl.Color(255, 255, 255, int(255 * 0.9 * self._alpha_filter.x))
 

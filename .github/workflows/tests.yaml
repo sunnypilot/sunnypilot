@@ -102,7 +102,7 @@ jobs:
         key: scons-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
         restore-keys: scons-${{ runner.os }}-${{ github.job }}-
     - name: Building openpilot
-      run: scons
+      run: tools/op.sh build
 
   static_analysis:
     name: static analysis
@@ -140,7 +140,7 @@ jobs:
         key: scons-${{ runner.os }}-${{ github.job }}-${{ github.sha }}
         restore-keys: scons-${{ runner.os }}-${{ github.job }}-
     - name: Build openpilot
-      run: scons
+      run: tools/op.sh build
     - name: Run unit tests
       timeout-minutes: ${{ contains(runner.name, 'nsc') && 2 || 999 }}
       env:
