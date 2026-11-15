@@ -29,6 +29,13 @@ SPEED_LIMIT_MODE_DESCRIPTIONS = [
   tr("Assist: Adjusts the vehicle's cruise speed based on the current road's speed limit when operating the +/- buttons."),
 ]
 
+SPEED_LIMIT_SIGN_STYLE_BUTTONS = [tr("Auto"), tr("Canada")]
+
+SPEED_LIMIT_SIGN_STYLE_DESCRIPTIONS = [
+  tr("Auto: European sign for km/h, US sign for mph."),
+  tr("Canada: Canadian MAXIMUM sign for km/h."),
+]
+
 SPEED_LIMIT_OFFSET_DESCRIPTIONS = [
   tr("None: No Offset"),
   tr("Fixed: Adds a fixed offset [Speed Limit + Offset]"),
@@ -86,13 +93,23 @@ class SpeedLimitSettingsLayout(Widget):
       label_callback=self._get_offset_label,
     )
 
+    self._speed_limit_sign_style = multiple_button_item_sp(
+      title=lambda: tr("Speed Limit Sign Style"),
+      description=self._get_sign_style_description,
+      buttons=SPEED_LIMIT_SIGN_STYLE_BUTTONS,
+      param="SpeedLimitSignStyle",
+      button_width=380,
+    )
+
     items = [
       self._speed_limit_mode,
       LineSeparatorSP(40),
       self._source_button,
       LineSeparatorSP(40),
       self._speed_limit_offset_type,
-      self._speed_limit_value_offset
+      self._speed_limit_value_offset,
+      LineSeparatorSP(40),
+      self._speed_limit_sign_style,
     ]
     return items
 
@@ -104,6 +121,10 @@ class SpeedLimitSettingsLayout(Widget):
   @staticmethod
   def _get_mode_description():
     return get_highlighted_description(ui_state.params, "SpeedLimitMode", SPEED_LIMIT_MODE_DESCRIPTIONS)
+
+  @staticmethod
+  def _get_sign_style_description():
+    return get_highlighted_description(ui_state.params, "SpeedLimitSignStyle", SPEED_LIMIT_SIGN_STYLE_DESCRIPTIONS)
 
   @staticmethod
   def _get_offset_description():

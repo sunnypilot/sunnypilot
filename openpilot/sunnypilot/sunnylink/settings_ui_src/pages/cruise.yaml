@@ -203,6 +203,15 @@ sections:
         key: SpeedLimitOffsetType
         op: '>'
         value: 0
+    - key: SpeedLimitSignStyle
+      widget: multiple_button
+      title: Speed Limit Sign Style
+      description: 'Auto: European sign for km/h, US sign for mph. Canada: Canadian MAXIMUM sign for km/h.'
+      options:
+      - value: 0
+        label: Auto
+      - value: 1
+        label: Canada
 - id: smart_cruise
   title: Smart Cruise Control
   description: ''

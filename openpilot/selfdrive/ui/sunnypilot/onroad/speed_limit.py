@@ -42,6 +42,15 @@ class Colors:
   MUTCD_LINES = rl.Color(255, 255, 255, 100)
 
 
+SIGN_STYLE_CANADA = 1  # SpeedLimitSignStyle param: 0 auto, 1 Canadian sign for km/h
+
+
+class SignShape(StrEnum):
+  vienna = 'vienna'  # round EU sign (km/h, auto)
+  canada = 'canada'  # Canadian MAXIMUM sign (km/h)
+  mutcd = 'mutcd'  # US SPEED LIMIT sign (mph)
+
+
 class IconSide(StrEnum):
   left = 'left'
   right = 'right'
@@ -214,10 +223,19 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
     elif not self.speed_limit_valid:
       txt_color = Colors.GREY
 
-    if ui_state.is_metric:
+    shape = self._sign_shape()
+    if shape == SignShape.vienna:
       self._render_vienna(rect, limit_str, sub_text, txt_color, has_limit, alpha)
+    elif shape == SignShape.canada:
+      self._render_canada(rect, limit_str, sub_text, txt_color, has_limit, alpha)
     else:
       self._render_mutcd(rect, limit_str, sub_text, txt_color, has_limit, alpha)
+
+  @staticmethod
+  def _sign_shape() -> 'SignShape':
+    if not ui_state.is_metric:
+      return SignShape.mutcd
+    return SignShape.canada if ui_state.speed_limit_sign_style == SIGN_STYLE_CANADA else SignShape.vienna
 
   def _draw_pre_active_arrow(self, sign_rect):
     _, txt_icon, icon_alpha, _, _ = SpeedLimitAlertRenderer.speed_limit_pre_active_icon_helper(self)
@@ -282,6 +300,35 @@ class SpeedLimitRenderer(Widget, SpeedLimitAlertRenderer):
       rl.draw_rectangle_rounded(s_rect, 0.35, 10, black)
       rl.draw_rectangle_rounded_lines_ex(s_rect, 0.35, 10, 6, dark_grey)
 
+      f_scale = 0.6 if len(sub) < 3 else 0.475
+      self._draw_text_centered(self.font_bold, sub, int(box_sz * f_scale), rl.Vector2(s_rect.x + box_sz / 2, s_rect.y + box_sz / 2), white)
+
+  def _render_canada(self, rect, val, sub, color, has_limit, alpha=1.0):
+    """Canadian (Ontario) regulatory sign: MAXIMUM / number / km/h on a black band"""
+    white = rl.color_alpha(Colors.WHITE, alpha)
+    black = rl.color_alpha(Colors.BLACK, alpha)
+    dark_grey = rl.color_alpha(Colors.DARK_GREY, alpha)
+    text_color = rl.color_alpha(color, alpha)
+    mid_x = rect.x + rect.width / 2
+
+    rl.draw_rectangle_rounded(rect, 0.2, 10, white)
+    inner = rl.Rectangle(rect.x + 9, rect.y + 9, rect.width - 18, rect.height - 18)
+    rl.draw_rectangle_rounded_lines_ex(inner, 0.16, 10, 4, black)
+
+    self._draw_text_centered(self.font_demi, "MAXIMUM", 29, rl.Vector2(mid_x, rect.y + 40), black)
+    font_size = 76 if len(val) >= 3 else 96
+    self._draw_text_centered(self.font_bold, val, font_size, rl.Vector2(mid_x, rect.y + 110), text_color)
+
+    band = rl.Rectangle(inner.x + 10, inner.y + inner.height - 54, inner.width - 20, 42)
+    rl.draw_rectangle_rounded(band, 0.25, 8, black)
+    self._draw_text_centered(self.font_demi, "km/h", 34, rl.Vector2(mid_x, band.y + band.height / 2), white)
+
+    if sub and has_limit:
+      box_sz = rect.width * 0.3
+      overlap = box_sz * 0.2
+      s_rect = rl.Rectangle(rect.x + rect.width - box_sz / 1.5 + overlap, rect.y - box_sz / 1.25 + overlap, box_sz, box_sz)
+      rl.draw_rectangle_rounded(s_rect, 0.35, 10, black)
+      rl.draw_rectangle_rounded_lines_ex(s_rect, 0.35, 10, 6, dark_grey)
       f_scale = 0.6 if len(sub) < 3 else 0.475
       self._draw_text_centered(self.font_bold, sub, int(box_sz * f_scale), rl.Vector2(s_rect.x + box_sz / 2, s_rect.y + box_sz / 2), white)
 
