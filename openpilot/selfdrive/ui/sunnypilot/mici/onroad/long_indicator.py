@@ -7,9 +7,11 @@ See the LICENSE.md file in the root directory for more details.
 import raylib_nb as rl
 
 from openpilot.common.filter_simple import FirstOrderFilter
+from openpilot.selfdrive.ui.mici.onroad import DIMMED_ICON_ALPHA
 from openpilot.selfdrive.ui.mici.onroad.long_indicator import LongIndicator
+from openpilot.selfdrive.ui.mici.onroad.status import status_fade_mads
 from openpilot.selfdrive.ui.sunnypilot.onroad.speed_assist_dial import DIAL_HEIGHT, SpeedAssistLift, draw_dial
-from openpilot.selfdrive.ui.ui_state import ui_state
+from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.system.ui.lib.application import gui_app
 
 # with the assist on, the dial tops the car and bars, centered between the driver monitor and the wheel
@@ -29,10 +31,15 @@ class LongIndicatorSP(LongIndicator):
     self._speed_assist_filter = FirstOrderFilter(0.0, SLIDE_RC, 1 / gui_app.target_fps)
     self._speed_assist_lift = SpeedAssistLift()
 
+  @staticmethod
+  def _dim() -> float:
+    # LongIndicator._render's dimming while longitudinal is not engaged
+    return 1 - (1 - DIMMED_ICON_ALPHA / 0.9) * status_fade_mads.weight(UIStatus.DISENGAGED, UIStatus.LAT_ONLY)
+
   def _render(self, rect: rl.Rectangle) -> None:
     shown = self._speed_assist_filter.update(float(ui_state.speed_assist))
     shift = STACK_SHIFT * shown
     super()._render(rl.Rectangle(rect.x, rect.y + shift, rect.width, rect.height))
     # at the stack's alpha, which super() zeroes without openpilot longitudinal
     draw_dial(rect.x + rect.width / 2, rect.y + DIAL_TOP + shift - STACK_SHIFT, lift=self._speed_assist_lift.update(),
-              alpha=self._alpha_filter.x * self._dim_filter.x * shown)
+              alpha=self._alpha_filter.x * self._dim() * shown)

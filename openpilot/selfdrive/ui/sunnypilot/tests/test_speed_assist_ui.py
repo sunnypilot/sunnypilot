@@ -95,8 +95,9 @@ class TestSpeedAssistDial(SpeedAssistTestCase):
     stacks, dials = [], []
     def upstream_render(self, rect):
       stacks.append(rect)
-      self._alpha_filter.x = self._dim_filter.x = 1.0
+      self._alpha_filter.x = 1.0
     self.patch(LongIndicator, "_render", upstream_render)
+    self.patch(li.LongIndicatorSP, "_dim", staticmethod(lambda: 1.0))
     self.patch(li, "draw_dial", lambda cx, top, **kw: dials.append((top, kw)))
     sp = li.LongIndicatorSP()
     for _ in range(frames):
