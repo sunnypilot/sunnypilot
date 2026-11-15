@@ -20,6 +20,11 @@ on:
         description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
+      from_sunnypilot:
+        description: 'The ref is on sunnypilot/sunnypilot (custom models): skip trying commaai/openpilot first'
+        required: false
+        type: boolean
+        default: false
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
@@ -51,6 +56,11 @@ on:
         description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
+      from_sunnypilot:
+        description: 'The ref is on sunnypilot/sunnypilot (custom models): skip trying commaai/openpilot first'
+        required: false
+        type: boolean
+        default: true
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
@@ -84,6 +94,7 @@ jobs:
       # Note: To allow dynamic models from both openpilot and sunnypilot (merges/mashups), we try commaai as default,
       # and fallback to sunnypilot if the ref checkout fails.
       - name: Checkout commaai/openpilot
+        if: ${{ !inputs.from_sunnypilot }}
         id: checkout_upstream
         continue-on-error: true
         uses: actions/checkout@v4
@@ -95,7 +106,7 @@ jobs:
           path: openpilot
 
       - name: Fallback to sunnypilot/sunnypilot
-        if: steps.checkout_upstream.outcome == 'failure'
+        if: inputs.from_sunnypilot || steps.checkout_upstream.outcome == 'failure'
         uses: actions/checkout@v4
         with:
           repository: sunnypilot/sunnypilot
