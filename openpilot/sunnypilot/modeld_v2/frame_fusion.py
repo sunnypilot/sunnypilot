@@ -19,7 +19,7 @@ def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, in
     offsets[name], offset = offset, offset + -(-math.prod(shape) * 4 // 128) * 128
   return offsets | {"frames": offset}, offset + 2 * frame_size
 
-EXTRA_WARPS = {"light_img": "light_tfm", "turn_img": "turn_tfm"}
+EXTRA_WARPS = {"light_img": "light_tfm"}
 SPLIT_FRAMES = ("big_frame", "frame")
 
 def host_shapes(input_shapes: dict[str, tuple], states) -> dict[str, tuple]:
@@ -39,17 +39,16 @@ class _Blobs:  # the model's and the warp's blobs as one address space, for a pa
 def fused_with_warp(cam_w: int, cam_h: int, chestnut: bool):  # load_model's extend: a native model runs upload, warp and model as one submit
   models, big = f"{BASEDIR}/openpilot/sunnypilot/modeld_v2/models", 'big_' if chestnut else ''
   return partial(frame_part, f"{models}/{big}driving_warp_{cam_w}x{cam_h}_tinygrad.pkl",
-                 light_warp_path=f"{models}/{big}driving_lightwarp_{cam_w}x{cam_h}_tinygrad.pkl",
-                 turn_warp_path=f"{models}/{big}driving_turnwarp_{cam_w}x{cam_h}_tinygrad.pkl")
+                 light_warp_path=f"{models}/{big}driving_lightwarp_{cam_w}x{cam_h}_tinygrad.pkl")
 
 
-def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str | None = None, turn_warp_path: str | None = None) -> dict:
+def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str | None = None) -> dict:
   if "input_specs" not in extras:  # a legacy model warps in its own parts
     return {}
   (model, model_blob), (warp, warp_blob) = parts["run"], read_parts(warp_path)[0]["run"]
   states = sorted(name for name in extras["input_specs"] if f"next_{name}" in extras["metadata"]["output_shapes"])
   host = host_shapes({name: shape for name, (shape, _, _) in extras["input_specs"].items()}, states)
-  paths = {"light_img": light_warp_path, "turn_img": turn_warp_path}
+  paths = {"light_img": light_warp_path}
   extra = [(img, tfm, *read_parts(paths[img])[0]["run"]) for img, tfm in EXTRA_WARPS.items() if img in extras["input_specs"]]
   split = any(s["name"] in SPLIT_FRAMES for s in warp["inputs"])
   assert all(any(s["name"] in SPLIT_FRAMES for s in part["inputs"]) == split for _, _, part, _ in extra), "camera and extra warps must share a frame layout"

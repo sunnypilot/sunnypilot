@@ -18,7 +18,6 @@ def main():
   parser.add_argument("--warp-to", required=True, help="model input WxH")
   parser.add_argument("--output", required=True)
   parser.add_argument("--light", action="store_true")
-  parser.add_argument("--turn", action="store_true")
   parser.add_argument("--split-frames", action="store_true", help="one input per camera (frame, big_frame), bound to the camera buffers by pointer")
   args = parser.parse_args()
 
@@ -26,8 +25,8 @@ def main():
   from tinygrad import Device, Tensor, TinyJit
   frame = parse_frame(args.frame)
   warp = make_frame_prepare(frame, *parse_size(args.warp_to))
-  n = 1 if args.light or args.turn else 2
-  cams = [1] if args.turn else list(range(n))
+  n = 1 if args.light else 2
+  cams = list(range(n))
   rng = np.random.default_rng(42)
   frames = rng.integers(0, 256, (2, frame.size), dtype=np.uint8)
   m_inv = Tensor((rng.standard_normal((n, 3, 3)) * 8).astype(np.float32), device=Device.DEFAULT).realize()
