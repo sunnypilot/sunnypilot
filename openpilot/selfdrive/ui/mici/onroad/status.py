@@ -47,8 +47,9 @@ class StatusFade:
         self._weights.update(target)
     return self._weights.x
 
-  def weight(self, status: UIStatus) -> float:
-    return float(self._update()[STATUSES.index(status)])
+  def weight(self, *statuses: UIStatus) -> float:
+    weights = self._update()
+    return float(sum(weights[STATUSES.index(s)] for s in statuses))
 
   def color(self, colors: dict[UIStatus, rl.Color]) -> rl.Color:
     # callers may leave out the MADS statuses

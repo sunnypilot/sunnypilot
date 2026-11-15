@@ -1,7 +1,7 @@
 import numpy as np
 import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
-from openpilot.selfdrive.ui.mici.onroad.status import status_fade_mads
+from openpilot.selfdrive.ui.mici.onroad.status import status_fade, status_fade_mads
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.polygon import Gradient, draw_polygon
@@ -42,14 +42,11 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
     self._hidden = hidden
 
   def _update_state(self):
-    # rests at the bottom while disengaged
-    if ui_state.status == UIStatus.DISENGAGED:
-      self._confidence_filter.update(0.0)
-    elif ui_state.status in (UIStatus.LAT_ONLY, UIStatus.LONG_ONLY):
+    predictions = ui_state.sm['modelV2'].meta.disengagePredictions
+    if ui_state.status in (UIStatus.LAT_ONLY, UIStatus.LONG_ONLY):
       self._confidence_filter.update(1 - max(self.get_animate_status_probs() or [1]))
     else:
-      self._confidence_filter.update((1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs or [1])) *
-                                                        (1 - max(ui_state.sm['modelV2'].meta.disengagePredictions.steerOverrideProbs or [1])))
+      self._confidence_filter.update((1 - max(predictions.brakeDisengageProbs or [1])) * (1 - max(predictions.steerOverrideProbs or [1])))
 
   def _render(self, _):
     alpha = self._alpha_filter.update(0.0 if self._hidden else 1.0)
@@ -60,7 +57,9 @@ class ConfidenceBall(Widget, ConfidenceBallSP):
     status_dot_radius = 16
     margin = 10
     dot_x = self._rect.x + self._rect.width - margin - status_dot_radius
-    dot_height = (1 - self._confidence_filter.x) * (self._rect.height - 2 * (status_dot_radius + margin)) + status_dot_radius + margin
+    # rests at the bottom while disengaged. the color still comes from the confidence, so it doesn't pass through the low zones
+    height = self._confidence_filter.x * (1 - status_fade.weight(UIStatus.DISENGAGED))
+    dot_height = (1 - height) * (self._rect.height - 2 * (status_dot_radius + margin)) + status_dot_radius + margin
     dot_height = self._rect.y + dot_height
 
     # confidence zones while engaged, top and bottom gradient colors
