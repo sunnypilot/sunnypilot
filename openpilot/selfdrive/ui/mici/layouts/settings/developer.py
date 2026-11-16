@@ -83,6 +83,10 @@ class DeveloperLayoutMici(NavScroller):
                                         toggle_callback=self._on_alpha_long_enabled,
                                         description="Use alpha openpilot longitudinal control instead of stock ACC. This may disable Automatic Emergency " +
                                                     "Braking (AEB).")
+    self._tss3_oracle_auto_toggle = BigParamControl(
+      "auto-arm Toyota TSS3 signer", "Tss3OracleAutoArm",
+      description="Toyota TSS3 only. Prepare the volatile RAM signer automatically when the vehicle wakes. This does not flash the EPS.",
+    )
     self._navigation_toggle = BigParamControl("navigation (alpha)", "NavigationEnabled",
                                               description="Turn-by-turn navigation with a route map. Set a destination from comma connect.")
     self._debug_mode_toggle = BigParamControl("ui debug mode", "ShowDebugInfo",
@@ -97,6 +101,7 @@ class DeveloperLayoutMici(NavScroller):
       self._long_maneuver_toggle,
       self._lat_maneuver_toggle,
       self._alpha_long_toggle,
+      self._tss3_oracle_auto_toggle,
       self._debug_mode_toggle,
       self._navigation_toggle,
     ])
@@ -109,11 +114,13 @@ class DeveloperLayoutMici(NavScroller):
       ("LongitudinalManeuverMode", self._long_maneuver_toggle),
       ("LateralManeuverMode", self._lat_maneuver_toggle),
       ("AlphaLongitudinalEnabled", self._alpha_long_toggle),
+      ("Tss3OracleAutoArm", self._tss3_oracle_auto_toggle),
       ("ShowDebugInfo", self._debug_mode_toggle),
       ("NavigationEnabled", self._navigation_toggle),
     )
-    onroad_blocked_toggles = (self._adb_toggle, self._joystick_toggle)
-    release_blocked_toggles = (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle, self._navigation_toggle)
+    onroad_blocked_toggles = (self._adb_toggle, self._joystick_toggle, self._tss3_oracle_auto_toggle)
+    release_blocked_toggles = (self._joystick_toggle, self._long_maneuver_toggle, self._lat_maneuver_toggle,
+                               self._alpha_long_toggle, self._tss3_oracle_auto_toggle, self._navigation_toggle)
     engaged_blocked_toggles = (self._long_maneuver_toggle, self._lat_maneuver_toggle, self._alpha_long_toggle)
 
     # Hide non-release toggles on release builds
