@@ -370,8 +370,8 @@ class SelfdriveD:
                                                     LaneChangeState.laneChangeFinishing):
       self.events.add(EventName.laneChange)
 
-    # Always-on blind spot alert, skipped when lane change events already cover it
-    self.always_on_bsm.update(CS, self.events_sp, self.events.contains_in_list([EventName.laneChangeBlocked, EventName.laneChange]))
+    # Always-on blind spot alert, skipped when laneChangeBlocked covers it
+    self.always_on_bsm.update(CS, self.events_sp, self.events.has([EventName.laneChangeBlocked]))
 
     # Handle lane turn
     lane_turn_direction = self.sm['modelDataV2SP'].laneTurnDirection
