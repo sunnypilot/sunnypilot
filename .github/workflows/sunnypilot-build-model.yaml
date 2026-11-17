@@ -132,7 +132,12 @@ jobs:
               grep -qs "^version https://git-lfs" "$f" || continue
               OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
               HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
-                -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
+                -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href // empty')
+              if [ -z "$HREF" ]; then # not in openpilot's LFS: comma also publishes models to openpilot_driving_models
+                HF_PATH=$(curl -fsSL --retry 3 "https://huggingface.co/api/models/commaai/openpilot_driving_models/tree/main?recursive=true" | jq -r --arg oid "$OID" 'map(select(.lfs.oid == $oid))[0].path // empty')
+                [ -n "$HF_PATH" ] || { echo "::error::$f ($OID) is in neither openpilot's LFS nor commaai/openpilot_driving_models"; exit 1; }
+                HREF="https://huggingface.co/commaai/openpilot_driving_models/resolve/main/$HF_PATH"
+              fi
               aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
                 -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
               echo "$OID  $f" | sha256sum -c -
@@ -140,8 +145,9 @@ jobs:
           }
           UPSTREAM_PKL=selfdrive/modeld/models/big_driving_tinygrad.pkl
           if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl" || true
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
+            fetch_lfs selfdrive/modeld/models/*.onnx
           elif compgen -G "selfdrive/modeld/models/big_*.onnx" > /dev/null; then
             fetch_lfs selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl
             find selfdrive/modeld/models -type f \( -name "*.onnx" -o -name "*.pkl" \) ! -name "big_*.onnx" ! -name "big_*.pkl" -delete
