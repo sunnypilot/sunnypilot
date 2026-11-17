@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 
 from openpilot.common.basedir import BASEDIR
-from openpilot.sunnypilot.modeld_v2.frame_fusion import pack_layout
+from openpilot.sunnypilot.modeld_v2.frame_fusion import pack_layout, SPLIT_FRAMES
 from openpilot.sunnypilot.modeld_v2.helpers import load_model
 from openpilot.sunnypilot.modeld_v2.compile_modeld import (POLICY_INPUTS, derive_frame_skip,
                                                            make_split_input_queues, make_supercombo_input_queues)
@@ -169,16 +169,18 @@ class NativeTinygradAdapter(BaseModelAdapter):
     self.warp_frame_size = self.frame_copy_size
     self._init_common()
     self.run_model = self.jits['run']
+    self.split = [name for name in SPLIT_FRAMES if name in self.run_model.input_names]
+    self.frame_inputs: dict[str, Tensor] = {}
 
     self.input_queues = {name: Tensor(np.zeros(shape, dtype=dtype), device=self.model_device).realize()
                          for name, (shape, dtype) in self.input_shapes.items() if name in self.state_pairs}
     shapes = {name: shape for name, (shape, _) in self.input_shapes.items() if name not in self.state_pairs and name != 'new_img'}
-    offsets, packed = pack_layout(shapes, self.warp_frame_size)
+    offsets, packed = pack_layout(shapes, 0 if self.split else self.warp_frame_size)
     self.packed_input = np.zeros(packed, dtype=np.uint8)
     self.host = Tensor(self.packed_input, device='NPY')
     self.numpy_inputs = {name: np.ndarray(shape, dtype=np.float32, buffer=self.packed_input, offset=offsets[name])
                          for name, shape in ({'tfm': (2, 3, 3)} | shapes).items()}
-    self.frames = self.packed_input[offsets['frames']:].reshape(2, self.warp_frame_size)
+    self.frames = self.packed_input[offsets['frames']:].reshape(2, -1)
 
     self.outputs = {name: Tensor(np.zeros(shape, dtype=dtype), device=device).realize() for name, (shape, dtype, device) in self.jits['output_specs'].items()}
     for name, next_name in self.state_pairs.items():
@@ -187,17 +189,29 @@ class NativeTinygradAdapter(BaseModelAdapter):
 
   def copy_frames(self, bufs):
     for i, key in enumerate(self._vision_input_names):
-      if key in bufs:
+      if key not in bufs:
+        continue
+      if not self.split:
         data = bufs[key].data if hasattr(bufs[key], 'data') else bufs[key]
         np.copyto(self.frames[i], np.frombuffer(data, dtype=np.uint8, count=self.warp_frame_size))
+      elif (name := ('frame', 'big_frame')[i]) in self.split:
+        if isinstance(bufs[key], np.ndarray):  # cached memory: the GPU would read stale lines in place
+          self.frame_inputs[name] = Tensor(np.ascontiguousarray(bufs[key][:self.warp_frame_size]), device=self.model_device).realize()
+          continue
+        ptr = np.frombuffer(bufs[key].data, dtype=np.uint8).ctypes.data  # visionipc buffers are coherent
+        if (key, ptr) not in self._blob_cache:
+          self._blob_cache[(key, ptr)] = Tensor.from_blob(ptr, (self.warp_frame_size,), dtype='uint8', device=self.model_device)
+        self.frame_inputs[name] = self._blob_cache[(key, ptr)]
 
   def reset_warmup_buffers(self) -> None:
     self.packed_input[:] = 0
+    self.frame_inputs.clear()
+    self._blob_cache.clear()
     for key in self.state_pairs:
       self.input_queues[key].assign(0).realize()
 
   def run(self):
-    self.run_model(host=self.host, **self.input_queues, output_buffers=self.outputs)
+    self.run_model(host=self.host, **self.input_queues, **self.frame_inputs, output_buffers=self.outputs)
     return self.outputs['outputs']
 
 

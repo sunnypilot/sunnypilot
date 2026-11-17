@@ -12,6 +12,8 @@ from functools import partial
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.helpers import _dtype, read_parts
 
+SPLIT_FRAMES = ("big_frame", "frame")
+
 
 def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, int], int]:
   offsets, offset = {}, 0
@@ -39,29 +41,30 @@ def frame_part(warp_path: str, parts: dict, extras: dict) -> dict:
   (model, model_blob), (warp, warp_blob) = parts["run"], read_parts(warp_path)[0]["run"]
   states = sorted(name for name in extras["input_specs"] if f"next_{name}" in extras["metadata"]["output_shapes"])
   host = {name: shape for name, (shape, _, _) in extras["input_specs"].items() if name not in states and name != "new_img"}
-  frame_size = next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2
-  offsets, packed = pack_layout(host, frame_size)
+  frame_specs = {s["name"]: s for s in warp["inputs"] if s["name"] in SPLIT_FRAMES}
+  offsets, packed = pack_layout(host, 0 if frame_specs else next(s["numel"] for s in warp["inputs"] if s["name"] == "input_frame") // 2)
   shift, upload, u8 = len(model_blob), len(model["buffers"]) + len(warp["buffers"]), repr(_dtype("dtypes.uint8"))
 
   def view(name: str, nbytes: int, dtype: str) -> dict:
     return {"buffer": upload, "offset": offsets[name], "nbytes": nbytes, "dtype": dtype}
   outputs = sorted(s["slot"] for s in model["inputs"] if s["name"] is None)
-  names = sorted(["host", *states])
+  names = sorted(["host", *states, *frame_specs])
   slots = {s["slot"]: names.index(s["name"]) for s in model["inputs"] if s["name"] in states} | \
           {slot: len(names) + i for i, slot in enumerate(outputs)}
   returned = warp["returns"]["tensors"][0]
   model_inputs = {s["slot"]: {"input": slots[s["slot"]]} if s["slot"] in slots else
                   {k: v for k, v in returned.items() if k != "shape"} | {"buffer": returned["buffer"] + len(model["buffers"])} if s["name"] == "new_img" else
                   view(s["name"], s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in model["inputs"]}
-  warp_inputs = {s["slot"]: view("frames" if s["name"] == "input_frame" else "tfm", s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"])
-                 for s in warp["inputs"]}
+  warp_inputs = {s["slot"]: {"input": names.index(s["name"])} if s["name"] in frame_specs else
+                 view("frames" if s["name"] == "input_frame" else "tfm", s["numel"] * _dtype(s["dtype"]).itemsize, s["dtype"]) for s in warp["inputs"]}
 
   def remap(calls: list, inputs: dict, buffers: int, lib: int) -> list:
     return [call | ({"lib": [call["lib"][0] + lib, call["lib"][1] + lib]} if "lib" in call else {}) |
             {"args": [dict(inputs[a["input"]]) if "input" in a else a | {"buffer": a["buffer"] + buffers} for a in call["args"]]} for call in calls]
   header = {"input_names": names, "returns": {"kind": "NoneType", "tensors": []}, "check": None,
             "inputs": [{"slot": names.index("host"), "name": "host", "dtype": u8, "numel": packed, "device": "NPY"}] +
-                      [s | {"slot": slots[s["slot"]]} for s in model["inputs"] if s["slot"] in slots],
+                      [s | {"slot": slots[s["slot"]]} for s in model["inputs"] if s["slot"] in slots] +
+                      [s | {"slot": names.index(name)} for name, s in frame_specs.items()],
             "buffers": model["buffers"] + [b | ({"init": [b["init"][0] + shift, b["init"][1] + shift]} if "init" in b else {}) for b in warp["buffers"]] +
                        [{"nbytes": packed, "device": model["inputs"][0]["device"], "dtype": u8}],
             "calls": [{"kind": "copy", "args": [{"buffer": upload, "offset": 0, "nbytes": packed, "dtype": u8}, {"input": names.index("host")}]}] +
