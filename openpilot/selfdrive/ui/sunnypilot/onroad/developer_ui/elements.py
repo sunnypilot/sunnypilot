@@ -136,7 +136,7 @@ class DesiredSteeringAngleElement(LateralControlElement):
     controls_state = sm['controlsState']
     lat_active = sm['carControl'].latActive
     angle_steers = car_state.steeringAngleDeg
-    steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDeg
+    steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDesiredDeg
 
     value = f"{steer_angle_desired:.1f}°" if lat_active else "-"
 
