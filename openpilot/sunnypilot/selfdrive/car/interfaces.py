@@ -20,7 +20,7 @@ def _enforce_torque_lateral_control(CP: structs.CarParams, params: Params | None
   if params is None:
     params = Params()
 
-  if CP.steerControlType != structs.CarParams.SteerControlType.angle:
+  if CP.steerControlType == structs.CarParams.SteerControlType.torque:
     enabled = params.get_bool("EnforceTorqueControl")
 
   return enabled
@@ -36,7 +36,7 @@ def _initialize_neural_network_lateral_control(CP: structs.CarParams, CP_SP: str
   if nnlc_model_name == "MOCK":
     cloudlog.error({"nnlc event": "car doesn't match any Neural Network model"})
 
-  if nnlc_model_name != "MOCK" and CP.steerControlType != structs.CarParams.SteerControlType.angle:
+  if nnlc_model_name != "MOCK" and CP.steerControlType == structs.CarParams.SteerControlType.torque:
     enabled = params.get_bool("NeuralNetworkLateralControl")
 
   CP_SP.neuralNetworkLateralControl.model.path = nnlc_model_path
@@ -69,8 +69,8 @@ def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsS
     params.put_bool("LateralJerkTorqueController", False, block=True)
     params.put_bool("NeuralNetworkLateralControl", False, block=True)
 
-  if CP.steerControlType == structs.CarParams.SteerControlType.angle:
-    cloudlog.warning("SteerControlType is angle, cleaning up params")
+  if CP.steerControlType != structs.CarParams.SteerControlType.torque:
+    cloudlog.warning("SteerControlType is not torque, cleaning up params")
     params.remove("NeuralNetworkLateralControl")
     params.remove("EnforceTorqueControl")
     params.remove("LateralJerkTorqueController")

@@ -120,7 +120,7 @@ class SteeringLayout(Widget):
   def _update_state(self):
     super()._update_state()
 
-    torque_allowed = ui_state.CP is not None and ui_state.CP.steerControlType != car.CarParams.SteerControlType.angle
+    torque_allowed = ui_state.CP is not None and ui_state.CP.steerControlType == car.CarParams.SteerControlType.torque
     if ui_state.CP is not None:
       mads_main_desc = self._mads_limited_desc if self._mads_settings_layout._mads_limited_settings() else self._mads_full_desc
       self._mads_toggle.set_description(f"<b>{mads_main_desc}</b><br><br>{self._mads_base_desc}")

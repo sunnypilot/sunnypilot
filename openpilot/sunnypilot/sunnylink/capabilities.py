@@ -188,11 +188,11 @@ def generate_capabilities(params: Params | None = None) -> dict:
         caps["has_longitudinal_control"] = params.get_bool("AlphaLongitudinalEnabled")
       else:
         caps["has_longitudinal_control"] = bool(CP.openpilotLongitudinalControl)
-      # CP.steerControlType is the physical control mode (angle / torque).
+      # CP.steerControlType is the physical control mode (torque / angle / curvature).
       # CP.lateralTuning.which() returns the tuning class (pid / torque / indi)
       # which is a separate concept and is not interchangeable.
       caps["steer_control_type"] = str(CP.steerControlType)
-      caps["torque_allowed"] = CP.steerControlType != car.CarParams.SteerControlType.angle
+      caps["torque_allowed"] = CP.steerControlType == car.CarParams.SteerControlType.torque
       if not caps["brand"] and CP.brand:
         caps["brand"] = str(CP.brand)
       caps["pcm_cruise"] = bool(CP.pcmCruise)
