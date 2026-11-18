@@ -20,6 +20,8 @@ sections:
     widget: toggle
     title: Steering Arc
     description: Display steering arc on the driving screen when lateral control is enabled.
+    visibility:
+    - $ref: '#/macros/hide_on_mici'
   - key: ShowTurnSignals
     widget: toggle
     title: Display Turn Signals

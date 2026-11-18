@@ -144,6 +144,21 @@ class TestPlainArtifact(OpenpilotTestCase):
     for name in ("outputs", "next_state_feat_q"):
       assert np.array_equal(inputs["output_buffers"][name].numpy(), expected["output_buffers"][name].numpy()), name
 
+    split_path = os.path.join(self.tmp.name, "warp_split_tinygrad.pkl")
+    with mock.patch.object(sys, "argv", ["compile_warp", "--frame", FRAME, "--warp-to", f"{MODEL_W}x{MODEL_H}", "--output", split_path, "--split-frames"]):
+      compile_warp.main()
+    split = load_model(path, cache=False, extend=functools.partial(frame_part, split_path))
+    assert split["run"].input_names == ["big_frame", "frame", "host", "state_feat_q"]
+    offsets, packed = pack_layout(HOST, 0)
+    host = np.zeros(packed, np.uint8)
+    for name, shape in ({"tfm": (2, 3, 3)} | HOST).items():
+      np.ndarray(shape, np.float32, host, offsets[name])[...] = tfm.numpy() if name == "tfm" else inputs[name].numpy()
+    out = {"outputs": Tensor.zeros(OUT).contiguous().realize(), "next_state_feat_q": Tensor.zeros(STATE).contiguous().realize()}
+    split["run"](host=Tensor(host, device="NPY"), frame=Tensor(frames.numpy()[0]).realize(), big_frame=Tensor(frames.numpy()[1]).realize(),
+                 state_feat_q=expected["state_feat_q"], output_buffers=out)
+    for name in ("outputs", "next_state_feat_q"):
+      assert np.array_equal(out[name].numpy(), expected["output_buffers"][name].numpy()), name
+
   def test_tinygrad_api_the_loader_reads(self):
     import tinygrad.engine.jit as jit
     from tinygrad.device import Buffer, TinyELF

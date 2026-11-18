@@ -66,47 +66,75 @@ def _patched(buf, topo) -> tuple[bytearray, dict]:
   return blob, rows
 
 
-def _evaluate(u, env):
+def _packed_args(program) -> dict[int, int]:
+  from tinygrad.device import TinyELF
+  params = getattr(program.arg, "params", None) or ()
+  return {off: p.arg.slot for (off, _), p in zip(TinyELF.iter_sig(tuple((None, p.addrspace, p.dtype, ()) for p in params)), params, strict=True)}
+
+
+def _outer_slot(u, packed: dict[int, int]) -> int | None:
+  from tinygrad.uop.ops import Ops
+  if u.op is Ops.PARAM:
+    return None if packed else u.arg.slot
+  if u.op.name == "REFPARAM":
+    return u.arg.slot
+  if packed and u.op is Ops.LOAD and u.src[0].op is Ops.INDEX and _root(u.src[0].src[0]).op is Ops.PARAM:
+    index = _evaluate(u.src[0].src[1], {}, packed)
+    return None if index is None else packed.get(index * u.dtype.itemsize)
+  return None
+
+
+def _evaluate(u, env, packed: dict[int, int]):
   from tinygrad.uop.ops import GroupOp, Ops, exec_alu
   if u.op in (Ops.AFTER, Ops.CAST, Ops.BITCAST):
-    return _evaluate(u.src[0], env)
+    return _evaluate(u.src[0], env, packed)
   if u.op is Ops.CONST:
     return u.arg
-  if u.op in (Ops.PARAM, Ops.RANGE):
-    return env.get(u.arg.slot if u.op is Ops.PARAM else u)
+  if u.op is Ops.RANGE:
+    return env.get(u)
+  if (slot := _outer_slot(u, packed)) is not None:
+    return env.get(slot)
   if u.op is Ops.LOAD:
-    table, index = _root(u.src[0].src[0]), _evaluate(u.src[0].src[1], env)
+    table, index = _root(u.src[0].src[0]), _evaluate(u.src[0].src[1], env, packed)
     return struct.unpack_from(u.dtype.fmt, table.arg, index * u.dtype.itemsize)[0] if table.op is Ops.BINARY and index is not None else None
-  if u.op in GroupOp.ALU and None not in (values := [_evaluate(x, env) for x in u.src]):
+  if u.op in GroupOp.ALU and None not in (values := [_evaluate(x, env, packed) for x in u.src]):
     return exec_alu(u.op, u.dtype, values, *([False] if "truncate_output" in inspect.signature(exec_alu).parameters else []))
   return None
 
 
 def _input_pokes(submit, kernargs) -> dict[int, tuple[int, int]]:
   from tinygrad.uop.ops import Ops
-  outer = dict(enumerate(submit.src[1:]))
+  outer, packed = dict(enumerate(submit.src[1:])), _packed_args(submit.src[0])
   kernargs_params = {i for i, a in outer.items() if a.op is Ops.GETADDR and _root(a.src[0]) is kernargs}
   inputs = {i: _root(a.src[0]).arg.slot for i, a in outer.items() if a.op is Ops.GETADDR and _root(a.src[0]).op is Ops.PARAM}
   pokes = {}
   for call in (u for u in submit.src[0].src[0].toposort() if u.op is Ops.CALL and len(u.src) > 3):
     _, address, value, *_ = call.src[1:]
-    used = list({x.arg.slot for x in value.toposort() if x.op is Ops.PARAM} & inputs.keys())
-    if len(used) != 1 or not kernargs_params & {x.arg.slot for x in address.toposort() if x.op is Ops.PARAM}:
+    used = list({slot for x in value.toposort() if (slot := _outer_slot(x, packed)) is not None} & inputs.keys())
+    if len(used) != 1 or not kernargs_params & {_outer_slot(x, packed) for x in address.toposort()}:
       continue
     ranges = list(dict.fromkeys(x for x in (*address.toposort(), *value.toposort()) if x.op is Ops.RANGE))
     for trip in itertools.product(*[range(int(r.vmax) + 1) for r in ranges]):
       env = dict.fromkeys(outer, 0) | dict(zip(ranges, trip, strict=True))
-      if (offset := _evaluate(address, env)) % 8 == 0:
-        pokes[offset] = (inputs[used[0]], _evaluate(value, env))
+      if (offset := _evaluate(address, env, packed)) % 8 == 0:
+        pokes[offset] = (inputs[used[0]], _evaluate(value, env, packed))
   return pokes
 
 
-def _elf(image: bytes, rodata: int) -> bytes:
-  names, offset, data, headers = b"\0.text\0.rodata\0.shstrtab\0", 64, b"", []
-  for name, kind, address, content in [(0, 0, 0, b""), (1, 1, ALIGNMENT, image[:rodata]), (7, 1, ALIGNMENT + rodata, image[rodata:]), (15, 3, 0, names)]:
-    headers.append(struct.pack("<IIQQQQIIQQ", name, kind, 2 if kind == 1 else 0, address, offset, len(content), 0, 0, 1, 0))
+def _elf(image: bytes, rodata: int, entry: int) -> bytes:
+  spans = [(".text", 0, rodata), (".rodata", rodata, len(image))] if entry < rodata else \
+          [(".data", 0, rodata), (".rodata", rodata, entry), (".text", entry, len(image))]
+  sections, names = [(0, 0, 0, 0, b"")], b"\0"
+  for name, start, end in (span for span in spans if span[1] < span[2]):
+    sections.append((len(names), 1, 6 if name == ".text" else 2, ALIGNMENT + start, image[start:end]))
+    names += name.encode() + b"\0"
+  sections.append((len(names), 3, 0, 0, names + b".shstrtab\0"))
+  offset, data, headers = 64, b"", []
+  for name, kind, flags, address, content in sections:
+    headers.append(struct.pack("<IIQQQQIIQQ", name, kind, flags, address, offset, len(content), 0, 0, 1, 0))
     data, offset = data + content, offset + len(content)
-  return b"\x7fELF\x02\x01\x01" + bytes(9) + struct.pack("<HHIQQQIHHHHHH", 1, 0xe0, 1, 0, 0, offset, 0, 64, 0, 0, 64, 4, 3) + data + b"".join(headers)
+  header = struct.pack("<HHIQQQIHHHHHH", 1, 0xe0, 1, 0, 0, offset, 0, 64, 0, 0, 64, len(sections), len(sections) - 1)
+  return b"\x7fELF\x02\x01\x01" + bytes(9) + header + data + b"".join(headers)
 
 
 def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
@@ -155,7 +183,7 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
     if image_alloc not in programs:
       image = bytes(_patched(image_alloc, topo)[0])
       rodata = next(r for r in range(0, len(image) - 24, 64) if r + struct.unpack_from("<q", image, r + 16)[0] == entry)
-      programs[image_alloc] = blob.add(_elf(image, rodata))
+      programs[image_alloc] = blob.add(_elf(image, rodata, entry))
     start, size = _view(arguments.src[0])
     args = []
     for slot in range(start, start + unwrap(size), 8):
