@@ -22,6 +22,7 @@ from openpilot.common.transformations.orientation import rot_from_euler
 from enum import IntEnum
 
 if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.mici.onroad.augmented_road_view import AugmentedRoadViewSP
   from openpilot.selfdrive.ui.sunnypilot.mici.onroad.hud_renderer import HudRendererSP as HudRenderer
   from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
 
@@ -156,9 +157,10 @@ class BookmarkIcon(Widget):
         rl.draw_texture_ex(icon, rl.Vector2(icon_x, icon_y), 0.0, 1.0, rl.Color(255, 255, 255, round(255 * alpha)))
 
 
-class AugmentedRoadView(CameraView):
+class AugmentedRoadView(CameraView, AugmentedRoadViewSP):
   def __init__(self, bookmark_callback=None, stream_type: VisionStreamType = VisionStreamType.VISION_STREAM_NARROW_ROAD):
     super().__init__("camerad", stream_type)
+    AugmentedRoadViewSP.__init__(self)
     self._bookmark_callback = bookmark_callback
     self._set_placeholder_color(rl.BLACK)
 
@@ -275,7 +277,7 @@ class AugmentedRoadView(CameraView):
     if show_navigation:
       self._navigation.render(rl.Rectangle(self._content_rect.x + self._content_rect.width, self.rect.y, PANEL_WIDTH, self.rect.height))
     else:
-      self._confidence_ball.render(self.rect)
+      AugmentedRoadViewSP.render_side_panel(self, self.rect)
 
     self._bookmark_icon.render(self.rect)
 
