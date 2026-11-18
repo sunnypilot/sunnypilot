@@ -10,6 +10,7 @@ from collections.abc import Callable
 from functools import partial
 import gc
 import os
+os.environ['QCOM_PRIORITY'] = '1'
 os.environ['GMMU'] = '0'
 from tinygrad.device import Device
 import numpy as np
