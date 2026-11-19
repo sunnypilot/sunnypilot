@@ -131,7 +131,8 @@ jobs:
             for f in "$@"; do
               grep -qs "^version https://git-lfs" "$f" || continue
               OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
-              HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+              HREF="https://huggingface.co/buckets/commaai/openpilot-lfs/resolve/sha256/$OID" # lfs.py's bucket (commaai/openpilot#39206)
+              curl -fsSL --retry 3 -r 0-0 -o /dev/null "$HREF" || HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
                 -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href // empty')
               if [ -z "$HREF" ]; then # not in openpilot's LFS: comma also publishes models to openpilot_driving_models
                 HF_PATH=$(curl -fsSL --retry 3 "https://huggingface.co/api/models/commaai/openpilot_driving_models/tree/main?recursive=true" | jq -r --arg oid "$OID" 'map(select(.lfs.oid == $oid))[0].path // empty')
