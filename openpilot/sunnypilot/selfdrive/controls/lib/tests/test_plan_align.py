@@ -30,11 +30,8 @@ class FakeParams:
 
 
 def make(runner=Runner.tinygrad, toggle=True) -> PlanAlignBraking:
-  pa = PlanAlignBraking()
-  pa.params = FakeParams(runner, toggle)
-  pa._read_params()
-  return pa
-
+  with patch.object(plan_align, "Params", return_value=FakeParams(runner, toggle)):
+    return PlanAlignBraking()
 
 def stop_plan(v0, d_stop):
   """constant-decel plan that stops exactly at d_stop"""
