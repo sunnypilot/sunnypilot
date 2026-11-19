@@ -6,6 +6,8 @@ See the LICENSE.md file in the root directory for more details.
 """
 import types
 
+from unittest.mock import patch
+
 import numpy as np
 
 from openpilot.cereal import custom
