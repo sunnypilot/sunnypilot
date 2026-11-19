@@ -99,8 +99,13 @@ class ModelsLayoutMici(NavScroller):
                                            description=tr("Adds a gentle nudge toward lane center on top of the model's own steering, stronger when " +
                                                           "lane lines are clear. Yields around obstacles. Not available with the Default model."))
 
+    self.plan_align_toggle = BigParamControl(tr("plan-aligned braking (alpha)"), "PlanAlignBraking",
+                                             description=tr("Brakes harder toward the model's own planned stop when there is no lead car, " +
+                                                            "such as approaching a red light, especially at higher speeds. Never reduces braking. " +
+                                                            "Not available with the Default model."))
+
     self.main_items = [self.current_model_info, self.select_model_btn, self.cancel_download_btn, self.refresh_btn, self.clear_cache_btn,
-                       self.blendful_toggle]
+                       self.blendful_toggle, self.plan_align_toggle]
     self._scroller.add_widgets(self.main_items)
 
   @property
@@ -213,6 +218,7 @@ class ModelsLayoutMici(NavScroller):
   def show_event(self):
     super().show_event()
     self.blendful_toggle.refresh()
+    self.plan_align_toggle.refresh()
 
   def _update_state(self):
     super()._update_state()
@@ -232,6 +238,17 @@ class ModelsLayoutMici(NavScroller):
     blendful_value = "" if blendful_allowed else tr("custom model only")
     if self.blendful_toggle.value != blendful_value:
       self.blendful_toggle.set_value(blendful_value)
+
+    plan_align_allowed = ui_state.active_runner_tinygrad
+    if plan_align_allowed:
+      self.plan_align_toggle.set_checked(ui_state.params.get_bool("PlanAlignBraking"))
+      self.plan_align_toggle.set_enabled(True)
+    else:
+      self.plan_align_toggle.set_checked(False)
+      self.plan_align_toggle.set_enabled(False)
+    plan_align_value = "" if plan_align_allowed else tr("custom model only")
+    if self.plan_align_toggle.value != plan_align_value:
+      self.plan_align_toggle.set_value(plan_align_value)
 
     manager = self.model_manager
     self._download_frame += 1

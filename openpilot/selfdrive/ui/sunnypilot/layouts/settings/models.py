@@ -106,14 +106,19 @@ class ModelsLayout(Widget):
                              " Yields around obstacles. Not available with the Default model.")
     self.blendful_toggle = toggle_item_sp(tr("Blendful (Alpha)"), self._blendful_desc, param="Blendful")
 
+    self._plan_align_desc = tr("Brakes harder toward the model's own planned stop when there is no lead car, " +
+                               "such as approaching a red light, especially at higher speeds. Never reduces braking. " +
+                               "Not available with the Default model.")
+    self.plan_align_toggle = toggle_item_sp(tr("Plan-Aligned Braking (Alpha)"), self._plan_align_desc, param="PlanAlignBraking")
+
     self.camera_offset = option_item_sp(tr("Adjust Camera Offset"), "CameraOffset", -35, 35,
                                         tr("Virtually shift camera's perspective to move model's center to Left(+ values) or Right (- values)"),
                                         1, None, True, "", style.BUTTON_ACTION_WIDTH, None, True,
                                         lambda v: f"{v / 100:.2f} m")
 
     self.items = [self.small_model_item, self.big_model_item, self.cancel_download_item, self.download_item, self.refresh_item, self.clear_cache_item,
-                  self.blendful_toggle, self.lane_turn_desire_toggle, self.lane_turn_value_control, self.lagd_toggle, self.delay_control,
-                  self.camera_offset]
+                  self.blendful_toggle, self.plan_align_toggle, self.lane_turn_desire_toggle, self.lane_turn_value_control,
+                  self.lagd_toggle, self.delay_control, self.camera_offset]
 
   def _update_lagd_description(self, lagd_toggle: bool):
     desc = tr("Enable this for the car to learn and adapt its steering response time. Disable to use a fixed steering response time. " +
@@ -345,6 +350,20 @@ class ModelsLayout(Widget):
     if self.blendful_toggle.description != blendful_desc:
       self.blendful_toggle.set_description(blendful_desc)
       self.blendful_toggle.show_description(not blendful_allowed)
+
+    plan_align_allowed = ui_state.active_runner_tinygrad
+    if plan_align_allowed:
+      self.plan_align_toggle.action_item.set_state(ui_state.params.get_bool("PlanAlignBraking"))
+      self.plan_align_toggle.action_item.set_enabled(True)
+    else:
+      self.plan_align_toggle.action_item.set_state(False)
+      self.plan_align_toggle.action_item.set_enabled(False)
+
+    plan_align_desc = self._plan_align_desc if plan_align_allowed else \
+      f"<b>{tr('Select a non-Default model to use Plan-Aligned Braking.')}</b><br><br>{self._plan_align_desc}"
+    if self.plan_align_toggle.description != plan_align_desc:
+      self.plan_align_toggle.set_description(plan_align_desc)
+      self.plan_align_toggle.show_description(not plan_align_allowed)
 
     self.delay_control.set_visible(not live_delay and advanced_controls)
     new_step = int(round(100 / CV.MPH_TO_KPH)) if ui_state.is_metric else 100
