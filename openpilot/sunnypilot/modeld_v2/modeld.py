@@ -105,6 +105,8 @@ class ModelState(ModelStateBase):
     self.LAT_SMOOTH_SECONDS = float(overrides.get('lat', ".0"))
     self.LONG_SMOOTH_SECONDS = float(overrides.get('long', ".0"))
     self.MIN_LAT_CONTROL_SPEED = 0.3
+    self.STOP_HOLD_SPEED = 2.5
+    self.stop_curvature = None
     self.PLANPLUS_CONTROL: float = 1.0
     self.chestnut = chestnut
 
@@ -252,6 +254,18 @@ class ModelState(ModelStateBase):
 
     stop = v_ego < 0.3 and desired_accel < 0.1
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)
+
+    plan_v = model_output['plan'][0][:, Plan.VELOCITY][:, 0]
+    stopping = v_ego < self.STOP_HOLD_SPEED and plan_v[np.asarray(self.constants.T_IDXS[:len(plan_v)]) <= 2.0].min() < self.MIN_LAT_CONTROL_SPEED
+    if stopping and self.stop_curvature is None:
+      self.stop_curvature = prev_action.desiredCurvature
+    if self.stop_curvature is not None:
+      if stopping or v_ego <= self.MIN_LAT_CONTROL_SPEED:
+        desired_curvature = self.stop_curvature
+      elif v_ego < self.STOP_HOLD_SPEED:
+        desired_curvature = self.stop_curvature + (desired_curvature - self.stop_curvature) * v_ego / self.STOP_HOLD_SPEED
+      else:
+        self.stop_curvature = None
 
     if self.generation is not None and self.generation >= 10: # smooth curvature for post FOF models
       if v_ego > self.MIN_LAT_CONTROL_SPEED:
