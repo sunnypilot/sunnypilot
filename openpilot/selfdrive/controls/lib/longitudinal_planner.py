@@ -16,6 +16,7 @@ from openpilot.selfdrive.car.cruise import V_CRUISE_MAX, V_CRUISE_UNSET
 from openpilot.common.swaglog import cloudlog
 
 from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
+from openpilot.sunnypilot.selfdrive.controls.lib.plan_align import PlanAlignBraking
 
 J_CRUISE_VALS = [1.6, 1.2, 0.8, 0.6]
 J_CRUISE_BP = [0., 10.0, 25., 40.]
@@ -44,6 +45,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
     self.a_cruise = init_a
     self.output_a_target = init_a
     self.output_should_stop = False
+    self.plan_align = PlanAlignBraking()
 
     self.v_desired_trajectory = np.zeros(CONTROL_N)
     self.a_desired_trajectory = np.zeros(CONTROL_N)
@@ -104,6 +106,7 @@ class LongitudinalPlanner(LongitudinalPlannerSP):
                                               action_t=action_t)
     output_should_stop_mpc = should_stop(v_ego, output_a_target_mpc)
     output_a_target_e2e = sm['modelV2'].action.desiredAcceleration
+    output_a_target_e2e = self.plan_align.update(sm['modelV2'], output_a_target_e2e, sm['radarState'].leadOne.present)
     output_should_stop_e2e = sm['modelV2'].action.shouldStop
 
     self.a_cruise = get_cruise_accel(v_cruise, v_ego, self.a_cruise, self.dt)
