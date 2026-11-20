@@ -1,3 +1,8 @@
+sunnypilot Version 2026.002.003 (2026-11-19)
+========================
+* What's Changed
+  * hardware: fix fresh install stuck on comma logo on AGNOS 19.4 to 20.1 by @sunnyhaibin
+
 sunnypilot Version 2026.002.002 (2026-08-05)
 ========================
 * What's Changed
