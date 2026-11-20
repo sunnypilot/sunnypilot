@@ -15,15 +15,18 @@ from openpilot.sunnypilot.modeld_v2.constants import Plan
 # Models operating on cropped forward-looking views plan front/camera-centric
 # trajectories and initiate tight turns early, causing the rear axle to off-track
 # inside the front path by ~L^2 / (2R) and clip the inside curb.
-SHIFT_WHEELBASE_RATIO = 0.60  # fraction of wheelbase to delay turn-in (~1.73 m for 2.89 m WB)
+SHIFT_WHEELBASE_RATIO = 0.58  # fraction of wheelbase to delay turn-in (~1.68 m for 2.89 m WB)
 WHEELBASE_CLIP = (2.0, 4.0)   # m
 OPPOSITE_SIDE_WEIGHT = 0.75   # slightly lighter shift for non-curb-side turns
 
-SPEED_TAPER = (8.0, 13.0)     # m/s (~18-29 mph): full below 8 m/s, off above 13 m/s
+# Taper shift down where lateral accel/jerk limits (3.0/v^2, 5.0/v^2) leave less
+# curvature headroom for a tighter late-apex recovery (full <=7.8 mph, off >=13.4 mph).
+SPEED_TAPER = (3.5, 6.0)      # m/s (~7.8-13.4 mph)
 CURV_GATE = (0.04, 0.09)      # 1/m (R=25 m -> R=11 m): ignores gentle curves, full on tight turns
-PHASE_RELEASE_DEG = (20.0, 45.0)  # deg of turn heading completed: fade shift to 0 through apex
+PHASE_RELEASE_DEG = (8.0, 25.0)  # deg of turn heading completed: release early for snappy apex turn-in
 
-SHIFT_TAU = 0.15              # s, smooths shift distance transitions
+SHIFT_BUILD_TAU = 0.15        # s, smooths shift ramp-in
+SHIFT_RELEASE_TAU = 0.08      # s, releases shift crisply once turn is underway
 BUFFER_MAX_DIST = 4.5         # m, distance history retained for spatial lookup
 MIN_MOVE_SPEED = 0.3          # m/s
 MID_TURN_CURV_THRESH = 0.02   # 1/m, threshold to recognize a pause mid-turn
@@ -154,7 +157,8 @@ class TurnPlanner:
     side_w = 1.0 if is_curb_side else OPPOSITE_SIDE_WEIGHT
 
     target_shift = SHIFT_WHEELBASE_RATIO * self.wheelbase * speed_w * curv_w * phase_w * side_w
-    alpha = self.dt / (SHIFT_TAU + self.dt)
+    tau = SHIFT_RELEASE_TAU if target_shift < self.shift_dist else SHIFT_BUILD_TAU
+    alpha = self.dt / (tau + self.dt)
     self.shift_dist += (target_shift - self.shift_dist) * alpha
 
     if self.shift_dist < 0.05 or len(self.buf_s) < 2:

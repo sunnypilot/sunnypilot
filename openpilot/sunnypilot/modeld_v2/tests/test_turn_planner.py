@@ -176,3 +176,16 @@ class TestTurnPlanner(OpenpilotTestCase):
     assert base_clr < -0.5    # baseline curbs the rear wheel badly
     assert plan_clr > 0.20    # TurnPlanner clears the curb by > 20 cm
     assert plan_ovr < 0.0     # stays inside the oncoming yellow line
+
+  def test_rolling_speed_taper(self):
+    """Shift must taper smoothly down at rolling turn speeds (8-13.5 mph) and be 0 at 14+ mph."""
+    tp_low = TurnPlanner(wheelbase=2.89)
+    tp_mid = TurnPlanner(wheelbase=2.89)
+    tp_fast = TurnPlanner(wheelbase=2.89)
+    for _ in range(30):
+      tp_low.update(make_plan(0.14, 3.0), v_ego=3.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+      tp_mid.update(make_plan(0.14, 4.75), v_ego=4.75, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+      tp_fast.update(make_plan(0.14, 6.5), v_ego=6.5, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+    assert tp_low.shift_dist > 1.5
+    assert 0.5 < tp_mid.shift_dist < 1.1
+    assert tp_fast.shift_dist == 0.0
