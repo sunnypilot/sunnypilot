@@ -1,0 +1,24 @@
+name: tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref != 'refs/heads/master' && github.ref || github.run_id }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ./test.sh
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['macos-latest', 'ubuntu-latest']
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./test.sh

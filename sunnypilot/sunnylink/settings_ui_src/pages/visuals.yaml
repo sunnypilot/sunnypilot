@@ -1,0 +1,111 @@
+# Page: visuals
+# Edit this file. Run compile_settings_ui.py to emit settings_ui.json.
+id: visuals
+label: Visuals
+icon: visuals
+order: 4
+remote_configurable: true
+description: HUD overlays, alerts, and on-screen display elements
+sections:
+- id: hud_elements
+  title: HUD Elements
+  description: Overlays shown on the driving screen
+  items:
+  - key: BlindSpot
+    widget: toggle
+    title: Show Blind Spot Warnings
+    description: Enabling this will display warnings when a vehicle is detected in your blind spot as long as your car has
+      BSM supported.
+  - key: TorqueBar
+    widget: toggle
+    title: Steering Arc
+    description: Display steering arc on the driving screen when lateral control is enabled.
+  - key: ShowTurnSignals
+    widget: toggle
+    title: Display Turn Signals
+    description: When enabled, visual turn indicators are drawn on the HUD.
+  - key: RoadNameToggle
+    widget: toggle
+    title: Display Road Name
+    description: Displays the name of the road the car is traveling on. The OpenStreetMap database of the location must be
+      downloaded to fetch the road name.
+    visibility:
+    - $ref: '#/macros/hide_on_mici'
+  - key: StandstillTimer
+    widget: toggle
+    title: Standstill Timer
+    description: Show a timer on the HUD when the car is at a standstill.
+    visibility:
+    - $ref: '#/macros/hide_on_mici'
+  - key: RocketFuel
+    widget: toggle
+    title: Real-time Acceleration Bar
+    description: Show an indicator on the left side of the screen to display real-time vehicle acceleration and deceleration.
+      This displays what the car is currently doing, not what the planner is requesting.
+    visibility:
+    - $ref: '#/macros/hide_on_mici'
+  - key: ChevronInfo
+    widget: option
+    title: Display Metrics Below Chevron
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: Distance
+    - value: 2
+      label: Speed
+    - value: 3
+      label: Time
+    - value: 4
+      label: All
+    visibility:
+    - $ref: '#/macros/hide_on_mici'
+    enablement:
+    - $ref: '#/macros/longitudinal'
+- id: developer_ui
+  title: Developer UI Info
+  description: Speedometer and debug display options
+  visibility:
+  - $ref: '#/macros/hide_on_mici'
+  items:
+  - key: DevUIInfo
+    widget: option
+    title: Developer UI
+    description: Display real-time parameters and metrics from various sources.
+    options:
+    - value: 0
+      label: 'Off'
+    - value: 1
+      label: Bottom
+    - value: 2
+      label: Right
+    - value: 3
+      label: Right & Bottom
+  - key: TrueVEgoUI
+    widget: toggle
+    title: 'Speedometer: Always Display True Speed'
+    description: For applicable vehicles, always display the true vehicle current speed from wheel speed sensors.
+  - key: HideVEgoUI
+    widget: toggle
+    title: 'Speedometer: Hide from Onroad Screen'
+    description: When enabled, the speedometer on the onroad screen is not displayed.
+- id: alerts_extras
+  title: Alerts & Extras
+  description: Traffic light alerts and visual flair
+  items:
+  - key: GreenLightAlert
+    widget: toggle
+    title: Green Traffic Light Alert (Beta)
+    description: 'A chime and on-screen alert will play when the traffic light you are waiting for turns green and you have
+      no vehicle in front of you. On-screen visual alert is only available on comma 3X. Note: This chime is only designed
+      as a notification. It is the driver''s responsibility to observe their environment and make decisions accordingly.'
+  - key: LeadDepartAlert
+    widget: toggle
+    title: Lead Departure Alert (Beta)
+    description: 'A chime and on-screen alert will play when you are stopped, and the vehicle in front of you start moving.
+      On-screen visual alert is only available on comma 3X. Note: This chime is only designed as a notification. It is the
+      driver''s responsibility to observe their environment and make decisions accordingly.'
+  - key: RainbowMode
+    widget: toggle
+    title: Tesla Rainbow Mode
+    description: Display a rainbow effect on the path the model wants to take. It does not affect driving in any way.

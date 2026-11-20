@@ -1,0 +1,12 @@
+numpy
+cffi
+sympy
+comma-deps-eigen
+Cython
+scons
+setuptools
+
+[dev]
+scipy
+ruff
+ty
