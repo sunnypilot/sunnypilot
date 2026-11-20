@@ -55,14 +55,14 @@ class TestTurnPlanner(OpenpilotTestCase):
       assert out == k
 
   def test_sign_preservation_and_magnitude_bound_under_jitter(self):
-    """Output must never oppose model_curv or exceed |model_curv|, even after entry jitter."""
+    """Output must never oppose model_curv or exceed APEX_PATH_BOOST_CAP * |model_curv|."""
     tp = TurnPlanner(wheelbase=2.89)
     # Reproduces a5 seg31 Turn 1: brief negative jitter then sharp positive right turn
     ks = [-0.015] * 15 + [0.016, 0.05, 0.11, 0.14, 0.17, 0.18, 0.14, 0.08, 0.02, -0.01]
     plan_right = make_plan(0.15, 3.0)
     for k in ks:
       out = tp.update(plan_right, v_ego=3.0, actual_curv=k * 0.7, active=True, is_rhd=False, model_curv=k)
-      assert abs(out) <= abs(k) + 1e-9
+      assert abs(out) <= abs(k) * 1.35 + 1e-9
       if k > 0:
         assert out >= 0.0
       elif k < 0:
@@ -81,7 +81,7 @@ class TestTurnPlanner(OpenpilotTestCase):
     for i in range(1, 20):
       k = max(0.0, 0.14 * (1.0 - i / 15.0))
       out = tp.update(make_plan(k, 4.0), v_ego=4.0, actual_curv=k + 0.01, active=True, is_rhd=False, model_curv=k)
-      assert abs(out - k) < 1e-9
+      assert abs(out - k) < 1e-3
 
   def test_standstill_launch_and_mid_turn_pause(self):
     tp = TurnPlanner(wheelbase=2.89)
@@ -105,10 +105,10 @@ class TestTurnPlanner(OpenpilotTestCase):
   def test_wheelbase_and_rhd_scaling(self):
     tp_short = TurnPlanner(wheelbase=2.4)
     tp_long = TurnPlanner(wheelbase=3.4)
-    plan_r = make_plan(0.14, 3.5)
+    plan_r = make_plan(0.14, 4.2)
     for _ in range(25):
-      tp_short.update(plan_r, 3.5, 0.0, True, False, 0.02)
-      tp_long.update(plan_r, 3.5, 0.0, True, False, 0.02)
+      tp_short.update(plan_r, 4.2, 0.0, True, False, 0.02)
+      tp_long.update(plan_r, 4.2, 0.0, True, False, 0.02)
     assert tp_long.shift_dist > tp_short.shift_dist * 1.3
 
     # RHD gives larger shift on left turns (k < 0) than right turns (k > 0)
@@ -178,14 +178,33 @@ class TestTurnPlanner(OpenpilotTestCase):
     assert plan_ovr < 0.0     # stays inside the oncoming yellow line
 
   def test_rolling_speed_taper(self):
-    """Shift must taper smoothly down at rolling turn speeds (8-13.5 mph) and be 0 at 14+ mph."""
+    """Shift is strong at low speed, light at rolling speed, 0 at 19+ mph, and time-capped at crawl."""
+    tp_crawl = TurnPlanner(wheelbase=2.89)
     tp_low = TurnPlanner(wheelbase=2.89)
-    tp_mid = TurnPlanner(wheelbase=2.89)
+    tp_roll = TurnPlanner(wheelbase=2.89)
     tp_fast = TurnPlanner(wheelbase=2.89)
     for _ in range(30):
-      tp_low.update(make_plan(0.14, 3.0), v_ego=3.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-      tp_mid.update(make_plan(0.14, 4.75), v_ego=4.75, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-      tp_fast.update(make_plan(0.14, 6.5), v_ego=6.5, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-    assert tp_low.shift_dist > 1.5
-    assert 0.5 < tp_mid.shift_dist < 1.1
+      tp_crawl.update(make_plan(0.14, 1.8), v_ego=1.8, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+      tp_low.update(make_plan(0.14, 3.5), v_ego=3.5, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+      tp_roll.update(make_plan(0.14, 6.0), v_ego=6.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+      tp_fast.update(make_plan(0.14, 9.0), v_ego=9.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
+    assert tp_crawl.shift_dist <= 1.8 * 0.48 + 0.05  # time-capped so crawl starts don't stall
+    assert tp_low.shift_dist > 1.3
+    assert 0.3 < tp_roll.shift_dist < 0.7
     assert tp_fast.shift_dist == 0.0
+
+  def test_apex_1s_path_boost_and_exit_unwind(self):
+    """Once past entry, blends with 1s path to boost under-steering apex and unwind hanging exit."""
+    tp = TurnPlanner(wheelbase=2.89)
+    # Drive past entry (psi > 30 deg)
+    for _ in range(35):
+      tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.10)
+    # Apex (psi ~ 48 deg): action under-steers at 0.10 while 1s path says 0.14 -> boosted cleanly above 0.10
+    apex_out = tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.10)
+    assert apex_out > 0.115
+    # Advance past 60 deg into late-turn exit
+    for _ in range(20):
+      tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.14)
+    # Exit hang: action still stuck at 0.20 while 1s path already unwound to 0.10 -> pulls down cleanly
+    exit_out = tp.update(make_plan(0.10, 4.0), v_ego=4.0, actual_curv=0.15, active=True, is_rhd=False, model_curv=0.20)
+    assert exit_out < 0.15
