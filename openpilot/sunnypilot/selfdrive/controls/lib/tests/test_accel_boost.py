@@ -79,3 +79,17 @@ class TestAccelBoostSP(OpenpilotTestCase):
       assert not boost.update_params()
     assert boost.update_params() and not boost.enabled
     assert boost.boost == 0.0 and boost.total_boost == 0.0
+
+  @parameterized.expand([(True, True), (True, False), (False, True)])
+  def test_planner_hook(self, enabled, openpilot_longitudinal):
+    from openpilot.sunnypilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPlannerSP
+    planner = LongitudinalPlannerSP.__new__(LongitudinalPlannerSP)
+    planner.accel_boost_sp = AccelBoostSP()
+    planner.openpilot_longitudinal = openpilot_longitudinal
+    planner.accel_boost_sp.enabled = enabled
+    for _ in range(100):
+      out = LongitudinalPlannerSP.update_accel_boost(planner, make_sm(), 0.0, 9.0, 9.0)
+    if enabled and openpilot_longitudinal:
+      assert out > 0.0
+    else:
+      assert out == 0.0 and planner.accel_boost_sp.total_boost == 0.0

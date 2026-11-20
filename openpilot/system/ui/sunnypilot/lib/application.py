@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import os
 
-import pyray as rl
+import raylib_nb as rl
 
 SHOW_MOUSE_COORDS = os.getenv("SHOW_MOUSE_COORDS") == "1"
 SUNNYPILOT_UI = os.getenv("SUNNYPILOT_UI", "1") == "1"
@@ -21,7 +21,8 @@ class GuiApplicationExt:
     return SUNNYPILOT_UI
 
   def _draw_mouse_coordinates(self, font):
-    coords_text = f"X:{int(rl.get_mouse_x())}, Y:{int(rl.get_mouse_y())}"
+    mouse_pos = rl.get_mouse_position()
+    coords_text = f"X:{int(mouse_pos.x)}, Y:{int(mouse_pos.y)}"
 
     green_color = rl.Color(0, 159, 47, 255)  # Match the green color of FPS counter
 

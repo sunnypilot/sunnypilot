@@ -18,9 +18,5 @@ class ConfidenceBallSP:
     return ui_state.sm['modelV2'].meta.disengagePredictions.brakeDisengageProbs
 
   @staticmethod
-  def get_lat_long_dot_color():
-    if ui_state.status == UIStatus.LAT_ONLY:
-      return BORDER_COLORS[UIStatus.LAT_ONLY]
-
-    # UIStatus.LONG_ONLY
-    return BORDER_COLORS[UIStatus.LONG_ONLY]
+  def get_lat_long_dot_colors():
+    return BORDER_COLORS[UIStatus.LAT_ONLY], BORDER_COLORS[UIStatus.LONG_ONLY]

@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from dataclasses import dataclass
 
-import pyray as rl
+import raylib_nb as rl
 
 
 @dataclass

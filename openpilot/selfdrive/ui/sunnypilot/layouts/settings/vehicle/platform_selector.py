@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import json
 import os
-import pyray as rl
+import raylib_nb as rl
 from collections.abc import Callable
 from functools import partial
 

@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import threading
 import time
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.button import Button, ButtonStyle

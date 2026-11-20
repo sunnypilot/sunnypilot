@@ -17,4 +17,4 @@ class TestRegistryModels(unittest.TestCase):
       self.skipTest("MODEL_BASE_NAME env var not set, skipping integration test.")
     bundle = load_model(os.path.join(os.environ.get("MODEL_DIR", "/tmp/models"), base_name), {"QCOM": "CPU", "AMD": "CPU"}, verify=False, cache=False)
     jits = [value for value in bundle.values() if isinstance(value, PlainJit)]
-    assert "metadata" in bundle and jits and all(len(jit.captured.linear.src) > 0 for jit in jits)
+    assert "metadata" in bundle and jits and all(len(jit.captured._linear.src) > 0 for jit in jits)

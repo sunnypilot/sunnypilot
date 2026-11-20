@@ -5,7 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 from collections.abc import Callable
-import pyray as rl
+import raylib_nb as rl
 
 from opendbc.sunnypilot.car.interfaces import has_bsm
 from openpilot.selfdrive.ui.ui_state import ui_state
