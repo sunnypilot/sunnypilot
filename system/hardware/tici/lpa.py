@@ -6,7 +6,6 @@ import fcntl
 import hashlib
 import os
 import requests
-import serial
 import subprocess
 import sys
 import termios
@@ -14,12 +13,16 @@ import time
 
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pathlib import Path
 
 from openpilot.common.time_helpers import system_time_valid
 from openpilot.system.hardware.base import LPABase, LPAError, LPAProfileNotFoundError, Profile
+
+# pyserial is imported where used: AGNOS 19.4 to 20.1 lack it, and the updater imports this module
+if TYPE_CHECKING:
+  import serial
 
 GSMA_CI_BUNDLE = str(Path(__file__).parent / "gsma_ci_bundle.pem")
 
@@ -176,6 +179,7 @@ class AtClient:
       lines.append(line)
 
   def _ensure_serial(self, reconnect: bool = False) -> None:
+    import serial
     if reconnect:
       self.channel = None
       try:
@@ -188,6 +192,7 @@ class AtClient:
       self._serial = serial.Serial(self._device, baudrate=self._baud, timeout=self._timeout)
 
   def query(self, cmd: str) -> list[str]:
+    import serial
     self._ensure_serial()
     try:
       self._send(cmd)
@@ -198,6 +203,7 @@ class AtClient:
       return self._expect()
 
   def _open_isdr_once(self) -> None:
+    import serial
     if self.channel:
       try:
         self.query(f"AT+CCHC={self.channel}")
@@ -226,6 +232,7 @@ class AtClient:
     subprocess.run(['/usr/comma/lte/lte.sh', 'start'], capture_output=True)
 
   def open_isdr(self) -> None:
+    import serial
     for attempt in range(OPEN_ISDR_RETRIES):
       try:
         self._open_isdr_once()
