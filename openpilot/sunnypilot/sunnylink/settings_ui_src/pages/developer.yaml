@@ -49,6 +49,13 @@ sections:
           equals: true
     enablement:
     - $ref: '#/macros/not_engaged'
+  - key: NavigationEnabled
+    widget: toggle
+    title: Navigation (Alpha)
+    description: Turn-by-turn navigation with a route map. Set a destination from comma connect.
+    visibility:
+    - {type: capability, field: device_type, equals: mici}
+    - $ref: '#/macros/release_branches_hide'
   - key: ShowDebugInfo
     widget: toggle
     title: UI Debug Mode

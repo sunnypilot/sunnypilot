@@ -113,12 +113,56 @@ class TestDesireHelperIntegration(OpenpilotTestCase):
                 left_edge_detected=False, right_edge_detected=False)
     assert dh.desire == expected_desire
 
-  def test_edge_blocks_lane_change(self, set_lane_turn_params):
+  def test_nudge_overrides_edge_detection(self, set_lane_turn_params):
+    """Manual steering nudge should override road edge detection and allow lane change."""
     dh = DesireHelper()
     dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
     carstate = DummyCarState(vEgo=15, leftBlinker=True, steeringPressed=True, steeringTorque=1)
     for _ in range(10):
       dh.update(carstate, True, 1.0, left_edge_detected=True, right_edge_detected=False)
-    assert dh.lane_change_state == LaneChangeState.preLaneChange
+    assert dh.lane_change_state == LaneChangeState.laneChangeStarting
     assert dh.lane_change_direction == LaneChangeDirection.left
+    assert dh.desire == log.Desire.laneChangeLeft
+
+  def test_nudge_does_not_override_bsm(self, set_lane_turn_params):
+    """Manual steering nudge must NOT override BSM blindspot detection."""
+    dh = DesireHelper()
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGE
+    carstate = DummyCarState(vEgo=15, leftBlinker=True, leftBlindspot=True, steeringPressed=True, steeringTorque=1)
+    for _ in range(10):
+      dh.update(carstate, True, 1.0, left_edge_detected=False, right_edge_detected=False)
+    assert dh.lane_change_state == LaneChangeState.preLaneChange
     assert dh.desire == log.Desire.none
+
+  def test_edge_blocks_auto_lane_change(self, set_lane_turn_params):
+    """Road edge detection should still block auto (nudgeless) lane changes."""
+    dh = DesireHelper()
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
+    dh.alc.param_read_counter = 1
+    carstate = DummyCarState(vEgo=15, leftBlinker=True)
+    for _ in range(10):
+      dh.update(carstate, True, 1.0, left_edge_detected=True, right_edge_detected=False)
+    assert dh.lane_change_state == LaneChangeState.preLaneChange
+    assert dh.desire == log.Desire.none
+
+  def test_auto_lane_change_allowed_without_edge(self, set_lane_turn_params):
+    """Auto lane change should proceed when no edge and no BSM detected."""
+    dh = DesireHelper()
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
+    dh.alc.param_read_counter = 1
+    carstate = DummyCarState(vEgo=15, leftBlinker=True)
+    for _ in range(10):
+      dh.update(carstate, True, 1.0, left_edge_detected=False, right_edge_detected=False)
+    assert dh.lane_change_state == LaneChangeState.laneChangeStarting
+    assert dh.desire == log.Desire.laneChangeLeft
+
+  def test_right_edge_does_not_block_left_lane_change(self, set_lane_turn_params):
+    """Edge on opposite side should not affect lane change direction."""
+    dh = DesireHelper()
+    dh.alc.lane_change_set_timer = AutoLaneChangeMode.NUDGELESS
+    dh.alc.param_read_counter = 1
+    carstate = DummyCarState(vEgo=15, leftBlinker=True)
+    for _ in range(10):
+      dh.update(carstate, True, 1.0, left_edge_detected=False, right_edge_detected=True)
+    assert dh.lane_change_state == LaneChangeState.laneChangeStarting
+    assert dh.desire == log.Desire.laneChangeLeft

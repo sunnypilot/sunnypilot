@@ -13,26 +13,41 @@ from pathlib import Path
 from datetime import datetime, UTC
 
 
+_VERSION_REGEX = re.compile(r'^(?:\d+[a-zA-Z]+|\d+[vVbB]\d+|[vVbB]\d+|\d{4})$')
+_DECIMAL_VERSION_REGEX = re.compile(r'^([vVbB]?)(\d+(?:\.\d+)+)$')
+
+
+def _version(word: str) -> str | None:
+  match = _DECIMAL_VERSION_REGEX.match(word.strip('()[]{}.,;:'))
+  if match:
+    return match.group(1).upper() + match.group(2)
+  stripped = re.sub(r'[^a-zA-Z0-9]', '', word)
+  return stripped.upper() if _VERSION_REGEX.match(stripped) else None
+
+
+def _truncate(short_name: str) -> str:
+  return short_name[:8].rstrip('.')
+
+
 def create_short_name(full_name: str) -> str:
-  # Remove parentheses and extract alphanumeric words
+  # Remove parentheses and extract alphanumeric words, keeping decimals for versioning
   clean_name = re.sub(r'\([^)]*\)', '', full_name)
-  words = [re.sub(r'[^a-zA-Z0-9]', '', word) for word in clean_name.split() if re.sub(r'[^a-zA-Z0-9]', '', word)]
+  words = [re.sub(r'[^a-zA-Z0-9.]', '', word) for word in clean_name.split()]
+  words = [word for word in words if word]
 
   if len(words) == 1:
-    return words[0][:8].upper()
+    return _truncate((_version(words[0]) or words[0]).upper())
 
-  # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1")
-  if len(words) == 2 and re.match(r'^[A-Za-z]\d+$', words[1]):
-    return (words[0] + words[1])[:8].upper()
+  # Handle special case: Name + Version (e.g., "Word A1" -> "WordA1", "Model v1.1" -> "ModelV1.1")
+  if len(words) == 2 and re.match(r'^[A-Za-z]?\d+$', words[1]):
+    return _truncate((words[0] + (_version(words[1]) or words[1])).upper())
 
   result = ""
   for word in words:
     # Version or number patterns
-    if (re.match(r'^\d+[a-zA-Z]+$', word) or
-        re.match(r'^\d+[vVbB]\d+$', word) or
-        re.match(r'^[vVbB]\d+$', word) or
-        re.match(r'^\d{4}$', word)):
-      result += word.upper()
+    version = _version(word)
+    if version:
+      result += version
     # All uppercase abbreviations (2-3 letters)
     elif re.match(r'^[A-Z]{2,3}$', word):
       result += word
@@ -45,7 +60,7 @@ def create_short_name(full_name: str) -> str:
       result += word
     else:
       result += word[0].upper()
-  return result[:8]
+  return _truncate(result)
 
 
 def create_pkl_name(full_name: str) -> str:
@@ -54,18 +69,10 @@ def create_pkl_name(full_name: str) -> str:
 
 
 def _hash_pkl(pkl_path: Path) -> str:
-  manifest = Path(f"{pkl_path}.chunkmanifest")
-  if manifest.exists():
-    num_chunks = int(manifest.read_text().strip())
-    paths = [Path(f"{pkl_path}.chunk{i + 1:02d}of{num_chunks:02d}") for i in range(num_chunks)]
-  else:
-    paths = [pkl_path]
-
   digest = hashlib.sha256()
-  for path in paths:
-    with path.open('rb') as f:
-      while block := f.read(1024 * 1024):
-        digest.update(block)
+  with pkl_path.open('rb') as f:
+    while block := f.read(1024 * 1024):
+      digest.update(block)
   return digest.hexdigest()
 
 
@@ -74,24 +81,11 @@ def _find_driving_pkl(output_path: Path) -> Path | None:
     matches = sorted(output_path.glob(pattern))
     if matches:
       return matches[0]
-  for pattern in ('*driving_tinygrad.pkl.chunkmanifest', '*driving_*_tinygrad.pkl.chunkmanifest'):
-    matches = sorted(output_path.glob(pattern))
-    if matches:
-      return Path(str(matches[0]).removesuffix('.chunkmanifest'))
   return None
 
 
-def _rename_pkl_with_chunks(old_pkl: Path, new_pkl: Path) -> Path:
-  manifest = Path(f"{old_pkl}.chunkmanifest")
-  if manifest.exists():
-    for f in sorted(old_pkl.parent.glob(f"{old_pkl.name}.chunk*")):
-      f.rename(old_pkl.parent / f.name.replace(old_pkl.name, new_pkl.name, 1))
-    return new_pkl
-  return old_pkl.rename(new_pkl)
-
-
 def _hash_onnx_files(model_dir: Path) -> str | None:
-  onnx_files = sorted(model_dir.glob("*.onnx"))
+  onnx_files = [f for f in sorted(model_dir.glob("*.onnx")) if f.stat().st_size > 1024]
   if not onnx_files:
     return None
   digest = hashlib.sha256()
@@ -102,21 +96,8 @@ def _hash_onnx_files(model_dir: Path) -> str | None:
   return digest.hexdigest()
 
 
-def generate_chunked_model(driving_pkl: Path) -> dict:
+def generate_model(driving_pkl: Path) -> dict:
   tinygrad_hash = _hash_pkl(driving_pkl)
-
-  chunks_config = []
-  manifest_file = Path(f"{driving_pkl}.chunkmanifest")
-  if manifest_file.exists():
-    num_chunks = int(manifest_file.read_text().strip())
-    for i in range(num_chunks):
-      chunk_path = Path(f"{driving_pkl}.chunk{i + 1:02d}of{num_chunks:02d}")
-      if chunk_path.exists():
-        chunk_hash = hashlib.sha256(chunk_path.read_bytes()).hexdigest()
-        chunks_config.append({
-          "file_name": chunk_path.name,
-          "sha256": chunk_hash
-        })
 
   artifact_data = {
     "file_name": driving_pkl.name,
@@ -125,9 +106,6 @@ def generate_chunked_model(driving_pkl: Path) -> dict:
       "sha256": tinygrad_hash
     }
   }
-
-  if chunks_config:
-    artifact_data["chunks"] = chunks_config
 
   return {
     "type": "chunked",
@@ -175,6 +153,7 @@ if __name__ == "__main__":
   parser.add_argument("--custom-name", help="Custom display name for the model")
   parser.add_argument("--is-20hz", action="store_true", help="Whether this is a 20Hz model")
   parser.add_argument("--upstream-branch", default="unknown", help="Upstream branch name")
+  parser.add_argument("--onnx-sha256", default=None, help="Pre-computed LFS SHA256 for the model file (used when no ONNX is present)")
   args = parser.parse_args()
 
   _output_dir = Path(args.output_dir)
@@ -192,11 +171,11 @@ if __name__ == "__main__":
   if _pkl:
     new_pkl = _output_dir / f"driving_{_pkl}_tinygrad.pkl"
     if not new_pkl.exists():
-      _driving_pkl = _rename_pkl_with_chunks(_driving_pkl, new_pkl)
+      _driving_pkl = _driving_pkl.rename(new_pkl)
     else:
       _driving_pkl = new_pkl
 
-  _model_metadata = generate_chunked_model(_driving_pkl)
-  _onnx_sha256 = _hash_onnx_files(Path(args.model_dir))
+  _model_metadata = generate_model(_driving_pkl)
+  _onnx_sha256 = args.onnx_sha256 or _hash_onnx_files(Path(args.model_dir))
   create_metadata_json([_model_metadata], _output_dir, args.custom_name, _short_name, args.is_20hz, args.upstream_branch,
                        onnx_sha256=_onnx_sha256, is_big=is_big)

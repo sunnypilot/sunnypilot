@@ -58,9 +58,7 @@ def host():
 class TestAthenadMethods(OpenpilotTestCase):
   @classmethod
   def setup_class(cls):
-    cls.SOCKET_PORT = 45454
     athenad.Api = MockApi  # ty: ignore[invalid-assignment]  # test double
-    athenad.LOCAL_PORT_WHITELIST = {cls.SOCKET_PORT}
 
   def setup_method(self):
     self.default_params = {
@@ -113,6 +111,21 @@ class TestAthenadMethods(OpenpilotTestCase):
 
 
   # *** test cases ***
+
+  def test_nav_destination(self):
+    set_destination = dispatcher["setNavDestination"]
+    destination = {"latitude": 32.875134, "longitude": -117.209777}
+    assert set_destination(**destination) == {"success": 1}
+    assert self.params.get("NavDestination") == destination
+
+    # out of range and non-finite coordinates are rejected without touching the destination
+    for latitude, longitude in [(91, 0), (0, -181), (float('nan'), 0), (0, float('inf'))]:
+      assert set_destination(latitude, longitude)["success"] == 0, (latitude, longitude)
+      assert self.params.get("NavDestination") == destination
+
+    assert dispatcher["clearNavDestination"]() == {"success": 1}
+    assert dispatcher["clearNavDestination"]() == {"success": 1}
+    assert self.params.get("NavDestination") is None
 
   def test_echo(self):
     assert dispatcher["echo"]("bob") == "bob"
@@ -434,7 +447,7 @@ class TestAthenadMethods(OpenpilotTestCase):
     assert athenad.upload_queue.qsize() == 1
     assert asdict(athenad.upload_queue.queue[-1]) == asdict(item1)
 
-  def test_start_local_proxy(self, mock_create_connection):
+  def test_start_local_proxy(self, mock_create_connection, mocker):
     end_event = threading.Event()
 
     ws_recv = queue.Queue()
@@ -442,11 +455,13 @@ class TestAthenadMethods(OpenpilotTestCase):
     mock_ws = MockWebsocket(ws_recv, ws_send)
     mock_create_connection.return_value = mock_ws
 
-    echo_socket = EchoSocket(self.SOCKET_PORT)
+    echo_socket = EchoSocket(0)
+    port = echo_socket.socket.getsockname()[1]
+    mocker.patch('openpilot.system.athena.athenad.LOCAL_PORT_WHITELIST', {port})
     socket_thread = threading.Thread(target=echo_socket.run)
     socket_thread.start()
 
-    athenad.startLocalProxy(end_event, 'ws://localhost:1234', self.SOCKET_PORT)
+    athenad.startLocalProxy(end_event, 'ws://localhost:1234', port)
 
     ws_recv.put_nowait(b'ping')
     try:

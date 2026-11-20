@@ -20,7 +20,6 @@ from openpilot.common.hardware.hw import Paths
 from openpilot.common.spinner import Spinner
 from openpilot.common.version import is_prebuilt
 from openpilot.sunnypilot.mapd import MAPD_PATH, MAPD_BIN_DIR
-import openpilot.system.sentry as sentry
 
 VERSION = "v1.12.0"
 URL = f"https://github.com/pfeiferj/openpilot-mapd/releases/download/{VERSION}/mapd"
@@ -136,9 +135,7 @@ class MapdInstallManager:
                              f"Boot will continue in {5 - i}s...")
         time.sleep(1)
 
-      sentry.init(sentry.SentryProject.SELFDRIVE)
       traceback.print_exc()
-      sentry.capture_exception()
 
 
 if __name__ == "__main__":

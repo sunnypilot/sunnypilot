@@ -1,8 +1,8 @@
 name: Sync comma's LFS
 
 env:
-  LFS_URL: 'https://gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git/info/lfs'
-  LFS_PUSH_URL: 'ssh://git@gitlab.com/sunnypilot/public/sunnypilot-new-lfs.git'
+  LFS_URL: 'https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs'
+  LFS_PUSH_URL: 'https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs'
 
 on:
   schedule:
@@ -33,21 +33,19 @@ jobs:
 
       - name: LFS Fetch
         run: |
-          git lfs fetch
+          git lfs fetch || echo "::warning::some objects are missing on commaai/openpilot-lfs; mirroring the rest"
 
       - name: Set up Git
         run: |
           git config --global user.name 'GitHub Action'
           git config --global user.email 'action@github.com'
 
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Add GitLab public keys
+      - name: Setup hf
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          ssh-keyscan -H gitlab.com >> ~/.ssh/known_hosts
+          git config --global credential.helper store
+          echo "https://user:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
 
       - name: Ensure branch
         run: |
@@ -70,6 +68,7 @@ jobs:
           git config lfs.activitytimeout 300
           git config lfs.transfer.maxretries 5
           git config lfs.concurrenttransfers 4
+          git config lfs.allowincompletepush true
 
       - name: Push LFS
         id: sync-and-commit
@@ -83,3 +82,80 @@ jobs:
           done
           echo "All push attempts failed"
           exit 1
+
+      - name: Checkout sunnypilot
+        uses: actions/checkout@v4
+        with:
+          repository: 'sunnypilot/sunnypilot'
+          path: sunnypilot
+          fetch-depth: 0
+          filter: blob:limit=1k
+          lfs: false
+
+      - name: Reference objects on sunnypilot-lfs
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          GIT_LFS_SKIP_SMUDGE=1 git clone --quiet https://huggingface.co/sunnypilot/sunnypilot-lfs hf-lfs
+          mkdir -p hf-lfs/all
+          cat > scan_pointers.py <<'EOF'
+          import re, subprocess, sys, threading
+          repo = sys.argv[1]
+          chk = subprocess.run(["git", "-C", repo, "cat-file", "--batch-all-objects",
+                                "--batch-check=%(objectname) %(objecttype) %(objectsize)"],
+                               capture_output=True, text=True, check=True).stdout
+          small = [f[0] for f in (l.split() for l in chk.splitlines()) if f[1] == "blob" and int(f[2]) < 1024]
+          p = subprocess.Popen(["git", "-C", repo, "cat-file", "--batch=%(objectsize)"],
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+          def feed():
+            for sha in small:
+              p.stdin.write(sha.encode() + b"\n")
+            p.stdin.close()
+          threading.Thread(target=feed, daemon=True).start()
+          rx = re.compile(rb"^version https://git-lfs\.github\.com/spec/v1\noid sha256:([0-9a-f]{64})\nsize ([0-9]+)\n")
+          seen = {}
+          for _ in small:
+            n = int(p.stdout.readline()); body = p.stdout.read(n); p.stdout.read(1)
+            m = rx.match(body)
+            if m:
+              seen.setdefault(m.group(1).decode(), m.group(2).decode())
+          for oid, size in sorted(seen.items()):
+            print(oid, size)
+          EOF
+          for repo in . sunnypilot; do
+            python3 scan_pointers.py "$repo"
+          done | sort -u | while read -r oid size; do
+            [ -e "hf-lfs/all/$oid" ] && continue
+            printf 'version https://git-lfs.github.com/spec/v1\noid sha256:%s\nsize %s\n' "$oid" "$size" > "hf-lfs/all/$oid"
+            echo "$oid"
+          done > new_oids.txt
+          echo "new pointer files: $(wc -l < new_oids.txt)"
+
+          dropped=0
+          while mapfile -t -n 100 chunk && ((${#chunk[@]})); do
+            body=$(for oid in "${chunk[@]}"; do
+                     size=$(awk '/^size /{print $2}' "hf-lfs/all/$oid")
+                     printf '{"oid":"%s","size":%s}\n' "$oid" "$size"
+                   done | jq -s '{operation:"download",transfers:["basic"],objects:.}')
+            for attempt in 1 2 3 4 5; do
+              resp=$(curl -sS -u "user:${HF_TOKEN}" -w '\n%{http_code}' \
+                       -H 'Accept: application/vnd.git-lfs+json' -H 'Content-Type: application/vnd.git-lfs+json' \
+                       --data "$body" "${LFS_URL}/objects/batch") && [ "$(tail -n1 <<<"$resp")" = 200 ] && break
+              echo "batch check attempt $attempt failed ($(tail -n1 <<<"$resp")), retrying in 60s"; sleep 60
+            done
+            [ "$(tail -n1 <<<"$resp")" = 200 ] || { echo "batch check failed"; exit 1; }
+            for oid in $(sed '$d' <<<"$resp" | jq -r '.objects[] | select(.error) | .oid'); do
+              rm -f "hf-lfs/all/$oid"; dropped=$((dropped+1))
+            done
+          done < new_oids.txt
+          echo "dropped (not on HF): $dropped"
+
+          cd hf-lfs
+          git add -A all
+          if git diff --cached --quiet; then
+            echo "nothing new to reference"
+            exit 0
+          fi
+          git commit -q -m "Reference $(git diff --cached --name-only | wc -l | tr -d ' ') new LFS objects"
+          git push origin HEAD:main

@@ -38,7 +38,10 @@ class OsmMapData(BaseMapData):
     if self.last_bearing is not None:
       params['bearing'] = self.last_bearing
 
-    self.mem_params.put("LastGPSPosition", json.dumps(params), block=True)
+    # mapd reads its position from the memory params as JSON, so write it for the mapd binary.
+    # LastGPSPosition is registered as BYTES (ubloxd owns the persistent copy for pigeond),
+    # so the JSON payload has to be encoded here.
+    self.mem_params.put("LastGPSPosition", json.dumps(params).encode(), block=True)
 
   def get_current_speed_limit(self) -> float:
     return float(self.mem_params.get("MapSpeedLimit") or 0.0)

@@ -7,6 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from collections.abc import Callable
 import pyray as rl
 
+from opendbc.sunnypilot.car.interfaces import has_bsm
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp, option_item_sp, LineSeparatorSP
@@ -82,7 +83,7 @@ class LaneChangeSettingsLayout(Widget):
     self._scroller.show_event()
 
   def _update_toggles(self):
-    enable_bsm = ui_state.CP is not None and ui_state.CP.enableBsm
+    enable_bsm = ui_state.CP is not None and has_bsm(ui_state.CP, ui_state.CP_SP)
     if not enable_bsm and ui_state.params.get_bool("AutoLaneChangeBsmDelay"):
       ui_state.params.remove("AutoLaneChangeBsmDelay")
     self._bsm_delay.action_item.set_enabled(enable_bsm and ui_state.params.get("AutoLaneChangeTimer", return_default=True) > AutoLaneChangeMode.NUDGE)
