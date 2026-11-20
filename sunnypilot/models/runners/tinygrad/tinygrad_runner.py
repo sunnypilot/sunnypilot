@@ -1,0 +1,179 @@
+import pickle
+
+import numpy as np
+from openpilot.sunnypilot.models.runners.constants import NumpyDict, ModelType, ShapeDict, CUSTOM_MODEL_PATH, SliceDict
+from openpilot.sunnypilot.models.runners.model_runner import ModelRunner
+from openpilot.sunnypilot.models.runners.tinygrad.model_types import PolicyTinygrad, VisionTinygrad, SupercomboTinygrad, OffPolicyTinygrad, OnPolicyTinygrad
+from openpilot.sunnypilot.models.split_model_constants import SplitModelConstants
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
+
+from tinygrad.tensor import Tensor
+
+
+class TinygradRunner(ModelRunner, SupercomboTinygrad, PolicyTinygrad, VisionTinygrad, OffPolicyTinygrad, OnPolicyTinygrad):
+  """
+  A ModelRunner implementation for executing Tinygrad models.
+
+  Handles loading Tinygrad model artifacts (.pkl), preparing inputs as Tinygrad
+  Tensors (potentially using QCOM extensions on TICI), running inference,
+  and parsing the outputs.
+
+  :param model_type: The type of model (e.g., supercombo) to load and run.
+  """
+  def __init__(self, model_type: int = ModelType.supercombo):
+    ModelRunner.__init__(self)
+    SupercomboTinygrad.__init__(self)
+    PolicyTinygrad.__init__(self)
+    VisionTinygrad.__init__(self)
+    OffPolicyTinygrad.__init__(self)
+    OnPolicyTinygrad.__init__(self)
+    self._constants = ModelConstants
+    self._model_data = self.models.get(model_type)
+    if not self._model_data or not self._model_data.model:
+      raise ValueError(f"Model data for type {model_type} not available.")
+
+    artifact_filename = self._model_data.model.artifact.fileName
+    assert artifact_filename.endswith('_tinygrad.pkl'), \
+      f"Invalid model file {artifact_filename} for TinygradRunner"
+
+    model_pkl_path = f"{CUSTOM_MODEL_PATH}/{artifact_filename}"
+    with open(model_pkl_path, "rb") as f:
+      try:
+        # Load the compiled Tinygrad model runner function
+        self.model_run = pickle.load(f)
+      except FileNotFoundError as e:
+        # Provide a helpful error message if the model was built for a different platform
+        assert "/dev/kgsl-3d0" not in str(e), "Model was built on C3 or C3X, but is being loaded on PC"
+        raise
+
+    # Map input names to their required dtype and device from the loaded model
+    self.input_to_dtype = {}
+    self.input_to_device = {}
+    for idx, name in enumerate(self.model_run.captured.expected_names):
+      info = self.model_run.captured.expected_input_info[idx]
+      self.input_to_dtype[name] = info[2]  # dtype
+      self.input_to_device[name] = info[3]  # device
+    self._policy_cached = False
+
+  @property
+  def vision_input_names(self) -> list[str]:
+    """Returns the list of vision input names from the input shapes."""
+    return [name for name in self.input_shapes.keys() if 'img' in name]
+
+
+  def prepare_policy_inputs(self, numpy_inputs: NumpyDict):
+    if not self._policy_cached:
+      for key, value in numpy_inputs.items():
+        self.inputs[key] = Tensor(value, device='NPY').realize()
+      self._policy_cached = True
+
+  def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
+    """Prepares all vision and policy inputs for the model."""
+    self.prepare_policy_inputs(numpy_inputs)
+    for key in self.vision_input_names:
+      if key in self.inputs:
+        self.inputs[key] = self.inputs[key].cast(self.input_to_dtype[key])
+    return self.inputs
+
+  def _run_model(self) -> NumpyDict:
+    """Runs the Tinygrad model inference and parses the outputs."""
+    outputs = self.model_run(**self.inputs).contiguous().realize().uop.base.buffer.numpy().flatten()
+    return self._parse_outputs(outputs)
+
+  def _parse_outputs(self, model_outputs: np.ndarray) -> NumpyDict:
+    """Parses the raw model outputs using the standard Parser."""
+    if self._model_data is None:
+      raise ValueError("Model data is not available. Ensure the model is loaded correctly.")
+
+    result: NumpyDict = self.parser_method_dict[self._model_data.model.type.raw](model_outputs)
+    return result
+
+
+class TinygradSplitRunner(ModelRunner):
+  """
+  A ModelRunner that coordinates separate TinygradVisionRunner and TinygradPolicyRunner instances.
+
+  Manages the execution of split vision and policy models, combining their inputs and outputs.
+  """
+  def __init__(self):
+    super().__init__()
+    self.is_20hz_3d = True
+    self.vision_runner = TinygradRunner(ModelType.vision)
+    self.policy_runner = TinygradRunner(ModelType.policy) if self.models.get(ModelType.policy) else None
+    self.off_policy_runner = TinygradRunner(ModelType.offPolicy) if self.models.get(ModelType.offPolicy) else None
+    self.on_policy_runner = TinygradRunner(ModelType.onPolicy) if self.models.get(ModelType.onPolicy) else None
+    self._constants = SplitModelConstants
+
+  def _run_model(self) -> NumpyDict:
+    """Runs both vision and policy models and merges their parsed outputs."""
+    vision_output = self.vision_runner.run_model()
+    outputs = {**vision_output}
+
+    if self.policy_runner:
+      policy_output = self.policy_runner.run_model()
+      outputs.update(policy_output)
+
+    if self.off_policy_runner:
+      off_policy_output = self.off_policy_runner.run_model()
+      if self.on_policy_runner:
+        off_policy_output.pop('plan', None)
+      outputs.update(off_policy_output)
+
+    if self.on_policy_runner:
+      on_policy_output = self.on_policy_runner.run_model()
+      outputs.update(on_policy_output)
+
+    if 'planplus' in outputs and 'plan' in outputs:
+      outputs['plan'] = outputs['plan'] + outputs['planplus']
+
+    return outputs
+
+  @property
+  def vision_input_names(self) -> list[str]:
+    """Returns the list of vision input names from the vision runner."""
+    return list(self.vision_runner.vision_input_names)
+
+  @property
+  def input_shapes(self) -> ShapeDict:
+    """Returns the combined input shapes from both vision and policy models."""
+    shapes = {**self.vision_runner.input_shapes}
+    if self.policy_runner:
+      shapes.update(self.policy_runner.input_shapes)
+    if self.off_policy_runner:
+      shapes.update(self.off_policy_runner.input_shapes)
+    if self.on_policy_runner:
+      shapes.update(self.on_policy_runner.input_shapes)
+    return shapes
+
+  @property
+  def output_slices(self) -> SliceDict:
+    """Returns the combined output slices from both vision and policy models."""
+    slices = {**self.vision_runner.output_slices}
+    if self.policy_runner:
+      slices.update(self.policy_runner.output_slices)
+    if self.off_policy_runner:
+      slices.update(self.off_policy_runner.output_slices)
+    if self.on_policy_runner:
+      slices.update(self.on_policy_runner.output_slices)
+    return slices
+
+  def prepare_inputs(self, numpy_inputs: NumpyDict) -> dict:
+    """Prepares inputs for both vision and policy models."""
+    if self.policy_runner:
+      self.policy_runner.prepare_policy_inputs(numpy_inputs)
+
+    for key in self.vision_input_names:
+      if key in self.inputs:
+        self.vision_runner.inputs[key] = self.inputs[key].cast(self.vision_runner.input_to_dtype[key])
+
+    inputs = {**self.vision_runner.inputs}
+    if self.policy_runner:
+      inputs.update(self.policy_runner.inputs)
+
+    if self.off_policy_runner:
+      self.off_policy_runner.prepare_policy_inputs(numpy_inputs)
+      inputs.update(self.off_policy_runner.inputs)
+    if self.on_policy_runner:
+      self.on_policy_runner.prepare_policy_inputs(numpy_inputs)
+      inputs.update(self.on_policy_runner.inputs)
+    return inputs

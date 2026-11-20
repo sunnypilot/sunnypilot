@@ -1,0 +1,8 @@
+libdatachannel-py>=2026.1.0.dev2
+
+[dev]
+parameterized>=0.8
+pre-commit
+pytest
+pytest-asyncio
+pytest-xdist
