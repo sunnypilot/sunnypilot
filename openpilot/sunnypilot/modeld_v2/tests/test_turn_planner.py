@@ -208,3 +208,32 @@ class TestTurnPlanner(OpenpilotTestCase):
     # Exit hang: action still stuck at 0.20 while 1s path already unwound to 0.10 -> pulls down cleanly
     exit_out = tp.update(make_plan(0.10, 4.0), v_ego=4.0, actual_curv=0.15, active=True, is_rhd=False, model_curv=0.20)
     assert exit_out < 0.15
+
+  def test_road_edge_curb_guard_holds_until_opening(self):
+    """Confident straight curb beside car prolongs turn-in until curb flares open or disappears."""
+    x = np.array(ModelConstants.X_IDXS, dtype=np.float32)
+
+    def with_curb(plan_dict, e0=2.4, flare_5m=0.1, std=0.4):
+      edges = np.zeros((1, 2, len(x), 2), dtype=np.float32)
+      edges[0, 0, :, 0] = -5.0
+      edges[0, 1, :, 0] = e0 + (flare_5m / 25.0) * (x ** 2)
+      stds = np.full((1, 2, len(x), 2), std, dtype=np.float32)
+      return {**plan_dict, 'road_edges': edges, 'road_edges_stds': stds}
+
+    tp = TurnPlanner(wheelbase=2.89)
+    # Rolling 15 mph (6.7 m/s) right turn with solid straight curb right beside car -> curb guard holds it down
+    mo_curb = with_curb(make_plan(0.03, 6.7), e0=2.4, flare_5m=0.1, std=0.4)
+    for _ in range(5):
+      out_guarded = tp.update(mo_curb, v_ego=6.7, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.035)
+    assert out_guarded < 0.016
+
+    # Curb flares open (intersection/turn lane opens) -> releases immediately!
+    mo_open = with_curb(make_plan(0.06, 6.7), e0=2.4, flare_5m=1.2, std=1.1)
+    out_open = tp.update(mo_open, v_ego=6.7, actual_curv=0.01, active=True, is_rhd=False, model_curv=0.06)
+    assert out_open > 0.04
+
+    # Normal curved road (curb itself curves at k=0.03 => flare_5m = 0.5 * 0.03 * 25 = 0.375 m) -> untouched
+    tp2 = TurnPlanner(wheelbase=2.89)
+    mo_curve = with_curb(make_plan(0.03, 6.7), e0=2.4, flare_5m=0.375, std=0.4)
+    out_curve = tp2.update(mo_curve, v_ego=6.7, actual_curv=0.03, active=True, is_rhd=False, model_curv=0.03)
+    assert abs(out_curve - 0.03) < 1e-6

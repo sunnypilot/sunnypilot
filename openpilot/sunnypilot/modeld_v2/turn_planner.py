@@ -43,7 +43,17 @@ MID_TURN_CURV_THRESH = 0.02   # 1/m
 PLAN_S_RANGE = (1.0, 18.0)    # m
 PLAN_MIN_SEG_DS = 0.8         # m
 
+# Road-edge curb guard: prevents premature turn-in (e.g. immediately on blinker)
+# while a confident, unbroken curb still runs straight beside the vehicle.
+CURB_STD_GATE = (0.55, 0.95)        # m: confident curb below 0.55, gone/opening above 0.95
+CURB_CLOSE_GATE = (2.5, 3.1)        # m: curb close to lane below 2.5, open turn bay above 3.1
+CURB_OPENING_GATE = (0.35, 0.90)    # m: (edge_5m - edge_0m) flare indicating intersection opening
+CURB_FOLLOW_MARGIN_K = 0.005        # 1/m: small lane-keeping allowance above curb's own curvature
+CURB_CHECK_X = 5.0                  # m: lookahead along road edge for curb wall check
+CURB_GUARD_PHASE_DEG = (10.0, 22.0) # deg: only guards turn entry before car has rotated in
+
 T_IDXS = np.array(ModelConstants.T_IDXS, dtype=np.float32)
+X_IDXS = np.array(ModelConstants.X_IDXS, dtype=np.float32)
 
 
 def compute_plan_metrics(model_output: dict[str, np.ndarray]) -> tuple[float, float]:
@@ -85,6 +95,44 @@ def compute_plan_metrics(model_output: dict[str, np.ndarray]) -> tuple[float, fl
 
 def compute_plan_peak_curv(model_output: dict[str, np.ndarray]) -> float:
   return compute_plan_metrics(model_output)[0]
+
+
+def compute_curb_guard(model_output: dict[str, np.ndarray], turn_sign: float) -> tuple[float, float]:
+  """
+  Check if a confident, unbroken road edge (curb) still runs straight beside the car
+  on the turning side (turn_sign > 0 = right edge, turn_sign < 0 = left edge).
+  Returns (curb_weight in [0, 1], max_safe_curv_abs).
+  """
+  edges = model_output.get('road_edges')
+  stds = model_output.get('road_edges_stds')
+  if edges is None or stds is None or edges.ndim < 4 or edges.shape[1] < 2:
+    return 0.0, 1.0
+
+  idx = 1 if turn_sign > 0.0 else 0
+  edge_y = edges[0, idx, :, 0]
+  if len(edge_y) != len(X_IDXS):
+    return 0.0, 1.0
+  edge_std = float(stds[0, idx, 0, 0])
+
+  std_w = float(np.interp(edge_std, CURB_STD_GATE, [1.0, 0.0]))
+  if std_w <= 0.0:
+    return 0.0, 1.0
+
+  e0 = float(edge_y[0]) * turn_sign
+  e5 = float(np.interp(CURB_CHECK_X, X_IDXS, edge_y)) * turn_sign
+  if e0 <= 0.0:
+    return 0.0, 1.0
+
+  close_w = float(np.interp(e0, CURB_CLOSE_GATE, [1.0, 0.0]))
+  flare = e5 - e0
+  unopened_w = float(np.interp(flare, CURB_OPENING_GATE, [1.0, 0.0]))
+  curb_w = std_w * close_w * unopened_w
+  if curb_w <= 0.0:
+    return 0.0, 1.0
+
+  # Allow following the curb's own curvature (so normal curved roads are untouched) plus small margin.
+  k_curb = max(0.0, 2.0 * flare / (CURB_CHECK_X * CURB_CHECK_X))
+  return curb_w, k_curb + CURB_FOLLOW_MARGIN_K
 
 
 class TurnPlanner:
@@ -197,6 +245,16 @@ class TurnPlanner:
         out_k = float(np.clip(k_delayed, 0.0, model_curv))
       else:
         out_k = float(np.clip(k_delayed, model_curv, 0.0))
+
+    # Stage 1b: Road-edge curb guard during turn entry (prolongs straight travel while
+    # a confident, unbroken curb is still beside the car before the turn lane/intersection opens).
+    curb_phase_w = float(np.interp(psi_deg, CURB_GUARD_PHASE_DEG, [1.0, 0.0]))
+    if turn_speed_w > 0.05 and curb_phase_w > 0.01 and abs(out_k) > CURB_FOLLOW_MARGIN_K:
+      curb_w, k_cap = compute_curb_guard(model_output, 1.0 if out_k > 0.0 else -1.0)
+      guard_w = curb_w * turn_speed_w * curb_phase_w
+      if guard_w > 0.01 and abs(out_k) > k_cap:
+        capped = math.copysign(k_cap, out_k)
+        out_k = (1.0 - guard_w) * out_k + guard_w * capped
 
     # Stage 2: Apex & Exit 1s-path blend (prevents wide apexes and exit hang-ups)
     apex_phase_w = float(np.interp(psi_deg, APEX_BLEND_PHASE_DEG, [0.0, 1.0]))
