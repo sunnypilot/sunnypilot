@@ -1,0 +1,5 @@
+[lfs]
+	url = https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs
+	pushurl = https://huggingface.co/sunnypilot/sunnypilot-lfs.git/info/lfs
+
+	locksverify = false
