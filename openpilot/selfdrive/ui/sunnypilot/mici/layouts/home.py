@@ -6,9 +6,10 @@ See the LICENSE.md file in the root directory for more details.
 """
 import math
 
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
+from openpilot.selfdrive.ui.sunnypilot.onroad.speed_assist_badge import SpeedAssistIcon
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.system.ui.lib.application import FontWeight
 from openpilot.system.ui.widgets.label import UnifiedLabel
@@ -18,6 +19,12 @@ class MiciHomeLayoutSP(MiciHomeLayout):
   def __init__(self):
     super().__init__()
     self._openpilot_label = UnifiedLabel("sunnypilot", font_size=88, font_weight=FontWeight.AUDIOWIDE, max_width=480, wrap_text=False)
+    self.set_long_press_callback(ui_state.toggle_speed_assist)
+    # after the network icon
+    self._speed_assist_icon = SpeedAssistIcon()
+    self._speed_assist_icon.set_visible(lambda: ui_state.speed_assist_active)
+    self._status_bar_layout.add_widget(self._speed_assist_icon)
+    self._status_bar_layout.widgets.insert(2, self._status_bar_layout.widgets.pop())
 
   def _set_chestnut_visibility(self):
     usb_connected = ui_state.usb_connected

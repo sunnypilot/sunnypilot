@@ -9,9 +9,9 @@ from openpilot.cereal import messaging, custom
 from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
-from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import AccelBoostSP
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
+from openpilot.sunnypilot.selfdrive.controls.lib.set_speed_assist import SetSpeedAssist, approach_accel
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_assist import SpeedLimitAssist
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.speed_limit_resolver import SpeedLimitResolver
@@ -31,6 +31,7 @@ class LongitudinalPlannerSP:
     self.generation = int(model_bundle.generation) if (model_bundle := get_active_bundle()) else None
     self.source = LongitudinalPlanSource.cruise
     self.e2e_alerts_helper = E2EAlertsHelper()
+    self.set_speed_assist = SetSpeedAssist()
     self.accel_boost_sp = AccelBoostSP()
     self.openpilot_longitudinal = CP.openpilotLongitudinalControl
 
@@ -67,12 +68,24 @@ class LongitudinalPlannerSP:
     self.output_v_target, self.output_a_target = targets[self.source]
     return self.output_v_target, self.output_a_target
 
+  def update_e2e_target(self, sm: messaging.SubMaster, a_model: float, a_mpc: float, a_cruise: float, reset_state: bool) -> float:
+    a_floor = min(a_mpc, a_cruise, approach_accel(sm['carState'].vEgo, self.output_v_target, sm['selfdriveState'].personality))
+    return self.set_speed_assist.update(sm, a_model, a_floor, reset_state)
+
   def update(self, sm: messaging.SubMaster) -> None:
-    if self.accel_boost_sp.update_params():
-      self.accel_boost = self.accel_boost_sp if self.accel_boost_sp.enabled and self.openpilot_longitudinal else AccelBoost()
+    self.accel_boost_sp.update_params()
+    self.set_speed_assist.update_params()
 
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)
+
+  def update_accel_boost(self, sm: messaging.SubMaster, output_a_target_e2e: float, output_a_target_mpc: float, a_cruise: float) -> float:
+    # the boost would stack on Set Speed Assist
+    if self.accel_boost_sp.enabled and self.openpilot_longitudinal and not self.set_speed_assist.enabled:
+      return float(self.accel_boost_sp.update(sm, output_a_target_e2e, output_a_target_mpc, a_cruise))
+    # held at zero, so it builds from zero when it comes back
+    self.accel_boost_sp.boost = self.accel_boost_sp.total_boost = 0.
+    return output_a_target_e2e
 
   def publish_longitudinal_plan_sp(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
     plan_sp_send = messaging.new_message('longitudinalPlanSP')
@@ -127,5 +140,12 @@ class LongitudinalPlannerSP:
     e2eAlerts = longitudinalPlanSP.e2eAlerts
     e2eAlerts.greenLightAlert = self.e2e_alerts_helper.green_light_alert
     e2eAlerts.leadDepartAlert = self.e2e_alerts_helper.lead_depart_alert
+
+    # Set Speed Assist
+    setSpeedAssist = longitudinalPlanSP.setSpeedAssist
+    setSpeedAssist.active = self.set_speed_assist.active
+    setSpeedAssist.lift = float(self.set_speed_assist.lift)
+    setSpeedAssist.gain = float(self.set_speed_assist.gain)
+    setSpeedAssist.fade = float(self.set_speed_assist.fade)
 
     pm.send('longitudinalPlanSP', plan_sp_send)

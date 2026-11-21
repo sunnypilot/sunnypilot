@@ -82,7 +82,7 @@ class TestLoggerd(OpenpilotTestCase):
 
     managed_processes["loggerd"].start()
     for s in services:
-      assert pm.wait_for_readers_to_update(s, timeout=5)
+      assert pm.wait_for_readers_to_update(s, timeout=5, dt=0.001)
 
     sent_msgs = defaultdict(list)
     for i in range(random.randint(2, 10) * 100):
@@ -98,10 +98,10 @@ class TestLoggerd(OpenpilotTestCase):
       # that loggerd logged every message we sent.
       if (i + 1) % 100 == 0:
         for s in services:
-          assert pm.wait_for_readers_to_update(s, timeout=5)
+          assert pm.wait_for_readers_to_update(s, timeout=5, dt=0.001)
 
     for s in services:
-      assert pm.wait_for_readers_to_update(s, timeout=5)
+      assert pm.wait_for_readers_to_update(s, timeout=5, dt=0.001)
     managed_processes["loggerd"].stop()
 
     return sent_msgs
@@ -117,6 +117,10 @@ class TestLoggerd(OpenpilotTestCase):
       (VisionStreamType.VISION_STREAM_WIDE_ROAD, frame_spec, "wideRoadCameraState"),
     ]
 
+    # set env before start_listener(), its thread calls getenv() which races with setenv()
+    os.environ["LOGGERD_TEST"] = "1"
+    os.environ["LOGGERD_SEGMENT_LENGTH"] = str(segment_length)
+
     sm = messaging.SubMaster(["narrowRoadEncodeData"])
     pm = messaging.PubMaster([s for _, _, s in streams] + ["rawAudioData"])
     vipc_server = VisionIpcServer("camerad")
@@ -124,18 +128,16 @@ class TestLoggerd(OpenpilotTestCase):
       vipc_server.create_buffers_with_sizes(stream_type, 40, *(frame_spec))
     vipc_server.start_listener()
 
-    os.environ["LOGGERD_TEST"] = "1"
-    os.environ["LOGGERD_SEGMENT_LENGTH"] = str(segment_length)
     managed_processes["loggerd"].start()
     managed_processes["encoderd"].start()
-    assert pm.wait_for_readers_to_update("narrowRoadCameraState", timeout=5)
+    assert pm.wait_for_readers_to_update("narrowRoadCameraState", timeout=5, dt=0.001)
 
     fps = 20
     for n in range(1, int(num_segs * segment_length * fps) + 1):
       # send video
       for stream_type, frame_spec, state in streams:
         dat = np.empty(frame_spec[2], dtype=np.uint8)
-        vipc_server.send(stream_type, dat[:].flatten().tobytes(), n, n / fps, n / fps)
+        vipc_server.send(stream_type, dat[:].flatten().tobytes(), n, int(n / fps * 1e9), int(n / fps * 1e9))
 
         camera_state = messaging.new_message(state)
         frame = getattr(camera_state, state)

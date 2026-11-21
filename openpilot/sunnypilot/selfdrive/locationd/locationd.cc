@@ -691,7 +691,7 @@ int Localizer::locationd_thread() {
   const std::initializer_list<const char *> service_list = {gps_location_socket, "cameraOdometry", "extrinsicsCalibration",
                                                           "carState", "accelerometer", "gyroscope"};
 
-  SubMaster sm(service_list, {}, nullptr, {gps_location_socket});
+  SubMaster sm(service_list, {}, {gps_location_socket});
   PubMaster pm({"liveLocationKalman"});
 
   uint64_t cnt = 0;

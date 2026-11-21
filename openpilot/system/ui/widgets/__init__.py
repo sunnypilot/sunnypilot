@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import time
-import pyray as rl
+import raylib_nb as rl
 from enum import IntEnum
 from typing import Protocol, TypeVar
 from collections.abc import Callable
@@ -85,6 +85,11 @@ class Widget(abc.ABC):
     self._enabled = enabled
 
   @property
+  def covers_screen(self) -> bool:
+    # if so, the nav stack skips rendering the widgets under it
+    return False
+
+  @property
   def is_visible(self) -> bool:
     return self._is_visible() if callable(self._is_visible) else self._is_visible
 
@@ -162,7 +167,7 @@ class Widget(abc.ABC):
       if not self._multi_touch and mouse_event.slot != 0:
         continue
 
-      mouse_in_rect = rl.check_collision_point_rec(mouse_event.pos, hit_rect)
+      mouse_in_rect = rl.check_collision_point_rec(rl.Vector2(mouse_event.pos.x, mouse_event.pos.y), hit_rect)
       # Ignores touches/presses that start outside our rect
       # Allows touch to leave the rect and come back in focus if mouse did not release
       if mouse_event.left_pressed and touch_valid:

@@ -80,7 +80,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     refuse @3;
 
     warningSoft @4;
-    warningImmediate @5;
+    warningImmediateSystem @5;
 
     prompt @6;
     promptRepeat @7;
@@ -89,7 +89,7 @@ struct SelfdriveStateSP @0x81c2f05a394cf4af {
     # unused, these are reserved for upstream events so we don't collide
     reserved9 @9;
     reserved10 @10;
-    reserved11 @11;
+    warningImmediateUser @11;
     reserved12 @12;
     reserved13 @13;
     reserved14 @14;
@@ -206,6 +206,7 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   aTarget @5 :Float32;
   events @6 :List(OnroadEventSP.Event);
   e2eAlerts @7 :E2eAlerts;
+  setSpeedAssist @8 :SetSpeedAssist;
 
   deprecated :group {
     dec @0 :DynamicExperimentalControlDEPRECATED;
@@ -311,6 +312,13 @@ struct LongitudinalPlanSP @0xf35cc4560bbf6ec2 {
   struct E2eAlerts {
     greenLightAlert @0 :Bool;
     leadDepartAlert @1 :Bool;
+  }
+
+  struct SetSpeedAssist {
+    active @0 :Bool;
+    lift @1 :Float32;  # m/s^2 added to the e2e candidate
+    gain @2 :Float32;
+    fade @3 :Float32;
   }
 }
 

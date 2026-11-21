@@ -1,6 +1,6 @@
 import os
 import math
-import pyray as rl
+import raylib_nb as rl
 from collections.abc import Callable
 from enum import Enum
 from typing import cast
@@ -11,29 +11,29 @@ from collections import deque
 MIN_VELOCITY = 10  # px/s, changes from auto scroll to steady state
 MIN_VELOCITY_FOR_CLICKING = 2 * 60  # px/s, accepts clicks while auto scrolling below this velocity
 MIN_DRAG_PIXELS = 12
+DRAG_ANGLE_BIAS = 2.0  # a panel that can scroll toward a drag takes it up to ~63 deg off its axis, instead of 45
 AUTO_SCROLL_TC_SNAP = 0.025
 AUTO_SCROLL_TC = 0.18
 BOUNCE_RETURN_RATE = 10.0
 SNAP_RATE = 6.3  # matches previous Scroller snapping. exp rate of approach to snap target, 1/s
 REJECT_DECELERATION_FACTOR = 3
 MAX_SPEED = 10000.0  # px/s
+FLING_VELOCITY_SAMPLES = 6  # ~50ms of touch on mici
 
 DEBUG = os.getenv("DEBUG_SCROLL", "0") == "1"
 
 
-# Weights older (steadier) velocity samples more heavily on release.
-# Finger-lift samples are noisy; trusting earlier samples gives consistent fling velocity.
-# Reverse-engineered from iOS UIScrollView (tuned at 120Hz touch) by Flutter team:
-# https://github.com/flutter/flutter/pull/60501
-# 3 samples ≈ 25ms at 120Hz (iOS) / ~21ms at 140Hz (comma). Scale if touch rate changes.
-def weighted_velocity(buffer: deque) -> float:
-  if len(buffer) >= 3:
-    return buffer[-3] * 0.6 + buffer[-2] * 0.35 + buffer[-1] * 0.05
-  elif len(buffer) == 2:
-    return buffer[-2] * 0.7 + buffer[-1] * 0.3
-  elif len(buffer) == 1:
-    return buffer[-1]
-  return 0.0
+# Fling velocity is the slope of a best fit line through the last few touch positions.
+# Touch timestamps are a bit noisy, and a fit smooths that out much better than the last few velocities.
+def fit_velocity(samples: deque[tuple[float, float]]) -> float:
+  if len(samples) < 2:
+    return 0.0
+  mean_t = sum(t for t, _ in samples) / len(samples)
+  mean_pos = sum(pos for _, pos in samples) / len(samples)
+  var_t = sum((t - mean_t) ** 2 for t, _ in samples)
+  if var_t == 0.0:
+    return 0.0
+  return sum((t - mean_t) * (pos - mean_pos) for t, pos in samples) / var_t
 
 
 # from https://ariya.io/2011/10/flick-list-with-its-momentum-scrolling-and-deceleration
@@ -45,6 +45,10 @@ class ScrollState(Enum):
 
 
 class GuiScrollPanel2:
+  # (panel, touch press, frame) of the last bid for a drag. Nested panels see the same touches, outer ones first. Every panel
+  # that wants a drag past the touch slop bids for it, and the last bidder, the innermost one, wins it on the next frame
+  _drag_bid: tuple['GuiScrollPanel2', MouseEvent, int] | None = None
+
   def __init__(self, horizontal: bool = True) -> None:
     self._horizontal = horizontal
     self._state = ScrollState.STEADY
@@ -53,7 +57,9 @@ class GuiScrollPanel2:
     self._previous_mouse_event: MouseEvent | None = None
     self._velocity = 0.0  # pixels per second
     self._velocity_buffer: deque[float] = deque(maxlen=12 if COMMA_HARDWARE else 6)
+    self._position_buffer: deque[tuple[float, float]] = deque(maxlen=FLING_VELOCITY_SAMPLES)  # (t, pos)
     self._enabled: bool | Callable[[], bool] = True
+    self._dragging = False  # bid for the current touch, so it's not a tap
 
   def set_enabled(self, enabled: bool | Callable[[], bool]) -> None:
     self._enabled = enabled
@@ -68,9 +74,16 @@ class GuiScrollPanel2:
 
     bounds_size = bounds.width if self._horizontal else bounds.height
 
+    if self._state == ScrollState.PRESSED and GuiScrollPanel2._drag_bid is not None:
+      bidder, press, frame = GuiScrollPanel2._drag_bid
+      if press is self._initial_click_event and frame < gui_app.frame:
+        self._state = ScrollState.MANUAL_SCROLL if bidder is self else ScrollState.STEADY
+
     for mouse_event in gui_app.mouse_events:
-      self._handle_mouse_event(mouse_event, bounds, bounds_size, content_size)
-      self._previous_mouse_event = mouse_event
+      # ignore additional fingers to avoid jumping
+      if mouse_event.slot == 0:
+        self._handle_mouse_event(mouse_event, bounds, bounds_size, content_size)
+        self._previous_mouse_event = mouse_event
 
     self._update_state(bounds_size, content_size, snap_target)
 
@@ -148,32 +161,32 @@ class GuiScrollPanel2:
 
     mouse_pos = self._get_mouse_pos(mouse_event)
 
+    if mouse_event.left_pressed or not self.enabled:
+      self._dragging = False
+
     if not self.enabled:
       # Reset state if not enabled
       self._state = ScrollState.STEADY
       self._velocity = 0.0
       self._velocity_buffer.clear()
+      self._position_buffer.clear()
 
     elif self._state == ScrollState.STEADY:
-      if rl.check_collision_point_rec(mouse_event.pos, bounds):
+      if rl.check_collision_point_rec(rl.Vector2(mouse_event.pos.x, mouse_event.pos.y), bounds):
         if mouse_event.left_pressed:
           self._state = ScrollState.PRESSED
           self._initial_click_event = mouse_event
 
     elif self._state == ScrollState.PRESSED:
-      initial_click_pos = self._get_mouse_pos(cast(MouseEvent, self._initial_click_event))
-      diff = abs(mouse_pos - initial_click_pos)
+      initial_click_event = cast(MouseEvent, self._initial_click_event)
+      dx, dy = mouse_event.pos.x - initial_click_event.pos.x, mouse_event.pos.y - initial_click_event.pos.y
+      along, across = (dx, dy) if self._horizontal else (dy, dx)
+      can_scroll = self.get_offset() > min_offset if along < 0 else self.get_offset() < max_offset
       if mouse_event.left_released:
-        # Special handling for down and up clicks across two frames
-        # TODO: not sure what that means or if it's accurate anymore
-        if out_of_bounds:
-          self._state = ScrollState.AUTO_SCROLL
-        elif diff <= MIN_DRAG_PIXELS:
-          self._state = ScrollState.STEADY
-        else:
-          self._state = ScrollState.MANUAL_SCROLL
-      elif diff > MIN_DRAG_PIXELS:
-        self._state = ScrollState.MANUAL_SCROLL
+        self._state = ScrollState.STEADY
+      elif math.hypot(dx, dy) > MIN_DRAG_PIXELS and abs(along) * (DRAG_ANGLE_BIAS if can_scroll else 1.0) >= abs(across):
+        self._dragging = True
+        GuiScrollPanel2._drag_bid = (self, initial_click_event, gui_app.frame)
 
     elif self._state == ScrollState.MANUAL_SCROLL:
       if mouse_event.left_released:
@@ -183,10 +196,7 @@ class GuiScrollPanel2:
         # If velocity decelerates very quickly, assume user doesn't intend to auto scroll.
         # Catches two cases: 1) swipe, stop finger, then lift (stale high velocity in buffer)
         # 2) dirty finger lift where finger rotates/slides producing spurious velocity spike.
-        # TODO: this heuristic false-positives on fast swipes because 140Hz touch polling
-        #  jitter causes velocity to oscillate (not real deceleration). Better approaches:
-        #  - Use evdev kernel timestamps to eliminate velocity oscillation at the source
-        #  - Replace with a time-since-last-event check (40ms timeout) for swipe-stop-lift
+        # Uses px moved per touch sample, not velocity, since noisy timestamps make steady swipes look like a sudden stop.
         high_decel = False
         if len(self._velocity_buffer) > 2:
           # We limit max to first half since final few velocities can surpass first few
@@ -201,7 +211,7 @@ class GuiScrollPanel2:
               print('deceleration too high, going to STEADY')
             high_decel = True
 
-        self._velocity = weighted_velocity(self._velocity_buffer)
+        self._velocity = max(-MAX_SPEED, min(MAX_SPEED, fit_velocity(self._position_buffer)))
 
         # If final velocity is below some threshold, switch to steady state too
         low_speed = abs(self._velocity) <= MIN_VELOCITY_FOR_CLICKING * 1.5  # plus some margin
@@ -213,6 +223,7 @@ class GuiScrollPanel2:
           self._velocity = 0.0
           self._state = ScrollState.STEADY
         self._velocity_buffer.clear()
+        self._position_buffer.clear()
       else:
         # Update velocity for when we release the mouse button.
         # Do not update velocity on the same frame the mouse was released
@@ -221,7 +232,12 @@ class GuiScrollPanel2:
         delta_t = max((mouse_event.t - cast(MouseEvent, self._previous_mouse_event).t), 1e-6)
         self._velocity = delta_x / delta_t
         self._velocity = max(-MAX_SPEED, min(MAX_SPEED, self._velocity))
-        self._velocity_buffer.append(self._velocity)
+        self._velocity_buffer.append(delta_x)
+
+        # start from the touch before the first drag sample, like the velocity buffer
+        if len(self._position_buffer) == 0:
+          self._position_buffer.append((cast(MouseEvent, self._previous_mouse_event).t, previous_mouse_pos))
+        self._position_buffer.append((mouse_event.t, mouse_pos))
 
         # rubber-banding: reduce dragging when out of bounds
         # TODO: this drifts when dragging quickly
@@ -236,14 +252,13 @@ class GuiScrollPanel2:
 
     elif self._state == ScrollState.AUTO_SCROLL:
       if mouse_event.left_pressed:
+        self._state = ScrollState.PRESSED
+        self._initial_click_event = mouse_event
         # Decide whether to click or scroll (block click if moving too fast)
-        if abs(self._velocity) <= MIN_VELOCITY_FOR_CLICKING:
-          # Traveling slow enough, click
-          self._state = ScrollState.PRESSED
-          self._initial_click_event = mouse_event
-        else:
-          # Go straight into manual scrolling to block erroneous input
-          self._state = ScrollState.MANUAL_SCROLL
+        if abs(self._velocity) > MIN_VELOCITY_FOR_CLICKING:
+          # Catch the fling: bid for the touch right away to block erroneous input
+          self._dragging = True
+          GuiScrollPanel2._drag_bid = (self, mouse_event, gui_app.frame)
           # Reset velocity for touch down and up events that happen in back-to-back frames
           self._velocity = 0.0
 
@@ -269,4 +284,4 @@ class GuiScrollPanel2:
 
   def is_touch_valid(self) -> bool:
     # MIN_VELOCITY_FOR_CLICKING is checked in auto-scroll state
-    return bool(self._state != ScrollState.MANUAL_SCROLL)
+    return not self._dragging

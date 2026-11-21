@@ -1,33 +1,24 @@
-import colorsys
 import numpy as np
-import pyray as rl
-from openpilot.cereal import log, messaging
-from opendbc.car.structs import car
-from dataclasses import dataclass, field
-from openpilot.common.params import Params
+import raylib_nb as rl
+from openpilot.cereal import log
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.selfdrive.controls.radard import RADAR_TO_CAMERA
 from openpilot.selfdrive.locationd.calibrationd import HEIGHT_INIT
 from openpilot.selfdrive.ui.ui_state import ui_state, UIStatus
 from openpilot.selfdrive.ui.mici.onroad import blend_colors
+from openpilot.selfdrive.ui.mici.onroad.status import status_fade
+from openpilot.selfdrive.ui.onroad.model_renderer import ModelRenderer as BaseModelRenderer, CLIP_MARGIN, MAX_DRAW_DISTANCE, STOCK_PATH_GRADIENT
 from openpilot.system.ui.lib.application import gui_app
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
-from openpilot.system.ui.widgets import Widget
+from openpilot.system.ui.lib.polygon import Gradient, draw_polygon
 
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.model_renderer import LANE_LINE_COLORS_SP, ModelRendererSP
 
-CLIP_MARGIN = 500
-MIN_DRAW_DISTANCE = 10.0
-MAX_DRAW_DISTANCE = 100.0
 LEAD_BAR_LENGTH = 12.0  # px
 LEAD_BAR_WIDTH = 1.8  # m
 
-STOCK_PATH_GRADIENT = Gradient(
-  start=(0.0, 1.0),
-  end=(0.0, 0.0),
-  colors=[rl.Color(13, 248, 122, 102), rl.Color(114, 255, 92, 89), rl.Color(114, 255, 92, 0)],
-  stops=[0.0, 0.5, 1.0],
-)
+STOP_SPEED = 1.0  # m/s, planned speed that counts as stopping
+STOP_APPEAR_DISTANCE = (8.0, 50.0)  # m
+STOP_LEAD_MARGIN = 15.0  # m, a lead this close past the stop is what it's stopping for
 
 LANE_LINE_COLORS = {
   UIStatus.DISENGAGED: rl.Color(200, 200, 200, 255),
@@ -37,10 +28,10 @@ LANE_LINE_COLORS = {
 }
 
 
-@dataclass
-class ModelPoints:
-  raw_points: np.ndarray = field(default_factory=lambda: np.empty((0, 3), dtype=np.float32))
-  projected_points: np.ndarray = field(default_factory=lambda: np.empty((0, 2), dtype=np.float32))
+def _faded(gradient: Gradient, alpha: float) -> Gradient:
+  if alpha >= 1:
+    return gradient
+  return Gradient(gradient.start, gradient.end, [rl.Color(c.r, c.g, c.b, round(c.a * alpha)) for c in gradient.colors], gradient.stops)
 
 
 class LeadVehicle:
@@ -51,47 +42,65 @@ class LeadVehicle:
     self.fade_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
 
-class ModelRenderer(Widget, ModelRendererSP):
+class StopPoint:
+  """Where the model plans to stop with no lead to stop behind, e.g. at a stop sign or red light"""
   def __init__(self):
-    Widget.__init__(self)
+    self.bar = np.empty((0, 2), dtype=np.float32)
+    self.d = 0.0
+    self.planned_d: float | None = None
+    self.visible = False
+    # the planned stop comes and goes frame to frame, so it needs to persist before showing and before hiding
+    self._planning, self._planning_filter = False, FirstOrderFilter(0.0, 0.3, 1 / gui_app.target_fps)
+    self._behind_lead, self._behind_lead_filter = False, FirstOrderFilter(0.0, 0.3, 1 / gui_app.target_fps)
+    self.fade_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+
+  def update(self, model, model_updated: bool, v_ego: float, lead_distances: list[float]) -> bool:
+    # the stop point is fixed on the road, so move it with the car between model frames
+    self.d = max(self.d - v_ego / gui_app.target_fps, 0.0)
+    if model_updated:
+      self.planned_d = self._get_planned_stop(model)
+      if self.planned_d is not None:
+        self.d = self.d + 0.3 * (self.planned_d - self.d) if self.visible else self.planned_d
+
+    self._planning = hysteresis(self._planning_filter.update(self.planned_d is not None), self._planning, 0.6, 0.2)
+    # the lead bar already shows stopping behind a lead
+    behind_lead = any(d < self.d + RADAR_TO_CAMERA + STOP_LEAD_MARGIN for d in lead_distances)
+    self._behind_lead = hysteresis(self._behind_lead_filter.update(behind_lead), self._behind_lead, 0.6, 0.1)
+    # appear out ahead, not right in front of the car while creeping or stopped,
+    # and not so far out that a lead to stop behind may not be detected yet
+    appear = STOP_APPEAR_DISTANCE[0] < self.d < STOP_APPEAR_DISTANCE[1]
+    self.visible = self._planning and not self._behind_lead and (self.visible or appear)
+    return self.visible
+
+  @staticmethod
+  def _get_planned_stop(model) -> float | None:
+    vx, px = np.array(model.velocity.x), np.array(model.position.x)
+    stopped = np.flatnonzero(vx < STOP_SPEED)
+    if not stopped.size or len(vx) != len(px):
+      return None
+    i = stopped[0]
+    return 0.0 if i == 0 else float(np.interp(STOP_SPEED, vx[[i, i - 1]], px[[i, i - 1]]))
+
+
+def hysteresis(x: float, state: bool, on: float, off: float) -> bool:
+  return x > on or (state and x > off)
+
+
+class ModelRenderer(BaseModelRenderer, ModelRendererSP):
+  LANE_LINE_WIDTHS = (0.12, 0.16, 0.16, 0.16)
+  ROAD_EDGE_WIDTH = 0.16
+
+  def __init__(self):
+    super().__init__()
     ModelRendererSP.__init__(self)
-    self._longitudinal_control = False
-    self._lane_line_probs = np.zeros(4, dtype=np.float32)
-    self._road_edge_stds = np.zeros(2, dtype=np.float32)
-    self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
-    self._path_offset_z = HEIGHT_INIT[0]
-
-    # Initialize ModelPoints objects
-    self._path = ModelPoints()
-    self._lane_lines = [ModelPoints() for _ in range(4)]
-    self._road_edges = [ModelPoints() for _ in range(2)]
-    self._acceleration_x = np.empty((0,), dtype=np.float32)
-
+    self._lead_bars = [LeadVehicle(), LeadVehicle()]
+    self._stop_point = StopPoint()
     self._torque_filter = FirstOrderFilter(0, 0.1, 1 / gui_app.target_fps)
+    self._visible = 0.0
 
-    # 3x3 car space -> rect-origin space (draw methods add rect.x/y)
-    self._car_space_transform = np.zeros((3, 3), dtype=np.float32)
-    self._transform_dirty = True
-    self._clip_region = None
-
-    self._counter = -1
-    self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
-
-    self._path_gradient = Gradient(
-      start=(0.0, 1.0),  # Bottom of path
-      end=(0.0, 0.0),  # Top of path
-      colors=[],
-      stops=[],
-    )
-
-    # Get longitudinal control setting from car parameters
-    if car_params := Params().get("CarParams"):
-      cp = messaging.log_from_bytes(car_params, car.CarParams)
-      self._longitudinal_control = cp.openpilotLongitudinalControl
-
-  def set_transform(self, transform: np.ndarray):
-    self._car_space_transform = transform.astype(np.float32)
-    self._transform_dirty = True
+  def _draw_offset(self) -> np.ndarray:
+    # car space transform maps to rect-origin space
+    return np.array([self._rect.x, self._rect.y], dtype=np.float32)
 
   def _render(self, rect: rl.Rectangle):
     sm = ui_state.sm
@@ -137,33 +146,21 @@ class ModelRenderer(Widget, ModelRendererSP):
       self._update_model(lead_one, path_x_array)
       self._transform_dirty = False
 
-    # Draw elements (hide when disengaged)
-    if ui_state.status != UIStatus.DISENGAGED:
+    # lane lines and path fade out while disengaged
+    self._visible = 1 - status_fade.weight(UIStatus.DISENGAGED)
+    if self._visible > 1e-2:
       self._draw_lane_lines()
       self._draw_path()
       self.blendful.draw(self._rect)
 
     if render_lead_indicator:
-      self._update_leads(sm)
+      self._update_lead_bars(sm)
       self._draw_lead_indicator()
     else:
-      self._lead_vehicles = [LeadVehicle(), LeadVehicle()]
+      self._lead_bars = [LeadVehicle(), LeadVehicle()]
+      self._stop_point = StopPoint()
 
-  def _update_raw_points(self, model):
-    """Update raw 3D points from model data"""
-    self._path.raw_points = np.array([model.position.x, np.array(model.position.y) + self._camera_offset, model.position.z], dtype=np.float32).T
-
-    for i, lane_line in enumerate(model.laneLines):
-      self._lane_lines[i].raw_points = np.array([lane_line.x, np.array(lane_line.y) + self._camera_offset, lane_line.z], dtype=np.float32).T
-
-    for i, road_edge in enumerate(model.roadEdges):
-      self._road_edges[i].raw_points = np.array([road_edge.x, np.array(road_edge.y) + self._camera_offset, road_edge.z], dtype=np.float32).T
-
-    self._lane_line_probs = np.array(model.laneLineProbs, dtype=np.float32)
-    self._road_edge_stds = np.array(model.roadEdgeStds, dtype=np.float32)
-    self._acceleration_x = np.array(model.acceleration.x, dtype=np.float32)
-
-  def _update_leads(self, sm):
+  def _update_lead_bars(self, sm):
     plan = sm['longitudinalPlan']
     if plan.longitudinalPlanSource == log.LongitudinalPlan.LongitudinalPlanSource.e2e and len(sm['modelV2'].leadsV3) > 1:
       leads = [(lead.prob > 0.5, lead.x[0], -lead.y[0]) for lead in list(sm['modelV2'].leadsV3)[:2]]
@@ -179,8 +176,8 @@ class ModelRenderer(Widget, ModelRendererSP):
     # braking disengages without making openpilot unavailable
     available = ss.enabled or ss.engageable or cs.brakePressed
     lane = self._path.raw_points
-    opacity = 0.4 if ui_state.status == UIStatus.DISENGAGED else 0.8
-    for lead, (present, d_rel, y_rel) in zip(self._lead_vehicles, leads, strict=True):
+    opacity = 0.8 - 0.4 * status_fade.weight(UIStatus.DISENGAGED)
+    for lead, (present, d_rel, y_rel) in zip(self._lead_bars, leads, strict=True):
       visible = available and present and d_rel < MAX_DRAW_DISTANCE and len(lane) > 0
       # snap to a new vehicle instead of sliding over
       if not visible or abs(y_rel - lead.y_filter.x) > 3.0:
@@ -188,6 +185,15 @@ class ModelRenderer(Widget, ModelRendererSP):
       lead.fade_filter.update(opacity if visible else 0.0)
       if visible:
         lead.bar = self._get_lead_bar(lane, lead.d_filter.update(d_rel), lead.y_filter.update(y_rel))
+
+    # the radar is at the front of the car, which is what stops at the planned stop
+    lead_distances = [d_rel for present, d_rel, _ in leads if present]
+    planning_stop = self._stop_point.update(sm['modelV2'], sm.updated['modelV2'], cs.vEgo, lead_distances)
+    d_stop = self._stop_point.d + RADAR_TO_CAMERA
+    visible = available and planning_stop and d_stop < MAX_DRAW_DISTANCE and len(lane) > 0
+    self._stop_point.fade_filter.update(opacity if visible else 0.0)
+    if visible:
+      self._stop_point.bar = self._get_lead_bar(lane, d_stop, 0.0)
 
   def _get_lead_bar(self, lane, d_rel, y_rel):
     # bar on the road behind the lead, following the lane
@@ -203,82 +209,10 @@ class ModelRenderer(Widget, ModelRendererSP):
     bar[[1, 2]] = far + (near - far) * np.clip(length, 3.0, LEAD_BAR_LENGTH) / length
     return bar.astype(np.float32)
 
-  def _update_model(self, lead, path_x_array):
-    """Update model visualization data based on model message"""
-    max_distance = np.clip(path_x_array[-1], MIN_DRAW_DISTANCE, MAX_DRAW_DISTANCE)
-    max_idx = self._get_path_length_idx(self._lane_lines[0].raw_points[:, 0], max_distance)
-
-    # Update lane lines using raw points
-    line_width_factor = 0.12
-    for i, lane_line in enumerate(self._lane_lines):
-      if i in (1, 2):
-        line_width_factor = 0.16
-      lane_line.projected_points = self._map_line_to_polygon(
-        lane_line.raw_points, line_width_factor * self._lane_line_probs[i], 0.0, max_idx
-      )
-
-    # Update road edges using raw points
-    for road_edge in self._road_edges:
-      road_edge.projected_points = self._map_line_to_polygon(road_edge.raw_points, line_width_factor, 0.0, max_idx)
-    self.blendful.update(self, max_idx)
-
-    # Update path using raw points
-    if lead and lead.present:
-      lead_d = lead.dRel * 2.0
-      max_distance = np.clip(lead_d - min(lead_d * 0.35, 10.0), 0.0, max_distance)
-
-    max_idx = self._get_path_length_idx(path_x_array, max_distance)
-    self._path.projected_points = self._map_line_to_polygon(
-      self._path.raw_points, 0.9, self._path_offset_z, max_idx, allow_invert=False
-    )
-
-    self._update_path_gradient()
-
-  def _update_path_gradient(self):
-    if not self._longitudinal_control:
-      return
-
-    path_pts = self._path.projected_points + np.array([self._rect.x, self._rect.y], dtype=np.float32)
-    max_len = min(len(path_pts) // 2, len(self._acceleration_x))
-
-    segment_colors = []
-    gradient_stops = []
-
-    i = 0
-    while i < max_len:
-      # Some points (screen space) are out of frame (rect space)
-      track_y = path_pts[i][1]
-      if track_y < self._rect.y or track_y > (self._rect.y + self._rect.height):
-        i += 1
-        continue
-
-      # Calculate color based on acceleration (0 is bottom, 1 is top)
-      lin_grad_point = 1 - (track_y - self._rect.y) / self._rect.height
-
-      # speed up: 120, slow down: 0
-      path_hue = np.clip(60 + self._acceleration_x[i] * 35, 0, 120)
-
-      saturation = min(abs(self._acceleration_x[i] * 1.5), 1)
-      lightness = np.interp(saturation, [0.0, 1.0], [0.95, 0.62])
-      alpha = np.interp(lin_grad_point, [0.75 / 2.0, 0.75], [0.4, 0.0])
-
-      # Use HSL to RGB conversion
-      color = self._hsla_to_color(path_hue / 360.0, saturation, lightness, alpha)
-
-      gradient_stops.append(lin_grad_point)
-      segment_colors.append(color)
-
-      # Skip a point, unless next is last
-      i += 1 + (1 if (i + 2) < max_len else 0)
-
-    # Store the gradient in the path object
-    self._path_gradient.colors = segment_colors
-    self._path_gradient.stops = gradient_stops
-
   def _get_ll_color(self, prob: float, adjacent: bool, left: bool):
-    alpha = np.clip(prob, 0.0, 0.7)
+    alpha = np.clip(prob, 0.0, 0.7) * self._visible
     if adjacent:
-      _base_color = LANE_LINE_COLORS.get(ui_state.status, LANE_LINE_COLORS[UIStatus.DISENGAGED])
+      _base_color = status_fade.color(LANE_LINE_COLORS)
       color = rl.Color(_base_color.r, _base_color.g, _base_color.b, int(alpha * 255))
 
       # turn adjacent lls orange if torque is high
@@ -293,14 +227,11 @@ class ModelRenderer(Widget, ModelRendererSP):
     else:
       color = rl.Color(255, 255, 255, int(alpha * 255))
 
-    if ui_state.status == UIStatus.DISENGAGED:
-      color = rl.Color(0, 0, 0, int(alpha * 255))
-
     return color
 
   def _draw_lane_lines(self):
     """Draw lane lines and road edges. Two closest lines should be green (lane line or road edges)."""
-    offset = np.array([self._rect.x, self._rect.y], dtype=np.float32)
+    offset = self._draw_offset()
 
     for i, lane_line in enumerate(self._lane_lines):
       if lane_line.projected_points.size == 0:
@@ -325,102 +256,16 @@ class ModelRenderer(Widget, ModelRendererSP):
       self.rainbow_path.draw_rainbow_path(self._rect, self._path)
       return
 
-    path_pts = self._path.projected_points + np.array([self._rect.x, self._rect.y], dtype=np.float32)
+    path_pts = self._path.projected_points + self._draw_offset()
 
-    if ui_state.status == UIStatus.DISENGAGED:
-      draw_polygon(self._rect, path_pts, rl.Color(0, 0, 0, 90))
-    elif not self._longitudinal_control:
-      draw_polygon(self._rect, path_pts, gradient=STOCK_PATH_GRADIENT)
+    if not self._longitudinal_control:
+      draw_polygon(self._rect, path_pts, gradient=_faded(STOCK_PATH_GRADIENT, self._visible))
     elif len(self._path_gradient.colors) > 1:
-      draw_polygon(self._rect, path_pts, gradient=self._path_gradient)
+      draw_polygon(self._rect, path_pts, gradient=_faded(self._path_gradient, self._visible))
     else:
-      draw_polygon(self._rect, path_pts, rl.Color(255, 255, 255, 30))
+      draw_polygon(self._rect, path_pts, rl.Color(255, 255, 255, round(30 * self._visible)))
 
   def _draw_lead_indicator(self):
-    offset = np.array([self._rect.x, self._rect.y], dtype=np.float32)
-    for lead in self._lead_vehicles:
+    offset = self._draw_offset()
+    for lead in (*self._lead_bars, self._stop_point):
       draw_polygon(self._rect, lead.bar + offset, rl.Color(255, 255, 255, int(255 * lead.fade_filter.x)))
-
-  @staticmethod
-  def _get_path_length_idx(pos_x_array: np.ndarray, path_height: float) -> int:
-    """Get the index corresponding to the given path height"""
-    if len(pos_x_array) == 0:
-      return 0
-    indices = np.where(pos_x_array <= path_height)[0]
-    return indices[-1] if indices.size > 0 else 0
-
-  def _map_line_to_polygon(self, line: np.ndarray, y_off: float, z_off: float, max_idx: int, allow_invert: bool = True) -> np.ndarray:
-    """Convert 3D line to 2D polygon for rendering."""
-    if line.shape[0] == 0:
-      return np.empty((0, 2), dtype=np.float32)
-
-    # Slice points and filter non-negative x-coordinates
-    points = line[:max_idx + 1]
-    points = points[points[:, 0] >= 0]
-    if points.shape[0] == 0:
-      return np.empty((0, 2), dtype=np.float32)
-
-    N = points.shape[0]
-    # Generate left and right 3D points in one array using broadcasting
-    offsets = np.array([[0, -y_off, z_off], [0, y_off, z_off]], dtype=np.float32)
-    points_3d = points[None, :, :] + offsets[:, None, :]  # Shape: 2xNx3
-    points_3d = points_3d.reshape(2 * N, 3)  # Shape: (2*N)x3
-
-    # Transform all points to projected space in one operation
-    proj = self._car_space_transform @ points_3d.T  # Shape: 3x(2*N)
-    proj = proj.reshape(3, 2, N)
-    left_proj = proj[:, 0, :]
-    right_proj = proj[:, 1, :]
-
-    # Filter points where z is sufficiently large
-    valid_proj = (np.abs(left_proj[2]) >= 1e-6) & (np.abs(right_proj[2]) >= 1e-6)
-    if not np.any(valid_proj):
-      return np.empty((0, 2), dtype=np.float32)
-
-    # Compute screen coordinates
-    left_screen = left_proj[:2, valid_proj] / left_proj[2, valid_proj][None, :]
-    right_screen = right_proj[:2, valid_proj] / right_proj[2, valid_proj][None, :]
-
-    # Define clip region bounds
-    clip = self._clip_region
-    x_min, x_max = clip.x, clip.x + clip.width
-    y_min, y_max = clip.y, clip.y + clip.height
-
-    # Filter points within clip region
-    left_in_clip = (
-      (left_screen[0] >= x_min) & (left_screen[0] <= x_max) &
-      (left_screen[1] >= y_min) & (left_screen[1] <= y_max)
-    )
-    right_in_clip = (
-      (right_screen[0] >= x_min) & (right_screen[0] <= x_max) &
-      (right_screen[1] >= y_min) & (right_screen[1] <= y_max)
-    )
-    both_in_clip = left_in_clip & right_in_clip
-
-    if not np.any(both_in_clip):
-      return np.empty((0, 2), dtype=np.float32)
-
-    # Select valid and clipped points
-    left_screen = left_screen[:, both_in_clip]
-    right_screen = right_screen[:, both_in_clip]
-
-    # Handle Y-coordinate inversion on hills
-    if not allow_invert and left_screen.shape[1] > 1:
-      y = left_screen[1, :]  # y-coordinates
-      keep = y == np.minimum.accumulate(y)
-      if not np.any(keep):
-        return np.empty((0, 2), dtype=np.float32)
-      left_screen = left_screen[:, keep]
-      right_screen = right_screen[:, keep]
-
-    return np.vstack((left_screen.T, right_screen[:, ::-1].T)).astype(np.float32)
-
-  @staticmethod
-  def _hsla_to_color(h, s, l, a):
-    rgb = colorsys.hls_to_rgb(h, l, s)
-    return rl.Color(
-      int(rgb[0] * 255),
-      int(rgb[1] * 255),
-      int(rgb[2] * 255),
-      int(a * 255)
-    )

@@ -58,6 +58,7 @@ class UIStateSP:
     self.rainbow_path: bool = False
     self.road_name_toggle: bool = False
     self.rocket_fuel: bool = False
+    self.speed_assist: bool = False
     self.speed_limit_mode = None
     self.standstill_timer: bool = False
     self.sunnylink_enabled: bool = False
@@ -101,6 +102,15 @@ class UIStateSP:
         self.onroad_brightness_timer = 15 * gui_app.target_fps
       else:
         self.onroad_brightness_timer = self.onroad_brightness_timer_param * gui_app.target_fps
+
+  @property
+  def speed_assist_active(self) -> bool:
+    return self.has_longitudinal_control and self.speed_assist
+
+  def toggle_speed_assist(self) -> None:
+    if self.has_longitudinal_control:
+      self.speed_assist = not self.speed_assist
+      self.params.put_bool("SetSpeedAssist", self.speed_assist, block=True)
 
   @property
   def onroad_brightness_timer_expired(self) -> bool:
@@ -181,6 +191,7 @@ class UIStateSP:
     self.rainbow_path = self.params.get_bool("RainbowMode")
     self.road_name_toggle = self.params.get_bool("RoadNameToggle")
     self.rocket_fuel = self.params.get_bool("RocketFuel")
+    self.speed_assist = self.params.get_bool("SetSpeedAssist")
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
     self.standstill_timer = self.params.get_bool("StandstillTimer")
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
@@ -278,13 +289,17 @@ class DeviceSP:
     self._blocked_by_screensaver = False
 
   @staticmethod
-  def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float) -> float:
+  def set_onroad_brightness(_ui_state, awake: bool, cur_brightness: float, auto_floor: float, backlight_min: float) -> float:
     if not awake or not _ui_state.started:
       return cur_brightness
 
+    # alerts never show darker than upstream's lowest auto level
+    if _ui_state.sm['selfdriveState'].alertSize != log.SelfdriveState.AlertSize.none:
+      return max(auto_floor, cur_brightness)
+
     if _ui_state.onroad_brightness_timer != 0:
       if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
-        return max(30.0, cur_brightness)
+        return max(backlight_min, cur_brightness)
       return cur_brightness
 
     # 0: Auto (Default), 1: Auto (Dark), 2: Screen Off
@@ -299,7 +314,16 @@ class DeviceSP:
     return float((_ui_state.onroad_brightness - 2) * 5)
 
   @staticmethod
-  def set_min_onroad_brightness(_ui_state, min_brightness: int) -> int:
+  def backlight_and_dim(brightness: float, backlight_min: float, dims: bool) -> tuple[int, float]:
+    if brightness <= 0:
+      return 0, 0.0
+    # like upstream, dim the UI where the panel can't go below backlight_min (mici), else lower the backlight
+    if dims:
+      return round(max(brightness, backlight_min)), max(0.0, 1 - brightness / backlight_min)
+    return round(brightness), 0.0
+
+  @staticmethod
+  def set_min_onroad_brightness(_ui_state, min_brightness: float) -> float:
     if _ui_state.onroad_brightness == OnroadBrightness.AUTO_DARK:
       min_brightness = 10
 

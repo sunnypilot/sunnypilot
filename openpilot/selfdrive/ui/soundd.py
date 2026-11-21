@@ -20,7 +20,8 @@ SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
 MIN_VOLUME = 0.1
-ALERT_RAMP_TIME = 4 # seconds to ramp to max volume for warningImmediate
+ALERT_RAMP_TIME = 4 # seconds to ramp critical alerts to max volume
+ALERT_MAX_TIME = 8 # seconds before critical alerts switch to the max sound
 SELFDRIVE_STATE_TIMEOUT = 5 # 5 seconds
 FILTER_DT = 1. / (micd.SAMPLE_RATE / micd.FFT_SAMPLES)
 
@@ -34,6 +35,9 @@ if HARDWARE.get_device_type() == "tizi":
 
 AudibleAlert = log.SelfdriveState.AudibleAlert
 AudibleAlertSP = custom.SelfdriveStateSP.AudibleAlert
+# internal sound keys, not AudibleAlerts
+CRITICAL_MAX = -1
+DM_CRITICAL_MAX = -2
 
 
 sound_list_sp: dict[int, tuple[str, int | None, float]] = {
@@ -55,9 +59,19 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.preAlert: ("pre_alert.wav", 1, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("critical.wav", None, MAX_VOLUME),
-  AudibleAlert.warningImmediate: ("dm_critical.wav", None, MAX_VOLUME),
+  AudibleAlert.warningImmediateSystem: ("critical.wav", None, MAX_VOLUME),
+  AudibleAlert.warningImmediateUser: ("dm_critical.wav", None, MAX_VOLUME),
+  CRITICAL_MAX: ("critical_max.wav", None, MAX_VOLUME),
+  DM_CRITICAL_MAX: ("dm_critical_max.wav", None, MAX_VOLUME),
 
   **sound_list_sp,
+}
+
+# critical alerts ramp up in volume, then switch to their max sound
+critical_max_sounds = {
+  AudibleAlert.warningSoft: CRITICAL_MAX,
+  AudibleAlert.warningImmediateSystem: CRITICAL_MAX,
+  AudibleAlert.warningImmediateUser: DM_CRITICAL_MAX,
 }
 
 def check_selfdrive_timeout_alert(sm):
@@ -77,6 +91,7 @@ class Soundd(QuietMode):
     self.load_sounds()
 
     self.current_alert = AudibleAlert.none
+    self.current_sound = AudibleAlert.none
     self.current_volume = MIN_VOLUME
     self.current_sound_frame = 0
 
@@ -109,7 +124,7 @@ class Soundd(QuietMode):
 
     if self.should_play_sound(self.current_alert):
       num_loops = sound_list[self.current_alert][1]
-      sound_data = self.loaded_sounds[self.current_alert]
+      sound_data = self.loaded_sounds[self.current_sound]
       written_frames = 0
 
       current_sound_frame = self.current_sound_frame % len(sound_data)
@@ -136,7 +151,7 @@ class Soundd(QuietMode):
     data_out[:frames, 0] = self.get_sound_data(frames)
 
   def update_alert(self, new_alert):
-    current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame >= len(self.loaded_sounds[self.current_alert])
+    current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame >= len(self.loaded_sounds[self.current_sound])
     # let looping sounds finish the current loop instead of cutting off mid tone
     if new_alert == AudibleAlert.none and self.current_alert != AudibleAlert.none and sound_list[self.current_alert][1] is None:
       if current_alert_played_once:
@@ -147,10 +162,11 @@ class Soundd(QuietMode):
       return
     self.pending_stop = False
     if self.current_alert != new_alert and (new_alert != AudibleAlert.none or current_alert_played_once):
-      if new_alert == AudibleAlert.warningImmediate:
+      if new_alert in critical_max_sounds:
         self.ramp_start_volume = self.current_volume
         self.ramp_start_time = time.monotonic()
       self.current_alert = new_alert
+      self.current_sound = new_alert
       self.current_sound_frame = 0
 
   def get_audible_alert(self, sm):
@@ -158,7 +174,7 @@ class Soundd(QuietMode):
       new_alert = sm['selfdriveState'].alertSound.raw
       self.update_alert(new_alert)
     elif check_selfdrive_timeout_alert(sm):
-      self.update_alert(AudibleAlert.warningImmediate)
+      self.update_alert(AudibleAlert.warningImmediateSystem)
       self.selfdrive_timeout_alert = True
     elif self.selfdrive_timeout_alert:
       self.update_alert(AudibleAlert.none)
@@ -199,11 +215,14 @@ class Soundd(QuietMode):
 
         self.get_audible_alert(sm)
 
-        # Ramp up immediate warning sound over 4s
-        if self.current_alert == AudibleAlert.warningImmediate:
+        if self.current_alert in critical_max_sounds:
           elapsed = time.monotonic() - self.ramp_start_time
           ramp_vol = float(np.interp(elapsed, [0, ALERT_RAMP_TIME], [self.ramp_start_volume, MAX_VOLUME]))
           self.current_volume = max(self.current_volume, ramp_vol)
+          max_sound = critical_max_sounds[self.current_alert]
+          if elapsed >= ALERT_MAX_TIME and self.current_sound != max_sound:
+            self.current_sound = max_sound
+            self.current_sound_frame = 0
 
         rk.keep_time()
 

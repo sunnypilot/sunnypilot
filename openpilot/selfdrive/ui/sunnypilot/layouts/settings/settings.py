@@ -7,7 +7,7 @@ See the LICENSE.md file in the root directory for more details.
 from dataclasses import dataclass
 from enum import IntEnum
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.layouts.settings import settings as OP
 from openpilot.selfdrive.ui.layouts.settings.firehose import FirehoseLayout
 from openpilot.selfdrive.ui.layouts.settings.toggles import TogglesLayout
@@ -182,14 +182,14 @@ class SettingsLayoutSP(OP.SettingsLayout):
 
   def _handle_mouse_release(self, mouse_pos: MousePos) -> None:
     # Check close button
-    if rl.check_collision_point_rec(mouse_pos, self._close_btn_rect):
+    if rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), self._close_btn_rect):
       if self._close_callback:
         self._close_callback()
       return
 
     # Check navigation buttons
     for panel_type, panel_info in self._panels.items():
-      if rl.check_collision_point_rec(mouse_pos, panel_info.button_rect) and self._sidebar_scroller.scroll_panel.is_touch_valid():
+      if rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), panel_info.button_rect) and self._sidebar_scroller.scroll_panel.is_touch_valid():
         self.set_current_panel(panel_type)
         return
 

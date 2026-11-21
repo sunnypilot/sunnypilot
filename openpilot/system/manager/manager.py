@@ -52,6 +52,9 @@ def manager_init() -> None:
   if not PC:
     run_migration(params)
 
+  if params.get_bool("AlwaysOnDMLock"):
+    params.put_bool("AlwaysOnDM", True, block=True)
+
   # set unset params to their default value
   for k in params.all_keys():
     default_value = params.get_default_value(k)
