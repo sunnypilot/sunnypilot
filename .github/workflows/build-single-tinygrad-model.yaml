@@ -34,6 +34,11 @@ on:
         required: false
         type: string
         default: 'qcom'
+      on_device:
+        description: 'Compile on the tici / chestnut runner instead of on a hosted runner with tinygrad''s qcom / amd mock'
+        required: false
+        type: boolean
+        default: false
       hf_repo:
         description: 'Hugging Face dataset repository (e.g. sunnypilot/sunnypilot_models_v1)'
         required: false
@@ -107,6 +112,11 @@ on:
         options:
           - qcom
           - chestnut
+      on_device:
+        description: 'Compile on the tici / chestnut runner instead of on a hosted runner with tinygrad''s qcom / amd mock'
+        required: false
+        type: boolean
+        default: false
       hf_repo:
         description: 'Hugging Face dataset repository'
         required: false
@@ -130,6 +140,7 @@ jobs:
       is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
       target_hardware: ${{ inputs.target_hardware }}
+      on_device: ${{ inputs.on_device || false }}
     secrets: inherit
 
   publish_model:
