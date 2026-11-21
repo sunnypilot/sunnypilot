@@ -49,6 +49,14 @@ CCNC_PORT_SUPPORTED: dict[str, tuple[str, set[bytes]]] = {
     b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE000         ',
     b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE500         ',
   }),
+  "HYUNDAI_KONA_HEV_2ND_GEN": ("Hyundai Kona Hybrid 2024-26", {
+    b'\xf1\x00SX2HMFC  AT AUS RHD 1.00 1.00 99211-BE001 241015',
+    b'\xf1\x00SX2HMFC  AT AUS RHD 1.00 1.01 99211-BE001 250117',
+    b'\xf1\x00SX2HMFC  AT EUR LHD 1.00 1.01 99211-BE001 250117',
+    b'\xf1\x00SX2HMFC  AT EUR RHD 1.00 1.04 99211-BE000 231010',
+    b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE000         ',
+    b'\xf1\x00SX2_ RDR -----      1.00 1.02 99110-BE500         ',
+  }),
 }
 
 
