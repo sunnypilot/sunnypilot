@@ -1,2 +1,0 @@
-SConscript(['common/transformations/SConscript'])
-SConscript(['selfdrive/locationd/SConscript'])
