@@ -139,7 +139,7 @@ class ModularAssistiveDrivingSystem:
         self.transition_paused_state()
 
       if self.steering_mode_on_brake == MadsSteeringModeOnBrake.PAUSE:
-        if self.pedal_pressed_non_gas_pressed(CS):
+        if CS.brakePressed or CS.regenBraking or self.pedal_pressed_non_gas_pressed(CS):
           self.transition_paused_state()
 
       self.events.remove(EventName.preEnableStandstill)
