@@ -56,28 +56,28 @@
   },
   {
     "name": "boot",
-    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/boot-ea866ffae5dafe9c82e33ba139c65dc8eaaa2bbdbaa73845b35f79ed91ff1983.img.xz",
-    "hash": "ea866ffae5dafe9c82e33ba139c65dc8eaaa2bbdbaa73845b35f79ed91ff1983",
-    "hash_raw": "ea866ffae5dafe9c82e33ba139c65dc8eaaa2bbdbaa73845b35f79ed91ff1983",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/boot-b1cb5dca2fc3fe5320afb460cebd9a879349250e5c3d57136a22004bbdace7df.img.xz",
+    "hash": "b1cb5dca2fc3fe5320afb460cebd9a879349250e5c3d57136a22004bbdace7df",
+    "hash_raw": "b1cb5dca2fc3fe5320afb460cebd9a879349250e5c3d57136a22004bbdace7df",
     "size": 47859712,
     "sparse": false,
     "full_check": true,
     "has_ab": true,
-    "ondevice_hash": "90d54a838ffa9a18ca043f6e15f5d33f2510323b2844bf7dc59cee5e81fee581"
+    "ondevice_hash": "803bf594d8a339e06f8c0a2d6ba0586cfb06aa8822e89e95c0a7433378a663aa"
   },
   {
     "name": "system",
-    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/system-5aabe10909d21103cbdacba986758d3278a03971148650651b07c2a31758392d.img.xz",
-    "hash": "071ab85ca81a1ed24dc2fff6dc0f5b9c091cd56ab9ccafea141a9ac6456b39cc",
-    "hash_raw": "5aabe10909d21103cbdacba986758d3278a03971148650651b07c2a31758392d",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/system-45552e14bb0a056e3519eaa24f697fd2a1a2d496270a1dc515a5b3a19317f7c3.img.xz",
+    "hash": "32f283d0fb22639ff1c55fe5fd958032b9e0dc68ddfa8dfd52d2e7f936e9d939",
+    "hash_raw": "45552e14bb0a056e3519eaa24f697fd2a1a2d496270a1dc515a5b3a19317f7c3",
     "size": 4718592000,
     "sparse": true,
     "full_check": false,
     "has_ab": true,
-    "ondevice_hash": "28d4d109f71a8901ec1f076b1d556b4a231b157ff9ca5a606a165b19e2e33423",
+    "ondevice_hash": "1756c4bdb978752fea6f8ce9872d7d3e08eb4f0f7cdafe09ce3ef429232512a1",
     "alt": {
-      "hash": "5aabe10909d21103cbdacba986758d3278a03971148650651b07c2a31758392d",
-      "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/system-5aabe10909d21103cbdacba986758d3278a03971148650651b07c2a31758392d.img",
+      "hash": "45552e14bb0a056e3519eaa24f697fd2a1a2d496270a1dc515a5b3a19317f7c3",
+      "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-6/system-45552e14bb0a056e3519eaa24f697fd2a1a2d496270a1dc515a5b3a19317f7c3.img",
       "size": 4718592000
     }
   }
