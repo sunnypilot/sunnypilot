@@ -156,7 +156,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"BlinkerLateralReengageDelay", {PERSISTENT | BACKUP, INT, "0"}},  // seconds
     {"BlinkerMinLateralControlSpeed", {PERSISTENT | BACKUP, INT, "20"}},  // MPH or km/h
     {"BlinkerPauseLateralControl", {PERSISTENT | BACKUP, INT, "0"}},
-    {"BluetoothEnabled", {PERSISTENT | BACKUP, BOOL, "0"}},
+    {"BluetoothEnabled", {PERSISTENT, BOOL, "0"}},
     {"Brightness", {PERSISTENT | BACKUP, INT, "0"}},
     {"CarList", {PERSISTENT, JSON}},
     {"CarParamsSP", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, BYTES}},
