@@ -153,7 +153,7 @@ def main():
       yaw_rate = float((calib_from_device @ np.array([w.x, w.y, w.z]))[2])
       fuser.predict(t, sm['carState'].vEgo, yaw_rate)
 
-    gps_ok = gps.hasFix and 0 <= t - gps_t < GPS_TIMEOUT
+    gps_ok = gps.hasFix and t - gps_t < GPS_TIMEOUT
     msg = messaging.new_message('gpsLocationSP', valid=fuser.valid or gps_ok)
     out = msg.gpsLocationSP
     out.gpsOK = gps_ok
