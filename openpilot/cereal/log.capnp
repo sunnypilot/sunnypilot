@@ -2648,7 +2648,7 @@ struct Event {
     carStateSP @114 :Custom.CarStateSP;
     liveMapDataSP @115 :Custom.LiveMapDataSP;
     modelDataV2SP @116 :Custom.ModelDataV2SP;
-    customReserved10 @136 :Custom.CustomReserved10;
+    gpsLocationSP @136 :Custom.GpsLocationSP;
     customReserved11 @137 :Custom.CustomReserved11;
     customReserved12 @138 :Custom.CustomReserved12;
     customReserved13 @139 :Custom.CustomReserved13;
@@ -2701,7 +2701,7 @@ struct Event {
     lateralPlanDEPRECATED @64 :LateralPlan;
     navModelDEPRECATED @104 :Deprecated.NavModelData;
     uiPlanDEPRECATED @106 :UiPlan;
-    liveLocationKalman @72 :LiveLocationKalman;
+    liveLocationKalmanDEPRECATED @72 :LiveLocationKalman;
     liveTracksDEPRECATED @16 :List(Deprecated.LiveTracksDEPRECATED);
     onroadEventsDEPRECATED @68: List(Car.OnroadEventDEPRECATED);
     gyroscope2DEPRECATED @100 :SensorEventData;

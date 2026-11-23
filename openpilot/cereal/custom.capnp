@@ -483,7 +483,16 @@ struct ModelDataV2SP @0xa1680744031fdb2d {
   }
 }
 
-struct CustomReserved10 @0xcb9fd56c7057593a {
+struct GpsLocationSP @0xcb9fd56c7057593a {
+  latitude @0 :Float64;
+  longitude @1 :Float64;
+  speed @2 :Float32;
+  bearingDeg @3 :Float32;
+  horizontalAccuracy @4 :Float32;  # m
+  bearingAccuracyDeg @5 :Float32;
+  hasFix @6 :Bool;
+  gpsOK @7 :Bool;  # a raw fix arrived in the last 2 s
+  fused @8 :Bool;  # false while passing the raw fix through
 }
 
 struct CustomReserved11 @0xc2243c65e0340384 {
