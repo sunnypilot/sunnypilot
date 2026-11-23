@@ -233,7 +233,7 @@ class ModelState(ModelStateBase):
   def get_action_from_model(self, model_output: dict[str, np.ndarray], prev_action: log.ModelDataV2.Action,
                             lat_action_t: float, long_action_t: float, v_ego: float,
                             blendful: Callable[[float], float] | None = None,
-                            turn_shaper: Callable[[float], float] | None = None) -> log.ModelDataV2.Action:
+                            turn_shaper: Callable[[float, float], tuple[float, float]] | None = None) -> log.ModelDataV2.Action:
     if 'action' not in model_output:
       plan = model_output['plan'][0]
       desired_accel = get_accel_from_plan(plan[:, Plan.VELOCITY][:, 0], plan[:, Plan.ACCELERATION][:, 0], self.constants.T_IDXS,
@@ -248,7 +248,7 @@ class ModelState(ModelStateBase):
     if blendful is not None:
       desired_curvature += blendful(desired_curvature)
     if turn_shaper is not None:
-      desired_curvature = turn_shaper(desired_curvature)
+      desired_curvature, desired_accel = turn_shaper(desired_curvature, desired_accel)
 
     stop = v_ego < 0.3 and desired_accel < 0.1
     desired_accel = smooth_value(desired_accel, prev_action.desiredAcceleration, self.LONG_SMOOTH_SECONDS)

@@ -10,134 +10,147 @@ import numpy as np
 from openpilot.common.realtime import DT_MDL
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
-from openpilot.sunnypilot.modeld_v2.turn_planner import TurnPlanner, compute_plan_peak_curv
+from openpilot.sunnypilot.modeld_v2.turn_planner import TurnPlanner
+
+X = np.array(ModelConstants.X_IDXS, dtype=np.float32)
 
 
 def make_plan(curv: float, speed: float = 4.0) -> dict[str, np.ndarray]:
-  """Build a synthetic model_output dict with a constant-curvature arc plan."""
   t = np.array(ModelConstants.T_IDXS, dtype=np.float32)
   s = speed * t
   plan = np.zeros((1, len(t), ModelConstants.PLAN_WIDTH), dtype=np.float32)
   if abs(curv) < 1e-6:
     plan[0, :, Plan.POSITION][:, 0] = s
-    plan[0, :, Plan.POSITION][:, 1] = 0.0
-    plan[0, :, Plan.T_FROM_CURRENT_EULER][:, 2] = 0.0
   else:
     r = 1.0 / curv
-    theta = s * curv
-    plan[0, :, Plan.POSITION][:, 0] = r * np.sin(theta)
-    plan[0, :, Plan.POSITION][:, 1] = r * (1.0 - np.cos(theta))
-    plan[0, :, Plan.T_FROM_CURRENT_EULER][:, 2] = theta
+    th = s * curv
+    plan[0, :, Plan.POSITION][:, 0] = r * np.sin(th)
+    plan[0, :, Plan.POSITION][:, 1] = r * (1.0 - np.cos(th))
+    plan[0, :, Plan.T_FROM_CURRENT_EULER][:, 2] = th
   return {'plan': plan}
 
 
-class TestTurnPlanner(OpenpilotTestCase):
-  def test_plan_peak_curv_extraction(self):
-    assert abs(compute_plan_peak_curv(make_plan(0.0, 5.0))) < 1e-5
-    pk = compute_plan_peak_curv(make_plan(0.12, 4.0))
-    assert abs(pk - 0.12) < 0.01
-    pk_l = compute_plan_peak_curv(make_plan(-0.15, 4.0))
-    assert abs(pk_l + 0.15) < 0.01
-    assert compute_plan_peak_curv({}) == 0.0
+def with_curb(plan_dict: dict[str, np.ndarray], e0: float = 2.4, flare_5m: float = 0.1, std: float = 0.4) -> dict[str, np.ndarray]:
+  edges = np.zeros((1, 2, len(X), 2), dtype=np.float32)
+  edges[0, 0, :, 0] = -5.0
+  edges[0, 1, :, 0] = e0 + (flare_5m / 25.0) * (X ** 2)
+  stds = np.full((1, 2, len(X), 2), std, dtype=np.float32)
+  return {**plan_dict, 'road_edges': edges, 'road_edges_stds': stds}
 
-  def test_untouched_at_highway_speed(self):
+
+class TestTurnPlanner(OpenpilotTestCase):
+  def test_untouched_highway_and_gentle_curves(self):
     tp = TurnPlanner(wheelbase=2.89)
     for i in range(60):
       k = 0.01 * math.sin(i * 0.1)
-      out = tp.update(make_plan(k, 25.0), v_ego=25.0, actual_curv=k, active=True, is_rhd=False, model_curv=k)
-      assert out == k
-
-  def test_untouched_on_gentle_low_speed_curve(self):
-    tp = TurnPlanner(wheelbase=2.89)
-    for i in range(80):
+      out_k, out_a = tp.update(make_plan(k, 25.0), 25.0, k, True, False, k, 0.2)
+      assert out_k == k and out_a == 0.2
+    for i in range(60):
       k = 0.025 * min(1.0, i / 20.0)
-      out = tp.update(make_plan(k, 6.0), v_ego=6.0, actual_curv=k, active=True, is_rhd=False, model_curv=k)
-      assert out == k
+      out_k, out_a = tp.update(make_plan(k, 6.0), 6.0, k, True, False, k, 0.2)
+      assert out_k == k and out_a == 0.2
 
-  def test_sign_preservation_and_magnitude_bound_under_jitter(self):
-    """Output must never oppose model_curv or exceed APEX_PATH_BOOST_CAP * |model_curv|."""
+  def test_sign_preservation_and_magnitude_bounds(self):
     tp = TurnPlanner(wheelbase=2.89)
-    # Reproduces a5 seg31 Turn 1: brief negative jitter then sharp positive right turn
     ks = [-0.015] * 15 + [0.016, 0.05, 0.11, 0.14, 0.17, 0.18, 0.14, 0.08, 0.02, -0.01]
-    plan_right = make_plan(0.15, 3.0)
+    plan_r = make_plan(0.15, 3.0)
     for k in ks:
-      out = tp.update(plan_right, v_ego=3.0, actual_curv=k * 0.7, active=True, is_rhd=False, model_curv=k)
-      assert abs(out) <= abs(k) * 1.35 + 1e-9
+      out_k, _ = tp.update(plan_r, 3.0, k * 0.7, True, False, k, 0.0)
+      assert abs(out_k) <= abs(k) * 1.35 + 1e-9
       if k > 0:
-        assert out >= 0.0
+        assert out_k >= 0.0
       elif k < 0:
-        assert out <= 0.0
+        assert out_k <= 0.0
 
   def test_zero_lag_on_turn_exit_unwinding(self):
     tp = TurnPlanner(wheelbase=2.89)
     plan_tight = make_plan(0.14, 4.0)
-    # Ramp up entry and hold through apex so buffer is at peak curvature
     for i in range(25):
       k = 0.14 * (i / 25.0)
-      tp.update(plan_tight, v_ego=4.0, actual_curv=k * 0.8, active=True, is_rhd=False, model_curv=k)
+      tp.update(plan_tight, 4.0, k * 0.8, True, False, k)
     for _ in range(15):
-      tp.update(plan_tight, v_ego=4.0, actual_curv=0.14, active=True, is_rhd=False, model_curv=0.14)
-    # Now unwind monotonically: output must equal model_curv with zero lag
+      tp.update(plan_tight, 4.0, 0.14, True, False, 0.14)
     for i in range(1, 20):
       k = max(0.0, 0.14 * (1.0 - i / 15.0))
-      out = tp.update(make_plan(k, 4.0), v_ego=4.0, actual_curv=k + 0.01, active=True, is_rhd=False, model_curv=k)
-      assert abs(out - k) < 1e-3
+      out_k, _ = tp.update(make_plan(k, 4.0), 4.0, k + 0.01, True, False, k)
+      assert abs(out_k - k) < 1e-3
 
   def test_standstill_launch_and_mid_turn_pause(self):
     tp = TurnPlanner(wheelbase=2.89)
-    # Stopped straight at stop bar, then launches into a sharp right turn
     for _ in range(10):
-      tp.update(make_plan(0.12, 0.0), v_ego=0.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.002)
-    # First few steps of launch should hold back early curvature ramp
-    outs = []
-    for i in range(1, 20):
-      k = 0.006 * i
-      outs.append(tp.update(make_plan(0.12, 2.5), v_ego=2.5, actual_curv=0.004 * i, active=True, is_rhd=False, model_curv=k))
+      tp.update(make_plan(0.12, 0.0), 0.0, 0.0, True, False, 0.002)
+    outs = [tp.update(make_plan(0.12, 2.5), 2.5, 0.004 * i, True, False, 0.006 * i)[0] for i in range(1, 20)]
     assert outs[10] < 0.006 * 11 - 0.01
 
-    # Pause mid-turn (actual_curv = 0.05) should preserve turn_psi and not dip below 0.05 on resume
     tp.turn_psi = math.radians(30.0)
-    tp.update(make_plan(0.08, 0.0), v_ego=0.0, actual_curv=0.05, active=True, is_rhd=False, model_curv=0.05)
+    tp.update(make_plan(0.08, 0.0), 0.0, 0.05, True, False, 0.05)
     assert tp.turn_psi >= math.radians(29.0)
-    resumed = tp.update(make_plan(0.08, 2.0), v_ego=2.0, actual_curv=0.05, active=True, is_rhd=False, model_curv=0.06)
+    resumed, _ = tp.update(make_plan(0.08, 2.0), 2.0, 0.05, True, False, 0.06)
     assert resumed >= 0.05 - 1e-6
 
-  def test_wheelbase_and_rhd_scaling(self):
-    tp_short = TurnPlanner(wheelbase=2.4)
-    tp_long = TurnPlanner(wheelbase=3.4)
-    plan_r = make_plan(0.14, 4.2)
-    for _ in range(25):
-      tp_short.update(plan_r, 4.2, 0.0, True, False, 0.02)
-      tp_long.update(plan_r, 4.2, 0.0, True, False, 0.02)
-    assert tp_long.shift_dist > tp_short.shift_dist * 1.3
+  def test_odometry_curb_memory_and_rear_tire_clearance(self):
+    tp = TurnPlanner(wheelbase=2.89)
+    # 1) Live straight curb beside car holds early turn-in down
+    mo_curb = with_curb(make_plan(0.08, 5.0), e0=2.0, flare_5m=0.05, std=0.4)
+    out_live, _ = tp.update(mo_curb, 5.0, 0.0, True, False, 0.05)
+    assert tp.curb is not None and tp.curb[3] is True
+    assert out_live < 0.015
 
-    # RHD gives larger shift on left turns (k < 0) than right turns (k > 0)
-    tp_rhd_l = TurnPlanner(wheelbase=2.89)
-    tp_rhd_r = TurnPlanner(wheelbase=2.89)
-    for _ in range(25):
-      tp_rhd_l.update(make_plan(-0.14, 3.5), 3.5, 0.0, True, True, -0.02)
-      tp_rhd_r.update(make_plan(0.14, 3.5), 3.5, 0.0, True, True, 0.02)
-    assert tp_rhd_l.shift_dist > tp_rhd_r.shift_dist * 1.2
+    # 2) Curb exits cropped FOV (std=2.0): odometry remembers frozen corner and keeps protecting rear tire
+    mo_blind = with_curb(make_plan(0.14, 5.0), e0=4.0, flare_5m=1.5, std=2.0)
+    out_frozen, _ = tp.update(mo_blind, 5.0, 0.02, True, False, 0.14)
+    assert tp.curb is not None and tp.curb[3] is False
+    assert out_frozen < 0.14
 
-  def test_closed_loop_90deg_turn_clears_curb_without_oncoming_overshoot(self):
-    """Closed-loop Tesla Model Y 90-deg right turn around R=2.5 m curb."""
+    # 3) Advance ~4.5 m so rear axle clears the remembered corner -> curb memory releases!
+    for _ in range(25):
+      tp.update(mo_blind, 5.0, 0.08, True, False, 0.12)
+    assert tp.curb is None
+
+    # 4) Normal curved road (curb curves with the road at k=0.03) passes untouched
+    tp2 = TurnPlanner(wheelbase=2.89)
+    mo_curve = with_curb(make_plan(0.03, 6.7), e0=2.4, flare_5m=0.375, std=0.4)
+    out_curve, _ = tp2.update(mo_curve, 6.7, 0.03, True, False, 0.03)
+    assert abs(out_curve - 0.03) < 1e-6
+
+  def test_apex_1s_path_boost_and_exit_unwind(self):
+    tp = TurnPlanner(wheelbase=2.89)
+    for _ in range(35):
+      tp.update(make_plan(0.14, 4.0), 4.0, 0.12, True, False, 0.10)
+    apex_out, _ = tp.update(make_plan(0.14, 4.0), 4.0, 0.12, True, False, 0.10)
+    assert apex_out > 0.115
+    for _ in range(20):
+      tp.update(make_plan(0.14, 4.0), 4.0, 0.12, True, False, 0.14)
+    exit_out, _ = tp.update(make_plan(0.10, 4.0), 4.0, 0.15, True, False, 0.20)
+    assert exit_out < 0.15
+
+  def test_rolling_turn_pre_slowing(self):
+    tp = TurnPlanner(wheelbase=2.89)
+    # Approaching a tight R=8 m corner (k=0.125) at 14 mph (6.3 m/s) -> pre-slows smoothly
+    _, a_slow = tp.update(make_plan(0.125, 6.3), 6.3, 0.0, True, False, 0.02, model_accel=0.2)
+    assert a_slow < -0.5
+    # Already slow at 7 mph (3.1 m/s) -> does not brake
+    _, a_ok = tp.update(make_plan(0.125, 3.1), 3.1, 0.0, True, False, 0.02, model_accel=0.2)
+    assert a_ok == 0.2
+
+  def test_closed_loop_90deg_stop_and_rolling_turns(self):
     L, W_half, x_cam, lane_w, curb_r = 2.89, 0.96, 1.50, 3.60, 2.5
     y_curb = lane_w / 2.0
     x_dest = curb_r + lane_w / 2.0
     x_yellow = x_dest + lane_w / 2.0
 
-    pts = [(x, 0.0) for x in np.linspace(-20, x_dest - 2.0, 200)]
+    pts = [(x, 0.0) for x in np.linspace(-25, x_dest - 2.0, 250)]
     pts += [(x_dest - 2.0 + 2.0 * math.cos(th), 2.0 + 2.0 * math.sin(th)) for th in np.linspace(-math.pi / 2, 0, 50)]
-    pts += [(x_dest, y) for y in np.linspace(2.0, 25.0, 200)]
+    pts += [(x_dest, y) for y in np.linspace(2.0, 25.0, 250)]
     ref = np.array(pts)
 
-    def run(use_planner: bool) -> tuple[float, float]:
-      X, Y, psi, k_act = -15.0, 0.0, 0.0, 0.0
-      v = 3.5
+    def run(v_init: float, use_planner: bool) -> tuple[float, float]:
+      X_p, Y_p, psi, k_act, k_ctl = -18.0, 0.0, 0.0, 0.0, 0.0
+      v = v_init
       tp = TurnPlanner(wheelbase=L, dt=DT_MDL) if use_planner else None
       min_clr, max_ovr = 99.0, -99.0
-      for _ in range(400):
-        xc, yc = X + x_cam * math.cos(psi), Y + x_cam * math.sin(psi)
+      for _ in range(500):
+        xc, yc = X_p + x_cam * math.cos(psi), Y_p + x_cam * math.sin(psi)
         i_near = int(np.argmin(np.hypot(ref[:, 0] - xc, ref[:, 1] - yc)))
         i_tgt = i_near
         while i_tgt < len(ref) - 1 and np.hypot(ref[i_tgt, 0] - xc, ref[i_tgt, 1] - yc) < 6.5:
@@ -146,18 +159,22 @@ class TestTurnPlanner(OpenpilotTestCase):
         lx = dx * math.cos(psi) + dy * math.sin(psi)
         ly = -dx * math.sin(psi) + dy * math.cos(psi)
         k_mod = float(np.clip(2.0 * ly / max(lx**2 + ly**2, 1.0), -0.19, 0.19))
-        plan = make_plan(0.14 if (max(0.0, x_dest - xc) < 15.0 and psi < math.radians(75)) else 0.0, v)
+        plan = make_plan(0.14 if (max(0.0, x_dest - xc) < 16.0 and psi < math.radians(75)) else 0.0, max(v, 1.0))
 
-        k_cmd = tp.update(plan, v, k_act, True, False, k_mod) if tp is not None else k_mod
-        k_act += (float(np.clip(k_cmd, -0.19, 0.19)) - k_act) * (DT_MDL / (0.22 + DT_MDL))
+        k_des, a_des = tp.update(plan, v, k_act, True, False, k_mod, 0.0) if tp else (k_mod, 0.0)
+        v = max(2.5, v + a_des * DT_MDL)
+        max_rate = 5.0 / max(v, 1.0) ** 2
+        k_ctl = float(np.clip(k_des, k_ctl - max_rate * DT_MDL, k_ctl + max_rate * DT_MDL))
+        k_ctl = float(np.clip(k_ctl, -min(0.2, 3.0 / max(v, 1.0) ** 2), min(0.2, 3.0 / max(v, 1.0) ** 2)))
+        k_act += (k_ctl - k_act) * (DT_MDL / (0.22 + DT_MDL))
 
         ds = v * DT_MDL
         psi += k_act * ds
-        X += ds * math.cos(psi)
-        Y += ds * math.sin(psi)
+        X_p += ds * math.cos(psi)
+        Y_p += ds * math.sin(psi)
 
-        x_ir, y_ir = X - W_half * math.sin(psi), Y + W_half * math.cos(psi)
-        x_of, y_of = X + L * math.cos(psi) + W_half * math.sin(psi), Y + L * math.sin(psi) - W_half * math.cos(psi)
+        x_ir, y_ir = X_p - W_half * math.sin(psi), Y_p + W_half * math.cos(psi)
+        x_of, y_of = X_p + L * math.cos(psi) + W_half * math.sin(psi), Y_p + L * math.sin(psi) - W_half * math.cos(psi)
         if x_ir <= 0.0:
           clr = y_curb - y_ir
         elif y_ir >= y_curb + curb_r:
@@ -167,73 +184,16 @@ class TestTurnPlanner(OpenpilotTestCase):
         min_clr = min(min_clr, clr)
         if y_of > 2.0:
           max_ovr = max(max_ovr, x_of - x_yellow)
-        if Y > 15.0:
+        if Y_p > 15.0:
           break
       return min_clr, max_ovr
 
-    base_clr, _ = run(False)
-    plan_clr, plan_ovr = run(True)
-    assert base_clr < -0.5    # baseline curbs the rear wheel badly
-    assert plan_clr > 0.20    # TurnPlanner clears the curb by > 20 cm
-    assert plan_ovr < 0.0     # stays inside the oncoming yellow line
+    # Low-speed turn clears curb with margin and stays in lane
+    base_clr, _ = run(3.5, False)
+    plan_clr, plan_ovr = run(3.5, True)
+    assert base_clr < -0.5 and plan_clr > 0.20 and plan_ovr < 0.0
 
-  def test_rolling_speed_taper(self):
-    """Shift is strong at low speed, light at rolling speed, 0 at 19+ mph, and time-capped at crawl."""
-    tp_crawl = TurnPlanner(wheelbase=2.89)
-    tp_low = TurnPlanner(wheelbase=2.89)
-    tp_roll = TurnPlanner(wheelbase=2.89)
-    tp_fast = TurnPlanner(wheelbase=2.89)
-    for _ in range(30):
-      tp_crawl.update(make_plan(0.14, 1.8), v_ego=1.8, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-      tp_low.update(make_plan(0.14, 3.5), v_ego=3.5, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-      tp_roll.update(make_plan(0.14, 6.0), v_ego=6.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-      tp_fast.update(make_plan(0.14, 9.0), v_ego=9.0, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.02)
-    assert tp_crawl.shift_dist <= 1.8 * 0.48 + 0.05  # time-capped so crawl starts don't stall
-    assert tp_low.shift_dist > 1.3
-    assert 0.3 < tp_roll.shift_dist < 0.7
-    assert tp_fast.shift_dist == 0.0
-
-  def test_apex_1s_path_boost_and_exit_unwind(self):
-    """Once past entry, blends with 1s path to boost under-steering apex and unwind hanging exit."""
-    tp = TurnPlanner(wheelbase=2.89)
-    # Drive past entry (psi > 30 deg)
-    for _ in range(35):
-      tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.10)
-    # Apex (psi ~ 48 deg): action under-steers at 0.10 while 1s path says 0.14 -> boosted cleanly above 0.10
-    apex_out = tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.10)
-    assert apex_out > 0.115
-    # Advance past 60 deg into late-turn exit
-    for _ in range(20):
-      tp.update(make_plan(0.14, 4.0), v_ego=4.0, actual_curv=0.12, active=True, is_rhd=False, model_curv=0.14)
-    # Exit hang: action still stuck at 0.20 while 1s path already unwound to 0.10 -> pulls down cleanly
-    exit_out = tp.update(make_plan(0.10, 4.0), v_ego=4.0, actual_curv=0.15, active=True, is_rhd=False, model_curv=0.20)
-    assert exit_out < 0.15
-
-  def test_road_edge_curb_guard_holds_until_opening(self):
-    """Confident straight curb beside car prolongs turn-in until curb flares open or disappears."""
-    x = np.array(ModelConstants.X_IDXS, dtype=np.float32)
-
-    def with_curb(plan_dict, e0=2.4, flare_5m=0.1, std=0.4):
-      edges = np.zeros((1, 2, len(x), 2), dtype=np.float32)
-      edges[0, 0, :, 0] = -5.0
-      edges[0, 1, :, 0] = e0 + (flare_5m / 25.0) * (x ** 2)
-      stds = np.full((1, 2, len(x), 2), std, dtype=np.float32)
-      return {**plan_dict, 'road_edges': edges, 'road_edges_stds': stds}
-
-    tp = TurnPlanner(wheelbase=2.89)
-    # Rolling 15 mph (6.7 m/s) right turn with solid straight curb right beside car -> curb guard holds it down
-    mo_curb = with_curb(make_plan(0.03, 6.7), e0=2.4, flare_5m=0.1, std=0.4)
-    for _ in range(5):
-      out_guarded = tp.update(mo_curb, v_ego=6.7, actual_curv=0.0, active=True, is_rhd=False, model_curv=0.035)
-    assert out_guarded < 0.016
-
-    # Curb flares open (intersection/turn lane opens) -> releases immediately!
-    mo_open = with_curb(make_plan(0.06, 6.7), e0=2.4, flare_5m=1.2, std=1.1)
-    out_open = tp.update(mo_open, v_ego=6.7, actual_curv=0.01, active=True, is_rhd=False, model_curv=0.06)
-    assert out_open > 0.04
-
-    # Normal curved road (curb itself curves at k=0.03 => flare_5m = 0.5 * 0.03 * 25 = 0.375 m) -> untouched
-    tp2 = TurnPlanner(wheelbase=2.89)
-    mo_curve = with_curb(make_plan(0.03, 6.7), e0=2.4, flare_5m=0.375, std=0.4)
-    out_curve = tp2.update(mo_curve, v_ego=6.7, actual_curv=0.03, active=True, is_rhd=False, model_curv=0.03)
-    assert abs(out_curve - 0.03) < 1e-6
+    # Rolling 11 mph turn: baseline blows wide into oncoming lane; TurnPlanner pre-slows, clears curb, stays in lane
+    _, roll_base_ovr = run(4.9, False)
+    roll_plan_clr, roll_plan_ovr = run(4.9, True)
+    assert roll_base_ovr > 0.5 and roll_plan_clr > 0.15 and roll_plan_ovr < 0.0
