@@ -455,7 +455,9 @@ def main(demo=False):
         prev_action.desiredCurvature = sm['controlsState'].curvature
       action = get_action_from_model(model_output, prev_action, lat_action_t, long_action_t, v_ego,
                                      partial(turn_planner.update, model_output, v_ego, sm['controlsState'].curvature,
-                                             sm['carControl'].latActive, is_rhd))
+                                             sm['carControl'].latActive, is_rhd,
+                                             left_blindspot=sm['carState'].leftBlindspot,
+                                             right_blindspot=sm['carState'].rightBlindspot))
       prev_action = action
       fill_model_msg(modelv2_send, model_output, action,
                      publish_state, meta_main.frame_id, meta_extra.frame_id, frame_id,

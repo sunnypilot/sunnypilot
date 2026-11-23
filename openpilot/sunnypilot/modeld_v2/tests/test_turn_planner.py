@@ -4,6 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import functools
 import math
 import numpy as np
 
@@ -36,6 +37,33 @@ def with_curb(plan_dict: dict[str, np.ndarray], e0: float = 2.4, flare_5m: float
   edges[0, 1, :, 0] = e0 + (flare_5m / 25.0) * (X ** 2)
   stds = np.full((1, 2, len(X), 2), std, dtype=np.float32)
   return {**plan_dict, 'road_edges': edges, 'road_edges_stds': stds}
+
+
+def with_lanes_and_edges(plan_dict: dict[str, np.ndarray], re_l: float = -5.0, re_r: float = 5.4,
+                         ll1: float = -1.8, ll2: float = 1.9, p1: float = 0.8, p2: float = 0.8,
+                         std_l: float = 0.5, std_r: float = 0.5, plan_y_end: float | None = None) -> dict[str, np.ndarray]:
+  out = {**plan_dict}
+  if plan_y_end is not None:
+    plan = plan_dict['plan'].copy()
+    x = plan[0, :, Plan.POSITION][:, 0]
+    plan[0, :, Plan.POSITION][:, 1] = plan_y_end * np.clip(x / 12.0, 0.0, 1.0)
+    out['plan'] = plan
+  edges = np.zeros((1, 2, len(X), 2), dtype=np.float32)
+  edges[0, 0, :, 0] = re_l
+  edges[0, 1, :, 0] = re_r
+  stds = np.zeros((1, 2, len(X), 2), dtype=np.float32)
+  stds[0, 0, :, 0] = std_l
+  stds[0, 1, :, 0] = std_r
+  lanes = np.zeros((1, 4, len(X), 2), dtype=np.float32)
+  lanes[0, 0, :, 0] = ll1 - 3.6
+  lanes[0, 1, :, 0] = ll1
+  lanes[0, 2, :, 0] = ll2
+  lanes[0, 3, :, 0] = ll2 + 3.6
+  probs = np.zeros((1, 8), dtype=np.float32)
+  probs[0, 3] = p1
+  probs[0, 5] = p2
+  out.update({'road_edges': edges, 'road_edges_stds': stds, 'lane_lines': lanes, 'lane_lines_prob': probs})
+  return out
 
 
 class TestTurnPlanner(OpenpilotTestCase):
@@ -197,3 +225,47 @@ class TestTurnPlanner(OpenpilotTestCase):
     _, roll_base_ovr = run(4.9, False)
     roll_plan_clr, roll_plan_ovr = run(4.9, True)
     assert roll_base_ovr > 0.5 and roll_plan_clr > 0.15 and roll_plan_ovr < 0.0
+
+  def test_nearest_lane_exit_lock(self):
+    def finish_turn(sign: float, is_rhd: bool = False) -> TurnPlanner:
+      tp = TurnPlanner(wheelbase=2.89)
+      for _ in range(30):
+        tp.update(make_plan(0.12 * sign, 5.0), 5.0, 0.10 * sign, True, is_rhd, 0.10 * sign)
+      assert tp.exit_timer > 0.0 and tp.exit_sign == sign
+      return tp
+
+    # 1) Right turn exiting into lane 2 (full 3.5 m lane to right of ll2) -> pulls right into lane 1
+    tp_r = finish_turn(+1.0)
+    mo_lane2 = with_lanes_and_edges(make_plan(0.0, 6.0), re_r=5.4, ll2=1.9, p2=0.7)
+    out_r, _ = tp_r.update(mo_lane2, 6.0, 0.0, True, False, 0.0)
+    assert out_r > 0.008
+
+    # 2) Right turn beside 2.1 m bike lane/shoulder -> zero pull (never pulls into shoulder/bike lane)
+    tp_bike = finish_turn(+1.0)
+    mo_bike = with_lanes_and_edges(make_plan(0.0, 6.0), re_r=4.0, ll2=1.9, p2=0.9)
+    out_bike, _ = tp_bike.update(mo_bike, 6.0, 0.0, True, False, 0.0)
+    assert out_bike == 0.0
+
+    # 3) Right blindspot occupied -> suppressed
+    tp_bs = finish_turn(+1.0)
+    fn_bs = functools.partial(tp_bs.update, mo_lane2, 6.0, 0.0, True, False,
+                              left_blindspot=False, right_blindspot=True)
+    out_bs, _ = fn_bs(0.0, 0.0)
+    assert out_bs == 0.0
+
+    # 4) Left turn drifting right of ll1 -> pulls left back to ll1 + 1.8 m, never crosses ll1 into oncoming
+    tp_l = finish_turn(-1.0)
+    mo_l_drift = with_lanes_and_edges(make_plan(0.0, 6.0), ll1=-1.5, p1=0.7, plan_y_end=+1.2)
+    out_l_drift, _ = tp_l.update(mo_l_drift, 6.0, 0.0, True, False, 0.0)
+    assert out_l_drift < -0.008
+
+    tp_l_ok = finish_turn(-1.0)
+    mo_l_ok = with_lanes_and_edges(make_plan(0.0, 6.0), ll1=-1.5, p1=0.7, plan_y_end=0.0)
+    out_l_ok, _ = tp_l_ok.update(mo_l_ok, 6.0, 0.0, True, False, 0.0)
+    assert out_l_ok == 0.0
+
+    # 5) RHD symmetry: left turn is curb-side -> pulls left when full lane exists to the left
+    tp_rhd = finish_turn(-1.0, is_rhd=True)
+    mo_rhd = with_lanes_and_edges(make_plan(0.0, 6.0), re_l=-5.4, ll1=-1.9, p1=0.7)
+    out_rhd, _ = tp_rhd.update(mo_rhd, 6.0, 0.0, True, True, 0.0)
+    assert out_rhd < -0.008
