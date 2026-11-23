@@ -17,6 +17,7 @@ from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+from openpilot.sunnypilot.selfdrive.controls.lib.pidd import LatControlPidd, pidd_selected
 
 
 class ControlsExt(ModelStateBase):
@@ -30,11 +31,15 @@ class ControlsExt(ModelStateBase):
     cloudlog.info("controlsd_ext is waiting for CarParamsSP")
     self.CP_SP = messaging.log_from_bytes(params.get("CarParamsSP", block=True), custom.CarParamsSP)
     cloudlog.info("controlsd_ext got CarParamsSP")
+    self.pidd: LatControlPidd | None = None
 
     self.sm_services_ext = ['radarState', 'selfdriveStateSP']
     self.pm_services_ext = ['carControlSP']
 
   def initialize_lateral_control(self, lac, CI, dt):
+    if pidd_selected(self.CP):
+      self.pidd = LatControlPidd(self.CP, self.CP_SP, CI, dt)
+      return self.pidd
     enforce_torque_control = self.params.get_bool("EnforceTorqueControl")
     torque_versions = self.params.get("TorqueControlTune")
     if not enforce_torque_control:
@@ -114,6 +119,13 @@ class ControlsExt(ModelStateBase):
 
     pm.send('carControlSP', cc_sp_send)
 
+  def update_pidd_torque_params(self, sm: messaging.SubMaster) -> None:
+    torque_params = sm['lateralTorqueParameters']
+    if self.pidd is not None and sm.all_checks(['lateralTorqueParameters']) and torque_params.useParams:
+      self.pidd.update_torque_parameters(torque_params.latAccelFactorFiltered, torque_params.latAccelOffsetFiltered,
+                                         torque_params.frictionCoefficientFiltered)
+
   def run_ext(self, sm: messaging.SubMaster, pm: messaging.PubMaster) -> None:
+    self.update_pidd_torque_params(sm)
     CC_SP = self.state_control_ext(sm)
     self.publish_ext(CC_SP, sm, pm)
