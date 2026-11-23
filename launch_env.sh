@@ -16,7 +16,7 @@ export VECLIB_MAXIMUM_THREADS=1
 export QCOM_PRIORITY=12
 
 if [ -z "$AGNOS_VERSION" ]; then
-  export AGNOS_VERSION="19.9-9090b0f"
+  export AGNOS_VERSION="19.9-70b473a"
 fi
 
 export STAGING_ROOT="/data/safe_staging"
