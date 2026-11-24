@@ -6,6 +6,8 @@ See the LICENSE.md file in the root directory for more details.
 """
 import time
 
+import numpy as np
+
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 
@@ -17,6 +19,20 @@ from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+
+
+PATH_CURVATURE_XMIN = 15.0  # m
+PATH_CURVATURE_XMAX = 45.0  # m, ~1.5 s at highway speed
+
+
+def path_curvature_ahead(model_v2, x_min: float = PATH_CURVATURE_XMIN, x_max: float = PATH_CURVATURE_XMAX) -> float:
+  # curvature of the model's planned path over a lookahead window, not the instantaneous one, so displays lead the curve
+  pts = [(x, y) for x, y in zip(model_v2.position.x, model_v2.position.y, strict=False) if x_min <= x <= x_max]
+  if len(pts) < 5:
+    return 0.0
+
+  xs, ys = zip(*pts, strict=False)
+  return float(2 * np.polyfit(xs, ys, 2)[0])
 
 
 class ControlsExt(ModelStateBase):
@@ -103,6 +119,8 @@ class ControlsExt(ModelStateBase):
     CC_SP.intelligentCruiseButtonManagement.state = icbm_src.state
     CC_SP.intelligentCruiseButtonManagement.sendButton = icbm_src.sendButton
     CC_SP.intelligentCruiseButtonManagement.vTarget = icbm_src.vTarget
+
+    CC_SP.pathCurvature = path_curvature_ahead(sm['modelV2'])
 
     return CC_SP
 
