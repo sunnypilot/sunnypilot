@@ -267,8 +267,8 @@ class ModelsLayoutMici(NavScroller):
     self.current_model_info.info_text.set_text(info_text)
 
     if manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.failed:
-      self.current_model_info.info_header.set_text(tr("error") + self._download_progress)
-      self.current_model_info.info_text.set_text(tr("download failed"))
+      self.current_model_info.info_header.set_text(tr("error"))
+      self.current_model_info.info_text.set_text(f"{manager.selectedBundle.internalName.lower()}  |  {tr('download failed')}")
 
     elif manager.selectedBundle and manager.selectedBundle.status == custom.ModelManagerSP.DownloadStatus.downloading:
       self.cancel_download_btn.set_visible(ui_state.params.get("ModelManager_DownloadRef") is not None)
@@ -277,6 +277,7 @@ class ModelsLayoutMici(NavScroller):
       count = 0
       verifying = False
       canceling = False
+      resuming = False
       speed = 0.0
       for model in manager.selectedBundle.models:
         count += 1
@@ -286,12 +287,13 @@ class ModelsLayoutMici(NavScroller):
           progress += p.progress
           verifying = verifying or p.status == custom.ModelManagerSP.DownloadStatus.verifying
           canceling = canceling or p.canceling
+          resuming = resuming or p.resuming
           speed = max(speed, p.speed)  # only one file downloads at a time, so the non-zero speed is the live one
         elif p.status in (custom.ModelManagerSP.DownloadStatus.downloaded,
                           custom.ModelManagerSP.DownloadStatus.cached):
           progress += 100.0
 
-      header = tr("canceling...") if canceling else tr("verifying") if verifying else tr("downloading")
+      header = tr("canceling...") if canceling else tr("verifying") if verifying else tr("resuming...") if resuming else tr("downloading")
       self.current_model_info.current_model_header.set_text(header)
       self.cancel_download_btn.set_text(tr("cancel verification") if verifying else tr("cancel download"))
       self.current_model_info.current_model_header._shimmer = True
