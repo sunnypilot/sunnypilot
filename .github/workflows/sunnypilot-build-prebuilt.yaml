@@ -168,7 +168,7 @@ jobs:
           echo "Building locationd..."
           # -j1: parallel rednose generators OOM the device
           scons -j1 cache_dir="$SCONS_CACHE" --minimal \
-            openpilot/selfdrive/locationd openpilot/sunnypilot/selfdrive/locationd
+            openpilot/selfdrive/locationd
           echo "Building rest of sunnypilot"
           sudo rm -rf /tmp/* || true
           mkdir -p "$BUILD_DIR/tmp"

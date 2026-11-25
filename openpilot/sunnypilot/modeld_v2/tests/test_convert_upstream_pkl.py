@@ -6,6 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import os
 import re
+import struct
 import sys
 import tempfile
 import unittest
@@ -25,8 +26,8 @@ if sys.platform == "darwin" and os.environ.get("DEV", "").startswith("MOCKUSB"):
 
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.modeld_v2 import convert_upstream_pkl
-from openpilot.sunnypilot.modeld_v2.convert_upstream_pkl import convert
-from openpilot.sunnypilot.modeld_v2.helpers import PlainJit, load_model
+from openpilot.sunnypilot.modeld_v2.convert_upstream_pkl import _elf, convert
+from openpilot.sunnypilot.modeld_v2.helpers import ALIGNMENT, PlainJit, load_model
 from openpilot.sunnypilot.modeld_v2.plain_artifact_compiler import capture_frame
 
 IMG, DESIRE, STATE, OUT = (6, 8, 8), (8,), (4, 16), (1, 32)
@@ -119,3 +120,18 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
     bundle = load_model(out, cache=False, verify=True)
     assert bundle["metadata"] == {"name": "tiny"} and bundle["input_specs"] == self.input_specs and bundle["output_specs"] == self.output_specs
     self.assert_matches_eager(bundle["run"], 6)
+
+
+class TestKernelElf(OpenpilotTestCase):
+  def test_sections_follow_the_code(self):
+    from tinygrad.runtime.support.elf import elf_loader
+    code = bytes(range(1, 129))
+    for rodata, entry in ((len(code), 0), (0, 256)):
+      image = bytearray(code + bytes(64) if entry < rodata else bytes(256) + code)
+      struct.pack_into("<q", image, rodata + 16, entry - rodata)
+      loaded, sections, _ = elf_loader(_elf(bytes(image), rodata, entry))
+      headers = {section.name: section.header for section in sections}
+      assert bytes(loaded[ALIGNMENT:]) == bytes(image), "the uploaded program differs from the pickle's"
+      assert headers[".rodata"].sh_addr == ALIGNMENT + rodata, "the loader reads the kernel descriptor at .rodata"
+      text = headers[".text"]
+      assert text.sh_addr <= ALIGNMENT + entry < text.sh_addr + text.sh_size, "the amd mock sizes the code from the entry to the end of .text"

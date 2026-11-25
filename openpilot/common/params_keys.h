@@ -149,6 +149,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"Version", {PERSISTENT, STRING}},
 
     // --- sunnypilot params --- //
+    {"AccelBoostSP", {PERSISTENT | BACKUP, BOOL, "1"}},
     {"ApiCache_DriveStats", {PERSISTENT, JSON}},
     {"AutoLaneChangeBsmDelay", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"AutoLaneChangeTimer", {PERSISTENT | BACKUP, INT, "0"}},
@@ -171,14 +172,13 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"EnableCopyparty", {PERSISTENT | BACKUP, BOOL}},
     {"EnableGithubRunner", {PERSISTENT | BACKUP, BOOL}},
     {"GreenLightAlert", {PERSISTENT | BACKUP, BOOL, "0"}},
-    {"GithubRunnerSufficientVoltage", {CLEAR_ON_MANAGER_START , BOOL}},
     {"HasAcceptedTermsSP", {PERSISTENT, STRING, "0"}},
     {"HideVEgoUI", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"IntelligentCruiseButtonManagement", {PERSISTENT | BACKUP , BOOL}},
     {"InteractivityTimeout", {PERSISTENT | BACKUP, INT, "0"}},
     {"IsDevelopmentBranch", {CLEAR_ON_MANAGER_START, BOOL}},
     {"IsReleaseSpBranch", {CLEAR_ON_MANAGER_START, BOOL}},
-    {"LastGPSPositionLLK", {PERSISTENT, STRING}},
+    {"LastGPSPositionFused", {PERSISTENT, STRING}},
     {"LeadDepartAlert", {PERSISTENT | BACKUP, BOOL, "0"}},
     {"MaxTimeOffroad", {PERSISTENT | BACKUP, INT, "1800"}},
     {"ModelRunnerTypeCache", {CLEAR_ON_ONROAD_TRANSITION, INT}},

@@ -621,6 +621,19 @@
               ]
             },
             {
+              "key": "AccelBoostSP",
+              "widget": "toggle",
+              "title": "Acceleration Boost",
+              "description": "Adds a small push on top of sunnypilot's own acceleration, stronger in Aggressive and gentler in Relaxed. Eases off in curves and when sunnypilot slows or stops. Never goes past your set speed, and lead-car following still comes first.",
+              "enablement": [
+                {
+                  "type": "capability",
+                  "field": "has_longitudinal_control",
+                  "equals": true
+                }
+              ]
+            },
+            {
               "key": "IntelligentCruiseButtonManagement",
               "widget": "toggle",
               "title": "Intelligent Cruise Button Management (ICBM) (Alpha)",
@@ -1349,7 +1362,17 @@
               "key": "TorqueBar",
               "widget": "toggle",
               "title": "Steering Arc",
-              "description": "Display steering arc on the driving screen when lateral control is enabled."
+              "description": "Display steering arc on the driving screen when lateral control is enabled.",
+              "visibility": [
+                {
+                  "type": "not",
+                  "condition": {
+                    "type": "capability",
+                    "field": "device_type",
+                    "equals": "mici"
+                  }
+                }
+              ]
             },
             {
               "key": "ShowTurnSignals",
