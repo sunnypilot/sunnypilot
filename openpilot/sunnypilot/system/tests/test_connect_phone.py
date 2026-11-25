@@ -255,3 +255,15 @@ class TestParams(OpenpilotTestCase):
   def test_no_grants_yet(self, mocker):
     mocker.patch.object(cp, "Params", return_value=FakeParams())
     assert cp.grant_count() == 0
+
+
+class TestDisplayName(OpenpilotTestCase):
+  def test_dongle_id_then_serial(self):
+    params = FakeParams()
+    assert cp.display_name(params) == "comma"
+    params.put("HardwareSerial", "a1b2c3d4")
+    assert cp.display_name(params) == "comma a1b2"
+    params.put("DongleId", cp.UNREGISTERED_DONGLE_ID)
+    assert cp.display_name(params) == "comma a1b2"
+    params.put("DongleId", "3f12aa0000000000")
+    assert cp.display_name(params) == "comma 3f12"
