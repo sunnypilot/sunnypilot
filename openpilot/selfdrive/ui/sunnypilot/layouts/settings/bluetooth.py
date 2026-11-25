@@ -11,15 +11,27 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.connect_phone import ConnectPhoneLayout
 from openpilot.sunnypilot.system.ble import grants
 from openpilot.sunnypilot.system.connect_phone import write_request
-from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp, simple_button_item_sp, toggle_item_sp
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
-from openpilot.system.ui.widgets.list_view import text_item
+from openpilot.system.ui.widgets.list_view import ITEM_TEXT_FONT_SIZE, text_item
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 POLL_INTERVAL = 1.0
+NAME_MAX_WIDTH = 1000  # px at the list font: leaves room for REMOVE in the settings panel
+
+
+def _fit_name(name: str) -> str:
+  # a phone name is up to 80 bytes; list titles are single line and never elided by stock
+  font = gui_app.font(FontWeight.NORMAL)
+  if measure_text_cached(font, name, ITEM_TEXT_FONT_SIZE).x <= NAME_MAX_WIDTH:
+    return name
+  while name and measure_text_cached(font, name + "...", ITEM_TEXT_FONT_SIZE).x > NAME_MAX_WIDTH:
+    name = name[:-1]
+  return name.rstrip() + "..."
 
 
 class BluetoothLayout(Widget):
@@ -71,14 +83,14 @@ class BluetoothLayout(Widget):
       self._scroller.add_widget(item)
 
   def _phone_item(self, phone: dict):
-    spki = phone["spki"]
-    return button_item_sp(title=phone["name"], button_text=lambda: tr("REMOVE"), callback=lambda: self._remove(spki, phone["name"]))
+    spki, name = phone["spki"], _fit_name(phone["name"])
+    return button_item_sp(title=name, button_text=lambda: tr("REMOVE"), callback=lambda: self._remove(spki, name))
 
   def _remove(self, spki: str, name: str):
     def done(result: DialogResult):
       if result == DialogResult.CONFIRM:
         write_request(self._params, "remove", phone=spki)
-    gui_app.push_widget(ConfirmDialog(tr("Remove {}?").format(name), tr("Remove"), tr("Cancel"), callback=done))
+    gui_app.push_widget(ConfirmDialog(tr("Remove \"{}\"?").format(name), tr("Remove"), tr("Cancel"), callback=done))
 
   def _render(self, rect):
     self._scroller.render(rect)
