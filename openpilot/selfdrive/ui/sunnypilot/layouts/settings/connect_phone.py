@@ -177,10 +177,9 @@ class ConnectPhoneLayout(PairingDialog):
 
   def _render_instructions(self, rect: rl.Rectangle) -> None:
     window = self._window if self._is_open() else None
-    code = format_code(int(window["code"])) if window else "…"
     instructions = [
       tr("Open the sunnylink app and tap Connect phone"),
-      tr("Scan the QR code on the right, or type {}").format(code),
+      tr("Scan the QR code on the right, or type {}").format(format_code(int(window["code"]))) if window else tr("Scan the QR code on the right"),
       tr("Check that both screens show the same code, then tap Allow"),
     ]
     font = gui_app.font(FontWeight.BOLD)
