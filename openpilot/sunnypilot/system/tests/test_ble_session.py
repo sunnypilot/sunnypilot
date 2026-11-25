@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
+from openpilot.common.params import ParamKeyType
 from openpilot.common.test import Mocker, OpenpilotTestCase
 from openpilot.sunnypilot.system import connect_phone as cp
 from openpilot.sunnypilot.system.ble import cpace, grants, link, noise, session as s
@@ -22,9 +23,14 @@ class MemParams:
   def __init__(self, values: dict | None = None, known: set[str] | None = None):
     self.data = dict(values or {})
     self.known = known if known is not None else set(self.data)
+    self.types: dict[str, ParamKeyType] = {}
+    self.defaults: dict = {}
 
   def get(self, key, block=False, return_default=False):
-    return self.data.get(key)
+    return self.data.get(key, self.defaults.get(key) if return_default else None)
+
+  def get_type(self, key):
+    return self.types.get(key, ParamKeyType.BYTES)
 
   def get_bool(self, key):
     return bool(self.data.get(key))
@@ -550,6 +556,14 @@ class TestRpcOverSession(OpenpilotTestCase):
     assert phone.rpc("params.set", 0.0, {"values": {"CarParamsSP": "x"}})["result"] == {"ok": ["CarParamsSP"]}
     got = phone.rpc("params.get", 0.0, {"keys": ["CarParamsSP", "SunnylinkTempFault"]})
     assert got["result"] == {"values": {"CarParamsSP": "x", "SunnylinkTempFault": None}}
+
+  def test_params_get_unset_reads_like_sunnylink(self, mocker):
+    h, phone = self.session(mocker)
+    h.params.known |= {"IsMetric", "LongitudinalPersonality", "LanguageSetting"}
+    h.params.types |= {"IsMetric": ParamKeyType.BOOL, "LongitudinalPersonality": ParamKeyType.INT, "LanguageSetting": ParamKeyType.STRING}
+    h.params.defaults["LanguageSetting"] = "main_en"
+    got = phone.rpc("params.get", 0.0, {"keys": ["IsMetric", "LongitudinalPersonality", "LanguageSetting"]})
+    assert got["result"] == {"values": {"IsMetric": False, "LongitudinalPersonality": 0, "LanguageSetting": "main_en"}}
 
   def test_params_refusals_are_all_or_nothing(self, mocker):
     h, phone = self.session(mocker)
