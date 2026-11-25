@@ -21,18 +21,19 @@ from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import Bl
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
 
 
-PATH_CURVATURE_XMIN = 15.0  # m
-PATH_CURVATURE_XMAX = 45.0  # m, ~1.5 s at highway speed
+PATH_CURVATURE_LOOKAHEAD_SLICE = slice(2, 11)  # ~0.04s to ~1.0s lookahead in T_IDXS
+PATH_CURVATURE_MIN_SPEED = 1.0  # m/s
 
 
-def path_curvature_ahead(model_v2, x_min: float = PATH_CURVATURE_XMIN, x_max: float = PATH_CURVATURE_XMAX) -> float:
-  # curvature of the model's planned path over a lookahead window, not the instantaneous one, so displays lead the curve
-  pts = [(x, y) for x, y in zip(model_v2.position.x, model_v2.position.y, strict=False) if x_min <= x <= x_max]
-  if len(pts) < 5:
+def path_curvature_ahead(model_v2) -> float:
+  vx = model_v2.velocity.x
+  oz = model_v2.orientationRate.z
+  if len(vx) < 11 or len(oz) < 11 or vx[0] < PATH_CURVATURE_MIN_SPEED:
     return 0.0
 
-  xs, ys = zip(*pts, strict=False)
-  return float(2 * np.polyfit(xs, ys, 2)[0])
+  vx_arr = np.maximum(np.asarray(vx, dtype=np.float64)[PATH_CURVATURE_LOOKAHEAD_SLICE], PATH_CURVATURE_MIN_SPEED)
+  oz_arr = np.asarray(oz, dtype=np.float64)[PATH_CURVATURE_LOOKAHEAD_SLICE]
+  return float(np.mean(oz_arr / vx_arr))
 
 
 class ControlsExt(ModelStateBase):
