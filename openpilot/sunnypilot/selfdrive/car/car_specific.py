@@ -32,6 +32,8 @@ class CarSpecificEventsSP:
     self.sm.update(0)
     if self.sm['carStateSP'].stockSteerIntervention:
       events_sp.add(EventNameSP.stockSteerIntervention)
+    if self.sm['carStateSP'].stockAeb:
+      events_sp.add(EventNameSP.stockAeb)
 
     if self.CP.brand == 'chrysler':
       if self.CP.carFingerprint in RAM_DT:
