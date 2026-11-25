@@ -20,7 +20,7 @@ POLL_SECONDS = 1.0
 
 
 def _phone_count(n: int) -> str:
-  return tr("none yet") if n == 0 else (tr("1 phone") if n == 1 else tr("{} phones").format(n))
+  return tr("none connected") if n == 0 else tr("{} connected").format(n)
 
 
 class BluetoothLayoutMici(NavScroller):
@@ -39,7 +39,7 @@ class BluetoothLayoutMici(NavScroller):
     self._connect_phone_btn.set_enabled(lambda: self._bluetooth_on)
 
     self._phones_page = ConnectedPhonesMici()
-    self._phones_btn = BigButton(tr("connected phones"), "")
+    self._phones_btn = BigButton(tr("phones"), "")
     self._phones_btn.set_click_callback(lambda: gui_app.push_widget(self._phones_page))
     self._phones_btn.set_visible(lambda: self._bluetooth_on)
     self._last_poll = float("-inf")
@@ -77,7 +77,7 @@ class ConnectedPhonesMici(NavScroller):
 
   def _phone_item(self, phone: dict) -> BigButton:
     spki = phone["spki"]
-    item = BigButton(phone["name"], tr("remove"))
+    item = BigButton(phone["name"], tr("remove"), scroll=True)
     item.set_click_callback(lambda: self._remove(spki))
     return item
 

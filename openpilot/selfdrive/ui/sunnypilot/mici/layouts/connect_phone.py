@@ -140,6 +140,7 @@ class ConnectPhoneDialog(NavWidget):
     label_x = self._rect.x + 8 + self._rect.height + 24 if show_code else self._rect.x + 20
     max_width = int(self._rect.x + self._rect.width - label_x)
     y = self._rect.y + 16
+    self._title.set_text(tr("scan or type") if show_code else tr("connect phone"))
     self._title.set_max_width(max_width)
     self._title.set_position(label_x, y)
     self._title.render()
