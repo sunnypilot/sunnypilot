@@ -234,7 +234,7 @@ class Engine:
       return self._drop(lk)
     if not link.verify("ES256", spki, link.signed_bytes("P", lk.th, spki, static), sig):
       return self._drop(lk)
-    lk.phone = {"spki": grants.b64(spki), "static": grants.b64(static), "name": name}
+    lk.phone = {"spki": grants.b64(spki), "static": grants.b64(static), "name": " ".join(name.split()) or "phone"}
     lk.last = now
     saved = grants.load(self._params)
     known = any(g["spki"] == lk.phone["spki"] for g in saved)
