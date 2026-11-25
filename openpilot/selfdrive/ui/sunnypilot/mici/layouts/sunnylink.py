@@ -4,22 +4,30 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import pyray as rl
+import time
 
+import pyray as rl
+from functools import partial
 
 from openpilot.cereal import custom
+from openpilot.common.version import sunnylink_consent_version, sunnylink_consent_declined
 from openpilot.selfdrive.ui.mici.widgets.button import BigButton, BigToggle
 from openpilot.selfdrive.ui.mici.widgets.dialog import BigDialog, BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.sunnypilot.mici.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.athena.local_app_rows import MAX_LOCAL_APP_ROWS, LocalAppRow
+from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
+  app_rows,
+  request_revoke,
+  request_revoke_all,
+)
 from openpilot.system.ui.lib.application import gui_app, MousePos, FontWeight
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.scroller import NavScroller
-from openpilot.common.version import sunnylink_consent_version, sunnylink_consent_declined
 
 class SunnylinkInfo(Widget):
   def __init__(self):
@@ -73,11 +81,15 @@ class SunnylinkLayoutMici(NavScroller):
     self._sunnylink_uploader_toggle = BigToggle(text=tr("sunnylink uploader"), initial_state=False,
                                                 toggle_callback=self._sunnylink_uploader_callback)
 
+    self._mobile_app_btn = BigButton(tr("sunnylink local"), "")
+    self._mobile_app_btn.set_click_callback(lambda: gui_app.push_widget(LocalAppsPanelMici()))
+
     self._scroller.add_widgets([
       self._sunnylink_info,
       self._sunnylink_toggle,
       self._sunnylink_sponsor_button,
       self._sunnylink_pair_button,
+      self._mobile_app_btn,
       self._backup_btn,
       self._restore_btn,
       self._sunnylink_uploader_toggle
@@ -110,6 +122,8 @@ class SunnylinkLayoutMici(NavScroller):
       self._sunnylink_pair_button.set_text(tr("paired"))
     else:
       self._sunnylink_pair_button.set_text(tr("pair"))
+
+    self._mobile_app_btn.set_visible(self._sunnylink_enabled)
 
   def show_event(self):
     super().show_event()
@@ -252,3 +266,94 @@ class SunnylinkPairBigButton(BigButton):
       dlg = SunnylinkPairingDialog(sponsor_pairing=False)
     if dlg:
       gui_app.push_widget(dlg)
+
+
+class LocalAppsPanelMici(NavScroller):
+
+  # How long a requested unpair may stay visible before the UI calls it stuck: the local
+  # daemon's tick services requests about once a second, so anything older was never claimed.
+  _REVOKE_STUCK_S = 4.0
+
+  def __init__(self):
+    super().__init__()
+    self._rows_cache: list[LocalAppRow] = []
+    self._pending_revokes: dict[str, float] = {}
+    self._pending_revoke_all: float | None = None
+
+    self._local_toggle = BigToggle(text=tr("local connections"),
+                                   initial_state=ui_state.params.get_bool("SunnylinkLocalEnabled"),
+                                   toggle_callback=self._local_toggle_callback)
+
+    self._revoke_all_btn = BigButton(tr("revoke all phones"), "")
+    self._revoke_all_btn.set_click_callback(self._confirm_revoke_all)
+
+    self._local_app_btns: list[BigButton] = []
+    for i in range(MAX_LOCAL_APP_ROWS):
+      btn = BigButton("", "")
+      btn.set_click_callback(partial(self._confirm_unpair_row, i))
+      self._local_app_btns.append(btn)
+
+    self._scroller.add_widgets([self._local_toggle, self._revoke_all_btn, *self._local_app_btns])
+
+  @staticmethod
+  def _local_toggle_callback(state: bool):
+    ui_state.params.put_bool("SunnylinkLocalEnabled", state)
+    ui_state.update_params()
+
+  def _update_state(self):
+    super()._update_state()
+    self._local_toggle.set_checked(ui_state.params.get_bool("SunnylinkLocalEnabled"))
+    self._rows_cache = app_rows()
+    self._revoke_all_btn.set_visible(bool(self._rows_cache))
+    now = time.monotonic()
+    present = {row.app_id for row in self._rows_cache}
+    self._pending_revokes = {a: t for a, t in self._pending_revokes.items() if a in present}
+    if not present:
+      self._pending_revoke_all = None
+    stuck_all = (self._pending_revoke_all is not None and bool(present)
+                 and now - self._pending_revoke_all >= self._REVOKE_STUCK_S)
+    for i, btn in enumerate(self._local_app_btns):
+      btn.set_visible(i < len(self._rows_cache))
+      if i < len(self._rows_cache):
+        row = self._rows_cache[i]
+        btn.set_text(row.title)
+        asked = self._pending_revokes.get(row.app_id)
+        if (asked is not None and now - asked >= self._REVOKE_STUCK_S) or stuck_all:
+          btn.set_value(tr("still paired — retry?"))
+        else:
+          btn.set_value("")
+    if stuck_all:
+      self._revoke_all_btn.set_value(tr("still paired — retry?"))
+    else:
+      self._revoke_all_btn.set_value("")
+
+  def _confirm_revoke_all(self):
+    icon = gui_app.texture("icons_mici/settings/device/update.png", 64, 64)
+    dlg = BigConfirmationDialog(
+      tr("revoke all phones"),
+      icon,
+      confirm_callback=self._on_revoke_all_confirmed,
+      red=True,
+    )
+    gui_app.push_widget(dlg)
+
+  def _on_revoke_all_confirmed(self):
+    self._pending_revoke_all = time.monotonic()
+    request_revoke_all()
+
+  def _confirm_unpair_row(self, index: int):
+    if index >= len(self._rows_cache):
+      return
+    row = self._rows_cache[index]
+    dlg = BigConfirmationDialog(
+      tr("slide to unpair"),
+      gui_app.texture("icons_mici/settings/device/update.png", 64, 64),
+      confirm_callback=partial(self._on_unpair_confirmed, row.app_id),
+      red=True,
+    )
+    gui_app.push_widget(dlg)
+
+  def _on_unpair_confirmed(self, app_id: str):
+    self._pending_revokes[app_id] = time.monotonic()
+    request_revoke(app_id)
+

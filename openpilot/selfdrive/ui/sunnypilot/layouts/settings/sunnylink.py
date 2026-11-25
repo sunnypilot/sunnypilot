@@ -4,24 +4,33 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import time
+
 import pyray as rl
+from functools import partial
 from openpilot.cereal import custom
+from openpilot.common.version import sunnylink_consent_version
 from openpilot.selfdrive.ui.sunnypilot.layouts.onboarding import SunnylinkConsentPage
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.sunnylink.athena.local_app_rows import MAX_LOCAL_APP_ROWS, LocalAppRow
+from openpilot.sunnypilot.sunnylink.athena.local_auth_daemon import (
+  app_rows,
+  pending_enrollment,
+  request_revoke,
+  request_revoke_all,
+)
 from openpilot.system.ui.lib.application import gui_app, FontWeight, TextAlignment, TextAlignmentVertical
 from openpilot.system.ui.lib.multilang import tr
-from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp
-from openpilot.system.ui.sunnypilot.widgets.list_view import toggle_item_sp
+from openpilot.system.ui.sunnypilot.widgets.list_view import ListItemSP, button_item_sp, toggle_item_sp
 from openpilot.system.ui.sunnypilot.widgets.sunnylink_pairing_dialog import SunnylinkPairingDialog
 from openpilot.system.ui.widgets import Widget, DialogResult
 from openpilot.system.ui.widgets.button import ButtonStyle, Button
 from openpilot.system.ui.widgets.confirm_dialog import alert_dialog, ConfirmDialog
 from openpilot.system.ui.widgets.label import UnifiedLabel
 from openpilot.system.ui.widgets.list_view import dual_button_item
+from openpilot.system.ui.widgets.network import NavButton
 from openpilot.system.ui.widgets.scroller_tici import Scroller, LineSeparator
-from openpilot.common.version import sunnylink_consent_version
-
 
 class SunnylinkHeader(Widget):
   def __init__(self):
@@ -192,6 +201,15 @@ class SunnylinkLayout(Widget):
     self._backup_btn.set_button_style(ButtonStyle.NORMAL)
     self._restore_btn.set_button_style(ButtonStyle.PRIMARY)
 
+    self._mobile_app_btn = button_item_sp(
+      title=tr("Sunnylink Local Connections"),
+      button_text=tr("CONFIGURE"),
+      description=tr("Manage the mobile app(s) connected over Wi-Fi: pair a new app ") +
+                  tr("or unpair existing ones."),
+      callback=self._open_local_apps,
+    )
+    self._mobile_app_btn.set_visible(lambda: self._sunnylink_enabled)
+
     items = [
       SunnylinkHeader(),
       LineSeparator(),
@@ -202,9 +220,11 @@ class SunnylinkLayout(Widget):
       LineSeparator(),
       self._pair_btn,
       LineSeparator(),
+      self._mobile_app_btn,
+      LineSeparator(),
       self._sunnylink_uploader_toggle,
       LineSeparator(),
-      self._sunnylink_backup_restore_buttons
+      self._sunnylink_backup_restore_buttons,
     ]
     return items
 
@@ -352,6 +372,9 @@ class SunnylinkLayout(Widget):
     self._pair_btn.action_item.set_text(pair_btn_text)
     self._pair_btn.action_item.set_enabled(self._sunnylink_enabled)
 
+  def _open_local_apps(self):
+    gui_app.push_widget(SunnylinkLocalAppLayout())
+
   def _render(self, rect):
     self._scroller.render(rect)
 
@@ -364,3 +387,138 @@ class SunnylinkLayout(Widget):
   def hide_event(self):
     super().hide_event()
     ui_state.sunnylink_state.set_settings_open(False)
+
+
+class SunnylinkLocalAppLayout(Widget):
+
+  # How long a requested unpair may stay visible before the UI calls it stuck: the local
+  # daemon's tick services requests about once a second, so anything older was never claimed.
+  _REVOKE_STUCK_S = 4.0
+
+  def __init__(self):
+    super().__init__()
+    self._rows_cache: list[LocalAppRow] = []
+    self._pending_revokes: dict[str, float] = {}
+    self._pending_revoke_all: float | None = None
+
+    self._back_button = NavButton(tr("Back"))
+    self._back_button.set_click_callback(gui_app.pop_widget)
+
+    self._local_connections_toggle = toggle_item_sp(
+      title=tr("Enable local connections"),
+      description=tr("Let the sunnylink mobile app connect to this device over Wi-Fi. ") +
+                  tr("Turn this off to stop the local daemon and keep sunnylink itself running."),
+      param="SunnylinkLocalEnabled",
+    )
+
+    self._revoke_all_btn = button_item_sp(
+      title=tr("Unpair all phones"),
+      button_text=tr("REVOKE ALL"),
+      description=tr("Revoke every enrolled phone at once. Each phone must pair again ") +
+                  tr("from the sunnylink app to reconnect."),
+      callback=self._revoke_all,
+    )
+    self._revoke_all_btn.set_visible(lambda: bool(self._rows_cache))
+
+    self._revoke_status = SunnylinkDescriptionItem()
+    self._revoke_status.set_visible(False)
+
+    self._local_app_rows: list[ListItemSP] = []
+    self._local_app_seps: list[LineSeparator] = []
+    for i in range(MAX_LOCAL_APP_ROWS):
+      row = button_item_sp(
+        title=lambda i=i: self._row_title(i),
+        button_text=tr("UNPAIR"),
+        callback=partial(self._unpair_row, i),
+      )
+      sep = LineSeparator()
+      row.set_visible(lambda i=i: self._local_row_visible(i))
+      sep.set_visible(lambda i=i: self._local_row_visible(i))
+      self._local_app_rows.append(row)
+      self._local_app_seps.append(sep)
+
+    items = [self._local_connections_toggle, LineSeparator(),
+             self._revoke_status, LineSeparator(), self._revoke_all_btn, LineSeparator()]
+    for row, sep in zip(self._local_app_rows, self._local_app_seps, strict=True):
+      items.extend((row, sep))
+    self._scroller = Scroller(items, line_separator=False, spacing=0)
+
+  def _local_row_visible(self, i: int) -> bool:
+    return i < len(self._rows_cache)
+
+  def _row_title(self, i: int) -> str:
+    return self._rows_cache[i].title if i < len(self._rows_cache) else ""
+
+  def _revoke_all(self):
+    dialog = ConfirmDialog(
+      text=tr("Revoke all phones?") + " " + tr("They will need to pair again from the app."),
+      confirm_text=tr("Revoke all"),
+      callback=self._on_revoke_all_confirmed,
+    )
+    gui_app.push_widget(dialog)
+
+  def _on_revoke_all_confirmed(self, result: int):
+    if result != DialogResult.CONFIRM:
+      return
+    self._pending_revoke_all = time.monotonic()
+    request_revoke_all()
+
+  def _unpair_row(self, index: int):
+    if index >= len(self._rows_cache):
+      return
+    row = self._rows_cache[index]
+    dialog = ConfirmDialog(
+      text=tr("Unpair") + f" {row.title}? " + tr("You will need to enroll this phone again from the app."),
+      confirm_text=tr("Unpair"),
+      callback=partial(self._on_unpair_confirmed, row.app_id),
+    )
+    gui_app.push_widget(dialog)
+
+  def _on_unpair_confirmed(self, app_id: str, result: int):
+    if result != DialogResult.CONFIRM:
+      return
+    self._pending_revokes[app_id] = time.monotonic()
+    request_revoke(app_id)
+
+  def _update_state(self):
+    super()._update_state()
+    self._rows_cache = app_rows()
+    self._update_revoke_status()
+
+  def _update_revoke_status(self) -> None:
+    now = time.monotonic()
+    present = {row.app_id for row in self._rows_cache}
+    stuck = [app_id for app_id, asked in self._pending_revokes.items()
+             if app_id in present and now - asked >= self._REVOKE_STUCK_S]
+    self._pending_revokes = {a: t for a, t in self._pending_revokes.items() if a in present}
+    revoke_all_stuck = (self._pending_revoke_all is not None and bool(present)
+                        and now - self._pending_revoke_all >= self._REVOKE_STUCK_S)
+    if not present:
+      self._pending_revoke_all = None
+    pending = pending_enrollment()
+    if stuck or revoke_all_stuck:
+      self._revoke_status.set_color(rl.Color(255, 165, 0, 255))
+      self._revoke_status.set_text(tr("Still paired — the local daemon may not be running."))
+      self._revoke_status.set_visible(True)
+    elif pending is not None:
+      self._revoke_status.set_color(rl.WHITE)
+      self._revoke_status.set_text(tr("Enrollment pending — waiting for the phone to connect…"))
+      self._revoke_status.set_visible(True)
+    else:
+      self._revoke_status.set_visible(False)
+
+  def _render(self, rect):
+    self._back_button.set_position(self._rect.x, self._rect.y + 20)
+    self._back_button.render()
+    content_rect = rl.Rectangle(rect.x, rect.y + self._back_button.rect.height + 40,
+                                rect.width, rect.height - self._back_button.rect.height - 40)
+    self._scroller.render(content_rect)
+
+  def show_event(self):
+    super().show_event()
+    self._scroller.show_event()
+
+  def hide_event(self):
+    super().hide_event()
+    self._scroller.hide_event()
+
