@@ -122,6 +122,7 @@ class ConnectPhoneDialog(NavWidget):
 
   def _finish(self, message: str | None) -> None:
     self._closing = True
+    gui_app.pop_widgets_to(self, instant=True)
     if message is None:
       self.dismiss(lambda: None)
     else:
