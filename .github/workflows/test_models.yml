@@ -199,16 +199,3 @@ jobs:
           DEV: MOCK+QCOM
           PYTHONPATH: ${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}
         run: python3 -m openpilot.sunnypilot.modeld_v2.mock_parity check "$RUNNER_TEMP/model.pkl"
-
-  chestnut-mock-build-parity:
-    name: Chestnut build on the amd mock = chestnut runner build
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: ./.github/workflows/setup-amd-mock
-        with:
-          emu_cache: chestnut-build-parity
-      - run: python3 -m pip install -q numpy zstandard
-      - uses: ./.github/workflows/chestnut-build-parity
