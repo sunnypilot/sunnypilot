@@ -13,7 +13,7 @@ import pyray as rl
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.ui_state import device
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog
-from openpilot.sunnypilot.system.connect_phone import WINDOW_SECONDS, format_code, read_window, write_request
+from openpilot.sunnypilot.system.connect_phone import WINDOW_SECONDS, display_name, format_code, read_window, write_request
 from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr, tr_noop
 from openpilot.system.ui.lib.text_measure import measure_text_cached
@@ -41,6 +41,7 @@ class ConnectPhoneLayout(PairingDialog):
   def __init__(self):
     super().__init__()
     self._params = Params()
+    self._name = display_name(self._params)
     self._close_btn.set_click_callback(self._close_screen)
     self._started = False
     self._closed = False
@@ -154,7 +155,7 @@ class ConnectPhoneLayout(PairingDialog):
 
     title_font = gui_app.font(FontWeight.NORMAL)
     left_width = int(content_rect.width * 0.5 - 15)
-    title_wrapped = wrap_text(title_font, tr("Connect a phone to this device"), 75, left_width)
+    title_wrapped = wrap_text(title_font, tr("Connect a phone to {}").format(self._name), 75, left_width)
     rl.draw_text_ex(title_font, "\n".join(title_wrapped), rl.Vector2(content_rect.x, y), 75, 0.0, rl.BLACK)
     y += len(title_wrapped) * 75 + 60
 
