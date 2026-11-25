@@ -249,6 +249,14 @@ EVENTS_SP: dict[int, dict[str, Alert | AlertCallbackType]] = {
       Priority.LOW, VisualAlert.none, AudibleAlert.prompt, 0.1),
   },
 
+  EventNameSP.stockSteerIntervention: {
+    ET.PERMANENT: Alert(
+      "TAKE CONTROL",
+      "Stock Emergency Assist: Risk of Collision",
+      AlertStatus.critical, AlertSize.mid,
+      Priority.HIGH, VisualAlert.steerRequired, AudibleAlert.none, 2.),
+  },
+
   EventNameSP.bigModelReady: {
     ET.PERMANENT: Alert(
       "Big Model Ready",
