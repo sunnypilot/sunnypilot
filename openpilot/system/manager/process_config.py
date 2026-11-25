@@ -185,6 +185,8 @@ procs += [
   PythonProcess("mapd_manager", "openpilot.sunnypilot.mapd.mapd_manager", always_run),
 
   PythonProcess("gps_fuser", "openpilot.sunnypilot.selfdrive.locationd.gps_fuser", only_onroad),
+
+  PythonProcess("bluetooth_manager", "openpilot.sunnypilot.system.bluetooth_manager", always_run, enabled=not PC),
 ]
 
 if os.path.exists("../../sunnypilot/sunnylink/uploader.py"):
