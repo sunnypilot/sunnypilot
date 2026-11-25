@@ -98,7 +98,9 @@ def _gate(parts: dict) -> None:
 
 
 def check(path: str) -> None:
-  parts, _ = read_parts(path)
+  parts, extras = read_parts(path)
+  if "metadata" not in extras:
+    raise ParityError("artifact has no metadata")
   if ON_MOCK:
     _gate(parts)
   shared: dict = {}
