@@ -113,7 +113,7 @@ class ConnectPhoneDialog(NavWidget):
     elif window.get("state") == "open":
       self._was_open = True
       if not window.get("held") and now >= window["deadline"]:
-        self._finish(None)
+        self._finish(_closed_message("timeout"))
 
   def _cancel(self) -> None:
     if not self._closing:
