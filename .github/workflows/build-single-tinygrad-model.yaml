@@ -76,7 +76,7 @@ on:
         description: 'The ref is on sunnypilot/sunnypilot (custom models): skip trying commaai/openpilot first'
         required: false
         type: boolean
-        default: true
+        default: false
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
