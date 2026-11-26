@@ -4,6 +4,7 @@ Copyright (c) 2021-, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
+import selectors
 import signal
 import threading
 import time
@@ -66,11 +67,17 @@ def _prop(ifaces: dict, iface: str, name: str, default=None):
 
 class BluetoothManager:
   def __init__(self, on_write: Callable[[str, bytes, int], None], on_disconnect: Callable[[str], None] | None = None,
-               on_tick: Callable[[], None] | None = None):
-    # all three run on the run() thread
+               on_tick: Callable[[], None] | None = None,
+               stream_fds: Callable[[], list[tuple[int, int]]] | None = None,
+               on_stream_ready: Callable[[int, bool, bool], None] | None = None,
+               has_active_session: Callable[[], bool] | None = None):
+    # all callbacks run on the run() thread
     self._on_write = on_write  # device path, value, mtu
     self._on_disconnect = on_disconnect  # device path
     self._on_tick = on_tick
+    self._stream_fds = stream_fds
+    self._on_stream_ready = on_stream_ready
+    self._has_active_session = has_active_session
     self._params = Params()
     self._conn = None
     self._enabled = False
@@ -78,6 +85,7 @@ class BluetoothManager:
     self._adapter: str | None = None  # the adapter this manager has changed; ready implies it is set
     self._ready = False
     self._connected: frozenset[str] = frozenset()
+    self._stale_connected_since: float | None = None
     self._failed_step: str | None = None
     self._last_reconcile = 0.0
     self._last_tick = 0.0
@@ -102,6 +110,7 @@ class BluetoothManager:
                                  (GATT_CHARACTERISTIC_IFACE, {"Value": ("ay", data)}, [])))
 
   def disconnect(self, device: str):
+    cloudlog.warning(f"bluetooth: disconnecting {device}")
     self._send(new_method_call(DBusAddress(device, BLUEZ, DEVICE_IFACE), "Disconnect"))
 
   def stop(self):
@@ -115,10 +124,7 @@ class BluetoothManager:
           self._last_reconcile = time.monotonic()
           self._reconcile()
         self._tick()
-        try:
-          self._dispatch(self._conn.receive(timeout=RECONCILE_PERIOD))
-        except TimeoutError:
-          pass
+        self._wait_and_dispatch()
     finally:
       try:
         self._teardown()
@@ -127,6 +133,51 @@ class BluetoothManager:
       conn, self._conn = self._conn, None
       conn.close()
       self._set_connected(frozenset())
+
+  def _wait_and_dispatch(self):
+    # Drain any already-buffered D-Bus messages without blocking.
+    while not self._exit:
+      try:
+        self._dispatch(self._conn.receive(timeout=0))
+      except TimeoutError:
+        break
+    if self._exit:
+      return
+
+    entries = self._stream_fds() if self._stream_fds is not None else []
+    if not entries:
+      try:
+        self._dispatch(self._conn.receive(timeout=RECONCILE_PERIOD))
+      except TimeoutError:
+        pass
+      return
+
+    dbus_fd = self._conn.sock.fileno()
+    sel = selectors.DefaultSelector()
+    try:
+      sel.register(dbus_fd, selectors.EVENT_READ, data="dbus")
+      for fd, events in entries:
+        try:
+          sel.register(fd, events, data="stream")
+        except (OSError, ValueError):
+          pass
+      ready = sel.select(timeout=RECONCILE_PERIOD)
+      for key, mask in ready:
+        if key.data == "dbus":
+          while not self._exit:
+            try:
+              self._dispatch(self._conn.receive(timeout=0))
+            except TimeoutError:
+              break
+        else:
+          self._callback(
+            self._on_stream_ready,
+            key.fd,
+            bool(mask & selectors.EVENT_READ),
+            bool(mask & selectors.EVENT_WRITE),
+          )
+    finally:
+      sel.close()
 
   def _send(self, msg: Message) -> bool:
     conn = self._conn
@@ -190,11 +241,25 @@ class BluetoothManager:
     self._set_connected(frozenset(path for path, ifaces in objects.items() if _prop(ifaces, DEVICE_IFACE, "Connected")))
     adapter = next((path for path, ifaces in objects.items() if GATT_MANAGER_IFACE in ifaces and ADVERTISING_MANAGER_IFACE in ifaces), None)
 
+    if self._connected and self._has_active_session is not None and not self._has_active_session():
+      now = time.monotonic()
+      if self._stale_connected_since is None:
+        self._stale_connected_since = now
+      elif now - self._stale_connected_since >= 15.0:
+        cloudlog.warning(f"bluetooth: disconnecting stale idle devices {sorted(self._connected)}")
+        for path in self._connected:
+          self._call(new_method_call(DBusAddress(path, BLUEZ, DEVICE_IFACE), "Disconnect"))
+        self._stale_connected_since = None
+        self._set_connected(frozenset())
+    else:
+      self._stale_connected_since = None
+
     if self._ready and adapter == self._adapter:
       ifaces = objects[adapter]
-      # a restarted bluetoothd keeps the adapter powered but has no advertisement
+      # a restarted bluetoothd keeps the adapter powered but has no advertisement;
+      # while a phone is connected, single-role controllers may pause advertising without losing the app.
       if (_prop(ifaces, ADAPTER_IFACE, "Powered") and not _prop(ifaces, ADAPTER_IFACE, "Pairable", True) and
-          _prop(ifaces, ADVERTISING_MANAGER_IFACE, "ActiveInstances", 0) >= 1):
+          (self._connected or _prop(ifaces, ADVERTISING_MANAGER_IFACE, "ActiveInstances", 0) >= 1)):
         return
       cloudlog.warning(f"bluetooth: lost {adapter}, setting up again")
 
@@ -205,6 +270,10 @@ class BluetoothManager:
 
   def _setup(self, adapter: str, objects: dict):
     self._unregister(adapter)
+    for path, ifaces in objects.items():
+      if _prop(ifaces, DEVICE_IFACE, "Connected"):
+        cloudlog.warning(f"bluetooth: disconnecting leftover {path} before setup")
+        self._call(new_method_call(DBusAddress(path, BLUEZ, DEVICE_IFACE), "Disconnect"))
     adapter_address = DBusAddress(adapter, BLUEZ, ADAPTER_IFACE)
     props = Properties(adapter_address)
     paired = [path for path, ifaces in objects.items() if _prop(ifaces, DEVICE_IFACE, "Paired")]
@@ -270,6 +339,7 @@ class BluetoothManager:
       # BlueZ has already acked the write and discards this reply, so the only refusal is a disconnect.
       # A long write arrives joined at offset 0, so the length is checked as well.
       if options.get("offset", ("q", 0))[1] != 0 or len(value) > mtu - 3:
+        cloudlog.warning(f"bluetooth: bad WriteValue offset={options.get('offset')} len={len(value)} mtu={mtu} from {device}")
         self.disconnect(device)
       else:
         self._callback(self._on_write, device, bytes(value), mtu)
@@ -298,8 +368,18 @@ class Daemon:
     self._retry_at: float | None = None
 
   def new_manager(self) -> BluetoothManager:
-    self.bt = BluetoothManager(self.on_write, self._engine.on_disconnect, self.tick)
+    self.bt = BluetoothManager(
+      self.on_write,
+      self._engine.on_disconnect,
+      self.tick,
+      stream_fds=self._engine.stream_selector_entries,
+      on_stream_ready=self.on_stream_ready,
+      has_active_session=lambda: self._engine.connected() > 0,
+    )
     return self.bt
+
+  def on_stream_ready(self, fd: int, readable: bool, writable: bool):
+    self._act(self._engine.on_stream_ready(fd, readable, writable))
 
   def on_write(self, device: str, value: bytes, mtu: int):
     self._act(self._engine.on_write(device, value, mtu, time.monotonic()))

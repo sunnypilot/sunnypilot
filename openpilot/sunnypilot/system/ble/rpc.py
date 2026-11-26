@@ -126,7 +126,7 @@ class Rpc:
   def _status(self, grants: list[dict]) -> dict:
     return {"version": get_version(), "agnos": HARDWARE.get_os_version(), "dongle_id": self._params.get("DongleId"),
             "onroad": not self._params.get_bool("IsOffroad"), "engaged": self._params.get_bool("IsEngaged"),
-            "network": _wifi_status(), "phones": len(grants)}
+            "network": _wifi_status(), "phones": len(grants), "capabilities": ["ssh"]}
 
   def _known(self) -> set[str]:
     return {key.decode() for key in self._params.all_keys()}
@@ -146,7 +146,6 @@ class Rpc:
     keys = args.get("keys")
     if not isinstance(keys, list) or len(keys) > MAX_PARAM_KEYS or not all(isinstance(k, str) for k in keys):
       raise _refused("keys must be a list of at most 32 names")
-    self._check_keys(keys)
     known = self._known()
     values = {}
     for key in keys:
