@@ -303,6 +303,10 @@ class WifiManager:
     return wifi_state.ssid if wifi_state.status == ConnectStatus.CONNECTED else None
 
   @property
+  def tethering_ssid(self) -> str:
+    return self._tethering_ssid
+
+  @property
   def tethering_password(self) -> str:
     return self._tethering_password
 

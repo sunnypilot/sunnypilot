@@ -44,18 +44,7 @@ DISALLOW_LOG_UPLOAD = threading.Event()
 
 params = Params()
 
-# Parameters that should never be remotely modified
-BLOCKED_PARAMS = {
-  "AdbEnabled",
-  "CompletedSunnylinkConsentVersion",
-  "CompletedTrainingVersion",
-  "GithubUsername",  # Could grant SSH access
-  "GithubSshKeys",   # Direct SSH key injection
-  "HasAcceptedTerms",
-  "HasAcceptedTermsSP",
-  "OnroadCycleRequested",      # Prevent remote cycle trigger
-  "ParamsVersion",         # Device-managed version counter
-}
+from openpilot.sunnypilot.sunnylink.athena.params_guard import BLOCKED_PARAMS, is_local_param
 
 
 def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
@@ -166,7 +155,7 @@ def toggleLogUpload(enabled: bool):
 @dispatcher.add_method
 def getParamsAllKeys() -> list[str]:
   keys: list[str] = [k.decode('utf-8') for k in Params().all_keys()]
-  return keys
+  return [key for key in keys if not is_local_param(key)]
 
 
 @dispatcher.add_method
@@ -208,7 +197,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
       ParamKeyType.BYTES.value: b"",
     }
 
-    param_keys_validated = [key for key in params_keys if key in available_keys]
+    param_keys_validated = [key for key in params_keys if key in available_keys and not is_local_param(key)]
     params_dict: dict[str, list[dict[str, str | bool | int]]] = {"params": []}
     for key in param_keys_validated:
       value = get_param_as_byte(key)
@@ -238,7 +227,7 @@ def getParams(params_keys: list[str], compression: bool = False) -> str | dict[s
 def saveParams(params_to_update: dict[str, str], compression: bool = False) -> None:
   for key, value in params_to_update.items():
     # disallow modifications to blocked parameters
-    if key in BLOCKED_PARAMS:
+    if key in BLOCKED_PARAMS or is_local_param(key):
       cloudlog.warning(f"sunnylinkd.saveParams.blocked: Attempted to modify blocked parameter '{key}'")
       continue
 

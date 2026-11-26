@@ -149,7 +149,8 @@ class DeviceLayoutSP(DeviceLayout):
     def _do_reset(result: int):
       if result == DialogResult.CONFIRM:
         for _key in ui_state.params.all_keys():
-          ui_state.params.remove(_key)
+          if not _key.startswith("SunnylinkLocal"):
+            ui_state.params.remove(_key)
         HARDWARE.reboot()
 
     def _second_confirm(result: int):
