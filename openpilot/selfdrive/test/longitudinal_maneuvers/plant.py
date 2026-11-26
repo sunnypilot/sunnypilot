@@ -11,6 +11,13 @@ from openpilot.selfdrive.controls.lib.longitudinal_planner import LongitudinalPl
 from openpilot.selfdrive.controls.radard import _LEAD_ACCEL_TAU
 
 
+class PlantSubMaster(dict):
+  # The messages of one step, with the receive times the planner reads from a SubMaster
+  def __init__(self, msgs):
+    super().__init__(msgs)
+    self.recv_time = dict.fromkeys(msgs, time.monotonic())
+
+
 class Plant:
   messaging_initialized = False
 
@@ -127,15 +134,15 @@ class Plant:
     car_state.carState.vCruise = float(v_cruise * 3.6)
 
     # ******** get controlsState messages for plotting ***
-    sm = {'radarState': radar.radarState,
-          'carState': car_state.carState,
-          'carControl': car_control.carControl,
-          'controlsState': control.controlsState,
-          'selfdriveState': ss.selfdriveState,
-          'modelV2': model.modelV2,
-          'carStateSP': car_state_sp.carStateSP,
-          'liveMapDataSP': live_map_data_sp.liveMapDataSP,
-          'gpsLocation': gps_data.gpsLocation}
+    sm = PlantSubMaster({'radarState': radar.radarState,
+                         'carState': car_state.carState,
+                         'carControl': car_control.carControl,
+                         'controlsState': control.controlsState,
+                         'selfdriveState': ss.selfdriveState,
+                         'modelV2': model.modelV2,
+                         'carStateSP': car_state_sp.carStateSP,
+                         'liveMapDataSP': live_map_data_sp.liveMapDataSP,
+                         'gpsLocation': gps_data.gpsLocation})
     self.planner.update(sm)
     self.acceleration = self.planner.output_a_target
     if self.planner.output_should_stop:
