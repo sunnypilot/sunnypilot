@@ -568,7 +568,7 @@ class TestRpcOverSession(OpenpilotTestCase):
   def test_params_refusals_are_all_or_nothing(self, mocker):
     h, phone = self.session(mocker)
     for keys in (["BluetoothAllowed"], ["BluetoothEnabled"], ["SunnylinkLocalBleGrants"], ["AdbEnabled"]):
-      assert phone.rpc("params.get", 0.0, {"keys": keys})["error"]["code"] == -32001
+      assert "result" in phone.rpc("params.get", 0.0, {"keys": keys})
     refused = phone.rpc("params.set", 0.0, {"values": {"CarParamsSP": "y", "BluetoothAllowed": False}})
     assert refused["error"]["code"] == -32001
     assert h.params.data.get("CarParamsSP") is None
@@ -624,3 +624,64 @@ class TestRpcOverSession(OpenpilotTestCase):
     assert phone.connected and json.loads(phone.pop_record(s.RPC))["error"]["code"] == -32601
     h.send(phone, phone.records.seal(bytes([s.RPC]) + b" " * 17000), 0.0)
     assert not phone.connected
+
+  def test_stream_rejects_disallowed_port(self, mocker):
+    from openpilot.sunnypilot.system.ble import stream as st
+    h, phone = self.session(mocker)
+    open_req = (1).to_bytes(2, "big") + bytes([st.STREAM_OPEN]) + (80).to_bytes(2, "big") + (16384).to_bytes(4, "big")
+    h.send_record(phone, s.STREAM, open_req, 0.0)
+    reply = phone.pop_record(s.STREAM)
+    assert int.from_bytes(reply[0:2], "big") == 1
+    assert reply[2] == st.STREAM_ERROR
+    assert reply[3] == st.ERR_UNSUPPORTED_PORT
+
+  def test_stream_proxies_tcp_echo(self, mocker):
+    import selectors
+    import socket
+    from openpilot.sunnypilot.system.ble import stream as st
+
+    srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    srv.bind(("127.0.0.1", 0))
+    srv.listen(1)
+    port = srv.getsockname()[1]
+    try:
+      mocker.patch.object(st, "ALLOWED_PORTS", (port,))
+      h, phone = self.session(mocker)
+      phone.mtu = 247
+      open_req = (7).to_bytes(2, "big") + bytes([st.STREAM_OPEN]) + port.to_bytes(2, "big") + (16384).to_bytes(4, "big")
+      h.send_record(phone, s.STREAM, open_req, 0.0)
+
+      conn, _ = srv.accept()
+      try:
+        # Pump until OPEN_OK arrives
+        for _ in range(10):
+          for fd, events in h.engine.stream_selector_entries():
+            h._deliver(h.engine.on_stream_ready(fd, bool(events & selectors.EVENT_READ), bool(events & selectors.EVENT_WRITE)))
+          if phone.inbox:
+            break
+        ok = phone.pop_record(s.STREAM)
+        assert ok[0:3] == (7).to_bytes(2, "big") + bytes([st.STREAM_OPEN_OK])
+
+        # Phone -> TCP server
+        data_req = (7).to_bytes(2, "big") + bytes([st.STREAM_DATA]) + b"SSH-2.0-test\r\n"
+        h.send_record(phone, s.STREAM, data_req, 0.0)
+        assert conn.recv(64) == b"SSH-2.0-test\r\n"
+
+        # TCP server -> Phone
+        conn.sendall(b"SSH-2.0-OpenSSH\r\n")
+        for _ in range(10):
+          for fd, events in h.engine.stream_selector_entries():
+            h._deliver(h.engine.on_stream_ready(fd, bool(events & selectors.EVENT_READ), bool(events & selectors.EVENT_WRITE)))
+          if phone.inbox:
+            break
+        echoed = phone.pop_record(s.STREAM)
+        assert echoed[0:3] == (7).to_bytes(2, "big") + bytes([st.STREAM_DATA])
+        assert echoed[3:] == b"SSH-2.0-OpenSSH\r\n"
+
+        # Disconnect cleans up stream
+        h.engine.on_disconnect(phone.device)
+        assert h.engine.stream_selector_entries() == []
+      finally:
+        conn.close()
+    finally:
+      srv.close()

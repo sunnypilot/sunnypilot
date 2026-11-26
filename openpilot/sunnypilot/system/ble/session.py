@@ -13,11 +13,12 @@ from dataclasses import dataclass
 from openpilot.sunnypilot.system import connect_phone
 from openpilot.sunnypilot.system.ble import cpace, grants, link, noise
 from openpilot.sunnypilot.system.ble.rpc import Rpc
+from openpilot.sunnypilot.system.ble.stream import Streams
 
 PROTO = 1
 CONNECT_START, CONNECT_WINDOW, PAKE_A, PAKE_B, CONFIRM_A, CONFIRM_B = 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
 RESUME_1, RESUME_2, ERROR = 0x10, 0x11, 0x7F
-DECISION, DEVICE_KEYS, PHONE_KEYS, GRANT_RESULT, RPC = 0x30, 0x31, 0x32, 0x33, 0x40
+DECISION, DEVICE_KEYS, PHONE_KEYS, GRANT_RESULT, RPC, STREAM = 0x30, 0x31, 0x32, 0x33, 0x40, 0x50
 ERR_NO_WINDOW, ERR_BUSY, ERR_VERSION, ERR_WRONG_CODE, ERR_WINDOW_CLOSED, ERR_TIMEOUT, ERR_UNKNOWN_PHONE = 1, 2, 3, 4, 5, 6, 8
 ALLOW, DENY, NO_ANSWER = 1, 2, 3
 GRANT_ADDED, GRANT_REFUSED = 1, 2  # 3 reserved
@@ -60,7 +61,8 @@ class _Link:
 
 
 class Engine:
-  def __init__(self, params, window, *, wifi: Callable | None = None, wall: Callable[[], float] = time.time):  # noqa: TID251 unix time: the app shows added and last_seen
+  def __init__(self, params, window, *, wifi: Callable | None = None, wall: Callable[[], float] = time.time,  # noqa: TID251 unix time: the app shows added and last_seen
+               stream_host: str = "127.0.0.1"):
     self._params = params
     self._window = window
     self._wall = wall
@@ -68,6 +70,7 @@ class Engine:
     self._fail_nonce = b""
     self._fails = 0
     self._rpc = Rpc(params, wifi)
+    self._streams = Streams(target_host=stream_host)
 
   def on_write(self, device: str, value: bytes, mtu: int, now: float) -> list[Action]:
     lk = self._links.get(device)
@@ -115,7 +118,14 @@ class Engine:
       lk = self._links.get(device)
       if lk is not None and lk.phase == "session":
         acts += self._record(lk, RPC, _json(response))
+    acts += self._stream_actions(self._streams.tick(now))
     return acts
+
+  def stream_selector_entries(self) -> list[tuple[int, int]]:
+    return self._streams.selector_entries()
+
+  def on_stream_ready(self, fd: int, readable: bool, writable: bool) -> list[Action]:
+    return self._stream_actions(self._streams.on_socket_ready(fd, readable, writable))
 
   def prompt(self, now: float) -> dict | None:
     lk = next((o for o in self._links.values() if o.phase == "decide"), None)
@@ -161,6 +171,8 @@ class Engine:
         return self._phone_keys(lk, body, now)
       if lk.phase == "session" and typ == RPC:
         return self._rpc_request(lk, body, now)
+      if lk.phase == "session" and typ == STREAM:
+        return self._stream_actions(self._streams.handle(lk.device, body, now))
       return self._drop(lk)
     typ, body = msg[0], msg[1:]
     if lk.phase == "new" and typ == CONNECT_START:
@@ -312,7 +324,16 @@ class Engine:
   def _error(self, lk: _Link, code: int) -> list[Action]:
     return self._plain(lk, ERROR, bytes([code])) + self._drop(lk)
 
+  def _stream_actions(self, events: list[tuple[str, bytes]]) -> list[Action]:
+    acts: list[Action] = []
+    for device, payload in events:
+      lk = self._links.get(device)
+      if lk is not None and lk.phase == "session":
+        acts += self._record(lk, STREAM, payload)
+    return acts
+
   def _drop(self, lk: _Link) -> list[Action]:
+    self._streams.close_device(lk.device)
     if self._links.get(lk.device) is lk:
       del self._links[lk.device]
     if lk.phase in HELD:
