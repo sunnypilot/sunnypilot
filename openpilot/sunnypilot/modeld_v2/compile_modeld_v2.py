@@ -52,8 +52,8 @@ if __name__ == "__main__":
       benchmark(jit, cb=lambda t, i=i: print(f"  [{i + 1}/{2 + args.benchmark_runs}] {t * 1e3:.2f} ms"), **check_inputs)
   assert len(recorded) == 1, f"expected one captured kernel list, got {len(recorded)}"
 
-  frame, _ = capture_frame(jit, check_inputs, 'output_buffers')
+  frame, _ = capture_frame(jit, check_inputs, 'output_buffers', run=False)
   part = serialize_jit(jit, recorded[0], frame)
-  PlainJit(part[0], memoryview(part[1]))
+  PlainJit(part[0], memoryview(part[1]), verify=not os.environ.get('DEV', '').startswith('MOCK'))  # mock_parity checks a mock build bit for bit
   write_bundle(args.output, {'run': part}, {'metadata': metadata, 'input_specs': input_specs, 'output_specs': output_specs})
   print(f"Saved model to {args.output} ({os.path.getsize(args.output) / 1e6:.2f} MB, {len(part[0]['calls'])} kernels)")
