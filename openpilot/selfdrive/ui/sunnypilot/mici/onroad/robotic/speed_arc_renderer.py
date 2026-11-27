@@ -204,13 +204,15 @@ class SpeedArcRenderer:
       rl.draw_circle(int(x + 10), int(y + 12), 5.5, rl.Color(sr, sg, sb, int(200 * dot_pulse * alpha)))
 
   def _draw_tiny_heart(self, cx: float, cy: float, radius: float, color: rl.Color) -> None:
-    lobe_r = radius * 0.55
-    lobe_y = cy - radius * 0.2
-    rl.draw_circle(int(cx - lobe_r * 0.8), int(lobe_y), lobe_r, color)
-    rl.draw_circle(int(cx + lobe_r * 0.8), int(lobe_y), lobe_r, color)
-    rl.draw_triangle(
-      rl.Vector2(cx - radius * 0.95, lobe_y + lobe_r * 0.2),
-      rl.Vector2(cx, cy + radius * 0.9),
-      rl.Vector2(cx + radius * 0.95, lobe_y + lobe_r * 0.2),
-      color,
-    )
+    scale = radius / 16.0
+    n_pts = 32
+    pts: list[rl.Vector2] = []
+    for i in range(n_pts):
+      ang = (i / n_pts) * math.tau
+      s = math.sin(ang)
+      hx = 16.0 * (s * s * s)
+      hy = -(13.0 * math.cos(ang) - 5.0 * math.cos(2.0 * ang) - 2.0 * math.cos(3.0 * ang) - math.cos(4.0 * ang)) - 2.2
+      pts.append(rl.Vector2(cx + hx * scale, cy + hy * scale))
+    center = rl.Vector2(cx, cy + radius * 0.05)
+    for i in range(n_pts):
+      rl.draw_triangle(center, pts[(i + 1) % n_pts], pts[i], color)

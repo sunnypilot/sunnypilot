@@ -33,13 +33,14 @@ class ProceduralFaceRenderer:
     self._tilt_y = BounceFilter(0.0, 0.075, dt, bounce=3.2)
     self._scale_x = BounceFilter(1.0, 0.055, dt, bounce=4.5)
     self._scale_y = BounceFilter(1.0, 0.055, dt, bounce=4.5)
+    self._squish = BounceFilter(0.0, 0.075, dt, bounce=3.6)
+    self._pitch_y = BounceFilter(0.0, 0.075, dt, bounce=3.0)
 
-    # Crisp first-order filters for eyelids, roundness, blush, and smooth color blending
+    # Crisp first-order filters for eyelids, roundness, and smooth color blending
     self._roundness = FirstOrderFilter(0.62, 0.08, dt)
     self._top_lid = FirstOrderFilter(0.0, 0.032, dt)
     self._bottom_lid = FirstOrderFilter(0.0, 0.032, dt)
     self._top_slant = FirstOrderFilter(0.0, 0.065, dt)
-    self._cheek_blush = FirstOrderFilter(0.0, 0.12, dt)
     self._r = FirstOrderFilter(218.0, 0.14, dt)
     self._g = FirstOrderFilter(232.0, 0.14, dt)
     self._b = FirstOrderFilter(248.0, 0.14, dt)
@@ -65,6 +66,9 @@ class ProceduralFaceRenderer:
     gaze_y = self._gaze_y.update(target.gaze_y)
     bounce_y = self._bounce_y.update(target.bounce_y)
     tilt_y = self._tilt_y.update(target.tilt_y)
+    squish = max(-1.0, min(1.0, self._squish.update(target.squish_force)))
+    pitch_y = self._pitch_y.update(target.pitch_offset_y)
+    squish_abs = abs(squish)
 
     r = max(0, min(255, int(self._r.update(target.color[0]))))
     g = max(0, min(255, int(self._g.update(target.color[1]))))
@@ -78,6 +82,11 @@ class ProceduralFaceRenderer:
     eff_alpha = max(0.0, min(1.0, alpha * pulse))
     core_color = rl.Color(r, g, b, int(255 * eff_alpha))
 
+    # Subtle wall-cushion glow when centrifugal force squishes the bot strongly to one side
+    if squish_abs > 0.35:
+      wall_a = (squish_abs - 0.35) / 0.65
+      self._draw_wall_squish_glow(rect, 1 if squish > 0 else -1, core_color, wall_a * eff_alpha)
+
     # Ambient edge accents (blind spot glow, blinker chevrons, boost speed lines)
     bsm_a = self._bsm_alpha.update(1.0 if target.blind_spot_side != 0 else 0.0)
     if bsm_a > 0.02 and target.blind_spot_side != 0:
@@ -90,21 +99,33 @@ class ProceduralFaceRenderer:
     if target.show_speed_lines:
       self._draw_speed_lines(rect, core_color, eff_alpha, t)
 
-    cx = rect.x + rect.width / 2.0 + gaze_x
-    cy = rect.y + rect.height / 2.0 - 8.0 + gaze_y + bounce_y + y_shift
+    # Slide the whole face toward the opposite side of the turn under centrifugal force
+    centrifugal_shift_x = squish * 76.0
+    cx = rect.x + rect.width / 2.0 + gaze_x + centrifugal_shift_x
+    cy = rect.y + rect.height / 2.0 - 8.0 + gaze_y + bounce_y + pitch_y + y_shift
 
-    left_cx = cx - self.EYE_SPACING / 2.0
-    right_cx = cx + self.EYE_SPACING / 2.0
+    # Compress spacing between eyes as the bot gets smooshed against the side wall
+    spacing = self.EYE_SPACING * (1.0 - 0.24 * squish_abs)
+    left_cx = cx - spacing / 2.0
+    right_cx = cx + spacing / 2.0
     left_cy = cy - tilt_y
     right_cy = cy + tilt_y
+
+    # Asymmetric centrifugal wall-squish: outer pressed eye squishes narrower & taller!
+    left_w_mult = (1.0 - 0.36 * max(0.0, -squish)) * (1.0 - 0.14 * max(0.0, squish))
+    left_h_mult = (1.0 + 0.16 * max(0.0, -squish)) * (1.0 - 0.05 * max(0.0, squish))
+    right_w_mult = (1.0 - 0.36 * max(0.0, squish)) * (1.0 - 0.14 * max(0.0, -squish))
+    right_h_mult = (1.0 + 0.16 * max(0.0, squish)) * (1.0 - 0.05 * max(0.0, -squish))
 
     # Subtle 3D perspective scaling when glancing left/right
     left_scale = 1.0 - max(0.0, gaze_x / 210.0)
     right_scale = 1.0 + min(0.0, gaze_x / 210.0)
 
-    for side_idx, (ecx, ecy, scale) in enumerate(((left_cx, left_cy, left_scale), (right_cx, right_cy, right_scale))):
-      ew = w * scale
-      eh = h * scale
+    eye_configs = (
+      (left_cx, left_cy, w * left_scale * left_w_mult, h * left_scale * left_h_mult),
+      (right_cx, right_cy, w * right_scale * right_w_mult, h * right_scale * right_h_mult),
+    )
+    for side_idx, (ecx, ecy, ew, eh) in enumerate(eye_configs):
       slant = top_slant if side_idx == 0 else -top_slant
       glyph = EyeGlyph.CRESCENT if (side_idx == 1 and target.wink_right) else target.glyph
       self._draw_eye(ecx, ecy, ew, eh, roundness, top_lid, bottom_lid, slant, glyph, core_color, eff_alpha, gaze_x, gaze_y, t)
@@ -112,16 +133,20 @@ class ProceduralFaceRenderer:
     if target.mouth != MouthGlyph.NONE:
       self._draw_mouth(cx, cy + h * 0.72, target.mouth, core_color)
 
-    blush = self._cheek_blush.update(target.cheek_blush)
-    if blush > 0.03:
-      self._draw_cheek_blush(left_cx - w * 0.44, left_cy + h * 0.48, blush * eff_alpha)
-      self._draw_cheek_blush(right_cx + w * 0.44, right_cy + h * 0.48, blush * eff_alpha)
-
     if target.show_zzz:
       self._draw_floating_zzz(right_cx + w * 0.58, right_cy - h * 0.35, core_color, eff_alpha, t)
 
     if target.show_hearts:
       self._draw_floating_mini_hearts(cx, cy - h * 0.58, core_color, eff_alpha, t)
+
+  def _draw_wall_squish_glow(self, rect: rl.Rectangle, side: int, color: rl.Color, alpha: float) -> None:
+    glow_w = 46
+    edge = rl.Color(color.r, color.g, color.b, int(95 * alpha))
+    clear = rl.Color(color.r, color.g, color.b, 0)
+    if side < 0:
+      rl.draw_rectangle_gradient_h(int(rect.x), int(rect.y), glow_w, int(rect.height), edge, clear)
+    else:
+      rl.draw_rectangle_gradient_h(int(rect.x + rect.width - glow_w), int(rect.y), glow_w, int(rect.height), clear, edge)
 
   def _draw_bsm_edge_glow(self, rect: rl.Rectangle, side: int, alpha: float) -> None:
     glow_w = 56
@@ -317,22 +342,33 @@ class ProceduralFaceRenderer:
       rl.draw_triangle(center, p2, p1, color)
 
   def _draw_heart_eye(self, cx: float, cy: float, radius: float, color: rl.Color, alpha: float, with_glow: bool = True) -> None:
+    """Seamless, perfectly symmetrical 48-point parametric smooth heart curve."""
     if with_glow:
       rl.draw_circle_gradient(
-        rl.Vector2(cx, cy), radius * 1.35,
-        rl.Color(color.r, color.g, color.b, int(90 * alpha)),
+        rl.Vector2(cx, cy), radius * 1.4,
+        rl.Color(color.r, color.g, color.b, int(92 * alpha)),
         rl.Color(color.r, color.g, color.b, 0),
       )
-    lobe_r = radius * 0.52
-    lobe_y = cy - radius * 0.22
-    rl.draw_circle(int(cx - lobe_r * 0.85), int(lobe_y), lobe_r, color)
-    rl.draw_circle(int(cx + lobe_r * 0.85), int(lobe_y), lobe_r, color)
-    rl.draw_triangle(
-      rl.Vector2(cx - radius * 0.96, lobe_y + lobe_r * 0.22),
-      rl.Vector2(cx, cy + radius * 0.92),
-      rl.Vector2(cx + radius * 0.96, lobe_y + lobe_r * 0.22),
-      color,
-    )
+
+    # Classic smooth parametric heart:
+    # x(t) = 16 sin^3(t), y(t) = -(13 cos(t) - 5 cos(2t) - 2 cos(3t) - cos(4t))
+    # Normalized so half-width ~= radius; centered vertically around cy
+    scale = radius / 16.0
+    n_pts = 48
+    pts: list[rl.Vector2] = []
+    for i in range(n_pts):
+      ang = (i / n_pts) * math.tau
+      s = math.sin(ang)
+      hx = 16.0 * (s * s * s)
+      hy = -(13.0 * math.cos(ang) - 5.0 * math.cos(2.0 * ang) - 2.0 * math.cos(3.0 * ang) - math.cos(4.0 * ang)) - 2.2
+      pts.append(rl.Vector2(cx + hx * scale, cy + hy * scale))
+
+    center = rl.Vector2(cx, cy + radius * 0.05)
+    for i in range(n_pts):
+      p1 = pts[i]
+      p2 = pts[(i + 1) % n_pts]
+      # Parametric curve runs clockwise in screen coords (y-down), so (center, p2, p1) is CCW
+      rl.draw_triangle(center, p2, p1, color)
 
   def _draw_crescent_eye(self, cx: float, cy: float, w: float, h: float, color: rl.Color, alpha: float) -> None:
     radius = min(w, h) * 0.50
@@ -340,15 +376,6 @@ class ProceduralFaceRenderer:
     glow_col = rl.Color(color.r, color.g, color.b, int(55 * alpha))
     rl.draw_ring(rl.Vector2(cx, arc_cy), radius - 22.0, radius + 8.0, 200.0, 340.0, 28, glow_col)
     rl.draw_ring(rl.Vector2(cx, arc_cy), radius - 14.0, radius, 202.0, 338.0, 28, color)
-
-  def _draw_cheek_blush(self, cx: float, cy: float, alpha: float) -> None:
-    """Soft rosy OLED cheek blush beneath the outer corners of the eyes."""
-    rl.draw_circle_gradient(
-      rl.Vector2(cx, cy),
-      26.0,
-      rl.Color(255, 115, 165, int(110 * alpha)),
-      rl.Color(255, 115, 165, 0),
-    )
 
   def _draw_mouth(self, cx: float, cy: float, mouth: MouthGlyph, color: rl.Color) -> None:
     if mouth == MouthGlyph.SMILE:

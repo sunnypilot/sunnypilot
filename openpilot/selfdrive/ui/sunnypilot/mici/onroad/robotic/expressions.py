@@ -117,7 +117,8 @@ class EyeTarget:
   scale_x: float = 1.0          # squash-and-stretch horizontal multiplier
   scale_y: float = 1.0          # squash-and-stretch vertical multiplier
   wink_right: bool = False      # cute asymmetric wink on bookmark or cheeky idle wink
-  cheek_blush: float = 0.0      # 0..1 rosy glowing cheeks below outer eye corners
+  squish_force: float = 0.0     # -1..+1 centrifugal push (-1 left wall, +1 right wall)
+  pitch_offset_y: float = 0.0   # px vertical bob from pitch / pitch-rate (bumps, hills, dive)
   glyph: EyeGlyph = EyeGlyph.ROUND_RECT
   mouth: MouthGlyph = MouthGlyph.NONE
   color: tuple[int, int, int] = PALETTE["engaged"]
@@ -139,6 +140,10 @@ class DrivingSnapshot:
   a_ego: float = 0.0            # m/s^2
   standstill: bool = False
   steering_angle_deg: float = 0.0
+  yaw_rate: float = 0.0         # rad/s (+ = turning left -> centrifugal push right)
+  pitch_rad: float = 0.0        # rad (+ = nose up / hill climb)
+  pitch_rate: float = 0.0       # rad/s (bumps, crests, braking dive)
+  curvature: float = 0.0        # rad/m fallback for centrifugal accel
   set_speed_kph: float = SET_SPEED_NA
   is_metric: bool = False
   left_blinker: bool = False
@@ -351,6 +356,22 @@ class RoboticMoodEngine:
 
     self.showing_speed = False
 
+    # Compute physical centrifugal force (-1 = pushed left, +1 = pushed right) & pitch bob
+    # Positive yaw_rate (turning left) pushes the bot toward the right wall (+1)
+    effective_yaw = snap.yaw_rate
+    if abs(effective_yaw) < 1e-4 and abs(snap.curvature) > 1e-5:
+      effective_yaw = snap.v_ego * snap.curvature
+    lat_accel = snap.v_ego * effective_yaw  # m/s^2
+    # Blend true lateral G with direct gyro yaw-rate so even tight low-speed turns feel lively
+    centrifugal_raw = (lat_accel / 4.2) + (effective_yaw / 1.4) * 0.35
+    if abs(centrifugal_raw) < 0.05 and abs(snap.steering_angle_deg) > CURVE_STEER_THRESHOLD and not snap.standstill:
+      # Fallback for desktop previews/simulators without IMU data
+      centrifugal_raw = max(-1.0, min(1.0, (snap.steering_angle_deg / 90.0) * max(0.35, snap.v_ego / 20.0)))
+    squish_force = max(-1.0, min(1.0, centrifugal_raw)) if not snap.standstill else 0.0
+    if abs(squish_force) < 0.08:
+      squish_force = 0.0
+    pitch_offset_y = max(-22.0, min(22.0, snap.pitch_rad * 55.0 + snap.pitch_rate * 20.0))
+
     if alert is not None and alert_status == AlertStatus.critical:
       self.mood = RoboticMood.CRITICAL
     elif is_dm_alert:
@@ -374,9 +395,9 @@ class RoboticMoodEngine:
       self.mood = RoboticMood.BOOST_ACCEL
     elif blinker_side != 0:
       self.mood = RoboticMood.TURN_SIGNAL
-    elif abs(snap.steering_angle_deg) >= SHARP_TURN_THRESHOLD and not snap.standstill:
+    elif (abs(squish_force) >= 0.42 or abs(snap.steering_angle_deg) >= SHARP_TURN_THRESHOLD) and not snap.standstill:
       self.mood = RoboticMood.SHARP_TURN
-    elif abs(snap.steering_angle_deg) > CURVE_STEER_THRESHOLD and not snap.standstill:
+    elif (abs(squish_force) >= 0.18 or abs(snap.steering_angle_deg) > CURVE_STEER_THRESHOLD) and not snap.standstill:
       self.mood = RoboticMood.CURVE_FOCUS
     elif snap.started and snap.music is not None and snap.music.is_music and alert is None:
       self.mood = RoboticMood.MUSIC_GROOVE
@@ -406,6 +427,8 @@ class RoboticMoodEngine:
       bounce_y=breathe_y,
       scale_x=squash_x * breathe_scale,
       scale_y=stretch_y * (2.0 - breathe_scale),
+      squish_force=squish_force,
+      pitch_offset_y=pitch_offset_y,
       blind_spot_side=bsm_side,
       blinker_side=blinker_side,
     )
@@ -474,7 +497,6 @@ class RoboticMoodEngine:
       target.width = 114.0
       target.height = 114.0
       target.wink_right = self._love_wink
-      target.cheek_blush = 0.95
       target.mouth = MouthGlyph.BIG_GRIN
       target.bounce_y = -abs(math.sin(t * 10.5)) * 15.0
       target.show_hearts = True
@@ -484,7 +506,6 @@ class RoboticMoodEngine:
       target.color = PALETTE["engaged"]
       target.width = 116.0
       target.height = 100.0
-      target.cheek_blush = 0.90
       target.mouth = MouthGlyph.BIG_GRIN
       target.bounce_y = -abs(math.sin(t * 9.5)) * 16.0
 
@@ -494,7 +515,6 @@ class RoboticMoodEngine:
       target.width = 116.0
       target.height = 120.0
       target.gaze_y = -7.0
-      target.cheek_blush = 0.70
       target.mouth = MouthGlyph.BIG_GRIN
       target.bounce_y = math.sin(t * 18.0) * 5.0
       target.show_speed_lines = True
@@ -530,26 +550,28 @@ class RoboticMoodEngine:
       target.show_zzz = True
 
     elif self.mood == RoboticMood.SHARP_TURN:
-      direction = -1.0 if snap.steering_angle_deg > 0 else 1.0
+      intensity = max(abs(squish_force), min(1.0, abs(snap.steering_angle_deg) / 85.0))
+      push_dir = 1.0 if squish_force > 0 else (-1.0 if squish_force < 0 else (1.0 if snap.steering_angle_deg > 0 else -1.0))
+      target.squish_force = push_dir * intensity
       target.width = 108.0
-      target.height = 100.0
-      target.top_lid = 0.16
-      target.top_slant = 6.0
-      target.gaze_x = steer_gaze
+      target.height = 104.0
+      target.top_lid = 0.10 + 0.14 * intensity
+      target.top_slant = 5.0 + 7.0 * intensity
+      target.gaze_x = push_dir * 12.0  # squish renderer handles primary wall slide
       target.gaze_y = -3.0
-      target.tilt_y = direction * 13.0
-      target.cheek_blush = 0.55
-      target.mouth = MouthGlyph.SMILE
+      target.tilt_y = push_dir * (8.0 + 8.0 * intensity)
+      target.mouth = MouthGlyph.SURPRISED if intensity >= 0.62 else MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.CURVE_FOCUS:
-      direction = -1.0 if snap.steering_angle_deg > 0 else 1.0
+      intensity = max(abs(squish_force), min(0.5, abs(snap.steering_angle_deg) / 70.0))
+      push_dir = 1.0 if squish_force > 0 else (-1.0 if squish_force < 0 else (1.0 if snap.steering_angle_deg > 0 else -1.0))
+      target.squish_force = push_dir * intensity
       target.width = 106.0
       target.height = 106.0
-      target.top_lid = 0.10
-      target.gaze_x = steer_gaze
+      target.top_lid = 0.08
+      target.gaze_x = push_dir * 8.0
       target.gaze_y = -2.0
-      target.tilt_y = direction * 7.0
-      target.cheek_blush = 0.45
+      target.tilt_y = push_dir * (5.0 + 6.0 * intensity)
       target.mouth = MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.MUSIC_GROOVE:
@@ -565,7 +587,6 @@ class RoboticMoodEngine:
       target.bounce_y = -14.0 * beat - abs(sway) * 6.0 - 8.0
       target.scale_x = 1.0 + 0.11 * beat
       target.scale_y = 1.0 - 0.08 * beat
-      target.cheek_blush = 0.85 + 0.15 * beat
       target.mouth = MouthGlyph.BIG_GRIN
       if beat > 0.58:
         target.glyph = EyeGlyph.CRESCENT
@@ -573,9 +594,8 @@ class RoboticMoodEngine:
     elif self.mood == RoboticMood.CRUISING_HAPPY:
       target.width = 106.0
       target.height = 114.0
-      target.cheek_blush = 0.65
       target.mouth = MouthGlyph.SMILE
-      target.gaze_x = steer_gaze * 0.45 + self._idle_gaze_x * 0.65 + micro_drift_x
+      target.gaze_x = steer_gaze * 0.35 + self._idle_gaze_x * 0.65 + micro_drift_x
       target.gaze_y = self._idle_gaze_y * 0.65
       target.tilt_y = self._idle_tilt_y * 0.75 + math.sin(t * 1.6) * 3.0
       self._apply_idle_action(target, t)
@@ -583,7 +603,6 @@ class RoboticMoodEngine:
     else:  # IDLE_CURIOUS or SPEED_DISPLAY fallback
       target.width = 104.0
       target.height = 110.0
-      target.cheek_blush = 0.40
       target.mouth = MouthGlyph.SMILE
       target.gaze_x = self._idle_gaze_x + micro_drift_x
       target.gaze_y = self._idle_gaze_y
@@ -601,7 +620,6 @@ class RoboticMoodEngine:
     """Layer bubbly autonomous micro-behaviors onto normal cruising/idle states."""
     if self.idle_action == IdleAction.HAPPY_SQUINT:
       target.glyph = EyeGlyph.CRESCENT
-      target.cheek_blush = 0.90
       target.mouth = MouthGlyph.BIG_GRIN
       target.bounce_y = -abs(math.sin(t * 9.0)) * 12.0
     elif self.idle_action == IdleAction.CURIOUS_LOOK:
@@ -611,14 +629,12 @@ class RoboticMoodEngine:
       target.height = 118.0
     elif self.idle_action == IdleAction.CHEEKY_WINK:
       target.wink_right = True
-      target.cheek_blush = 0.85
       target.mouth = MouthGlyph.BIG_GRIN
       target.tilt_y = 6.0
       target.bounce_y = -8.0
     elif self.idle_action == IdleAction.GROOVE_BOB:
       target.bounce_y = math.sin(t * 7.2) * 11.0
       target.tilt_y = math.sin(t * 3.6) * 8.0
-      target.cheek_blush = 0.80
       target.mouth = MouthGlyph.BIG_GRIN
 
 
@@ -641,6 +657,24 @@ def snapshot_from_ui_state(ui_state, alert: Alert | None) -> DrivingSnapshot:
   v_ego_cluster = cs.vEgoCluster
   v_ego = v_ego_cluster if v_ego_cluster != 0.0 else cs.vEgo
 
+  # Extract pitch, pitch rate, and yaw rate from modelV2 orientation + gyroscope (104 Hz)
+  yaw_rate = 0.0
+  pitch_rad = 0.0
+  pitch_rate = 0.0
+  if sm.valid.get("modelV2"):
+    mv2 = sm["modelV2"]
+    if len(mv2.orientation.y) > 0:
+      pitch_rad = float(mv2.orientation.y[0])
+    if len(mv2.orientationRate.y) > 0 and len(mv2.orientationRate.z) > 0:
+      pitch_rate = float(mv2.orientationRate.y[0])
+      yaw_rate = float(mv2.orientationRate.z[0])
+  if sm.valid.get("gyroscope"):
+    gv = sm["gyroscope"].gyro.v
+    if len(gv) >= 3:
+      # Blend crisp high-rate gyro directly with model orientation rate
+      pitch_rate = 0.5 * pitch_rate + 0.5 * float(gv[1]) if pitch_rate != 0.0 else float(gv[1])
+      yaw_rate = 0.5 * yaw_rate + 0.5 * float(gv[2]) if yaw_rate != 0.0 else float(gv[2])
+
   return DrivingSnapshot(
     started=ui_state.started,
     engaged=ui_state.engaged,
@@ -649,6 +683,10 @@ def snapshot_from_ui_state(ui_state, alert: Alert | None) -> DrivingSnapshot:
     a_ego=float(cs.aEgo),
     standstill=bool(cs.standstill),
     steering_angle_deg=float(cs.steeringAngleDeg),
+    yaw_rate=yaw_rate,
+    pitch_rad=pitch_rad,
+    pitch_rate=pitch_rate,
+    curvature=float(controls.curvature) if sm.valid.get("controlsState") else 0.0,
     set_speed_kph=float(set_speed_kph),
     is_metric=bool(ui_state.is_metric),
     left_blinker=bool(cs.leftBlinker),

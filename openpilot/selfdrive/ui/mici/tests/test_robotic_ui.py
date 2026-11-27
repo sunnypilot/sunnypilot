@@ -246,3 +246,25 @@ class TestRoboticMoodEngine(OpenpilotTestCase):
     )
     engine.update(snap_alert, now=15.5)
     assert engine.mood == RoboticMood.USER_PROMPT
+
+  def test_centrifugal_turn_squish_and_pitch_response(self):
+    engine = self._engine()
+    # Gentle left turn (yaw_rate > 0 -> pushed right: squish_force > 0)
+    snap_mild = DrivingSnapshot(started=True, engaged=True, status=UIStatus.ENGAGED, v_ego=15.0, yaw_rate=0.10, pitch_rad=0.05)
+    engine.update(snap_mild, now=10.0)
+    t_mild = engine.update(snap_mild, now=15.0)
+    assert t_mild.squish_force > 0.15
+    assert t_mild.pitch_offset_y > 0.0
+
+    # Fast left turn (high lateral G -> strongly squished right + surprised mouth)
+    snap_fast = DrivingSnapshot(started=True, engaged=True, status=UIStatus.ENGAGED, v_ego=24.0, yaw_rate=0.18, pitch_rate=-0.2)
+    t_fast = engine.update(snap_fast, now=16.0)
+    assert engine.mood == RoboticMood.SHARP_TURN
+    assert t_fast.squish_force > t_mild.squish_force
+    assert t_fast.squish_force > 0.65
+    assert t_fast.mouth == MouthGlyph.SURPRISED
+
+    # Fast right turn (yaw_rate < 0 -> pushed left: squish_force < 0)
+    snap_right = DrivingSnapshot(started=True, engaged=True, status=UIStatus.ENGAGED, v_ego=22.0, yaw_rate=-0.18)
+    t_right = engine.update(snap_right, now=17.0)
+    assert t_right.squish_force < -0.65
