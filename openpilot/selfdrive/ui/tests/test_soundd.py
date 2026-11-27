@@ -80,7 +80,7 @@ class TestSoundd(OpenpilotTestCase):
     fake_params = _FakeParams()
     pack = RoboticSoundPack(fake_params, SAMPLE_RATE)
     pack.load()
-    assert len(pack.sounds) == len(ROBOTIC_SOUND_FILES)
+    assert set(ROBOTIC_SOUND_FILES).issubset(pack.sounds)
 
     soundd = Soundd.__new__(Soundd)
     soundd.params = fake_params
@@ -108,5 +108,37 @@ class TestSoundd(OpenpilotTestCase):
     soundd.enabled = True
     assert not soundd.should_play_sound(AudibleAlert.engage)
     assert soundd.should_play_sound(AudibleAlert.warningImmediate)
+
+  def test_robotic_sound_pack_lfs_fallback_and_reactive_chirps(self):
+    from types import SimpleNamespace
+    from openpilot.sunnypilot.selfdrive.ui.robotic_sounds import (
+      CHIRP_BOOST,
+      CHIRP_SPEED_UP,
+      CHIRP_STARTLED,
+      REACTIVE_CHIRP_IDS,
+    )
+
+    class _FakeParams:
+      def get_bool(self, key: str) -> bool:
+        return key == "MiciRoboticUI"
+
+    pack = RoboticSoundPack(_FakeParams(), SAMPLE_RATE)
+    pack.load()
+    for cid in REACTIVE_CHIRP_IDS:
+      assert cid in pack.sounds and len(pack.sounds[cid]) > 0
+
+    class _FakeSM:
+      def __init__(self, v_cruise=100.0, a_ego=0.0):
+        self.updated = {"carState": True, "userBookmark": False, "bookmarkButton": False}
+        self.valid = {"controlsState": False}
+        self._cs = SimpleNamespace(vCruiseCluster=v_cruise, leftBlinker=False, rightBlinker=False, standstill=False, aEgo=a_ego)
+
+      def __getitem__(self, key):
+        return self._cs
+
+    assert pack.detect_reactive_chirp(_FakeSM(100.0, 0.0), now=10.0) is None  # first sample seeds prev_set_speed
+    assert pack.detect_reactive_chirp(_FakeSM(110.0, 0.0), now=11.0) == CHIRP_SPEED_UP
+    assert pack.detect_reactive_chirp(_FakeSM(110.0, -3.5), now=12.0) == CHIRP_STARTLED
+    assert pack.detect_reactive_chirp(_FakeSM(110.0, 2.6), now=13.0) == CHIRP_BOOST
 
   # TODO: add test with micd for checking that soundd actually outputs sounds

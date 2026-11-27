@@ -24,21 +24,22 @@ class ProceduralFaceRenderer:
 
   def __init__(self):
     dt = 1.0 / max(gui_app.target_fps, 1)
-    # Bubbly spring-overshoot filters for organic squash-and-stretch motion
-    self._w = BounceFilter(104.0, 0.08, dt, bounce=3.2)
-    self._h = BounceFilter(112.0, 0.08, dt, bounce=3.2)
-    self._gaze_x = BounceFilter(0.0, 0.09, dt, bounce=2.6)
-    self._gaze_y = BounceFilter(0.0, 0.09, dt, bounce=2.4)
-    self._bounce_y = BounceFilter(0.0, 0.06, dt, bounce=3.5)
-    self._tilt_y = BounceFilter(0.0, 0.09, dt, bounce=2.4)
-    self._scale_x = BounceFilter(1.0, 0.06, dt, bounce=3.6)
-    self._scale_y = BounceFilter(1.0, 0.06, dt, bounce=3.6)
+    # Bubbly spring-overshoot filters for juicy EMO-style squash-and-stretch motion
+    self._w = BounceFilter(104.0, 0.065, dt, bounce=4.2)
+    self._h = BounceFilter(112.0, 0.065, dt, bounce=4.2)
+    self._gaze_x = BounceFilter(0.0, 0.075, dt, bounce=3.4)
+    self._gaze_y = BounceFilter(0.0, 0.075, dt, bounce=3.0)
+    self._bounce_y = BounceFilter(0.0, 0.055, dt, bounce=4.4)
+    self._tilt_y = BounceFilter(0.0, 0.075, dt, bounce=3.2)
+    self._scale_x = BounceFilter(1.0, 0.055, dt, bounce=4.5)
+    self._scale_y = BounceFilter(1.0, 0.055, dt, bounce=4.5)
 
-    # Crisp first-order filters for eyelids, roundness, and smooth color blending
-    self._roundness = FirstOrderFilter(0.48, 0.08, dt)
-    self._top_lid = FirstOrderFilter(0.0, 0.035, dt)
-    self._bottom_lid = FirstOrderFilter(0.0, 0.035, dt)
-    self._top_slant = FirstOrderFilter(0.0, 0.07, dt)
+    # Crisp first-order filters for eyelids, roundness, blush, and smooth color blending
+    self._roundness = FirstOrderFilter(0.62, 0.08, dt)
+    self._top_lid = FirstOrderFilter(0.0, 0.032, dt)
+    self._bottom_lid = FirstOrderFilter(0.0, 0.032, dt)
+    self._top_slant = FirstOrderFilter(0.0, 0.065, dt)
+    self._cheek_blush = FirstOrderFilter(0.0, 0.12, dt)
     self._r = FirstOrderFilter(218.0, 0.14, dt)
     self._g = FirstOrderFilter(232.0, 0.14, dt)
     self._b = FirstOrderFilter(248.0, 0.14, dt)
@@ -110,6 +111,11 @@ class ProceduralFaceRenderer:
 
     if target.mouth != MouthGlyph.NONE:
       self._draw_mouth(cx, cy + h * 0.72, target.mouth, core_color)
+
+    blush = self._cheek_blush.update(target.cheek_blush)
+    if blush > 0.03:
+      self._draw_cheek_blush(left_cx - w * 0.44, left_cy + h * 0.48, blush * eff_alpha)
+      self._draw_cheek_blush(right_cx + w * 0.44, right_cy + h * 0.48, blush * eff_alpha)
 
     if target.show_zzz:
       self._draw_floating_zzz(right_cx + w * 0.58, right_cy - h * 0.35, core_color, eff_alpha, t)
@@ -221,21 +227,21 @@ class ProceduralFaceRenderer:
     core_rec = rl.Rectangle(cx - w / 2.0, cy - h / 2.0, w, h)
     rl.draw_rectangle_rounded(core_rec, min(0.85, roundness), 24, color)
 
-    # Glossy dual specular catchlights (gently track gaze + micro-shimmer)
-    glint_dx = gaze_x * 0.08 + math.sin(t * 2.8) * 1.2
-    glint_dy = gaze_y * 0.08 + math.cos(t * 2.2) * 1.0
-    hi_col = rl.Color(255, 255, 255, int(92 * alpha))
+    # Glossy dual specular catchlights (centered-dynamic so eyes never appear stuck staring at top-left)
+    glint_dx = gaze_x * 0.16 + math.sin(t * 3.0) * 1.8
+    glint_dy = gaze_y * 0.14 + math.cos(t * 2.4) * 1.4
+    hi_col = rl.Color(255, 255, 255, int(105 * alpha))
     rl.draw_rectangle_rounded(
-      rl.Rectangle(cx - w * 0.30 + glint_dx, cy - h * 0.32 + glint_dy, w * 0.24, h * 0.19),
-      0.85,
+      rl.Rectangle(cx - w * 0.14 + glint_dx, cy - h * 0.30 + glint_dy, w * 0.28, h * 0.16),
+      0.90,
       12,
       hi_col,
     )
     rl.draw_circle(
-      int(cx + w * 0.22 + glint_dx * 0.5),
-      int(cy + h * 0.24 + glint_dy * 0.5),
-      max(3.0, min(w, h) * 0.055),
-      rl.Color(255, 255, 255, int(68 * alpha)),
+      int(cx + w * 0.18 + glint_dx * 0.6),
+      int(cy + h * 0.22 + glint_dy * 0.6),
+      max(3.5, min(w, h) * 0.055),
+      rl.Color(255, 255, 255, int(75 * alpha)),
     )
 
     # Sparkle glint inside eyes during sharp acceleration boost
@@ -334,6 +340,15 @@ class ProceduralFaceRenderer:
     glow_col = rl.Color(color.r, color.g, color.b, int(55 * alpha))
     rl.draw_ring(rl.Vector2(cx, arc_cy), radius - 22.0, radius + 8.0, 200.0, 340.0, 28, glow_col)
     rl.draw_ring(rl.Vector2(cx, arc_cy), radius - 14.0, radius, 202.0, 338.0, 28, color)
+
+  def _draw_cheek_blush(self, cx: float, cy: float, alpha: float) -> None:
+    """Soft rosy OLED cheek blush beneath the outer corners of the eyes."""
+    rl.draw_circle_gradient(
+      rl.Vector2(cx, cy),
+      26.0,
+      rl.Color(255, 115, 165, int(110 * alpha)),
+      rl.Color(255, 115, 165, 0),
+    )
 
   def _draw_mouth(self, cx: float, cy: float, mouth: MouthGlyph, color: rl.Color) -> None:
     if mouth == MouthGlyph.SMILE:

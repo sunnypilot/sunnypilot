@@ -57,6 +57,15 @@ class RoboticMood(Enum):
   IDLE_CURIOUS = "idle_curious"
 
 
+class IdleAction(Enum):
+  """Playful autonomous micro-behaviors during normal cruising & idle driving."""
+  NONE = "none"
+  HAPPY_SQUINT = "happy_squint"
+  CURIOUS_LOOK = "curious_look"
+  CHEEKY_WINK = "cheeky_wink"
+  GROOVE_BOB = "groove_bob"
+
+
 class EyeGlyph(Enum):
   ROUND_RECT = "round_rect"
   STAR = "star"
@@ -78,7 +87,7 @@ class MouthGlyph(Enum):
 
 # Dynamic status & mood palette (RGB tuples)
 PALETTE = {
-  "engaged": (64, 238, 224),        # EMO vibrant cyan-emerald
+  "engaged": (64, 240, 226),        # EMO vibrant cyan-emerald
   "lat_only": (255, 212, 178),      # Reference-video warm peach
   "long_only": (92, 198, 255),      # Sky cyan
   "disengaged": (218, 232, 248),    # Soft ice white
@@ -94,7 +103,7 @@ PALETTE = {
 class EyeTarget:
   width: float = 104.0
   height: float = 112.0
-  roundness: float = 0.48
+  roundness: float = 0.62       # Bubbly chunky squircle
   top_lid: float = 0.0          # 0..1 fraction covered from top
   bottom_lid: float = 0.0       # 0..1 fraction covered from bottom
   top_slant: float = 0.0        # degrees (+ = angry/inward, - = sad/outward)
@@ -104,7 +113,8 @@ class EyeTarget:
   tilt_y: float = 0.0           # vertical asymmetry between left & right eye (playful head tilt)
   scale_x: float = 1.0          # squash-and-stretch horizontal multiplier
   scale_y: float = 1.0          # squash-and-stretch vertical multiplier
-  wink_right: bool = False      # cute asymmetric wink on bookmark
+  wink_right: bool = False      # cute asymmetric wink on bookmark or cheeky idle wink
+  cheek_blush: float = 0.0      # 0..1 rosy glowing cheeks below outer eye corners
   glyph: EyeGlyph = EyeGlyph.ROUND_RECT
   mouth: MouthGlyph = MouthGlyph.NONE
   color: tuple[int, int, int] = PALETTE["engaged"]
@@ -141,11 +151,12 @@ class DrivingSnapshot:
 
 
 class RoboticMoodEngine:
-  """Priority-based EMO-inspired mood & animation state machine with continuous organic motion."""
+  """Priority-based EMO-inspired mood & lively autonomous personality state machine."""
 
   def __init__(self, rng: random.Random | None = None):
     self._rng = rng or random.Random()
     self.mood: RoboticMood = RoboticMood.IDLE_CURIOUS
+    self.idle_action: IdleAction = IdleAction.NONE
     self.showing_speed: bool = False
     self.speed_reason: str = ""  # "set_speed", "engage", "peek"
     self.cruising_smoothly: bool = False
@@ -163,16 +174,21 @@ class RoboticMoodEngine:
     self._happy_engage_until: float = 0.0
     self._speed_display_until: float = 0.0
 
-    # Blink & idle micro-saccade schedulers
+    # Blink, gaze, and playful idle personality schedulers
     now = time.monotonic()
-    self._next_blink_at: float = now + self._rng.uniform(2.0, 4.2)
+    self._next_blink_at: float = now + self._rng.uniform(1.8, 3.6)
     self._blink_end_at: float = 0.0
     self._blink_rebound_until: float = 0.0
     self._double_blink_pending: bool = False
-    self._next_glance_at: float = now + self._rng.uniform(1.6, 3.4)
+
+    self._next_glance_at: float = now + self._rng.uniform(1.2, 2.6)
     self._idle_gaze_x: float = 0.0
     self._idle_gaze_y: float = 0.0
     self._idle_tilt_y: float = 0.0
+
+    self._next_idle_action_at: float = now + self._rng.uniform(2.2, 3.8)
+    self._idle_action_until: float = 0.0
+    self._idle_action_dir: float = 1.0
 
   def trigger_love(self, now: float | None = None, wink: bool = False) -> None:
     t = time.monotonic() if now is None else now
@@ -203,46 +219,67 @@ class RoboticMoodEngine:
       return PALETTE["override"]
     return PALETTE["disengaged"]
 
-  def _update_blink_and_saccades(self, now: float, sleepy: bool) -> tuple[float, float, float]:
-    """Returns (blink_closure, squash_x, stretch_y) and updates continuous idle gaze/tilt."""
+  def _update_blink_and_personality(self, now: float, sleepy: bool) -> tuple[float, float, float]:
+    """Returns (blink_closure, squash_x, stretch_y) and advances idle glances & micro-actions."""
     blink_closure = 0.0
     squash_x = 1.0
     stretch_y = 1.0
 
     if now < self._blink_end_at:
       blink_closure = 1.0
-      squash_x = 1.10
-      stretch_y = 0.90
+      squash_x = 1.16
+      stretch_y = 0.86
     elif now < self._blink_rebound_until:
-      # Bubbly post-blink pop open
-      squash_x = 0.96
-      stretch_y = 1.06
+      # Juicy bubbly pop-open after blink
+      squash_x = 0.93
+      stretch_y = 1.10
     elif now >= self._next_blink_at:
-      blink_dur = 0.22 if sleepy else 0.12
+      blink_dur = 0.22 if sleepy else 0.11
       self._blink_end_at = now + blink_dur
-      self._blink_rebound_until = self._blink_end_at + 0.11
+      self._blink_rebound_until = self._blink_end_at + 0.12
       blink_closure = 1.0
-      squash_x = 1.10
-      stretch_y = 0.90
-      if not sleepy and not self._double_blink_pending and self._rng.random() < 0.25:
+      squash_x = 1.16
+      stretch_y = 0.86
+      if not sleepy and not self._double_blink_pending and self._rng.random() < 0.30:
         self._double_blink_pending = True
-        self._next_blink_at = self._blink_end_at + 0.14
+        self._next_blink_at = self._blink_end_at + 0.13
       else:
         self._double_blink_pending = False
-        lo, hi = (1.8, 3.2) if sleepy else (2.6, 5.2)
+        lo, hi = (1.6, 3.0) if sleepy else (2.2, 4.4)
         self._next_blink_at = self._blink_end_at + self._rng.uniform(lo, hi)
 
     if now >= self._next_glance_at:
       roll = self._rng.random()
-      if roll < 0.35:
+      if roll < 0.28:
         self._idle_gaze_x = 0.0
         self._idle_gaze_y = 0.0
         self._idle_tilt_y = 0.0
       else:
-        self._idle_gaze_x = self._rng.uniform(-24.0, 24.0)
-        self._idle_gaze_y = self._rng.uniform(-9.0, 9.0)
-        self._idle_tilt_y = self._rng.uniform(-6.0, 6.0)
-      self._next_glance_at = now + self._rng.uniform(1.5, 3.5)
+        self._idle_gaze_x = self._rng.uniform(-34.0, 34.0)
+        self._idle_gaze_y = self._rng.uniform(-12.0, 10.0)
+        self._idle_tilt_y = self._rng.uniform(-9.0, 9.0)
+      self._next_glance_at = now + self._rng.uniform(1.3, 2.8)
+
+    # Playful autonomous micro-behaviors during normal cruising/idle
+    if now >= self._idle_action_until:
+      self.idle_action = IdleAction.NONE
+      if not sleepy and now >= self._next_idle_action_at:
+        choice = self._rng.choice([
+          IdleAction.HAPPY_SQUINT,
+          IdleAction.CURIOUS_LOOK,
+          IdleAction.CHEEKY_WINK,
+          IdleAction.GROOVE_BOB,
+        ])
+        self.idle_action = choice
+        self._idle_action_dir = -1.0 if self._rng.random() < 0.5 else 1.0
+        dur = {
+          IdleAction.HAPPY_SQUINT: 0.80,
+          IdleAction.CURIOUS_LOOK: 1.50,
+          IdleAction.CHEEKY_WINK: 0.55,
+          IdleAction.GROOVE_BOB: 1.80,
+        }[choice]
+        self._idle_action_until = now + dur
+        self._next_idle_action_at = self._idle_action_until + self._rng.uniform(2.0, 3.8)
 
     return blink_closure, squash_x, stretch_y
 
@@ -274,7 +311,7 @@ class RoboticMoodEngine:
       self.speed_reason = "set_speed"
     self._prev_set_speed = snap.set_speed_kph
 
-    # Track startling events (hard braking or blocked lane change) & sharp acceleration
+    # Track startling events & sharp acceleration
     if snap.a_ego < HARD_DECEL_THRESHOLD or snap.lane_change_blocked:
       self._startled_until = max(self._startled_until, t + STARTLED_HOLD_DURATION)
     elif snap.a_ego > SHARP_ACCEL_THRESHOLD and not snap.standstill:
@@ -288,10 +325,8 @@ class RoboticMoodEngine:
     elif not snap.lane_change:
       self._last_lane_dir = 0
 
-    # Active blinker side (-1 left, +1 right, 0 none)
     blinker_side = -1 if snap.left_blinker else (1 if snap.right_blinker else 0)
 
-    # Determine blind spot side
     bsm_side = 0
     if snap.left_blindspot and (snap.left_blinker or snap.pre_lane_change_left):
       bsm_side = -1
@@ -349,21 +384,22 @@ class RoboticMoodEngine:
       self.mood = RoboticMood.IDLE_CURIOUS
 
     base_color = self._status_color(snap)
-    blink, squash_x, stretch_y = self._update_blink_and_saccades(t, sleepy=(self.mood == RoboticMood.SLEEPY))
+    blink, squash_x, stretch_y = self._update_blink_and_personality(t, sleepy=(self.mood == RoboticMood.SLEEPY))
 
-    # Continuous multi-harmonic breathing & micro-drift so the UI is NEVER static
-    breathe_y = math.sin(t * 2.4) * 4.0 + math.sin(t * 1.1) * 1.8
-    breathe_scale = 1.0 + 0.022 * math.sin(t * 2.4 - 0.4)
-    micro_drift_x = math.sin(t * 0.85) * 3.5
+    # Lively, clearly visible breathing & energetic bounce so the face is always bubbling with life
+    energy = 1.0 + min(0.55, snap.v_ego / 35.0)
+    breathe_y = math.sin(t * 2.8 * energy) * 6.5 + math.sin(t * 1.3) * 2.5
+    breathe_scale = 1.0 + 0.035 * math.sin(t * 2.8 * energy - 0.35)
+    micro_drift_x = math.sin(t * 1.1) * 6.0
 
-    # Steering-coupled gaze (clamped to [-38, +38])
-    steer_gaze = max(-38.0, min(38.0, -snap.steering_angle_deg * 0.72))
+    # Steering-coupled gaze (clamped to [-40, +40])
+    steer_gaze = max(-40.0, min(40.0, -snap.steering_angle_deg * 0.78))
 
     target = EyeTarget(
       color=base_color,
       bounce_y=breathe_y,
       scale_x=squash_x * breathe_scale,
-      scale_y=stretch_y * (2.0 - breathe_scale),  # volume-preserving bubbly breathing
+      scale_y=stretch_y * (2.0 - breathe_scale),
       blind_spot_side=bsm_side,
       blinker_side=blinker_side,
     )
@@ -371,28 +407,30 @@ class RoboticMoodEngine:
     if self.mood == RoboticMood.CRITICAL:
       target.glyph = EyeGlyph.LASER_ALERT
       target.color = PALETTE["critical"]
-      target.width = 112.0
+      target.width = 114.0
       target.height = 84.0
+      target.roundness = 0.42
       target.top_lid = 0.28
       target.top_slant = 18.0
       target.pulse_speed = 5.5
-      target.bounce_y = math.sin(t * 28.0) * 3.0
+      target.bounce_y = math.sin(t * 28.0) * 3.5
 
     elif self.mood == RoboticMood.DISTRACTED:
       target.color = PALETTE["prompt"]
       target.width = 108.0
       target.height = 96.0
+      target.roundness = 0.48
       target.top_lid = 0.32
       target.top_slant = 12.0
-      target.gaze_x = math.sin(t * 5.2) * 16.0
+      target.gaze_x = math.sin(t * 5.2) * 18.0
       target.mouth = MouthGlyph.FROWN
       target.pulse_speed = 2.5
 
     elif self.mood == RoboticMood.USER_PROMPT:
       target.color = PALETTE["prompt"]
-      target.width = 106.0
-      target.height = 118.0
-      target.top_lid = 0.08
+      target.width = 108.0
+      target.height = 120.0
+      target.top_lid = 0.06
       target.top_slant = -6.0
       target.gaze_x = micro_drift_x
       target.pulse_speed = 1.8
@@ -400,25 +438,26 @@ class RoboticMoodEngine:
     elif self.mood == RoboticMood.STARTLED_STARS:
       target.glyph = EyeGlyph.STAR
       target.color = PALETTE["override"]
-      target.width = 112.0
-      target.height = 112.0
+      target.width = 114.0
+      target.height = 114.0
       target.mouth = MouthGlyph.SURPRISED
-      target.bounce_y = math.sin(t * 24.0) * 5.0
-      target.scale_x = 1.0 + 0.06 * math.sin(t * 20.0)
-      target.scale_y = 1.0 - 0.06 * math.sin(t * 20.0)
+      target.bounce_y = math.sin(t * 26.0) * 6.0
+      target.scale_x = 1.0 + 0.08 * math.sin(t * 22.0)
+      target.scale_y = 1.0 - 0.08 * math.sin(t * 22.0)
 
     elif self.mood == RoboticMood.LANE_CHANGE:
       direction = -1 if snap.pre_lane_change_left else (1 if snap.pre_lane_change_right else self._last_lane_dir or 1)
       target.glyph = EyeGlyph.ARROW_LEFT if direction < 0 else EyeGlyph.ARROW_RIGHT
-      target.gaze_x = direction * 30.0 + math.sin(t * 6.0) * 4.0
-      target.height = 104.0
-      target.top_lid = 0.12
-      target.tilt_y = direction * 5.0
+      target.gaze_x = direction * 32.0 + math.sin(t * 6.5) * 5.0
+      target.height = 106.0
+      target.top_lid = 0.10
+      target.tilt_y = direction * 7.0
+      target.mouth = MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.BLIND_SPOT:
       target.color = PALETTE["override"]
-      target.gaze_x = bsm_side * 36.0
-      target.height = 100.0
+      target.gaze_x = bsm_side * 38.0
+      target.height = 102.0
       target.top_lid = 0.22
       target.top_slant = 9.0
       target.pulse_speed = 3.2
@@ -426,100 +465,137 @@ class RoboticMoodEngine:
     elif self.mood == RoboticMood.BOOKMARK_LOVE:
       target.glyph = EyeGlyph.HEART
       target.color = PALETTE["love"]
-      target.width = 112.0
-      target.height = 112.0
+      target.width = 114.0
+      target.height = 114.0
       target.wink_right = self._love_wink
-      target.mouth = MouthGlyph.SMILE
-      target.bounce_y = -abs(math.sin(t * 9.5)) * 12.0
+      target.cheek_blush = 0.95
+      target.mouth = MouthGlyph.BIG_GRIN
+      target.bounce_y = -abs(math.sin(t * 10.5)) * 15.0
       target.show_hearts = True
 
     elif self.mood == RoboticMood.HAPPY_ENGAGE:
       target.glyph = EyeGlyph.CRESCENT
       target.color = PALETTE["engaged"]
-      target.width = 114.0
-      target.height = 98.0
+      target.width = 116.0
+      target.height = 100.0
+      target.cheek_blush = 0.90
       target.mouth = MouthGlyph.BIG_GRIN
-      target.bounce_y = -abs(math.sin(t * 8.5)) * 14.0
+      target.bounce_y = -abs(math.sin(t * 9.5)) * 16.0
 
     elif self.mood == RoboticMood.BOOST_ACCEL:
       target.glyph = EyeGlyph.SPARKLE_BOOST
       target.color = PALETTE["boost"]
-      target.width = 114.0
-      target.height = 118.0
-      target.gaze_y = -6.0
+      target.width = 116.0
+      target.height = 120.0
+      target.gaze_y = -7.0
+      target.cheek_blush = 0.70
       target.mouth = MouthGlyph.BIG_GRIN
-      target.bounce_y = math.sin(t * 16.0) * 3.5
+      target.bounce_y = math.sin(t * 18.0) * 5.0
       target.show_speed_lines = True
 
     elif self.mood == RoboticMood.TURN_SIGNAL:
-      # Rhythmic glance into the turn direction synced to blinker cadence
       beat = 0.5 + 0.5 * math.sin(t * 8.4)
-      target.gaze_x = blinker_side * (20.0 + 12.0 * beat)
-      target.tilt_y = blinker_side * 6.0
+      target.gaze_x = blinker_side * (22.0 + 14.0 * beat)
+      target.tilt_y = blinker_side * 8.0
       target.width = 106.0
       target.height = 108.0
-      target.top_lid = 0.10
+      target.top_lid = 0.08
+      target.mouth = MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.POUT_STANDSTILL:
-      target.width = 96.0
+      target.width = 98.0
       target.height = 84.0
-      target.roundness = 0.30
-      target.top_lid = 0.26 + 0.04 * math.sin(t * 1.6)
-      target.gaze_x = self._idle_gaze_x * 0.7 + micro_drift_x
+      target.roundness = 0.34
+      target.top_lid = 0.26 + 0.05 * math.sin(t * 1.8)
+      target.gaze_x = self._idle_gaze_x * 0.75 + micro_drift_x
       target.gaze_y = 6.0
-      target.tilt_y = self._idle_tilt_y * 0.6
+      target.tilt_y = self._idle_tilt_y * 0.7
       target.mouth = MouthGlyph.FROWN
 
     elif self.mood == RoboticMood.SLEEPY:
       target.width = 104.0
       target.height = 76.0
-      target.top_lid = 0.58 + 0.08 * math.sin(t * 1.4)
+      target.roundness = 0.45
+      target.top_lid = 0.58 + 0.09 * math.sin(t * 1.5)
       target.bottom_lid = 0.14
       target.gaze_y = 8.0
-      target.gaze_x = math.sin(t * 0.6) * 6.0
-      target.bounce_y = math.sin(t * 1.4) * 5.0
+      target.gaze_x = math.sin(t * 0.7) * 8.0
+      target.bounce_y = math.sin(t * 1.5) * 6.0
       target.show_zzz = True
 
     elif self.mood == RoboticMood.SHARP_TURN:
       direction = -1.0 if snap.steering_angle_deg > 0 else 1.0
       target.width = 108.0
-      target.height = 98.0
-      target.top_lid = 0.18
+      target.height = 100.0
+      target.top_lid = 0.16
       target.top_slant = 6.0
       target.gaze_x = steer_gaze
       target.gaze_y = -3.0
-      target.tilt_y = direction * 11.0
+      target.tilt_y = direction * 13.0
+      target.cheek_blush = 0.55
       target.mouth = MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.CURVE_FOCUS:
       direction = -1.0 if snap.steering_angle_deg > 0 else 1.0
       target.width = 106.0
-      target.height = 104.0
-      target.top_lid = 0.12
+      target.height = 106.0
+      target.top_lid = 0.10
       target.gaze_x = steer_gaze
       target.gaze_y = -2.0
-      target.tilt_y = direction * 5.0
+      target.tilt_y = direction * 7.0
+      target.cheek_blush = 0.45
+      target.mouth = MouthGlyph.SMILE
 
     elif self.mood == RoboticMood.CRUISING_HAPPY:
       target.width = 106.0
       target.height = 114.0
-      target.gaze_x = steer_gaze * 0.45 + self._idle_gaze_x * 0.40 + micro_drift_x
-      target.gaze_y = self._idle_gaze_y * 0.45
-      target.tilt_y = self._idle_tilt_y * 0.5
+      target.cheek_blush = 0.65
+      target.mouth = MouthGlyph.SMILE
+      target.gaze_x = steer_gaze * 0.45 + self._idle_gaze_x * 0.65 + micro_drift_x
+      target.gaze_y = self._idle_gaze_y * 0.65
+      target.tilt_y = self._idle_tilt_y * 0.75 + math.sin(t * 1.6) * 3.0
+      self._apply_idle_action(target, t)
 
     else:  # IDLE_CURIOUS or SPEED_DISPLAY fallback
-      target.width = 102.0
-      target.height = 108.0
+      target.width = 104.0
+      target.height = 110.0
+      target.cheek_blush = 0.40
+      target.mouth = MouthGlyph.SMILE
       target.gaze_x = self._idle_gaze_x + micro_drift_x
       target.gaze_y = self._idle_gaze_y
-      target.tilt_y = self._idle_tilt_y
+      target.tilt_y = self._idle_tilt_y + math.sin(t * 1.4) * 3.0
+      self._apply_idle_action(target, t)
 
     # Apply natural blink closure to standard rounded-rect eyes
-    if target.glyph == EyeGlyph.ROUND_RECT and blink > 0.0:
+    if target.glyph == EyeGlyph.ROUND_RECT and not target.wink_right and blink > 0.0:
       target.top_lid = max(target.top_lid, 0.52 * blink)
       target.bottom_lid = max(target.bottom_lid, 0.48 * blink)
 
     return target
+
+  def _apply_idle_action(self, target: EyeTarget, t: float) -> None:
+    """Layer bubbly autonomous micro-behaviors onto normal cruising/idle states."""
+    if self.idle_action == IdleAction.HAPPY_SQUINT:
+      target.glyph = EyeGlyph.CRESCENT
+      target.cheek_blush = 0.90
+      target.mouth = MouthGlyph.BIG_GRIN
+      target.bounce_y = -abs(math.sin(t * 9.0)) * 12.0
+    elif self.idle_action == IdleAction.CURIOUS_LOOK:
+      target.gaze_x = self._idle_action_dir * 34.0
+      target.gaze_y = -6.0
+      target.tilt_y = self._idle_action_dir * 10.0
+      target.height = 118.0
+    elif self.idle_action == IdleAction.CHEEKY_WINK:
+      target.wink_right = True
+      target.cheek_blush = 0.85
+      target.mouth = MouthGlyph.BIG_GRIN
+      target.tilt_y = 6.0
+      target.bounce_y = -8.0
+    elif self.idle_action == IdleAction.GROOVE_BOB:
+      target.bounce_y = math.sin(t * 7.2) * 11.0
+      target.tilt_y = math.sin(t * 3.6) * 8.0
+      target.cheek_blush = 0.80
+      target.mouth = MouthGlyph.BIG_GRIN
 
 
 def snapshot_from_ui_state(ui_state, alert: Alert | None) -> DrivingSnapshot:

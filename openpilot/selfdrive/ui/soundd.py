@@ -15,7 +15,7 @@ from openpilot.system import micd
 from openpilot.common.hardware import HARDWARE
 
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
-from openpilot.sunnypilot.selfdrive.ui.robotic_sounds import RoboticSoundPack
+from openpilot.sunnypilot.selfdrive.ui.robotic_sounds import REACTIVE_CHIRP_IDS, RoboticSoundPack
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -119,7 +119,7 @@ class Soundd(QuietMode):
     ret = np.zeros(frames, dtype=np.float32)
 
     if self.should_play_sound(self.current_alert):
-      num_loops = sound_list[self.current_alert][1]
+      num_loops = 1 if self.current_alert in REACTIVE_CHIRP_IDS else sound_list[self.current_alert][1]
       sound_data = self.robotic_sound_pack.get_buffer(self.current_alert, self.loaded_sounds)
       written_frames = 0
 
@@ -152,7 +152,12 @@ class Soundd(QuietMode):
       self.current_sound_frame >= len(self.robotic_sound_pack.get_buffer(self.current_alert, self.loaded_sounds))
     )
     # let looping sounds finish the current loop instead of cutting off mid tone
-    if new_alert == AudibleAlert.none and self.current_alert != AudibleAlert.none and sound_list[self.current_alert][1] is None:
+    if (
+      new_alert == AudibleAlert.none
+      and self.current_alert != AudibleAlert.none
+      and self.current_alert not in REACTIVE_CHIRP_IDS
+      and sound_list[self.current_alert][1] is None
+    ):
       if current_alert_played_once:
         self.pending_stop = True
       else:
@@ -178,6 +183,12 @@ class Soundd(QuietMode):
       self.update_alert(AudibleAlert.none)
       self.selfdrive_timeout_alert = False
 
+    # Trigger playful one-shot robotic chirps only when idle (never preempting safety alerts)
+    if self.robotic_sound_pack.enabled and self.current_alert == AudibleAlert.none:
+      chirp = self.robotic_sound_pack.detect_reactive_chirp(sm)
+      if chirp is not None:
+        self.update_alert(chirp)
+
   def calculate_volume(self, weighted_db):
     volume = ((weighted_db - AMBIENT_DB) / DB_SCALE) * (MAX_VOLUME - MIN_VOLUME) + MIN_VOLUME
     return math.pow(VOLUME_BASE, (np.clip(volume, MIN_VOLUME, MAX_VOLUME) - 1))
@@ -194,7 +205,7 @@ class Soundd(QuietMode):
     import sounddevice as sd
     micd.patch_sounddevice(sd)
 
-    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure'])
+    sm = messaging.SubMaster(['selfdriveState', 'selfdriveStateSP', 'soundPressure', 'carState', 'controlsState', 'userBookmark', 'bookmarkButton'])
 
     with self.get_stream(sd) as stream:
       rk = Ratekeeper(20)

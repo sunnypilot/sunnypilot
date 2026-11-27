@@ -88,10 +88,10 @@ def robotize_voice(samples: np.ndarray, carrier_hz: float = 165.0) -> np.ndarray
   blended = 0.62 * comb + 0.38 * ring
 
   # Soft saturation & normalization
-  blended = np.tanh(blended * 1.35)
+  blended = np.tanh(blended * 1.45)
   peak = float(np.max(np.abs(blended)))
   if peak > 1e-5:
-    blended = blended / peak * 0.78
+    blended = blended / peak * 0.94
   return blended.astype(np.float32)
 
 
@@ -124,35 +124,35 @@ def synthesize_robotic_phrase(text: str, rate: int = 205, carrier_hz: float = 17
 
 
 def build_all_sounds() -> None:
-  # 1. EMO-style expressive chirps & vocalizations
+  # 1. EMO-style expressive chirps & vocalizations (punchy & bubbly loudness matching stock WAVs)
   engage = np.concatenate([
-    emo_chirp(580, 880, 0.14, gain=0.62),
-    silence(0.03),
-    emo_chirp(880, 1340, 0.22, vibrato_hz=18, vibrato_depth=18, gain=0.68),
+    emo_chirp(660, 1020, 0.11, gain=0.88),
+    silence(0.025),
+    emo_chirp(1020, 1580, 0.19, vibrato_hz=24, vibrato_depth=28, gain=0.94),
   ])
   write_wav(OUT_DIR / "engage.wav", engage)
 
   disengage = np.concatenate([
-    emo_chirp(920, 640, 0.16, gain=0.58),
-    silence(0.03),
-    emo_chirp(600, 390, 0.24, gain=0.55),
+    emo_chirp(1080, 740, 0.13, gain=0.86),
+    silence(0.025),
+    emo_chirp(700, 440, 0.19, gain=0.84),
   ])
   write_wav(OUT_DIR / "disengage.wav", disengage)
 
   refuse = np.concatenate([
-    emo_chirp(420, 310, 0.14, vibrato_hz=28, vibrato_depth=24, gain=0.62),
-    silence(0.05),
-    emo_chirp(360, 250, 0.18, vibrato_hz=28, vibrato_depth=24, gain=0.62),
+    emo_chirp(480, 340, 0.12, vibrato_hz=32, vibrato_depth=28, gain=0.88),
+    silence(0.04),
+    emo_chirp(390, 270, 0.16, vibrato_hz=32, vibrato_depth=28, gain=0.88),
   ])
   write_wav(OUT_DIR / "refuse.wav", refuse)
 
-  pre_alert = emo_chirp(760, 1280, 0.24, vibrato_hz=20, vibrato_depth=16, gain=0.60)
+  pre_alert = emo_chirp(860, 1480, 0.22, vibrato_hz=26, vibrato_depth=22, gain=0.88)
   write_wav(OUT_DIR / "pre_alert.wav", pre_alert)
 
-  prompt_low = emo_chirp(520, 460, 0.22, gain=0.55)
+  prompt_low = emo_chirp(620, 500, 0.19, gain=0.84)
   write_wav(OUT_DIR / "prompt_single_low.wav", prompt_low)
 
-  prompt_high = emo_chirp(980, 1220, 0.20, gain=0.60)
+  prompt_high = emo_chirp(1080, 1420, 0.17, gain=0.88)
   write_wav(OUT_DIR / "prompt_single_high.wav", prompt_high)
 
   # 2. Hybrid chirp + vocoded robotic spoken phrases for warnings & critical alerts
