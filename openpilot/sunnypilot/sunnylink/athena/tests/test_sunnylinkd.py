@@ -58,3 +58,24 @@ class TestSunnylinkdMethods(OpenpilotTestCase):
     assert len(self.saved_params) == 1
     assert self.saved_params[0][0] == "SpeedLimitOffset"
     assert self.saved_params[0][1] == "10"
+
+  def test_saveParams_refuses_local_and_bluetooth_params(self):
+    sunnylinkd.saveParams({
+      "SunnylinkLocalBleGrants": "e30=",
+      "SunnylinkLocalConnectPhoneRequest": "e30=",
+      "BluetoothAllowed": "MQ==",
+      "BluetoothEnabled": "MQ==",
+      "SpeedLimitOffset": "5",
+    })
+
+    assert [p[0] for p in self.saved_params] == ["SpeedLimitOffset"]
+
+  def test_local_params_are_hidden(self, mocker):
+    params = mocker.patch.object(sunnylinkd, "Params").return_value
+    params.all_keys.return_value = [b"SunnylinkEnabled", b"SunnylinkLocalBleGrants", b"SunnylinkLocalConnectPhoneWindow"]
+    mocker.patch.object(sunnylinkd, "get_param_as_byte", return_value=b"1")
+
+    assert sunnylinkd.getParamsAllKeys() == ["SunnylinkEnabled"]
+    response = sunnylinkd.getParams(["SunnylinkEnabled", "SunnylinkLocalBleGrants", "SunnylinkLocalConnectPhoneWindow"])
+    assert set(response) == {"SunnylinkEnabled", "params"}
+    assert "SunnylinkLocal" not in response["params"]

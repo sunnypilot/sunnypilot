@@ -1,7 +1,7 @@
 [
   {
     "name": "xbl",
-    "url": "https://commadist.azureedge.net/agnosupdate/xbl-e8acf2a9cc7f0ce84cb803bfea9477f765c0d7b4daf26048e59651b9e6a7bfbb.img.xz",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/xbl-e8acf2a9cc7f0ce84cb803bfea9477f765c0d7b4daf26048e59651b9e6a7bfbb.img.xz",
     "hash": "e8acf2a9cc7f0ce84cb803bfea9477f765c0d7b4daf26048e59651b9e6a7bfbb",
     "hash_raw": "e8acf2a9cc7f0ce84cb803bfea9477f765c0d7b4daf26048e59651b9e6a7bfbb",
     "size": 3282256,
@@ -12,7 +12,7 @@
   },
   {
     "name": "xbl_config",
-    "url": "https://commadist.azureedge.net/agnosupdate/xbl_config-758552ecf92b5569677197783bf0ccb73d7f961685308e45d3276ac9dd974f85.img.xz",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/xbl_config-758552ecf92b5569677197783bf0ccb73d7f961685308e45d3276ac9dd974f85.img.xz",
     "hash": "758552ecf92b5569677197783bf0ccb73d7f961685308e45d3276ac9dd974f85",
     "hash_raw": "758552ecf92b5569677197783bf0ccb73d7f961685308e45d3276ac9dd974f85",
     "size": 98124,
@@ -23,7 +23,7 @@
   },
   {
     "name": "abl",
-    "url": "https://commadist.azureedge.net/agnosupdate/abl-29fd7ed1c012e599420764840f9f11286d34dbff4adaf102a447f06d8c5e0b35.img.xz",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/abl-29fd7ed1c012e599420764840f9f11286d34dbff4adaf102a447f06d8c5e0b35.img.xz",
     "hash": "29fd7ed1c012e599420764840f9f11286d34dbff4adaf102a447f06d8c5e0b35",
     "hash_raw": "29fd7ed1c012e599420764840f9f11286d34dbff4adaf102a447f06d8c5e0b35",
     "size": 274432,
@@ -34,7 +34,7 @@
   },
   {
     "name": "aop",
-    "url": "https://commadist.azureedge.net/agnosupdate/aop-78b2287ca219a0811b3004c523fa0f4749e4d1fd92be3aba61699305b7943ad1.img.xz",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/aop-78b2287ca219a0811b3004c523fa0f4749e4d1fd92be3aba61699305b7943ad1.img.xz",
     "hash": "78b2287ca219a0811b3004c523fa0f4749e4d1fd92be3aba61699305b7943ad1",
     "hash_raw": "78b2287ca219a0811b3004c523fa0f4749e4d1fd92be3aba61699305b7943ad1",
     "size": 184364,
@@ -45,7 +45,7 @@
   },
   {
     "name": "devcfg",
-    "url": "https://commadist.azureedge.net/agnosupdate/devcfg-f71df3a86958c093ba3969254c4db025187eef9385427f1ade946742939b43cc.img.xz",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/devcfg-f71df3a86958c093ba3969254c4db025187eef9385427f1ade946742939b43cc.img.xz",
     "hash": "f71df3a86958c093ba3969254c4db025187eef9385427f1ade946742939b43cc",
     "hash_raw": "f71df3a86958c093ba3969254c4db025187eef9385427f1ade946742939b43cc",
     "size": 40336,
@@ -56,28 +56,28 @@
   },
   {
     "name": "boot",
-    "url": "https://commadist.azureedge.net/agnosupdate/boot-2388598cda7c5c09a44b8f2683ff473d7ce8096a545a1c4ea2ff1cff65456c5a.img.xz",
-    "hash": "2388598cda7c5c09a44b8f2683ff473d7ce8096a545a1c4ea2ff1cff65456c5a",
-    "hash_raw": "2388598cda7c5c09a44b8f2683ff473d7ce8096a545a1c4ea2ff1cff65456c5a",
-    "size": 46897152,
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/boot-7da6f3e3defcc90c599d6a941df0240555d687d0d0c9df83a3e186b83424a0e4.img.xz",
+    "hash": "7da6f3e3defcc90c599d6a941df0240555d687d0d0c9df83a3e186b83424a0e4",
+    "hash_raw": "7da6f3e3defcc90c599d6a941df0240555d687d0d0c9df83a3e186b83424a0e4",
+    "size": 47855616,
     "sparse": false,
     "full_check": true,
     "has_ab": true,
-    "ondevice_hash": "3519123cc1ec417e56ed2bdd449094e6e6e38ecb610ea4452dd44d5bdce5604c"
+    "ondevice_hash": "f456444afa8d821c5e482240af5bcfb717d8c840d16dd98100941e5f665eefa1"
   },
   {
     "name": "system",
-    "url": "https://commadist.azureedge.net/agnosupdate/system-ec939431c59751372e34d669fce1b08494b391019534b5d7f690b87991ea159e.img.xz",
-    "hash": "6042848e01cd245df7570fc96cff28c831b4d3713e4321ee38735cb4e4591593",
-    "hash_raw": "ec939431c59751372e34d669fce1b08494b391019534b5d7f690b87991ea159e",
+    "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/system-cb1d8ac3c8c8917e584d4a37a78e80dfb614ceed626fdd91f8125ee54baeb97a.img.xz",
+    "hash": "bd3c6cc917f8fdd74c1248324fa1518b091a8e810d1466c5e8fea9cf1e23f6d0",
+    "hash_raw": "cb1d8ac3c8c8917e584d4a37a78e80dfb614ceed626fdd91f8125ee54baeb97a",
     "size": 2147483648,
     "sparse": true,
     "full_check": false,
     "has_ab": true,
-    "ondevice_hash": "b2fc71b9071ddb0664a7e3a837df8d57ee36a2befabd8f044eb8be8d73ee66b7",
+    "ondevice_hash": "71814ad7b2ab4344790f660d463a1dc12142a8cf6a31dfabf4c43bd8545f152d",
     "alt": {
-      "hash": "ec939431c59751372e34d669fce1b08494b391019534b5d7f690b87991ea159e",
-      "url": "https://commadist.azureedge.net/agnosupdate/system-ec939431c59751372e34d669fce1b08494b391019534b5d7f690b87991ea159e.img",
+      "hash": "cb1d8ac3c8c8917e584d4a37a78e80dfb614ceed626fdd91f8125ee54baeb97a",
+      "url": "https://huggingface.co/sunnypilot/agnos-ci/resolve/main/pr-20/system-cb1d8ac3c8c8917e584d4a37a78e80dfb614ceed626fdd91f8125ee54baeb97a.img",
       "size": 2147483648
     }
   }

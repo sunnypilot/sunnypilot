@@ -100,6 +100,8 @@ class Sidebar(Widget, SidebarSP):
 
     self._draw_buttons(rect)
     self._draw_network_indicator(rect)
+    if gui_app.sunnypilot_ui():
+      SidebarSP._draw_bluetooth_indicator(self, rect)
     self._draw_metrics(rect)
 
   def _update_state(self):
