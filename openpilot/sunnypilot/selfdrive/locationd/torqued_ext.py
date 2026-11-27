@@ -6,11 +6,13 @@ See the LICENSE.md file in the root directory for more details.
 """
 import numpy as np
 
+from opendbc.car.interfaces import get_torque_params
 from opendbc.car.structs import car
 
 from openpilot.common.params import Params
 from openpilot.common.realtime import DT_MDL
 from openpilot.sunnypilot import PARAMS_UPDATE_PERIOD
+from openpilot.sunnypilot.selfdrive.controls.lib.pidd import pidd_selected
 
 RELAXED_MIN_BUCKET_POINTS = np.array([1, 200, 300, 500, 500, 300, 200, 1])
 
@@ -36,6 +38,11 @@ class TorqueEstimatorExt:
 
   def initialize_custom_params(self, decimated=False):
     self.update_use_params()
+
+    if pidd_selected(self.CP):
+      torque_params = get_torque_params()[self.CP.carFingerprint]
+      self.offline_latAccelFactor = float(torque_params['LAT_ACCEL_FACTOR'])
+      self.offline_friction = float(torque_params['FRICTION'])
 
     if self.enforce_torque_control_toggle:
       if self._params.get_bool("LiveTorqueParamsRelaxedToggle"):

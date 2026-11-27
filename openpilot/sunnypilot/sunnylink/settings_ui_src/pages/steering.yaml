@@ -225,6 +225,8 @@ sections:
       options:
       - value: ''
         label: Default
+      - value: 2.0
+        label: pidd
       - value: 1.0
         label: v1.0
       - value: 0.0
