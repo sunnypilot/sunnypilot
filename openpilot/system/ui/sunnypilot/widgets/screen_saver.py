@@ -5,9 +5,10 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import os
+import random
 import time
 
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.common.hardware import HARDWARE
 from openpilot.common.params import Params
@@ -100,7 +101,7 @@ class ScreenSaverSP(Widget):
 
     hit = hit_x or hit_y
     if hit and not self._hit_last_frame:
-      while self._hue_dist((new_hue := rl.get_random_value(0, 360)), self._hue) < 120:
+      while self._hue_dist((new_hue := random.randint(0, 360)), self._hue) < 120:
         pass
       self._hue = new_hue
       self.color = rl.color_from_hsv(self._hue, 1, 1)

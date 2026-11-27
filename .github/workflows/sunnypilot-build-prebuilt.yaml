@@ -127,7 +127,7 @@ jobs:
           submodules: recursive
           ref: ${{ env.SOURCE_BRANCH }}
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
-      - run: git lfs pull
+      - run: ./lfs.py pull --exclude=''
 
       - name: Set environment variables
         run: |
@@ -599,7 +599,8 @@ jobs:
           CHESTNUT_BRANCH="${{ needs.prepare_strategy.outputs.new_branch }}-chestnut"
           cp .lfsconfig "${{ env.OUTPUT_DIR }}/"
           echo 'openpilot/selfdrive/modeld/models/big_*_tinygrad.pkl filter=lfs diff=lfs merge=lfs -text' > "${{ env.OUTPUT_DIR }}/.gitattributes"
-          git lfs install
+          python3 -m venv "$RUNNER_TEMP/lfs-venv" && "$RUNNER_TEMP/lfs-venv/bin/pip" install -q hf-xet==1.7.0
+          export PATH="$RUNNER_TEMP/lfs-venv/bin:$PATH"  # publish.sh runs lfs.py install; its pre-push uploads to the HF bucket
           git config --global credential.helper store
           echo "https://user:${HF_TOKEN}@huggingface.co" > ~/.git-credentials
 

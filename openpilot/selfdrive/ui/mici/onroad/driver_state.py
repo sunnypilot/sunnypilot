@@ -1,10 +1,12 @@
-import pyray as rl
+import raylib_nb as rl
 import numpy as np
 import math
 from openpilot.cereal import log
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.widgets import Widget
+from openpilot.selfdrive.ui.mici.onroad import glow_highlight_texture
+from openpilot.selfdrive.ui.mici.onroad.status import lerp_color
 from openpilot.selfdrive.ui.ui_state import ui_state
 
 
@@ -18,16 +20,18 @@ LOOKING_CENTER_THRESHOLD_LOWER = math.radians(3)
 
 CONE_COLOR_GREEN = (0, 255, 64)
 CONE_COLOR_ORANGE = (255, 115, 0)
+PERSON_WHITE = rl.Color(255, 255, 255, 255)
+PERSON_ORANGE = rl.Color(*CONE_COLOR_ORANGE, 255)
 
 
 class DriverStateRenderer(Widget):
   BASE_SIZE = 60
   LINES_ANGLE_INCREMENT = 5
-  LINES_STALE_ANGLES = 3.0  # seconds
   AWARENESS_UNFULL_PERCENT = 95  # ~0.5s
 
-  def __init__(self, lines: bool = False, inset: bool = False):
+  def __init__(self, lines: bool = False, inset: bool = False, background: bool = True):
     super().__init__()
+    self._background = background
     self.set_rect(rl.Rectangle(0, 0, self.BASE_SIZE, self.BASE_SIZE))
     self._lines = lines
     self._inset = inset
@@ -42,16 +46,20 @@ class DriverStateRenderer(Widget):
     self._face_pitch = 0.
     self._face_yaw = 0.
     self._should_draw = False
+    self._dimmed = 0.0
+    self._show_under_alerts = False
     self._force_active = False
     self._looking_center = False
     self._awareness_unfull = False
+    self._warning = False
 
-    self._fade_filter = FirstOrderFilter(0.0, 0.05, 1 / gui_app.target_fps)
-    self._color_fade_filter = FirstOrderFilter(1.0, 0.05, 1 / gui_app.target_fps) # 1.0 = full green, 0.0 = full orange
+    self._fade_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+    self._color_fade_filter = FirstOrderFilter(1.0, 0.1, 1 / gui_app.target_fps) # 1.0 = full green, 0.0 = full orange
     self._pitch_filter = FirstOrderFilter(0.0, 0.05, 1 / gui_app.target_fps, initialized=False)
     self._yaw_filter = FirstOrderFilter(0.0, 0.05, 1 / gui_app.target_fps, initialized=False)
     self._rotation_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps, initialized=False)
     self._looking_center_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
+    self._warning_filter = FirstOrderFilter(0.0, 0.1, 1 / gui_app.target_fps)
 
     # Load the driver face icons
     self.load_icons()
@@ -69,15 +77,28 @@ class DriverStateRenderer(Widget):
 
     self._dm_person = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_person.png", cone_and_person_size, cone_and_person_size)
     self._dm_cone = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_cone.png", cone_and_person_size, cone_and_person_size)
+    self._dm_person_highlight = glow_highlight_texture("icons_mici/onroad/driver_monitoring/dm_person.png", cone_and_person_size,
+                                                       center=(64.42 / 128, 79 / 128), radius=(40.82 / 128, 49 / 128))
     self._dm_background = gui_app.texture("icons_mici/onroad/driver_monitoring/dm_background.png", int(self._rect.width), int(self._rect.height))
 
   def set_should_draw(self, should_draw: bool):
     self._should_draw = should_draw
 
+  def set_dimmed(self, dimmed: float):
+    """Draw grayed out without the cone, like when monitoring is inactive. 0 to 1 so it can fade with the rest of the UI"""
+    self._dimmed = dimmed
+
+  def set_warning(self, warning: bool):
+    self._warning = warning
+
+  def set_show_under_alerts(self, show_under_alerts: bool):
+    self._show_under_alerts = show_under_alerts
+
   @property
   def should_draw(self):
-    return (self._should_draw and ui_state.sm["selfdriveState"].alertSize == AlertSize.none and
-            ui_state.sm.recv_frame["driverStateV2"] > ui_state.started_frame)
+    # dimmed doesn't need driver data, so it also shows offroad
+    return (self._should_draw and (self._show_under_alerts or ui_state.sm["selfdriveState"].alertSize == AlertSize.none) and
+            (self._dimmed > 0 or ui_state.received_since_started("driverStateV2")))
 
   def set_force_active(self, force_active: bool):
     """Force the dmoji to always appear active (green) regardless of actual state"""
@@ -96,17 +117,21 @@ class DriverStateRenderer(Widget):
     if DEBUG:
       rl.draw_rectangle_lines_ex(self._rect, 1, rl.RED)
 
-    rl.draw_texture_ex(self._dm_background,
-                       rl.Vector2(self._rect.x, self._rect.y), 0.0, 1.0,
-                       rl.Color(255, 255, 255, int(255 * self._fade_filter.x)))
+    if self._background:
+      rl.draw_texture_ex(self._dm_background,
+                         rl.Vector2(self._rect.x, self._rect.y), 0.0, 1.0,
+                         rl.Color(255, 255, 255, int(255 * self._fade_filter.x)))
 
-    rl.draw_texture_ex(self._dm_person,
-                       rl.Vector2(self._rect.x + (self._rect.width - self._dm_person.width) / 2,
-                                  self._rect.y + (self._rect.height - self._dm_person.height) / 2), 0.0, 1.0,
-                       rl.Color(255, 255, 255, int(255 * 0.9 * self._fade_filter.x)))
+    warning = self._warning_filter.update(self._warning)
+    person_pos = rl.Vector2(self._rect.x + (self._rect.width - self._dm_person.width) / 2,
+                            self._rect.y + (self._rect.height - self._dm_person.height) / 2)
+    person_color = lerp_color(PERSON_WHITE, PERSON_ORANGE, warning)
+    person_alpha = 255 * 0.9 * self._fade_filter.x
+    rl.draw_texture_ex(self._dm_person, person_pos, 0.0, 1.0, rl.Color(person_color.r, person_color.g, person_color.b, int(person_alpha)))
+    rl.draw_texture_ex(self._dm_person_highlight, person_pos, 0.0, 1.0, rl.Color(255, 255, 255, int(person_alpha * warning)))
 
-    green_amount = self._color_fade_filter.update(0.0 if self._awareness_unfull else 1.0)
-    if self.effective_active:
+    green_amount = self._color_fade_filter.update(0.0 if self._awareness_unfull or self._warning else 1.0)
+    if self.effective_active and self._dimmed < 1:
       source_rect = rl.Rectangle(0, 0, self._dm_cone.width, self._dm_cone.height)
       dest_rect = rl.Rectangle(
         self._rect.x + self._rect.width / 2,
@@ -125,7 +150,7 @@ class DriverStateRenderer(Widget):
           dest_rect,
           rl.Vector2(dest_rect.width / 2, dest_rect.height / 2),
           self._rotation_filter.x - 90,
-          rl.Color(r, g, b, int(255 * self._fade_filter.x)),
+          rl.Color(r, g, b, int(255 * self._fade_filter.x * (1 - self._dimmed))),
         )
 
       else:
@@ -159,13 +184,13 @@ class DriverStateRenderer(Widget):
       color = rl.Color(166, 166, 166, 255)
 
     if f.x > 0.01:
-      rl.draw_line_ex((start_x, start_y), (end_x, end_y), 12, color)
+      rl.draw_line_ex(rl.Vector2(start_x, start_y), rl.Vector2(end_x, end_y), 12, color)
 
   def get_driver_data(self):
     sm = ui_state.sm
 
     dm_state = sm["driverMonitoringState"]
-    self._is_active = dm_state.activePolicy == log.DriverMonitoringState.MonitoringPolicy.vision
+    self._is_active = sm.valid["driverMonitoringState"] and dm_state.activePolicy == log.DriverMonitoringState.MonitoringPolicy.vision
     self._is_rhd = dm_state.isRHD
     self._face_detected = dm_state.visionPolicyState.faceDetected
     self._awareness_unfull = self.effective_active and dm_state.visionPolicyState.awarenessPercent < self.AWARENESS_UNFULL_PERCENT
@@ -193,9 +218,9 @@ class DriverStateRenderer(Widget):
       pitchd = math.degrees(pitch)
       yawd = math.degrees(yaw)
 
-      rl.draw_line_ex((0, 100), (200, 100), 3, rl.RED)
-      rl.draw_line_ex((0, 120), (200, 120), 3, rl.RED)
-      rl.draw_line_ex((0, 140), (200, 140), 3, rl.RED)
+      rl.draw_line_ex(rl.Vector2(0, 100), rl.Vector2(200, 100), 3, rl.RED)
+      rl.draw_line_ex(rl.Vector2(0, 120), rl.Vector2(200, 120), 3, rl.RED)
+      rl.draw_line_ex(rl.Vector2(0, 140), rl.Vector2(200, 140), 3, rl.RED)
 
       pitch_x = 100 + pitchd
       yaw_x = 100 + yawd
@@ -213,4 +238,4 @@ class DriverStateRenderer(Widget):
     elif not self.effective_active:
       self._fade_filter.update(0.35)
     else:
-      self._fade_filter.update(1.0)
+      self._fade_filter.update(1.0 - 0.65 * self._dimmed)

@@ -4,7 +4,7 @@ import os
 import sys
 
 import numpy as np
-import pyray as rl
+import raylib_nb as rl
 
 import openpilot.cereal.messaging as messaging
 from openpilot.common.basedir import BASEDIR
@@ -29,9 +29,8 @@ os.environ['BASEDIR'] = BASEDIR
 ANGLE_SCALE = 5.0
 
 
-def ui_thread(addr):
+def ui_thread():
   # Get monitor info before creating window
-  rl.set_config_flags(rl.ConfigFlags.FLAG_MSAA_4X_HINT)
   rl.init_window(1, 1, "")
   max_height = rl.get_monitor_height(0)
   rl.close_window()
@@ -49,7 +48,6 @@ def ui_thread(addr):
     write_y = 970
 
   rl.set_trace_log_level(rl.TraceLogLevel.LOG_ERROR)
-  rl.set_config_flags(rl.ConfigFlags.FLAG_MSAA_4X_HINT)
   rl.init_window(size[0], size[1], "openpilot debug UI")
   rl.set_target_fps(60)
 
@@ -84,7 +82,6 @@ def ui_thread(addr):
       'vehicleParameters',
       'narrowRoadCameraState',
     ],
-    addr=addr,
   )
 
   img = np.zeros((480, 640, 3), dtype='uint8')
@@ -140,7 +137,7 @@ def ui_thread(addr):
     rl.begin_drawing()
     rl.clear_background(rl.Color(64, 64, 64, 255))
 
-    # Render camera (NV12->RGB on GPU via shader)
+    # Render camera
     if camera_view.frame:
       cam_h = 640.0 * camera_view.frame.height / camera_view.frame.width
     else:
@@ -205,7 +202,7 @@ def ui_thread(addr):
     mask = np.any(img > 0, axis=2)
     overlay_img[:, :, :3] = img
     overlay_img[:, :, 3] = mask * 255
-    rl.update_texture(overlay_texture, rl.ffi.cast("void *", overlay_img.ctypes.data))
+    rl.update_texture(overlay_texture, overlay_img)
     rl.draw_texture(overlay_texture, 0, 0, rl.WHITE)  # noqa: TID251
 
     # display alerts
@@ -222,7 +219,7 @@ def ui_thread(addr):
     # Convert lid_overlay to RGBA and update top_down texture
     # lid_overlay is (384, 960), need to transpose to (960, 384) for row-major RGBA buffer
     lid_rgba = palette[lid_overlay.T]
-    rl.update_texture(top_down_texture, rl.ffi.cast("void *", np.ascontiguousarray(lid_rgba).ctypes.data))
+    rl.update_texture(top_down_texture, np.ascontiguousarray(lid_rgba))
     rl.draw_texture(top_down_texture, 640, 0, rl.WHITE)  # noqa: TID251
 
     SPACING = 25
@@ -253,19 +250,9 @@ def ui_thread(addr):
 
 
 def get_arg_parser():
-  parser = argparse.ArgumentParser(description="Show replay data in a UI.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-
-  parser.add_argument("ip_address", nargs="?", default="127.0.0.1", help="The ip address on which to receive zmq messages.")
-
-  parser.add_argument("--frame-address", default=None, help="The frame address (fully qualified ZMQ endpoint for frames) on which to receive zmq messages.")
-  return parser
+  return argparse.ArgumentParser(description="Show replay data in a UI.", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 
 if __name__ == "__main__":
-  args = get_arg_parser().parse_args(sys.argv[1:])
-
-  if args.ip_address != "127.0.0.1":
-    os.environ["ZMQ"] = "1"
-    messaging.reset_context()
-
-  ui_thread(args.ip_address)
+  get_arg_parser().parse_args(sys.argv[1:])
+  ui_thread()

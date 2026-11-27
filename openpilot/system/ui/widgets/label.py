@@ -2,11 +2,12 @@ import math
 from enum import IntEnum
 from collections.abc import Callable
 from typing import Union
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight, DEFAULT_TEXT_SIZE, DEFAULT_TEXT_COLOR, FONT_SCALE, TextAlignment, TextAlignmentVertical
 from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.lib.text_measure import measure_text_cached
+from openpilot.system.ui.lib.emoji import emoji_texture, replace_emoji
 from openpilot.system.ui.lib.wrap_text import wrap_text
 
 ICON_PADDING = 15
@@ -257,6 +258,7 @@ class UnifiedLabel(Widget):
 
     # Cached data
     self._cached_text: str | None = None
+    self._emoji: dict[str, str] = {}
     self._cached_wrapped_lines: list[str] = []
     self._cached_line_sizes: list[rl.Vector2] = []
     self._cached_total_height: float | None = None
@@ -298,13 +300,6 @@ class UnifiedLabel(Widget):
     if self._font_size != size:
       self._font_size = size
       self._spacing_pixels = size * self._letter_spacing  # Recalculate spacing
-      self._cached_text = None  # Invalidate cache
-
-  def set_letter_spacing(self, letter_spacing: float):
-    """Update letter spacing (as percentage, e.g., 0.1 = 10%)."""
-    if self._letter_spacing != letter_spacing:
-      self._letter_spacing = letter_spacing
-      self._spacing_pixels = self._font_size * letter_spacing
       self._cached_text = None  # Invalidate cache
 
   def set_line_height(self, line_height: float):
@@ -366,6 +361,7 @@ class UnifiedLabel(Widget):
 
     self._cached_text = text
     self._cached_width = available_width
+    text, self._emoji = replace_emoji(text, gui_app.font_chars)
 
     # Determine wrapping width
     content_width = available_width - (self._text_padding * 2)
@@ -621,7 +617,9 @@ class UnifiedLabel(Widget):
       line_x = self._rect.x + self._text_padding
     line_x += self._scroll_offset + x_offset
 
-    if self._shimmer:
+    if self._emoji:
+      self._render_line_emoji(line, line_x, current_y)
+    elif self._shimmer:
       self._render_line_shimmer(line, line_x, current_y)
     else:
       self._render_line_normal(line, line_x, current_y)
@@ -629,6 +627,26 @@ class UnifiedLabel(Widget):
   def _render_line_normal(self, line, line_x, current_y):
     line_pos = rl.Vector2(line_x, current_y)
     rl.draw_text_ex(self._font, line, line_pos, self._font_size, self._spacing_pixels, self._text_color)
+
+  def _render_line_emoji(self, line, line_x, current_y):
+    # draw text runs, and each emoji centered over its two placeholders
+    line_height = self._font_size * FONT_SCALE
+    i = 0
+    while i < len(line):
+      is_emoji = line[i] in self._emoji
+      j = i + 1
+      while j < len(line) and not is_emoji and line[j] not in self._emoji:
+        j += 1
+      x = line_x + (measure_text_cached(self._font, line[:i], self._font_size, self._spacing_pixels).x + self._spacing_pixels if i else 0)
+      if not is_emoji:
+        rl.draw_text_ex(self._font, line[i:j], rl.Vector2(x, current_y), self._font_size, self._spacing_pixels, self._text_color)
+      elif line[i - 1:i] != line[i]:
+        width = measure_text_cached(self._font, line[i] * 2, self._font_size, self._spacing_pixels).x
+        texture = emoji_texture(self._emoji[line[i]])
+        scale = min(width, line_height * 0.85) / max(texture.width, texture.height)
+        pos = rl.Vector2(x + (width - texture.width * scale) / 2, current_y + (line_height - texture.height * scale) / 2)
+        rl.draw_texture_ex(texture, pos, 0.0, scale, rl.Color(255, 255, 255, self._text_color.a))
+      i = j
 
   def _render_line_shimmer(self, line, line_x, current_y):
     # Shimmer range based on widest line so sweep is even across all lines

@@ -23,14 +23,6 @@
 
 ExitHandler do_exit;
 
-bool check_connected(Panda *panda) {
-  if (!panda->connected()) {
-    do_exit = true;
-    return false;
-  }
-  return true;
-}
-
 bool process_mads_heartbeat(SubMaster *sm) {
   const auto &mads = (*sm)["selfdriveStateSP"].getSelfdriveStateSP().getMads();
   return sm->allAliveAndValid({"selfdriveStateSP"}) && mads.getEnabled();
@@ -48,7 +40,6 @@ Panda *connect(std::string serial) {
   if (getenv("BOARDD_LOOPBACK")) {
     panda->set_loopback(true);
   }
-  //panda->enable_deepsleep();
 
   for (int i = 0; i < PANDA_CAN_CNT; i++) {
     panda->set_can_fd_auto(i, true);
@@ -72,13 +63,12 @@ void can_send_thread(Panda *panda, bool fake_send) {
   util::set_thread_name("pandad_can_send");
 
   AlignedBuffer aligned_buf;
-  std::unique_ptr<Context> context(Context::create());
-  std::unique_ptr<SubSocket> subscriber(SubSocket::create(context.get(), "sendcan", "127.0.0.1", false, true, services.at("sendcan").queue_size));
+  std::unique_ptr<SubSocket> subscriber(SubSocket::create("sendcan", false, services.at("sendcan").queue_size));
   assert(subscriber != NULL);
   subscriber->setTimeout(100);
 
   // run as fast as messages come in
-  while (!do_exit && check_connected(panda)) {
+  while (!do_exit) {
     std::unique_ptr<Message> msg(subscriber->receive());
     if (!msg) {
       continue;
@@ -89,9 +79,7 @@ void can_send_thread(Panda *panda, bool fake_send) {
 
     // Don't send if older than 1 second
     if ((nanos_since_boot() - event.getLogMonoTime() < 1e9) && !fake_send) {
-      LOGT("sending sendcan to panda: %s", (panda->hw_serial()).c_str());
       panda->can_send(event.getSendcan());
-      LOGT("sendcan sent to panda: %s", (panda->hw_serial()).c_str());
     } else {
       LOGE("sendcan too old to send: %" PRIu64 ", %" PRIu64, nanos_since_boot(), event.getLogMonoTime());
     }
@@ -102,11 +90,11 @@ void can_recv(Panda *panda, PubMaster *pm) {
   static std::vector<can_frame> raw_can_data;
   {
     raw_can_data.clear();
-    bool comms_healthy = panda->can_receive(raw_can_data);
+    bool valid = panda->can_receive(raw_can_data);
 
     MessageBuilder msg;
     auto evt = msg.initEvent();
-    evt.setValid(comms_healthy);
+    evt.setValid(valid);
     auto canData = evt.initCan(raw_can_data.size());
     for (size_t i = 0; i < raw_can_data.size(); ++i) {
       canData[i].setAddress(raw_can_data[i].address);
@@ -221,10 +209,6 @@ std::optional<bool> send_panda_states(PubMaster *pm, Panda *panda, bool is_onroa
     panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
   }
 
-  if (!panda->comms_healthy()) {
-    evt.setValid(false);
-  }
-
   auto ps = pss[0];
   fill_panda_state(ps, panda->hw_type, health);
 
@@ -234,12 +218,13 @@ std::optional<bool> send_panda_states(PubMaster *pm, Panda *panda, bool is_onroa
   }
 
   // Convert faults bitset to capnp list
-  std::bitset<sizeof(health.faults_pkt) * 8> fault_bits(health.faults_pkt);
+  // bits above the last fault type would leave unset entries, which read as relayMalfunction
+  std::bitset<sizeof(health.faults_pkt) * 8> fault_bits(health.faults_pkt & ((2U << size_t(cereal::PandaState::FaultType::SAFETY_REDUNDANCY)) - 1U));
   auto faults = ps.initFaults(fault_bits.count());
 
   size_t j = 0;
   for (size_t f = size_t(cereal::PandaState::FaultType::RELAY_MALFUNCTION);
-       f <= size_t(cereal::PandaState::FaultType::HEARTBEAT_LOOP_WATCHDOG); f++) {
+       f <= size_t(cereal::PandaState::FaultType::SAFETY_REDUNDANCY); f++) {
     if (fault_bits.test(f)) {
       faults.set(j, cereal::PandaState::FaultType(f));
       j++;
@@ -259,7 +244,6 @@ void send_peripheral_state(Panda *panda, PubMaster *pm) {
   // build msg
   MessageBuilder msg;
   auto evt = msg.initEvent();
-  evt.setValid(panda->comms_healthy());
 
   auto ps = evt.initPeripheralState();
   ps.setPandaType(panda->hw_type);
@@ -279,14 +263,6 @@ void process_panda_state(Panda *panda, PubMaster *pm, bool engaged, bool engaged
   if (!ignition_opt) {
     LOGE("Failed to get ignition_opt");
     return;
-  }
-
-  // check if we should have pandad reconnect
-  if (!ignition_opt.value()) {
-    if (!panda->comms_healthy()) {
-      LOGE("Reconnecting, communication to panda not healthy");
-      do_exit = true;
-    }
   }
 
   panda->send_heartbeat(engaged, engaged_mads);
@@ -391,7 +367,7 @@ void pandad_run(Panda *panda) {
   bool always_offroad = false;
 
   // Main loop: receive CAN first, then process lower priority panda and peripheral state.
-  while (!do_exit && check_connected(panda)) {
+  while (!do_exit) {
     can_recv(panda, &pm);
 
     // Process peripheral state at 20 Hz
@@ -433,9 +409,7 @@ void pandad_run(Panda *panda) {
 
   // Close relay on exit to prevent a fault
   if (is_onroad && !engaged) {
-    if (panda->connected()) {
-      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
-    }
+    panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
   }
 
   send_thread.join();
