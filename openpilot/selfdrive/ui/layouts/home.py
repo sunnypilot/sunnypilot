@@ -1,5 +1,5 @@
 import time
-import pyray as rl
+import raylib_nb as rl
 from enum import IntEnum
 from openpilot.common.params import Params
 from openpilot.selfdrive.ui.widgets.offroad_alerts import UpdateAlert, OffroadAlert
@@ -43,6 +43,7 @@ class HomeLayout(Widget):
     self._version_text = ""
     self._prev_update_available = False
     self._prev_alerts_present = False
+    self._notification_image: str | None = None
 
     self.header_rect = rl.Rectangle(0, 0, 0, 0)
     self.content_rect = rl.Rectangle(0, 0, 0, 0)
@@ -122,9 +123,9 @@ class HomeLayout(Widget):
   def _handle_mouse_release(self, mouse_pos: MousePos):
     super()._handle_mouse_release(mouse_pos)
 
-    if self.update_available and rl.check_collision_point_rec(mouse_pos, self.update_notif_rect):
+    if self.update_available and rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), self.update_notif_rect):
       self._set_state(HomeLayoutState.UPDATE)
-    elif self.alert_count > 0 and rl.check_collision_point_rec(mouse_pos, self.alert_notif_rect):
+    elif self.alert_count > 0 and rl.check_collision_point_rec(rl.Vector2(mouse_pos.x, mouse_pos.y), self.alert_notif_rect):
       self._set_state(HomeLayoutState.ALERTS)
 
   def _render_header(self):
@@ -179,7 +180,10 @@ class HomeLayout(Widget):
     self.offroad_alert.render(self.content_rect)
 
   def _render_left_column(self):
-    self._prime_widget.render(self.left_column_rect)
+    if self._notification_image is not None:
+      rl.draw_texture_ex(gui_app.texture(self._notification_image), rl.Vector2(self.left_column_rect.x, self.left_column_rect.y), 0.0, 1.0, rl.WHITE)
+    else:
+      self._prime_widget.render(self.left_column_rect)
 
   def _render_right_column(self):
     self._setup_widget.render(self.right_column_rect)
@@ -202,6 +206,9 @@ class HomeLayout(Widget):
     self.alert_count = alert_count
     self._prev_update_available = update_available
     self._prev_alerts_present = alerts_present
+
+    notifications = self.params.get("Notifications")
+    self._notification_image = notifications[0]["image"] if notifications else None
 
   def _get_version_text(self) -> str:
     brand = "sunnypilot"

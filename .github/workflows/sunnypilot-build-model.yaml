@@ -110,7 +110,9 @@ jobs:
             for f in "$@"; do
               grep -qs "^version https://git-lfs" "$f" || continue
               OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
-              HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+              # refs with lfs.py keep objects in the HF bucket; older refs only in the .lfsconfig store
+              HREF="https://huggingface.co/buckets/sunnypilot/sunnypilot-lfs/resolve/sha256/$OID"
+              curl -fsIL --retry 3 -o /dev/null "$HREF" || HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
                 -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href')
               aria2c -x 16 -s 16 -k 16M --max-tries=5 --retry-wait=5 --file-allocation=none --summary-interval=30 --allow-overwrite=true \
                 -d "$(dirname "$f")" -o "$(basename "$f")" "$HREF"
@@ -119,7 +121,9 @@ jobs:
           }
           UPSTREAM_PKL=selfdrive/modeld/models/big_driving_tinygrad.pkl
           if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            LFS_EXCLUDE="**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            TOP=$(git rev-parse --show-toplevel)
+            if [ -f "$TOP/lfs.py" ]; then (cd "$TOP" && ./lfs.py pull --exclude="$LFS_EXCLUDE"); else git lfs pull -X "$LFS_EXCLUDE"; fi
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
           elif compgen -G "selfdrive/modeld/models/big_*.onnx" > /dev/null; then
             fetch_lfs selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/big_*.pkl

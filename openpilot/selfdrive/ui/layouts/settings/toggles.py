@@ -24,9 +24,9 @@ DESCRIPTIONS = {
   ),
   "DisengageOnAccelerator": tr_noop("When enabled, pressing the accelerator pedal will disengage sunnypilot."),
   "LongitudinalPersonality": tr_noop(
-    "Standard is recommended. In aggressive mode, sunnypilot will follow lead cars closer and be more aggressive with the gas and brake. " +
-    "In relaxed mode sunnypilot will stay further away from lead cars. On supported cars, you can cycle through these personalities with " +
-    "your steering wheel distance button."
+    "In aggressive mode, sunnypilot will follow lead cars closer and more confidently accelerate towards the max speed. " +
+    "Relaxed lets the driving model decide your speed, regardless of max speed. Relaxed is recommended. " +
+    "On supported cars, you can cycle through these personalities with your steering wheel distance button."
   ),
   "IsLdwEnabled": tr_noop(
     "Receive alerts to steer back into the lane when your vehicle drifts over a detected lane line " +
@@ -91,7 +91,7 @@ class TogglesLayout(Widget):
     }
 
     self._long_personality_setting = multiple_button_item(
-      lambda: tr("Following Distance"),
+      lambda: tr("Driving Personality"),
       lambda: tr(DESCRIPTIONS["LongitudinalPersonality"]),
       buttons=[lambda: tr("Aggressive"), lambda: tr("Standard"), lambda: tr("Relaxed")],
       button_width=300,

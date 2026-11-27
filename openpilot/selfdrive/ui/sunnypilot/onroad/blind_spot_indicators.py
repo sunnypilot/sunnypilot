@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.system.ui.lib.application import gui_app
@@ -25,10 +25,6 @@ class BlindSpotIndicators:
 
     self._blind_spot_left_alpha_filter.update(1.0 if CS.leftBlindspot else 0.0)
     self._blind_spot_right_alpha_filter.update(1.0 if CS.rightBlindspot else 0.0)
-
-  @property
-  def detected(self) -> bool:
-    return ui_state.blindspot and (self._blind_spot_left_alpha_filter.x > 0.01 or self._blind_spot_right_alpha_filter.x > 0.01)
 
   def render(self, rect: rl.Rectangle) -> None:
     if not ui_state.blindspot:

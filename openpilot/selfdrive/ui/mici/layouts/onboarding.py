@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import pyray as rl
+import raylib_nb as rl
 from collections.abc import Callable
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.qrcode import make_texture
@@ -9,7 +9,7 @@ from openpilot.system.ui.widgets import Widget
 from openpilot.system.ui.widgets.button import SmallCircleIconButton
 from openpilot.system.ui.widgets.scroller import NavScroller, Scroller
 from openpilot.system.ui.widgets.nav_widget import NavWidget
-from openpilot.system.ui.mici_setup import GreyBigButton, BigPillButton
+from openpilot.selfdrive.ui.mici.widgets.button import GreyBigButton, BigPillButton
 from openpilot.system.ui.widgets.label import gui_label
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.common.version import terms_version, training_version, terms_version_sp
@@ -125,11 +125,10 @@ class TrainingGuideDMTutorial(NavWidget):
     if device.awake and not ui_state.params.get_bool("IsDriverViewEnabled"):
       ui_state.params.put_bool("IsDriverViewEnabled", True)
 
-    sm = ui_state.sm
-    if sm.recv_frame.get("driverMonitoringState", 0) == 0:
+    if not ui_state.received_since_started("driverMonitoringState"):
       return
 
-    dm_state = sm["driverMonitoringState"]
+    dm_state = ui_state.sm["driverMonitoringState"]
     driver_data = self._dialog.driver_state_renderer.get_driver_data()
 
     if len(driver_data.faceOrientation) == 3:
