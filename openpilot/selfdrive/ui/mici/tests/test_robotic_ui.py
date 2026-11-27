@@ -179,3 +179,70 @@ class TestRoboticMoodEngine(OpenpilotTestCase):
     t1 = engine.update(snap_idle, now=40.0)
     t2 = engine.update(snap_idle, now=40.5)
     assert (t1.bounce_y != t2.bounce_y) or (t1.gaze_x != t2.gaze_x)
+
+  def test_music_analyzer_rejects_road_noise_and_speech_detects_music(self):
+    import numpy as np
+    from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.music_analyzer import (
+      DEFAULT_SAMPLE_RATE,
+      MusicAnalyzer,
+      MusicState,
+    )
+
+    sr = DEFAULT_SAMPLE_RATE
+    chunk_len = 800  # 50 ms @ 16 kHz
+    rng = np.random.default_rng(7)
+
+    # 1. Broadband cabin road/wind noise -> MUST be rejected
+    road_analyzer = MusicAnalyzer(sr)
+    for _ in range(90):  # 4.5 s
+      noise = rng.normal(0.0, 0.08, size=chunk_len).astype(np.float32)
+      state = road_analyzer.process_samples(noise)
+    assert state.is_music is False, f"Road noise falsely triggered music (conf={state.confidence:.2f})"
+
+    # 2. Simulated human talking (irregular vocal-band bursts with speech pauses) -> MUST be rejected
+    speech_analyzer = MusicAnalyzer(sr)
+    t_total = np.arange(90 * chunk_len, dtype=np.float32) / sr
+    # Speech formants (550Hz + 1200Hz) modulated by irregular syllables & pauses
+    vocal = 0.09 * np.sin(2 * np.pi * 550 * t_total) + 0.06 * np.sin(2 * np.pi * 1250 * t_total)
+    for idx in range(90):
+      # Irregular talk/pause pattern (approx 45% active)
+      speaking = (idx % 11) in (0, 1, 2, 5, 6)
+      seg = vocal[idx * chunk_len:(idx + 1) * chunk_len] * (1.0 if speaking else 0.02)
+      seg = seg + rng.normal(0.0, 0.01, size=chunk_len).astype(np.float32)
+      state = speech_analyzer.process_samples(seg)
+    assert state.is_music is False, f"Talking falsely triggered music (conf={state.confidence:.2f})"
+
+    # 3. Simulated rhythmic harmonic music (120 BPM kick + chords + hi-hat) -> MUST be detected
+    music_analyzer = MusicAnalyzer(sr)
+    beat_period = 0.5  # 120 BPM
+    for idx in range(100):  # 5.0 s
+      t = (idx * chunk_len + np.arange(chunk_len, dtype=np.float32)) / sr
+      beat_t = t % beat_period
+      kick = 0.22 * np.exp(-beat_t * 18.0) * np.sin(2 * np.pi * 95.0 * t)
+      chord = (
+        0.09 * np.sin(2 * np.pi * 261.6 * t)
+        + 0.07 * np.sin(2 * np.pi * 329.6 * t)
+        + 0.07 * np.sin(2 * np.pi * 392.0 * t)
+      )
+      hihat_t = (t + 0.25) % beat_period
+      hihat = 0.08 * np.exp(-hihat_t * 35.0) * np.sin(2 * np.pi * 5200.0 * t)
+      mix = (kick + chord + hihat).astype(np.float32)
+      state = music_analyzer.process_samples(mix)
+    assert state.is_music is True, f"Music was not detected (conf={state.confidence:.2f})"
+    assert max(state.bands) > 0.2
+
+    # 4. Mood engine enters MUSIC_GROOVE when cruising/idling, overridden immediately by alerts
+    engine = self._engine()
+    music_on = MusicState(is_music=True, confidence=0.85, beat_pulse=0.7, groove_phase=1.2, bpm=120.0, energy=0.7)
+    snap_cruise = DrivingSnapshot(started=True, engaged=True, status=UIStatus.ENGAGED, v_ego=25.0, music=music_on)
+    engine.update(snap_cruise, now=10.0)
+    engine.update(snap_cruise, now=15.0)
+    assert engine.mood == RoboticMood.MUSIC_GROOVE
+
+    # Alert overrides MUSIC_GROOVE immediately
+    snap_alert = DrivingSnapshot(
+      started=True, engaged=True, status=UIStatus.ENGAGED, v_ego=25.0, music=music_on,
+      alert=Alert("Pay Attention", "Eyes on road", status=AlertStatus.userPrompt),
+    )
+    engine.update(snap_alert, now=15.5)
+    assert engine.mood == RoboticMood.USER_PROMPT

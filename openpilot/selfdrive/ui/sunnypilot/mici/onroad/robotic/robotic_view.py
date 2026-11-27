@@ -12,10 +12,13 @@ from openpilot.selfdrive.ui.mici.onroad.augmented_road_view import BookmarkIcon
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.alert_overlay import RoboticAlertOverlay
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.expressions import (
   DrivingSnapshot,
+  RoboticMood,
   RoboticMoodEngine,
   snapshot_from_ui_state,
 )
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.face_renderer import ProceduralFaceRenderer
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.music_analyzer import MusicAnalyzer, MusicState
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.music_visualizer import MusicVisualizerRenderer
 from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.speed_arc_renderer import SpeedArcRenderer
 from openpilot.selfdrive.ui.sunnypilot.ui_state import OnroadTimerStatus
 from openpilot.selfdrive.ui.ui_state import UIStatus, ui_state
@@ -44,6 +47,8 @@ class RoboticOnroadView(Widget):
     self._face_renderer = ProceduralFaceRenderer()
     self._speed_renderer = SpeedArcRenderer()
     self._alert_overlay = RoboticAlertOverlay()
+    self._music_analyzer = MusicAnalyzer()
+    self._music_visualizer = MusicVisualizerRenderer()
 
     self._bookmark_icon = BookmarkIcon(self._on_bookmark_triggered)
 
@@ -120,7 +125,13 @@ class RoboticOnroadView(Widget):
       return
 
     alert = self._alert_overlay.get_alert()
+    if ui_state.sm.updated["rawAudioData"] and alert is None:
+      raw_audio = ui_state.sm["rawAudioData"]
+      self._music_analyzer.process_audio_bytes(raw_audio.data, int(raw_audio.sampleRate))
+    music_state = self._music_analyzer.step_visual_decay(1.0 / max(gui_app.target_fps, 1))
+
     snap = snapshot_from_ui_state(ui_state, alert)
+    snap.music = music_state
     self._render_from_snapshot(snap, alert)
 
     self._bookmark_icon.render(self.rect)
@@ -130,11 +141,17 @@ class RoboticOnroadView(Widget):
     speed_alpha = self._speed_blend.update(1.0 if self._mood_engine.showing_speed else 0.0)
     face_alpha = 1.0 - speed_alpha
 
-    # Shift eyes slightly upward when a bottom alert banner is visible
-    alert_shift = -26.0 if alert is not None else 0.0
+    # Shift eyes slightly upward when a bottom alert banner or music equalizer is visible
+    grooving = self._mood_engine.mood == RoboticMood.MUSIC_GROOVE and alert is None
+    alert_shift = -26.0 if alert is not None else (-14.0 if grooving else 0.0)
+    music_state = snap.music or MusicState()
 
+    viz_alpha = 0.0
     if face_alpha > 0.01:
+      viz_alpha = self._music_visualizer.render_background(self.rect, music_state, active=grooving)
       self._face_renderer.render(self.rect, eye_target, alpha=face_alpha, y_shift=alert_shift)
+      if viz_alpha > 0.05:
+        self._music_visualizer.render_foreground_notes(self.rect, music_state, alpha=viz_alpha * face_alpha)
       if alert is None:
         self._speed_renderer.render_corner_badge(self.rect, snap, alpha=face_alpha)
 

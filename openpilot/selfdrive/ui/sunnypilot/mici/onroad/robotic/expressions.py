@@ -13,6 +13,8 @@ import time
 from openpilot.cereal import log
 from openpilot.common.constants import CV
 from openpilot.selfdrive.ui.mici.onroad.alert_renderer import Alert
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.music_analyzer import MusicState
+from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic.music_visualizer import groove_prism_color
 from openpilot.selfdrive.ui.ui_state import UIStatus
 
 AlertStatus = log.SelfdriveState.AlertStatus
@@ -53,6 +55,7 @@ class RoboticMood(Enum):
   SLEEPY = "sleepy"
   SHARP_TURN = "sharp_turn"
   CURVE_FOCUS = "curve_focus"
+  MUSIC_GROOVE = "music_groove"
   CRUISING_HAPPY = "cruising_happy"
   IDLE_CURIOUS = "idle_curious"
 
@@ -148,6 +151,7 @@ class DrivingSnapshot:
   lane_change_blocked: bool = False
   dm_alert_level: int = 0       # 0=none, 1=warn, 2=critical
   alert: Alert | None = None
+  music: MusicState | None = None
 
 
 class RoboticMoodEngine:
@@ -370,14 +374,16 @@ class RoboticMoodEngine:
       self.mood = RoboticMood.BOOST_ACCEL
     elif blinker_side != 0:
       self.mood = RoboticMood.TURN_SIGNAL
-    elif not snap.started or standstill_dur >= STANDSTILL_SLEEPY_DELAY:
-      self.mood = RoboticMood.SLEEPY
-    elif standstill_dur >= STANDSTILL_POUT_DELAY:
-      self.mood = RoboticMood.POUT_STANDSTILL
     elif abs(snap.steering_angle_deg) >= SHARP_TURN_THRESHOLD and not snap.standstill:
       self.mood = RoboticMood.SHARP_TURN
     elif abs(snap.steering_angle_deg) > CURVE_STEER_THRESHOLD and not snap.standstill:
       self.mood = RoboticMood.CURVE_FOCUS
+    elif snap.started and snap.music is not None and snap.music.is_music and alert is None:
+      self.mood = RoboticMood.MUSIC_GROOVE
+    elif not snap.started or standstill_dur >= STANDSTILL_SLEEPY_DELAY:
+      self.mood = RoboticMood.SLEEPY
+    elif standstill_dur >= STANDSTILL_POUT_DELAY:
+      self.mood = RoboticMood.POUT_STANDSTILL
     elif snap.engaged:
       self.mood = RoboticMood.CRUISING_HAPPY
     else:
@@ -545,6 +551,24 @@ class RoboticMoodEngine:
       target.tilt_y = direction * 7.0
       target.cheek_blush = 0.45
       target.mouth = MouthGlyph.SMILE
+
+    elif self.mood == RoboticMood.MUSIC_GROOVE:
+      m = snap.music or MusicState()
+      sway = math.sin(m.groove_phase)
+      beat = m.beat_pulse
+      target.color = groove_prism_color(t)
+      target.width = 108.0
+      target.height = 112.0
+      target.gaze_x = sway * 22.0
+      target.gaze_y = -6.0 - beat * 6.0
+      target.tilt_y = sway * 12.0
+      target.bounce_y = -14.0 * beat - abs(sway) * 6.0 - 8.0
+      target.scale_x = 1.0 + 0.11 * beat
+      target.scale_y = 1.0 - 0.08 * beat
+      target.cheek_blush = 0.85 + 0.15 * beat
+      target.mouth = MouthGlyph.BIG_GRIN
+      if beat > 0.58:
+        target.glyph = EyeGlyph.CRESCENT
 
     elif self.mood == RoboticMood.CRUISING_HAPPY:
       target.width = 106.0
