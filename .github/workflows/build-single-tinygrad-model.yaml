@@ -11,6 +11,11 @@ on:
         description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
+      from_sunnypilot:
+        description: 'The ref is on sunnypilot/sunnypilot (custom models): skip trying commaai/openpilot first'
+        required: false
+        type: boolean
+        default: false
       recompiled_dir:
         description: 'Existing recompiled directory number (e.g. 1 for recompiled1)'
         required: true
@@ -34,6 +39,11 @@ on:
         required: false
         type: string
         default: 'qcom'
+      on_device:
+        description: 'Compile on the tici / chestnut runner instead of on a hosted runner with tinygrad''s qcom / amd mock'
+        required: false
+        type: boolean
+        default: false
       hf_repo:
         description: 'Hugging Face dataset repository (e.g. sunnypilot/sunnypilot_models_v1)'
         required: false
@@ -62,6 +72,11 @@ on:
         description: 'Custom name for the model (no date, only name)'
         required: false
         type: string
+      from_sunnypilot:
+        description: 'The ref is on sunnypilot/sunnypilot (custom models): skip trying commaai/openpilot first'
+        required: false
+        type: boolean
+        default: false
       is_20hz:
         description: 'Is this a 20Hz model'
         required: false
@@ -85,7 +100,7 @@ on:
           - Release Models
           - 2026 World Models
           - 2026 Deep RL Models
-          - Custom Merge Models
+          - Custom sunnypilot Models
           - Other
       custom_model_folder:
         description: 'Custom model folder name (if "Other" selected)'
@@ -107,6 +122,11 @@ on:
         options:
           - qcom
           - chestnut
+      on_device:
+        description: 'Compile on the tici / chestnut runner instead of on a hosted runner with tinygrad''s qcom / amd mock'
+        required: false
+        type: boolean
+        default: false
       hf_repo:
         description: 'Hugging Face dataset repository'
         required: false
@@ -127,9 +147,11 @@ jobs:
     with:
       upstream_branch: ${{ inputs.upstream_branch }}
       custom_name: ${{ inputs.custom_name || inputs.upstream_branch }}
+      from_sunnypilot: ${{ inputs.from_sunnypilot || false }}
       is_20hz: ${{ inputs.is_20hz }}
       artifact_suffix: ${{ inputs.artifact_suffix }}
       target_hardware: ${{ inputs.target_hardware }}
+      on_device: ${{ inputs.on_device || false }}
     secrets: inherit
 
   publish_model:

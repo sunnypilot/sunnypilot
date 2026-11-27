@@ -5,6 +5,7 @@ import time
 import unittest
 import numpy as np
 from dataclasses import dataclass
+from openpilot.common.hardware import HARDWARE
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.common.utils import tabulate
 
@@ -13,12 +14,13 @@ from openpilot.cereal.services import SERVICE_LIST
 from opendbc.car.car_helpers import get_demo_car_params
 from openpilot.common.mock import mock_messages
 from openpilot.common.params import Params
-from openpilot.common.hardware.comma.power_monitor import get_power
 from openpilot.system.manager.process_config import managed_processes
 from openpilot.system.manager.manager import manager_cleanup
 
-SAMPLE_TIME = 2       # seconds to sample power
+SAMPLE_TIME = 5       # seconds to sample power, longer than the ~3 s power bumps the device has
+MAX_SPREAD = 0.1      # W, a wider window caught a ramp or a spike, so it isn't settled
 MAX_WARMUP_TIME = 30  # seconds to wait for SAMPLE_TIME consecutive valid samples
+MICI = HARDWARE.get_device_type() == "mici"
 
 @dataclass
 class Proc:
@@ -33,11 +35,12 @@ class Proc:
     return '+'.join(self.procs)
 
 
+# how much each adds to the DUT's power, which the UP measures on its OBD-C port
 PROCS = [
-  Proc(['camerad'], 1.65, atol=0.4, msgs=['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']),
-  Proc(['modeld'], 1.5, atol=0.2, msgs=['modelV2']),
+  Proc(['camerad'], 1.0 if MICI else 1.65, atol=0.4, msgs=['narrowRoadCameraState', 'wideRoadCameraState', 'cabinCameraState']),
+  Proc(['modeld'], 1.5 if MICI else 1.65, atol=0.2, msgs=['modelV2']),
   Proc(['dmonitoringmodeld'], 0.65, atol=0.35, msgs=['driverStateV2']),
-  Proc(['encoderd'], 0.23, msgs=[]),
+  Proc(['encoderd'], 0.23, msgs=['narrowRoadEncodeData', 'wideRoadEncodeData']),
 ]
 
 
@@ -46,6 +49,8 @@ class TestPowerDraw(OpenpilotTestCase):
 
   def setup_method(self):
     Params().put("CarParams", get_demo_car_params().to_bytes(), block=True)
+    from ultimate_provisioning import UP  # only on a DUT, from its UP's up run or up ssh
+    self.up = UP.remote()
 
   def teardown_method(self):
     manager_cleanup()
@@ -68,7 +73,7 @@ class TestPowerDraw(OpenpilotTestCase):
         msg_counts[msg] += count
     return msg_counts
 
-  def get_power_with_warmup_for_target(self, proc, prev):
+  def get_settled_power(self, proc):
     socks = {msg: messaging.sub_sock(msg) for msg in proc.msgs}
     for sock in socks.values():
       messaging.drain_sock_raw(sock)
@@ -78,7 +83,7 @@ class TestPowerDraw(OpenpilotTestCase):
     start_time = time.monotonic()
 
     while (time.monotonic() - start_time) < MAX_WARMUP_TIME:
-      power = get_power(1)
+      power = self.up.get_power(1)
       iteration_msg_counts = {}
       for msg,sock in socks.items():
         iteration_msg_counts[msg] = len(messaging.drain_sock_raw(sock))
@@ -88,16 +93,17 @@ class TestPowerDraw(OpenpilotTestCase):
         continue
 
       msg_counts = self.tabulate_msg_counts(msgs_and_power)
-      now = np.mean([m[0] for m in msgs_and_power])
+      powers = [m[0] for m in msgs_and_power]
+      now = np.mean(powers)
 
-      if self.valid_msg_count(proc, msg_counts) and self.valid_power_draw(proc, now - prev):
+      if self.valid_msg_count(proc, msg_counts) and np.ptp(powers) < MAX_SPREAD:
         break
 
     return now, msg_counts, time.monotonic() - start_time - SAMPLE_TIME
 
   @mock_messages(['deviceMotion'])
   def test_camera_procs(self, subtests):
-    baseline = get_power()
+    baseline, _, _ = self.get_settled_power(Proc([], 0., msgs=[]))
 
     prev = baseline
     used = {}
@@ -107,7 +113,7 @@ class TestPowerDraw(OpenpilotTestCase):
     for proc in PROCS:
       for p in proc.procs:
         managed_processes[p].start()
-      now, local_msg_counts, warmup_time[proc.name] = self.get_power_with_warmup_for_target(proc, prev)
+      now, local_msg_counts, warmup_time[proc.name] = self.get_settled_power(proc)
       msg_counts.update(local_msg_counts)
 
       used[proc.name] = now - prev

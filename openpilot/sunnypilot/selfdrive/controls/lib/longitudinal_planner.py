@@ -10,6 +10,7 @@ from opendbc.car import structs
 from openpilot.common.constants import CV
 from openpilot.selfdrive.car.cruise import V_CRUISE_MAX
 from openpilot.selfdrive.controls.lib.accel_boost import AccelBoost
+from openpilot.selfdrive.controls.lib.curve_speed import CurveSpeed
 from openpilot.sunnypilot.selfdrive.controls.lib.accel_boost import AccelBoostSP
 from openpilot.sunnypilot.selfdrive.controls.lib.e2e_alerts_helper import E2EAlertsHelper
 from openpilot.sunnypilot.selfdrive.controls.lib.smart_cruise_control.smart_cruise_control import SmartCruiseControl
@@ -19,6 +20,14 @@ from openpilot.sunnypilot.selfdrive.selfdrived.events import EventsSP
 from openpilot.sunnypilot.models.helpers import get_active_bundle
 
 LongitudinalPlanSource = custom.LongitudinalPlanSP.LongitudinalPlanSource
+
+
+class NoCurveSpeed:
+  def reset(self):
+    pass
+
+  def update(self, model, roll) -> float:
+    return 0.0
 
 
 class LongitudinalPlannerSP:
@@ -67,9 +76,16 @@ class LongitudinalPlannerSP:
     self.output_v_target, self.output_a_target = targets[self.source]
     return self.output_v_target, self.output_a_target
 
+  def _update_curve_speed(self) -> None:
+    # with Smart Cruise Control vision on, curve slowdown is its job, not upstream's e2e curve offset
+    scc_curves = self.scc.vision.enabled and self.openpilot_longitudinal
+    if scc_curves != isinstance(self.curve_speed, NoCurveSpeed):
+      self.curve_speed = NoCurveSpeed() if scc_curves else CurveSpeed(self.dt)
+
   def update(self, sm: messaging.SubMaster) -> None:
     if self.accel_boost_sp.update_params():
       self.accel_boost = self.accel_boost_sp if self.accel_boost_sp.enabled and self.openpilot_longitudinal else AccelBoost()
+    self._update_curve_speed()
 
     self.events_sp.clear()
     self.e2e_alerts_helper.update(sm, self.events_sp)

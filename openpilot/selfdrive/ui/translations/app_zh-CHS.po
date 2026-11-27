@@ -48,11 +48,19 @@ msgstr "<br><br>转向延迟校准完成。"
 msgid "<br><br>Steering lag calibration is {}% complete."
 msgstr "<br><br>转向延迟校准已完成 {}%。"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "A driver assistance system is not a self-driving car."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "A green border will appear around the screen whenever openpilot is engaged."
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "ADD"
 msgstr "添加"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "APN Setting"
 msgstr "APN 设置"
 
@@ -60,7 +68,11 @@ msgstr "APN 设置"
 msgid "Acknowledge Excessive Actuation"
 msgstr "确认过度作动"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Adjust the Max Speed"
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Advanced"
 msgstr "高级"
 
@@ -71,6 +83,10 @@ msgstr "激进"
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Agree"
 msgstr "同意"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Alongside this path, lane lines are displayed in white and road edges are displayed in red."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Always-On Driver Monitoring"
@@ -92,8 +108,13 @@ msgstr "确定要重置校准吗？"
 msgid "Are you sure you want to uninstall?"
 msgstr "确定要卸载吗？"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Avoid construction barriers, cones, or pedestrians."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Back"
 msgstr "返回"
 
@@ -101,9 +122,21 @@ msgstr "返回"
 msgid "Become a comma prime member at connect.comma.ai"
 msgstr "前往 connect.comma.ai 成为 comma prime 会员"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Before we continue, please confirm the following:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Begin Training"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Bookmark connect.comma.ai to your home screen to use it like an app"
 msgstr "将 connect.comma.ai 添加到主屏幕，像应用一样使用"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Both steering and distance to the lead car will be managed by openpilot until the brake pedal is pressed to disengage."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "CHANGE"
@@ -114,22 +147,22 @@ msgid "CHECK"
 msgstr "检查"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECT"
 msgstr "连接"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECTING..."
 msgstr "连接中..."
 
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/keyboard.py
-#: system/ui/widgets/network.py
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/keyboard.py
+#: openpilot/system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Cancel"
 msgstr "取消"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Cellular Metered"
 msgstr "蜂窝计量"
 
@@ -137,21 +170,29 @@ msgstr "蜂窝计量"
 msgid "Change Language"
 msgstr "更改语言"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Change lanes with driver assistance."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Changing this setting will restart sunnypilot if the car is powered on."
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Choose your sponsorship tier and confirm your support"
 msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
-msgstr "点击“添加新设备”，扫描右侧二维码"
+msgstr "点击“add new device”，扫描右侧二维码"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"
 msgstr "关闭"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Congratulations! You have completed openpilot training."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Current Version"
@@ -169,6 +210,10 @@ msgstr "拒绝"
 msgid "Decline, uninstall sunnypilot"
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Determine a path to drive."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Developer"
 msgstr "开发者"
@@ -180,6 +225,10 @@ msgstr "设备"
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Disengage on Accelerator Pedal"
 msgstr "踩下加速踏板时脱离"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Disengage openpilot"
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Disengage to Power Off"
@@ -197,6 +246,10 @@ msgstr "脱离以重置校准"
 msgid "Display speed in km/h instead of mph."
 msgstr "以 km/h 显示速度（非 mph）。"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Distracted Driving"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Dongle ID"
 msgstr "设备 ID"
@@ -209,11 +262,19 @@ msgstr "下载"
 msgid "Driver Camera"
 msgstr "车内摄像头"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Driver Distracted"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Driver Monitoring"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Driving Personality"
 msgstr "驾驶风格"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "EDIT"
 msgstr "编辑"
 
@@ -225,11 +286,7 @@ msgstr "错误"
 msgid "ETH"
 msgstr "ETH"
 
-#: openpilot/selfdrive/ui/widgets/exp_mode_button.py
-msgid "EXPERIMENTAL MODE ON"
-msgstr "实验模式已开启"
-
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Early Access: Become a sunnypilot Sponsor"
 msgstr ""
 
@@ -245,7 +302,7 @@ msgstr "启用 ADB"
 msgid "Enable Lane Departure Warnings"
 msgstr "启用车道偏离警示"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Roaming"
 msgstr "启用漫游"
 
@@ -253,7 +310,7 @@ msgstr "启用漫游"
 msgid "Enable SSH"
 msgstr "启用 SSH"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Tethering"
 msgstr "启用网络共享"
 
@@ -265,27 +322,27 @@ msgstr ""
 msgid "Enable sunnypilot"
 msgstr ""
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode."
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Engage openpilot"
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter APN"
 msgstr "输入 APN"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter SSID"
 msgstr "输入 SSID"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter new tethering password"
 msgstr "输入新的网络共享密码"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter password"
 msgstr "输入密码"
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Enter search query"
 msgstr ""
 
@@ -293,19 +350,11 @@ msgstr ""
 msgid "Enter your GitHub username"
 msgstr "输入您的 GitHub 用户名"
 
-#: system/ui/widgets/list_view.py
+#: openpilot/system/ui/widgets/list_view.py
 msgid "Error"
 msgstr "错误"
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Experimental Mode"
-msgstr "实验模式"
-
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control."
-msgstr "此车型当前无法使用实验模式，因为纵向控制使用的是原厂 ACC。"
-
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "FORGETTING..."
 msgstr "正在遗忘..."
 
@@ -313,26 +362,28 @@ msgstr "正在遗忘..."
 msgid "Finish Setup"
 msgstr "完成设置"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Finish Training"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Firehose"
 msgstr "数据洪流"
 
 #: openpilot/selfdrive/ui/layouts/settings/firehose.py
+#: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Firehose Mode"
 msgstr "Firehose 模式"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Follow the prompts to complete the pairing process"
 msgstr ""
 
-#: system/ui/widgets/network.py
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Following Distance"
-msgstr ""
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget"
 msgstr "忘记"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget Wi-Fi Network \"{}\"?"
 msgstr "要忘记 Wi‑Fi 网络“{}”吗？"
 
@@ -348,20 +399,74 @@ msgstr "在手机上前往 https://connect.comma.ai"
 msgid "HIGH"
 msgstr "高"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Help improve driver monitoring by including your driving data in the training data set."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Hidden Network"
 msgstr "隐藏网络"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to change lanes with openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to disengage openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to engage and control openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will be ready to take over at any time!"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will be ready to take over at any time."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will keep my eyes on the road."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "INSTALL"
 msgstr "安装"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "IP Address"
 msgstr "IP 地址"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If no triangle is present, your car may be using its stock ACC system, and some openpilot features may not be available."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If openpilot senses that your eyes aren't on the road, the system will go through a series of alerts and actions."
+msgstr ""
+
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If the problem persists, the system will begin decelerating the vehicle."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If you are distracted, openpilot will show alerts of increasing severity, and you will be locked out from engaging."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If you are traveling above 20 mph (32 km/h), openpilot can perform a lane change."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Improve Driver Monitoring"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Initial Max Speed"
 msgstr ""
@@ -370,13 +475,21 @@ msgstr ""
 msgid "Install Update"
 msgstr "安装更新"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Joystick Debug Mode"
 msgstr "摇杆调试模式"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Keep in mind that it is not capable of checking if a lane change is safe. This is your job."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Keep in mind that openpilot will not recognize certain scenarios including construction zones, close cut-ins, or pedestrians."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "LOADING"
@@ -390,13 +503,34 @@ msgstr "LTE"
 msgid "Lateral Maneuver Mode"
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Let's review the functionality and limitations of openpilot before getting started."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Let's review. openpilot can:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Limited Features"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Longitudinal Maneuver Mode"
 msgstr "纵向操作模式"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "MAX"
 msgstr "最大"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Maintain a maximum speed."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Maintain a safe distance from a lead car."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Maximize your training data uploads to improve openpilot's driving models."
@@ -414,6 +548,10 @@ msgstr "否"
 msgid "Network"
 msgstr "网络"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "No"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "No SSH keys found for user '{}'"
 msgstr "未找到用户“{}”的 SSH 密钥"
@@ -426,15 +564,18 @@ msgstr "暂无发行说明。"
 msgid "OFFLINE"
 msgstr "离线"
 
-#: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/html_render.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/html_render.py
 msgid "OK"
 msgstr "确定"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "ONLINE"
 msgstr "在线"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Once initiated, openpilot will change lanes regardless if another vehicle is present."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Open"
@@ -464,7 +605,7 @@ msgstr "配对设备"
 msgid "Pair device"
 msgstr "配对设备"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Pair your GitHub account"
 msgstr ""
 
@@ -477,6 +618,14 @@ msgstr "将设备配对到您的 comma 账号"
 msgid "Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."
 msgstr "将设备与 comma connect（connect.comma.ai）配对，领取您的 comma prime 优惠。"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Pay Attention"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Perform Lane Change"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Please connect to Wi-Fi to complete initial pairing"
 msgstr "请连接 Wi‑Fi 以完成初始配对"
@@ -485,11 +634,15 @@ msgstr "请连接 Wi‑Fi 以完成初始配对"
 msgid "Power Off"
 msgstr "关机"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Press + or - on your cruise control inputs to adjust the max speed shown in the upper left corner."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered Wi-Fi connection"
 msgstr "在计量制 Wi‑Fi 连接时避免大量上传"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered cellular connection"
 msgstr "在计量制蜂窝网络时避免大量上传"
 
@@ -513,8 +666,12 @@ msgstr "重置"
 msgid "REVIEW"
 msgstr "查看"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Re-enter the \"sunnylink\" panel to verify sponsorship status"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "React to unsafe situations like close vehicle cut-ins or road hazards."
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
@@ -569,6 +726,10 @@ msgstr "重置"
 msgid "Reset Calibration"
 msgstr "重置校准"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Restart"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Review Training Guide"
 msgstr "查看训练指南"
@@ -585,23 +746,27 @@ msgstr "选择"
 msgid "SSH Keys"
 msgstr "SSH 密钥"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to login to your GitHub account"
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Scanning Wi-Fi networks..."
 msgstr "正在扫描 Wi‑Fi 网络…"
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Search"
 msgstr ""
 
-#: system/ui/widgets/option_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "See other cars during a lane change."
+msgstr ""
+
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Select"
 msgstr "选择"
 
@@ -629,6 +794,10 @@ msgstr "软件"
 msgid "Standard"
 msgstr "标准"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Stay engaged while the driver is distracted."
+msgstr ""
+
 #: openpilot/selfdrive/ui/onroad/alert_renderer.py
 msgid "System Unresponsive"
 msgstr "系统无响应"
@@ -641,13 +810,81 @@ msgstr "请立即接管控制"
 msgid "TEMP"
 msgstr "温度"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the alert to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the brake pedal to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the driver to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the driving path to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the lead car indicator"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the max speed to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the steering wheel to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap “SET” in the image to continue"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Target Branch"
 msgstr "目标分支"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Tethering Password"
 msgstr "网络共享密码"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The Driving Path"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The Lead Car Indicator"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The lead car indicator is displayed as a triangle under the lead car."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The sequence of turn signal and wheel nudge will prompt openpilot to change lanes."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "These are usually located on the steering wheel or on a control lever near the steering column."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This guide can be replayed at any time from the device settings."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This is only a maximum, not a set speed. openpilot may drive slower for curves, the road scene, red lights, and stop signs."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This means openpilot is designed to work with you, not without you."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "To read more about openpilot, visit github.com/commaai/openpilot and join the community at discord.comma.ai."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Toggles"
@@ -701,25 +938,57 @@ msgstr "查看"
 msgid "Waiting to start"
 msgstr "等待开始"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Welcome to openpilot"
+msgstr "欢迎使用 openpilot"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Welcome to sunnypilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "What is openpilot?"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "When enabled, pressing the accelerator pedal will disengage sunnypilot."
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When it's safe, gently nudge the steering wheel towards your desired lane."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When you are ready to engage openpilot at a comfortable speed, engage the cruise control system and press “SET” to begin."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When you encounter a potentially unsafe situation or need to exit a highway, disengage openpilot by pressing the brake pedal."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "While openpilot is engaged, you may keep your hands on the wheel to override steering controls."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "Wi-Fi"
 msgstr "Wi‑Fi"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wi-Fi Network Metered"
 msgstr "Wi‑Fi 计量网络"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "With openpilot engaged, turn on your signal and check your surroundings."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Wrong password"
 msgstr "密码错误"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Yes"
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "You must accept the Terms of Service in order to use sunnypilot."
@@ -729,7 +998,23 @@ msgstr ""
 msgid "You must accept the Terms of Service to use sunnypilot. Read the latest terms at https://sunnypilot.ai/terms before continuing."
 msgstr ""
 
-#: openpilot/selfdrive/ui/onroad/driver_camera_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "You must pay attention at all times."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "You must stay alert and be ready to retake control of the vehicle at all times."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Your attention is required at all times to drive with openpilot."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Your preference can be changed at any time in Settings. Would you like to share your data?"
+msgstr ""
+
+#: openpilot/selfdrive/ui/onroad/cabin_camera_dialog.py
 msgid "camera starting"
 msgstr "相机启动中"
 
@@ -741,7 +1026,7 @@ msgstr "检查中..."
 msgid "comma prime"
 msgstr "comma prime"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "default"
 msgstr "默认"
 
@@ -761,7 +1046,7 @@ msgstr "检查更新失败"
 msgid "finalizing update..."
 msgstr "正在完成更新..."
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "for \"{}\""
 msgstr "用于“{}”"
 
@@ -770,7 +1055,7 @@ msgstr "用于“{}”"
 msgid "km/h"
 msgstr "km/h"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "leave blank for automatic configuration"
 msgstr "留空以自动配置"
 
@@ -778,11 +1063,12 @@ msgstr "留空以自动配置"
 msgid "left"
 msgstr "左"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "metered"
 msgstr "计量"
 
 #: openpilot/selfdrive/ui/layouts/settings/initial_cruise_speed.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "mph"
 msgstr "mph"
@@ -795,15 +1081,29 @@ msgstr "从不"
 msgid "now"
 msgstr "现在"
 
-#: openpilot/selfdrive/ui/layouts/settings/developer.py
-msgid "openpilot Longitudinal Control (Alpha)"
-msgstr "openpilot 纵向控制（Alpha）"
-#: openpilot/selfdrive/ui/onroad/alert_renderer.py
-msgid "openpilot Unavailable"
-msgstr "openpilot 无法使用"
-#: openpilot/selfdrive/ui/layouts/settings/device.py
-msgid "openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
-msgstr "openpilot 要求设备安装在左右 4°、上 5° 或下 9° 以内。"
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot can detect 2 cars simultaneously. The second triangle will appear when a cut-in is detected."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot cannot:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot is an advanced driver assistance system."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot is controlled using your car's cruise control inputs."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot monitors your awareness through the device's driver-facing camera."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot uses the road-facing camera to plan the best path to drive."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "right"
@@ -817,15 +1117,11 @@ msgstr ""
 msgid "sunnypilot Unavailable"
 msgstr ""
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "sunnypilot longitudinal control may come in a future update."
-msgstr ""
-
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "unmetered"
 msgstr "不限流量"
 
@@ -869,17 +1165,7 @@ msgid_plural "{} minutes ago"
 msgstr[0] "{} 分钟前"
 msgstr[1] "{} 分钟前"
 
-#: openpilot/selfdrive/ui/layouts/settings/firehose.py
-msgid "{} segment of your driving is in the training dataset so far."
-msgid_plural "{} segments of your driving is in the training dataset so far."
-msgstr[0] "目前已有 {} 个您的驾驶片段被纳入训练数据集。"
-msgstr[1] "目前已有 {} 个您的驾驶片段被纳入训练数据集。"
-
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "✓ SUBSCRIBED"
 msgstr "✓ 已订阅"
-
-#: openpilot/selfdrive/ui/widgets/setup.py
-msgid "🔥 Firehose Mode 🔥"
-msgstr "🔥 Firehose 模式 🔥"
 

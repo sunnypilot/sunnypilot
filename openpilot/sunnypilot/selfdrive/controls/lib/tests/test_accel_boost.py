@@ -26,7 +26,7 @@ def make_sm(brake_prob=0.05, gas_prob=0.3, lat_accel=0.0, v_ego=30.0, personalit
 def settle(sm, frames=100):
   boost = AccelBoostSP()
   for _ in range(frames):
-    boost.update(sm, 0.0, 9.0, 9.0)
+    boost.update(sm, 0.0, 0.0)
   return boost.total_boost
 
 
@@ -54,17 +54,24 @@ class TestAccelBoostSP(OpenpilotTestCase):
   def test_disabled_resets(self):
     boost = AccelBoostSP()
     for _ in range(100):
-      boost.update(make_sm(), 0.0, 9.0, 9.0)
-    assert boost.update(make_sm(enabled=False), 0.0, 9.0, 9.0) == 0.0
+      boost.update(make_sm(), 0.0, 0.0)
+    assert boost.update(make_sm(enabled=False), 0.0, 0.0) == 0.0
+    assert boost.boost == 0.0 and boost.total_boost == 0.0
+
+  def test_reset(self):
+    boost = AccelBoostSP()
+    for _ in range(100):
+      boost.update(make_sm(), 0.0, 0.0)
+    boost.reset()
     assert boost.boost == 0.0 and boost.total_boost == 0.0
 
   def test_build_and_release_rates(self):
     boost = AccelBoostSP()
-    boost.update(make_sm(), 0.0, 9.0, 9.0)
+    boost.update(make_sm(), 0.0, 0.0)
     assert abs(boost.total_boost - 0.01) < 1e-6
     for _ in range(100):
-      boost.update(make_sm(), 0.0, 9.0, 9.0)
-    boost.update(make_sm(brake_prob=0.5), 0.0, 9.0, 9.0)
+      boost.update(make_sm(), 0.0, 0.0)
+    boost.update(make_sm(brake_prob=0.5), 0.0, 0.0)
     assert abs(boost.total_boost - (ACCEL_BOOST_MAX[0] - 0.05)) < 1e-6
 
   def test_param_switch(self):
@@ -73,7 +80,7 @@ class TestAccelBoostSP(OpenpilotTestCase):
     params.put_bool("AccelBoostSP", True, block=True)
     assert boost.update_params() and boost.enabled
     for _ in range(100):
-      boost.update(make_sm(), 0.0, 9.0, 9.0)
+      boost.update(make_sm(), 0.0, 0.0)
     params.put_bool("AccelBoostSP", False, block=True)
     for _ in range(int(PARAMS_UPDATE_PERIOD / DT_MDL) - 1):
       assert not boost.update_params()

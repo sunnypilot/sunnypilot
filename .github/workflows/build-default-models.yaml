@@ -89,7 +89,7 @@ jobs:
           submodules: recursive
 
       - name: Pull small ONNX via LFS
-        run: git lfs pull -I "${{ env.SMALL_ONNX }}"
+        run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
 
       - name: Set environment variables
@@ -173,7 +173,7 @@ jobs:
           submodules: recursive
 
       - name: Pull big PKL via LFS
-        run: git lfs pull -I "${{ env.BIG_PKL }}"
+        run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
       - name: Set environment variables
         run: |
@@ -196,9 +196,9 @@ jobs:
           export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
           python3 -c "
           import time
-          from openpilot.system.hardware.chestnut.flash import link_up
+          from openpilot.sunnypilot.modeld_v2.compile_modeld import chestnut_link_up
           for i in range(10):
-              if link_up():
+              if chestnut_link_up():
                   print(f'PCIe link up after {i+1} attempt(s)')
                   break
               time.sleep(1)
@@ -296,7 +296,7 @@ jobs:
 
       - name: Pull LFS for resolved ONNX files
         if: ${{ needs.resolve.outputs.onnx_path != '' }}
-        run: git lfs pull -I "${{ needs.resolve.outputs.onnx_path }}"
+        run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
       - name: Install huggingface_hub
         run: pip install --upgrade "huggingface_hub>=0.22.0"
@@ -415,7 +415,7 @@ jobs:
           submodules: recursive
 
       - name: Pull DM ONNX via LFS
-        run: git lfs pull -I "${{ env.DM_ONNX }}"
+        run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
       - name: Set environment variables
         run: |
