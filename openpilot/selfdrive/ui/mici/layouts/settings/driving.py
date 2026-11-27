@@ -28,9 +28,14 @@ class DrivingLayoutMici(NavScroller):
     enable_openpilot = BigParamControl("enable sunnypilot", "OpenpilotEnabledToggle", toggle_callback=restart_needed_callback,
                                        description="Enable to use sunnypilot driver assistance.\n" +
                                                    "Disable to use your car's stock driver assistance.")
-
+    robotic_ui_toggle = BigParamControl(
+      "robotic companion UI",
+      "MiciRoboticUI",
+      description="Replace the onroad camera view with an expressive EMO-inspired robotic face and robotic alert voices.",
+    )
 
     self._scroller.add_widgets([
+      robotic_ui_toggle,
       self._personality_toggle,
       self._initial_cruise_speed,
       always_on_dm_toggle,
@@ -40,6 +45,7 @@ class DrivingLayoutMici(NavScroller):
 
     # Toggle lists
     self._refresh_toggles = (
+      ("MiciRoboticUI", robotic_ui_toggle),
       ("IsLdwEnabled", ldw_toggle),
       ("AlwaysOnDM", always_on_dm_toggle),
       ("OpenpilotEnabledToggle", enable_openpilot),

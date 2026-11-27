@@ -15,6 +15,7 @@ from openpilot.system.ui.lib.application import gui_app
 if gui_app.sunnypilot_ui():
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.settings import SettingsLayoutSP as SettingsLayout
   from openpilot.selfdrive.ui.sunnypilot.mici.layouts.home import MiciHomeLayoutSP as MiciHomeLayout
+  from openpilot.selfdrive.ui.sunnypilot.mici.onroad.robotic import RoboticOnroadView
 
 ONROAD_DELAY = 2.5  # seconds
 GREET_IGNITION_OFF_TIME = 60 * 60  # greet again when the car turns on after being off this long
@@ -37,23 +38,34 @@ class MiciMainLayout(Scroller):
     self._alerts_layout = MiciOffroadAlerts()
     self._settings_layout = SettingsLayout()
     self._car_onroad_layout = AugmentedRoadView(bookmark_callback=self._on_bookmark_clicked)
+    self._robotic_onroad_layout = RoboticOnroadView(bookmark_callback=self._on_bookmark_clicked) if gui_app.sunnypilot_ui() else None
     self._body_onroad_layout = BodyLayout()
+    self._prev_robotic_ui = bool(gui_app.sunnypilot_ui() and ui_state.mici_robotic_ui)
 
     # Initialize widget rects
-    for widget in (self._home_layout, self._alerts_layout, self._settings_layout,
-                   self._car_onroad_layout, self._body_onroad_layout):
+    all_widgets = [self._home_layout, self._alerts_layout, self._settings_layout,
+                   self._car_onroad_layout, self._body_onroad_layout]
+    if self._robotic_onroad_layout is not None:
+      all_widgets.append(self._robotic_onroad_layout)
+    for widget in all_widgets:
       # TODO: set parent rect and use it if never passed rect from render (like in Scroller)
       widget.set_rect(rl.Rectangle(0, 0, gui_app.width, gui_app.height))
 
-    self._scroller.add_widgets([
+    scroller_widgets = [
       self._home_layout,
       self._car_onroad_layout,
-      self._body_onroad_layout,
-    ])
+    ]
+    if self._robotic_onroad_layout is not None:
+      scroller_widgets.append(self._robotic_onroad_layout)
+    scroller_widgets.append(self._body_onroad_layout)
+    self._scroller.add_widgets(scroller_widgets)
     self._scroller.set_reset_scroll_at_show(False)
 
     # Disable scrolling when onroad is interacting with bookmark
-    self._scroller.set_scrolling_enabled(lambda: not self._car_onroad_layout.is_swiping_left())
+    self._scroller.set_scrolling_enabled(
+      lambda: not (self._car_onroad_layout.is_swiping_left() or
+                   (self._robotic_onroad_layout is not None and self._robotic_onroad_layout.is_swiping_left()))
+    )
 
     # Set callbacks
     self._setup_callbacks()
@@ -72,7 +84,11 @@ class MiciMainLayout(Scroller):
   @property
   def _onroad_layout(self) -> Widget:
     # For scroll_to
-    return self._body_onroad_layout if ui_state.is_body else self._car_onroad_layout
+    if ui_state.is_body:
+      return self._body_onroad_layout
+    if self._robotic_onroad_layout is not None and ui_state.mici_robotic_ui:
+      return self._robotic_onroad_layout
+    return self._car_onroad_layout
 
   def _setup_callbacks(self):
     self._alerts_layout.set_pairing_callback(self._settings_layout.show_pairing)
@@ -82,7 +98,10 @@ class MiciMainLayout(Scroller):
       alert_count_callback=self._alerts_layout.active_alerts,
       alert_icon_callback=self._alerts_layout.highest_severity_icon,
     )
-    for layout in (self._car_onroad_layout, self._body_onroad_layout):
+    onroad_layouts = [self._car_onroad_layout, self._body_onroad_layout]
+    if self._robotic_onroad_layout is not None:
+      onroad_layouts.append(self._robotic_onroad_layout)
+    for layout in onroad_layouts:
       layout.set_click_callback(lambda: self._scroll_to(self._home_layout))
 
     device.add_interactive_timeout_callback(self._on_interactive_timeout)
@@ -92,6 +111,11 @@ class MiciMainLayout(Scroller):
     layout_x = int(layout.rect.x)
     self._scroller.scroll_to(layout_x, smooth=True)
 
+  def _update_state(self):
+    super()._update_state()
+    if self._robotic_onroad_layout is not None and ui_state.mici_robotic_ui != self._prev_robotic_ui:
+      self._prev_robotic_ui = ui_state.mici_robotic_ui
+      self._on_body_changed()
   def _handle_transitions(self):
     # greet when getting in the car after it's been off for a while
     if ui_state.ignition != self._prev_ignition:
@@ -146,5 +170,8 @@ class MiciMainLayout(Scroller):
       self._pm.send(service, msg)
 
   def _on_body_changed(self):
-    self._car_onroad_layout.set_visible(not ui_state.is_body)
+    use_robotic = self._robotic_onroad_layout is not None and ui_state.mici_robotic_ui
+    self._car_onroad_layout.set_visible(not ui_state.is_body and not use_robotic)
+    if self._robotic_onroad_layout is not None:
+      self._robotic_onroad_layout.set_visible(not ui_state.is_body and use_robotic)
     self._body_onroad_layout.set_visible(bool(ui_state.is_body))

@@ -36,7 +36,8 @@ class UIStateSP:
     self.is_sp_release: bool = self.params.get_bool("IsReleaseSpBranch")
     self.sm_services_ext = [
       "modelManagerSP", "selfdriveStateSP", "longitudinalPlanSP", "backupManagerSP",
-      "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay", "modelDataV2SP"
+      "lateralTorqueParameters", "carStateSP", "liveMapDataSP", "carParamsSP", "lateralDelay", "modelDataV2SP",
+      "gyroscope",
     ]
 
     self.sunnylink_state = SunnylinkState()
@@ -52,6 +53,7 @@ class UIStateSP:
     self.custom_interactive_timeout: int = 0
     self.developer_ui = None
     self.hide_v_ego_ui: bool = False
+    self.mici_robotic_ui: bool = self.params.get_bool("MiciRoboticUI")
     self.onroad_brightness: int = 0
     self.onroad_brightness_timer: int = 0
     self.onroad_brightness_timer_param: int = 0
@@ -176,6 +178,7 @@ class UIStateSP:
     self.custom_interactive_timeout = self.params.get("InteractivityTimeout", return_default=True)
     self.developer_ui = self.params.get("DevUIInfo")
     self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
+    self.mici_robotic_ui = self.params.get_bool("MiciRoboticUI")
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
     self.rainbow_path = self.params.get_bool("RainbowMode")

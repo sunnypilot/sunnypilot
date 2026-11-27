@@ -111,3 +111,9 @@ sections:
     widget: toggle
     title: Tesla Rainbow Mode
     description: Display a rainbow effect on the path the model wants to take. It does not affect driving in any way.
+  - key: MiciRoboticUI
+    widget: toggle
+    title: Robotic Companion UI
+    description: Replace the onroad camera view with an expressive EMO-inspired robotic face and robotic alert voices.
+    visibility:
+    - $ref: '#/macros/mici_only'

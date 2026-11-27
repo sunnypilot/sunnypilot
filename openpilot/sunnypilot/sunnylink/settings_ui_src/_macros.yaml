@@ -31,6 +31,10 @@ macros:
     - type: not
       condition: {type: capability, field: device_type, equals: mici}
 
+  # Show only on MICI hardware.
+  mici_only:
+    - {type: capability, field: device_type, equals: mici}
+
   # Mirrors selfdrive/ui/sunnypilot/layouts/.../mads_settings.py:_mads_limited_settings()
   # Rivian + Tesla-without-vehicle-bus get the limited MADS UI (3-toggle subset).
   # On those platforms these toggles are disabled — full MADS settings are
