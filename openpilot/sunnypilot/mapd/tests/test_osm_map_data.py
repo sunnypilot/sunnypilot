@@ -5,11 +5,9 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 import json
-import math
 import platform
 
 import openpilot.cereal.messaging as messaging
-from openpilot.cereal import log
 from openpilot.common.params import Params
 from openpilot.common.test import OpenpilotTestCase
 from openpilot.sunnypilot.mapd.live_map_data.osm_map_data import OsmMapData
@@ -20,28 +18,26 @@ class TestOsmMapData(OpenpilotTestCase):
 
   LATITUDE = 32.875134
   LONGITUDE = -117.209777
-  ALTITUDE = 42.0
   BEARING = 90.0
 
   def setup_method(self):
     self.mem_params = Params("/dev/shm/params") if platform.system() != "Darwin" else Params()
     self.mem_params.remove("LastGPSPosition")
     self.map_data = OsmMapData()
-    self.pm = messaging.PubMaster(['liveLocationKalman'])
+    self.pm = messaging.PubMaster(['gpsLocationSP'])
 
-  def location_message(self, status: log.LiveLocationKalman.Status, position_valid: bool):
-    msg = messaging.new_message('liveLocationKalman', valid=True)
-    location = msg.liveLocationKalman
-    location.status = status
-    location.positionGeodetic = {'value': [self.LATITUDE, self.LONGITUDE, self.ALTITUDE], 'valid': position_valid}
-    location.calibratedOrientationNED = {'value': [0.0, 0.0, math.radians(self.BEARING)], 'valid': True}
+  def location_message(self, has_fix: bool):
+    msg = messaging.new_message('gpsLocationSP', valid=has_fix)
+    location = msg.gpsLocationSP
+    location.hasFix = has_fix
+    location.latitude, location.longitude, location.bearingDeg = self.LATITUDE, self.LONGITUDE, self.BEARING
     return msg
 
-  def send_location(self, status: log.LiveLocationKalman.Status, position_valid: bool) -> None:
+  def send_location(self, has_fix: bool) -> None:
     # the first exchange synchronizes the PUB/SUB connection, the second one is actually received
-    self.pm.send('liveLocationKalman', self.location_message(status, position_valid))
+    self.pm.send('gpsLocationSP', self.location_message(has_fix))
     self.map_data.sm.update(1000)
-    self.pm.send('liveLocationKalman', self.location_message(status, position_valid))
+    self.pm.send('gpsLocationSP', self.location_message(has_fix))
     self.map_data.sm.update(1000)
 
   def read_position(self) -> dict:
@@ -50,7 +46,7 @@ class TestOsmMapData(OpenpilotTestCase):
     return json.loads(value)
 
   def test_writes_position_for_mapd(self):
-    self.send_location(log.LiveLocationKalman.Status.valid, True)
+    self.send_location(True)
     self.map_data.tick()
 
     position = self.read_position()
@@ -59,10 +55,10 @@ class TestOsmMapData(OpenpilotTestCase):
     self.assertAlmostEqual(position['bearing'], self.BEARING, delta=1e-6)
 
   def test_invalid_localizer_keeps_last_known_position(self):
-    self.send_location(log.LiveLocationKalman.Status.valid, True)
+    self.send_location(True)
     self.map_data.tick()
 
-    self.send_location(log.LiveLocationKalman.Status.uninitialized, False)
+    self.send_location(False)
     self.map_data.tick()
 
     position = self.read_position()
