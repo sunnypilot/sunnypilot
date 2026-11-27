@@ -15,6 +15,7 @@ from openpilot.system import micd
 from openpilot.common.hardware import HARDWARE
 
 from openpilot.sunnypilot.selfdrive.ui.quiet_mode import QuietMode
+from openpilot.sunnypilot.selfdrive.ui.robotic_sounds import RoboticSoundPack
 
 SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
@@ -73,6 +74,7 @@ def check_selfdrive_timeout_alert(sm):
 class Soundd(QuietMode):
   def __init__(self):
     super().__init__()
+    self.robotic_sound_pack = RoboticSoundPack(self.params, SAMPLE_RATE)
 
     self.load_sounds()
 
@@ -103,13 +105,22 @@ class Soundd(QuietMode):
         length = wavefile.getnframes()
         self.loaded_sounds[sound] = np.frombuffer(wavefile.readframes(length), dtype=np.int16).astype(np.float32) / (2**16/2)
 
+    self.robotic_sound_pack.load()
+
+  def load_param(self) -> None:
+    prev_frame = self._frame
+    super().load_param()
+    if self._frame != prev_frame and self._frame % 50 == 0:
+      if self.robotic_sound_pack.refresh_param():
+        self.current_sound_frame = 0
+
   def get_sound_data(self, frames): # get "frames" worth of data from the current alert sound, looping when required
 
     ret = np.zeros(frames, dtype=np.float32)
 
     if self.should_play_sound(self.current_alert):
       num_loops = sound_list[self.current_alert][1]
-      sound_data = self.loaded_sounds[self.current_alert]
+      sound_data = self.robotic_sound_pack.get_buffer(self.current_alert, self.loaded_sounds)
       written_frames = 0
 
       current_sound_frame = self.current_sound_frame % len(sound_data)
@@ -136,7 +147,10 @@ class Soundd(QuietMode):
     data_out[:frames, 0] = self.get_sound_data(frames)
 
   def update_alert(self, new_alert):
-    current_alert_played_once = self.current_alert == AudibleAlert.none or self.current_sound_frame >= len(self.loaded_sounds[self.current_alert])
+    current_alert_played_once = (
+      self.current_alert == AudibleAlert.none or
+      self.current_sound_frame >= len(self.robotic_sound_pack.get_buffer(self.current_alert, self.loaded_sounds))
+    )
     # let looping sounds finish the current loop instead of cutting off mid tone
     if new_alert == AudibleAlert.none and self.current_alert != AudibleAlert.none and sound_list[self.current_alert][1] is None:
       if current_alert_played_once:

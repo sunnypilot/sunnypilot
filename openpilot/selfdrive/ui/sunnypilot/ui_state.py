@@ -53,6 +53,7 @@ class UIStateSP:
     self.developer_ui = None
     self.draw_radar_tracks: bool = self.params.get_bool("DrawRadarTracks")
     self.hide_v_ego_ui: bool = False
+    self.mici_robotic_ui: bool = self.params.get_bool("MiciRoboticUI")
     self.onroad_brightness: int = 0
     self.onroad_brightness_timer: int = 0
     self.onroad_brightness_timer_param: int = 0
@@ -178,6 +179,7 @@ class UIStateSP:
     self.developer_ui = self.params.get("DevUIInfo")
     self.draw_radar_tracks = self.params.get_bool("DrawRadarTracks")
     self.hide_v_ego_ui = self.params.get_bool("HideVEgoUI")
+    self.mici_robotic_ui = self.params.get_bool("MiciRoboticUI")
     self.onroad_brightness = int(float(self.params.get("OnroadScreenOffBrightness", return_default=True)))
     self.onroad_brightness_timer_param = self.params.get("OnroadScreenOffTimer", return_default=True)
     self.rainbow_path = self.params.get_bool("RainbowMode")

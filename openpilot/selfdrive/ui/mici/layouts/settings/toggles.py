@@ -38,9 +38,15 @@ class TogglesLayoutMici(NavScroller):
                                                    "Disable to use your car's stock driver assistance.")
     radar_tracks = BigMultiParamToggle("radar tracks", "RadarTracks", ["off", "lead only", "full radar"])
     draw_radar_tracks = BigParamControl("draw radar tracks", "DrawRadarTracks")
+    robotic_ui_toggle = BigParamControl(
+      "robotic companion UI",
+      "MiciRoboticUI",
+      description="Replace the onroad camera view with an expressive EMO-inspired robotic face and robotic alert voices.",
+    )
     self._radar_tracks_toggle = radar_tracks
 
     self._scroller.add_widgets([
+      robotic_ui_toggle,
       radar_tracks,
       draw_radar_tracks,
       self._personality_toggle,
@@ -55,6 +61,7 @@ class TogglesLayoutMici(NavScroller):
 
     # Toggle lists
     self._refresh_toggles = (
+      ("MiciRoboticUI", robotic_ui_toggle),
       ("DrawRadarTracks", draw_radar_tracks),
       ("IsMetric", is_metric_toggle),
       ("IsLdwEnabled", ldw_toggle),
