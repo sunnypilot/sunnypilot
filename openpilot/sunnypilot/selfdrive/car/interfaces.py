@@ -11,6 +11,7 @@ from opendbc.car.interfaces import CarInterfaceBase
 from openpilot.common.params import Params
 from openpilot.common.swaglog import cloudlog
 from openpilot.sunnypilot.selfdrive.controls.lib.nnlc.helpers import get_nn_model_path
+from openpilot.sunnypilot.selfdrive.controls.lib.pidd import PIDD_VERSION
 from openpilot.sunnypilot.selfdrive.controls.lib.speed_limit.helpers import set_speed_limit_assist_availability
 
 from openpilot.sunnypilot.sunnylink.statsd import STATSLOGSP
@@ -55,9 +56,17 @@ def _initialize_intelligent_cruise_button_management(CP: structs.CarParams, CP_S
     CP_SP.pcmCruiseSpeed = False
 
 
-def _initialize_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarParams, enforce_torque: bool, nnlc_enabled: bool) -> None:
+def _initialize_torque_lateral_control(CI: CarInterfaceBase, CP: structs.CarParams, enforce_torque: bool, nnlc_enabled: bool,
+                                       params: Params | None = None) -> None:
+  if params is None:
+    params = Params()
+
   if nnlc_enabled or enforce_torque:
     CI.configure_torque_tune(CP.carFingerprint, CP.lateralTuning)
+
+  if enforce_torque and not nnlc_enabled and CP.steerControlType == structs.CarParams.SteerControlType.torque \
+     and params.get("TorqueControlTune") == PIDD_VERSION:
+    CP.lateralTuning.init('pid')
 
 
 def _cleanup_unsupported_params(CP: structs.CarParams, CP_SP: structs.CarParamsSP, params: Params | None = None) -> None:
@@ -92,7 +101,7 @@ def setup_interfaces(CI: CarInterfaceBase, params: Params | None = None) -> None
   enforce_torque = _enforce_torque_lateral_control(CI.CP, params)
   nnlc_enabled = _initialize_neural_network_lateral_control(CI.CP, CI.CP_SP, params)
   _initialize_intelligent_cruise_button_management(CI.CP, CI.CP_SP, params)
-  _initialize_torque_lateral_control(CI, CI.CP, enforce_torque, nnlc_enabled)
+  _initialize_torque_lateral_control(CI, CI.CP, enforce_torque, nnlc_enabled, params)
   _cleanup_unsupported_params(CI.CP, CI.CP_SP)
 
   try:
