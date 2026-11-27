@@ -113,7 +113,7 @@ class ConnectPhoneDialog(NavWidget):
     elif window.get("state") == "open":
       self._was_open = True
       if not window.get("held") and now >= window["deadline"]:
-        self._finish(None)
+        self._finish(_closed_message("timeout"))
 
   def _cancel(self) -> None:
     if not self._closing:
@@ -122,6 +122,7 @@ class ConnectPhoneDialog(NavWidget):
 
   def _finish(self, message: str | None) -> None:
     self._closing = True
+    gui_app.pop_widgets_to(self, instant=True)
     if message is None:
       self.dismiss(lambda: None)
     else:
@@ -140,6 +141,7 @@ class ConnectPhoneDialog(NavWidget):
     label_x = self._rect.x + 8 + self._rect.height + 24 if show_code else self._rect.x + 20
     max_width = int(self._rect.x + self._rect.width - label_x)
     y = self._rect.y + 16
+    self._title.set_text(tr("scan or type") if show_code else tr("connect phone"))
     self._title.set_max_width(max_width)
     self._title.set_position(label_x, y)
     self._title.render()

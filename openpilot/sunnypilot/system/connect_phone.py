@@ -16,6 +16,7 @@ from openpilot.common.api.base import BaseApi
 from openpilot.common.params import Params
 from openpilot.sunnypilot.system.ble import grants
 from openpilot.sunnypilot.system.ble.link import PAKE_SUITE
+from openpilot.system.athena.registration import UNREGISTERED_DONGLE_ID
 
 WINDOW_SECONDS = 120
 
@@ -61,6 +62,13 @@ def qr_text(code: int, nonce: bytes) -> str:
 
 def grant_count() -> int:
   return len(grants.load(Params()))
+
+
+def display_name(params) -> str:
+  # the sunnylink app builds the same name from DEVICE_KEYS: change both together
+  dongle_id = params.get("DongleId")
+  ident = dongle_id if dongle_id and dongle_id != UNREGISTERED_DONGLE_ID else params.get("HardwareSerial")
+  return f"comma {ident[:4]}" if ident else "comma"
 
 
 def write_request(params, action: str, phone: str | None = None) -> int:

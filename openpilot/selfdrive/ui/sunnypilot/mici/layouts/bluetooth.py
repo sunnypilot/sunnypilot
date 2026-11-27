@@ -11,7 +11,7 @@ from openpilot.selfdrive.ui.mici.widgets.dialog import BigConfirmationDialog
 from openpilot.selfdrive.ui.sunnypilot.mici.layouts.connect_phone import start_connect_phone
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.sunnypilot.system.ble import grants
-from openpilot.sunnypilot.system.connect_phone import write_request
+from openpilot.sunnypilot.system.connect_phone import display_name, write_request
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr
 from openpilot.system.ui.widgets.scroller import NavScroller
@@ -20,7 +20,7 @@ POLL_SECONDS = 1.0
 
 
 def _phone_count(n: int) -> str:
-  return tr("none yet") if n == 0 else (tr("1 phone") if n == 1 else tr("{} phones").format(n))
+  return tr("none connected") if n == 0 else tr("{} connected").format(n)
 
 
 class BluetoothLayoutMici(NavScroller):
@@ -34,12 +34,12 @@ class BluetoothLayoutMici(NavScroller):
 
     self._bluetooth_toggle = BigParamControl(tr("bluetooth"), "BluetoothAllowed", toggle_callback=bluetooth_callback)
 
-    self._connect_phone_btn = BigButton(tr("connect phone"), "")
+    self._connect_phone_btn = BigButton(tr("connect phone"), display_name(ui_state.params))
     self._connect_phone_btn.set_click_callback(start_connect_phone)
     self._connect_phone_btn.set_enabled(lambda: self._bluetooth_on)
 
     self._phones_page = ConnectedPhonesMici()
-    self._phones_btn = BigButton(tr("connected phones"), "")
+    self._phones_btn = BigButton(tr("phones"), "")
     self._phones_btn.set_click_callback(lambda: gui_app.push_widget(self._phones_page))
     self._phones_btn.set_visible(lambda: self._bluetooth_on)
     self._last_poll = float("-inf")
@@ -77,7 +77,7 @@ class ConnectedPhonesMici(NavScroller):
 
   def _phone_item(self, phone: dict) -> BigButton:
     spki = phone["spki"]
-    item = BigButton(phone["name"], tr("remove"))
+    item = BigButton(phone["name"], tr("remove"), scroll=True)
     item.set_click_callback(lambda: self._remove(spki))
     return item
 

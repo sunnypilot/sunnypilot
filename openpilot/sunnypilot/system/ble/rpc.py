@@ -7,8 +7,12 @@ See the LICENSE.md file in the root directory for more details.
 import json
 
 from openpilot.common.hardware import HARDWARE
+from openpilot.common.params import ParamKeyType
 from openpilot.common.version import get_version
 from openpilot.sunnypilot.sunnylink.athena.params_guard import BLOCKED_PARAMS, is_local_param
+
+# what sunnylink's getParams reports for a key that was never set and has no default
+UNSET_VALUES = {ParamKeyType.BOOL: False, ParamKeyType.INT: 0, ParamKeyType.FLOAT: 0.0, ParamKeyType.STRING: "", ParamKeyType.JSON: {}}
 
 METHOD_NOT_FOUND = -32601
 INVALID_REQUEST = -32600
@@ -122,7 +126,7 @@ class Rpc:
   def _status(self, grants: list[dict]) -> dict:
     return {"version": get_version(), "agnos": HARDWARE.get_os_version(), "dongle_id": self._params.get("DongleId"),
             "onroad": not self._params.get_bool("IsOffroad"), "engaged": self._params.get_bool("IsEngaged"),
-            "network": _wifi_status(), "phones": len(grants)}
+            "network": _wifi_status(), "phones": len(grants), "capabilities": ["ssh"]}
 
   def _known(self) -> set[str]:
     return {key.decode() for key in self._params.all_keys()}
@@ -142,11 +146,12 @@ class Rpc:
     keys = args.get("keys")
     if not isinstance(keys, list) or len(keys) > MAX_PARAM_KEYS or not all(isinstance(k, str) for k in keys):
       raise _refused("keys must be a list of at most 32 names")
-    self._check_keys(keys)
     known = self._known()
     values = {}
     for key in keys:
-      value = self._params.get(key) if key in known else None
+      value = self._params.get(key, return_default=True) if key in known else None
+      if value is None and key in known:
+        value = UNSET_VALUES.get(self._params.get_type(key))
       values[key] = None if isinstance(value, bytes) else value  # raw bytes have no JSON form
     return {"values": values}
 

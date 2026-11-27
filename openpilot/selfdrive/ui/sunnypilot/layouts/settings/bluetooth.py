@@ -11,15 +11,27 @@ from openpilot.common.params import Params
 from openpilot.selfdrive.ui.sunnypilot.layouts.settings.connect_phone import ConnectPhoneLayout
 from openpilot.sunnypilot.system.ble import grants
 from openpilot.sunnypilot.system.connect_phone import write_request
-from openpilot.system.ui.lib.application import gui_app
+from openpilot.system.ui.lib.application import FontWeight, gui_app
 from openpilot.system.ui.lib.multilang import tr
+from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.sunnypilot.widgets.list_view import button_item_sp, simple_button_item_sp, toggle_item_sp
 from openpilot.system.ui.widgets import DialogResult, Widget
 from openpilot.system.ui.widgets.confirm_dialog import ConfirmDialog
-from openpilot.system.ui.widgets.list_view import text_item
+from openpilot.system.ui.widgets.list_view import ITEM_TEXT_FONT_SIZE
 from openpilot.system.ui.widgets.scroller_tici import Scroller
 
 POLL_INTERVAL = 1.0
+NAME_MAX_WIDTH = 1000  # px at the list font: leaves room for REMOVE in the settings panel
+
+
+def _fit_name(name: str) -> str:
+  # a phone name is up to 80 bytes; list titles are single line and never elided by stock
+  font = gui_app.font(FontWeight.NORMAL)
+  if measure_text_cached(font, name, ITEM_TEXT_FONT_SIZE).x <= NAME_MAX_WIDTH:
+    return name
+  while name and measure_text_cached(font, name + "...", ITEM_TEXT_FONT_SIZE).x > NAME_MAX_WIDTH:
+    name = name[:-1]
+  return name.rstrip() + "..."
 
 
 class BluetoothLayout(Widget):
@@ -38,13 +50,11 @@ class BluetoothLayout(Widget):
       enabled=lambda: self._bluetooth_toggle.action_item.get_state(),
     )
 
-    self._connected_header = text_item(title=lambda: tr("Connected phones"), value="")
-    self._connected_header.set_visible(self._bluetooth_on)
     self._phone_items = []
     self._grants: list[dict] | None = None
     self._last_poll = float("-inf")
 
-    self._scroller = Scroller([self._bluetooth_toggle, self._connect_phone_button, self._connected_header], line_separator=True, spacing=0)
+    self._scroller = Scroller([self._bluetooth_toggle, self._connect_phone_button], line_separator=True, spacing=0)
 
   def _bluetooth_on(self) -> bool:
     return self._bluetooth_toggle.action_item.get_state()
@@ -62,23 +72,20 @@ class BluetoothLayout(Widget):
   def _rebuild_phone_items(self):
     for item in self._phone_items:
       self._scroller._items.remove(item)
-    if self._grants:
-      self._phone_items = [self._phone_item(phone) for phone in self._grants]
-    else:
-      self._phone_items = [text_item(title=lambda: tr("No phones connected yet"), value="")]
+    self._phone_items = [self._phone_item(phone) for phone in self._grants or []]
     for item in self._phone_items:
       item.set_visible(self._bluetooth_on)
       self._scroller.add_widget(item)
 
   def _phone_item(self, phone: dict):
-    spki = phone["spki"]
-    return button_item_sp(title=phone["name"], button_text=lambda: tr("REMOVE"), callback=lambda: self._remove(spki, phone["name"]))
+    spki, name = phone["spki"], _fit_name(phone["name"])
+    return button_item_sp(title=name, button_text=lambda: tr("REMOVE"), callback=lambda: self._remove(spki, name))
 
   def _remove(self, spki: str, name: str):
     def done(result: DialogResult):
       if result == DialogResult.CONFIRM:
         write_request(self._params, "remove", phone=spki)
-    gui_app.push_widget(ConfirmDialog(tr("Remove {}?").format(name), tr("Remove"), tr("Cancel"), callback=done))
+    gui_app.push_widget(ConfirmDialog(tr("Remove \"{}\"?").format(name), tr("Remove"), tr("Cancel"), callback=done))
 
   def _render(self, rect):
     self._scroller.render(rect)
