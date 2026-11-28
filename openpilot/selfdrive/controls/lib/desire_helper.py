@@ -28,6 +28,8 @@ class DesireHelper:
     self.alc = AutoLaneChangeController(self)
     self.lane_turn_controller = LaneTurnController(self)
     self.lane_turn_direction = TurnDirection.none
+    self.turn_frames = 0
+    self.turn_repulse = 98
 
   @staticmethod
   def get_lane_change_direction(CS):
@@ -95,8 +97,10 @@ class DesireHelper:
     self.prev_one_blinker = one_blinker and lateral_active
 
     if self.lane_turn_direction != TurnDirection.none:
-      self.desire = TURN_DESIRES[self.lane_turn_direction]
+      self.turn_frames += 1
+      self.desire = TURN_DESIRES[self.lane_turn_direction] if self.turn_frames % self.turn_repulse else log.Desire.none
     else:
+      self.turn_frames = 0
       self.desire = log.Desire.none
       if self.lane_change_state == LaneChangeState.laneChangeStarting:
         if self.lane_change_direction == LaneChangeDirection.left:
