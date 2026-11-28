@@ -394,7 +394,7 @@ def chestnut_link_up() -> bool:
 
 
 if __name__ == "__main__":
-  if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
+  if ('USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT')) and not os.getenv('DEV', '').startswith('MOCK'):
     for _ in range(10):
       if chestnut_link_up():
         break
