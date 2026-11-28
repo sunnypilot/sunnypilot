@@ -161,8 +161,8 @@ jobs:
         run: |
           export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
           ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
-          # outside the checkout, which is wiped each run. /data/scons_cache is the device's, not ours.
-          SCONS_CACHE="$RUNNER_WORKSPACE/scons_cache"
+          # fresh per job: the runner's shared cache holds objects from an older AGNOS's clang
+          SCONS_CACHE="$RUNNER_TEMP/scons_cache"
           mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
           echo "Building locationd..."
@@ -173,7 +173,7 @@ jobs:
           sudo rm -rf /tmp/* || true
           mkdir -p "$BUILD_DIR/tmp"
           export TMPDIR="$BUILD_DIR/tmp"
-          SKIP_TINYGRAD_COMPILE=1 /usr/bin/time -v scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
+          SKIP_TINYGRAD_COMPILE=1 scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
           if [[ "${{ runner.debug }}" == "1" ]]; then
             ls -la ${BUILD_DIR}
