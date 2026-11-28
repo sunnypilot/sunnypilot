@@ -8,10 +8,10 @@ import numpy as np
 
 from openpilot.common.filter_simple import FirstOrderFilter
 from openpilot.common.realtime import DT_MDL
-from openpilot.sunnypilot.modeld_v2.constants import ModelConstants, Plan
+from openpilot.sunnypilot.modeld_v2.constants import ModelConstants
 
 LANE_WIDTH_DEFAULT = 3.6  # m
-LANE_WIDTH_CLIP = (2.4, 4.5)  # m
+LANE_WIDTH_CLIP = (2.8, 4.5)  # m
 LOOKAHEAD_TIME = 1.5  # s
 MIN_LOOKAHEAD = 10.0  # m
 MIN_SPEED = 5.0  # m/s
@@ -19,11 +19,6 @@ LINE_STD = (0.2, 0.6)
 POINT_STD = 0.1
 YIELD = (0.2, 0.45)
 X_IDXS = np.array(ModelConstants.X_IDXS)
-JUMP = 0.5
-JUMP_TAU = 0.5
-JUMP_ACCEPT = 3.0
-WIDEN = 0.4
-YAW_RATE = Plan.ORIENTATION_RATE.start + 2  # matched .991 correlation to actual car
 
 
 class Blendful:
@@ -41,8 +36,7 @@ class Blendful:
     self.l_prob = 0.0
     self.r_prob = 0.0
     self.model_curvature = 0.0
-    self.ref = None
-    self.jumped = np.zeros(2)
+    self.smooth = 0.0 # smooths the correction target below .53 lat accel
     self.curvature = 0.0
 
   def update(self, model_output: dict[str, np.ndarray], v_ego: float, active: bool, model_curvature: float, enabled: bool = True) -> float:
@@ -58,8 +52,8 @@ class Blendful:
       self.usual_offset.initialized = False
       self.lane_width.initialized = False
       self.going_around = False
-      self.ref = None
     target = 0.0 if fading else self._target(model_output, v_ego, model_curvature)
+    target = self.smooth = self.smooth + (target - self.smooth) * DT_MDL / (DT_MDL + np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.5, 0.0]))
     build = 0.5 / max(v_ego, 1.0) ** 2 * DT_MDL  # jerk over 1 second
     release = (0.5 if fading else 2.0) / max(v_ego, 1.0) ** 2 * DT_MDL  # lets go fast, but past zero it builds like any other pull
     k = self.curvature
@@ -69,10 +63,6 @@ class Blendful:
   def _target(self, model_output: dict[str, np.ndarray], v_ego: float, model_curvature: float) -> float:
     lookahead = max(v_ego * LOOKAHEAD_TIME, MIN_LOOKAHEAD)
     lines = model_output['lane_lines'][0, :, :, 0]
-    plan = model_output['plan'][0]
-    self._jumps(lines[1:3], v_ego, plan[0, YAW_RATE] if plan.shape[-1] > YAW_RATE else model_curvature * v_ego,
-                np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [JUMP_TAU, 0.0]), lookahead)
-    held = bool(np.any((self.jumped > 0) & (self.jumped < JUMP_ACCEPT)))
     stds = model_output['lane_lines_stds'][0, :, :, 0]
 
     lone_weight = np.interp(abs(model_curvature) * v_ego ** 2, [0.18, 0.53], [0.5, 1.0])  # 0.5 on straights, 1.0 in curves
@@ -93,8 +83,6 @@ class Blendful:
       lane_trust = min(l_prob, r_prob)
     else:
       lane_trust = l_prob + r_prob - l_prob * r_prob
-    if held or (l_prob * r_prob > 0.5 and np.interp(lookahead, X_IDXS, lines[2] - lines[1]) > self.lane_width.x + WIDEN):
-      lane_trust = 0.0
     if lone_weight > 0.5 and lane_trust < self.line_trust:
       lane_trust = self.line_trust + (lane_trust - self.line_trust) * DT_MDL / (lone_weight - 0.5 + DT_MDL)
     self.line_trust = lane_trust
@@ -108,7 +96,7 @@ class Blendful:
     win = (X_IDXS >= 0.5 * lookahead) & (X_IDXS <= 1.5 * lookahead)
     x = X_IDXS[win]
     half_width = self.lane_width.x / 2
-    if l_prob * r_prob > 0.5 and not held:
+    if l_prob * r_prob > 0.5:
       width = np.interp(lookahead, X_IDXS, lines[2]) - np.interp(lookahead, X_IDXS, lines[1])
       self.lane_width.update(float(np.clip(width, *LANE_WIDTH_CLIP)))
       half_width = np.clip(lines[2, win] - lines[1, win], *LANE_WIDTH_CLIP) / 2
@@ -155,14 +143,3 @@ class Blendful:
     self.trust = lane_trust if lane_trust < self.trust else self.trust + (lane_trust - self.trust) * DT_MDL / (1.5 + DT_MDL)
     self.dk = dk
     return float(self.trust * dk)
-
-  def _jumps(self, raw: np.ndarray, v_ego: float, yaw_rate: float, tau: float, lookahead: float) -> None:
-    if self.ref is None:
-      self.ref, self.jumped = raw.copy(), np.zeros(2)
-      return
-    ref = np.array([np.interp(X_IDXS + v_ego * DT_MDL, X_IDXS, line) for line in self.ref]) - yaw_rate * DT_MDL * X_IDXS
-    off = np.abs([np.interp(lookahead, X_IDXS, d) for d in raw - ref]) > JUMP
-    self.jumped = np.where(off & ~off[::-1], self.jumped + DT_MDL, 0.0)
-    self.ref = ref + (raw - ref) * DT_MDL / (DT_MDL + tau)
-    accept = (self.jumped >= JUMP_ACCEPT) | off.all()
-    self.ref[accept] = raw[accept]
