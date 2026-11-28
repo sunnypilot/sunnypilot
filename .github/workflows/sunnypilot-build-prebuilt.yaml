@@ -159,7 +159,7 @@ jobs:
           uv sync
           export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
           ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
-          python3 -m pip install -q tinymesa==25.2.7.2
+          pip install -q tinymesa==25.2.7.2
           # scons passes the warp commands only PATH, TMPDIR and PYTHONPATH, so the mock goes into the command itself
           sed -i "s/'DEV=QCOM /'DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes /" "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
           grep -q "'DEV=MOCK+QCOM " "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
@@ -173,13 +173,16 @@ jobs:
           SKIP_TINYGRAD_COMPILE=1 scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
           EOF
-          sudo mkdir -p "$BUILD_DIR"
+          sudo mkdir -p "$BUILD_DIR" && sudo chown -R "$(id -u):$(id -g)" /data
           # MemAvailable, not RSS: scons runs many processes at once
           (while :; do awk '/MemAvailable/{print $2}' /proc/meminfo; sleep 1; done) > "$RUNNER_TEMP/mem.log" &
           MEM_PID=$!
           trap 'kill $MEM_PID' EXIT
-          docker run --rm --privileged -e CI=true -e HOME=/home/comma -e BUILD_DIR \
-            -v "$GITHUB_WORKSPACE:/src" -v "$BUILD_DIR:$BUILD_DIR" -v "$RUNNER_TEMP/build.sh:/build.sh:ro" agnos bash /build.sh
+          # AGNOS mounts these at boot (usr/comma/boot.sh); its uv and pip shims remount / read-only and resize /tmp
+          docker run --rm --privileged -e CI=true -e HOME=/data/media/0/github -e BUILD_DIR \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=150m,nr_inodes=1m,mode=1777 --tmpfs /var:rw,exec,nosuid,nodev,size=128m,mode=755 \
+            --tmpfs /home:rw,exec,nosuid,nodev,size=100m,mode=755 \
+            -v "$GITHUB_WORKSPACE:/src" -v /data:/data -v "$RUNNER_TEMP/build.sh:/build.sh:ro" agnos bash /build.sh
           TOTAL=$(awk '/MemTotal/{print $2}' /proc/meminfo)
           echo "peak mem used: $(( (TOTAL - $(sort -n "$RUNNER_TEMP/mem.log" | head -1)) / 1024 )) of $((TOTAL / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
           sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
