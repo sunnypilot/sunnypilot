@@ -138,6 +138,19 @@ def _elf(image: bytes, rodata: int, entry: int) -> bytes:
   return b"\x7fELF\x02\x01\x01" + bytes(9) + header + data + b"".join(headers)
 
 
+def lower_and_compile(linear):
+  try:
+    from tinygrad.codegen.compile import lower_and_compile
+  except ImportError:
+    from tinygrad.engine.realize import lower_and_compile
+  return lower_and_compile(linear)
+
+
+def submit_kernels(jit) -> tuple:
+  info = jit.captured._linear.src[0].without_after.arg
+  return (info.hcq if hasattr(info, "hcq") else info.aux).kernels
+
+
 def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
   import tinygrad.runtime.autogen.am.pm4_nv as pm4
   import tinygrad.runtime.autogen.amd_gpu as amd_gpu
@@ -146,7 +159,9 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
   from tinygrad.helpers import unwrap
   from tinygrad.uop.ops import Ops
   submit = jit.captured._linear.src[0].without_after
-  kernels, topo = submit.arg.aux.kernels, list(jit.captured._linear.toposort(enter_calls=True))
+  kernels, topo = submit_kernels(jit), list(jit.captured._linear.toposort(enter_calls=True))
+  externs = dict(enumerate(getattr(jit.captured, "_externs", ()), len(_prepare_jit_inputs((), kwargs)[0])))
+  buffer = lambda b: _buffer(externs.get(b.arg.slot, b) if b.op.name == "EXTERN" else b)  # noqa: E731
   allocs = {str(name): u for u in topo if u.op is Ops.ALLOC and (name := getattr(u, "tag", None) or u.arg.name) is not None}
   (commands, patched), kernargs = _patched(allocs["cmdbuf_compute_0"], topo), allocs["kernargs_compute_0"]
   argument_words, pokes = _patched(kernargs, topo)[1], _input_pokes(submit, kernargs)
@@ -202,12 +217,12 @@ def convert(jit, kwargs: dict, frame: dict, target) -> tuple[dict, memoryview]:
     needs_init |= {args[i]["buffer"] for i in ins if "buffer" in args[i] and args[i]["buffer"] not in written}
     written |= {args[i]["buffer"] for i in outs if "buffer" in args[i]}
 
-  assert all(_buffer(b) is not None for b, i in buffers.items() if i in needs_init), "a kernel reads a scratch before any kernel writes it"
+  assert all(buffer(b) is not None for b, i in buffers.items() if i in needs_init), "a kernel reads a scratch before any kernel writes it"
   names = list(jit.captured.expected_names)
   inputs = [{"slot": slot, "name": names[slot] if slot < len(names) else None, "dtype": repr(u.dtype), "numel": int(u.max_numel()), "device": u.device}
             for slot, u in enumerate(_prepare_jit_inputs((), kwargs)[0])]
   header = {"input_names": names, "calls": calls, "returns": {"kind": "NoneType", "tensors": []}, "inputs": inputs,
-            "buffers": [{"nbytes": bb.nbytes if (bb := _buffer(b)) else b.max_numel() * b.dtype.itemsize, "device": bb.device if bb else b.device, "dtype": u8}
+            "buffers": [{"nbytes": bb.nbytes if (bb := buffer(b)) else b.max_numel() * b.dtype.itemsize, "device": bb.device if bb else b.device, "dtype": u8}
                         | ({"init": blob.add(bb.ensure_allocated().as_memoryview())} if i in needs_init else {}) for b, i in buffers.items()],
             "check": {"inputs": [[path, store(array), device] for path, array, device in frame["inputs"]],
                       "outputs": [store(array) for array in frame["outputs"]], "output_container": frame["output_container"]}}
@@ -225,7 +240,6 @@ def main():
   patch_fetch_fw()
   from examples.openpilot.helpers import allocate_inputs, load_pickle
   from tinygrad import Device, Tensor
-  from tinygrad.engine.realize import lower_and_compile
   artifact = load_pickle(args.pkl, out_of_band=True)
   artifact["run"].captured._linear = lower_and_compile(artifact["run"].captured._linear)
   rng = np.random.default_rng(7)

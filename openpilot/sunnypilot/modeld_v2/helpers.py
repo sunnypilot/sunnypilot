@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import inspect
 import bisect
 import builtins
 import contextlib
@@ -332,11 +333,13 @@ class PlainJit(_Jit):
     stand_ins = {slot: UOp.from_buffer(Buffer(_device(spec["device"], device_map), spec["numel"] * _dtype(spec["dtype"]).itemsize).ensure_allocated(),
                                        _dtype(spec["dtype"])) for slot, spec in inputs.items()}
     input_uops = tuple(stand_ins.get(slot, next(iter(stand_ins.values()), None)) for slot in range(max(stand_ins, default=-1) + 1))
-    linear = jit.compile_linear(UOp(Ops.LINEAR, src=tuple(calls)), beam=0, input_uops=input_uops, cache=False)
+    takes_inputs = "input_uops" in inspect.signature(jit.compile_linear).parameters
+    linear = jit.compile_linear(UOp(Ops.LINEAR, src=tuple(calls)), beam=0, cache=False, **({"input_uops": input_uops} if takes_inputs else {}))
 
     returned = [Tensor(argument(t)).reshape(tuple(t["shape"])) for t in header["returns"]["tensors"]]
     ret = {"NoneType": None, "Tensor": returned[0] if returned else None, "tuple": tuple(returned), "list": returned}[header["returns"]["kind"]]
-    super().__init__(jit.CapturedJit(ret, linear, header["input_names"], []), header["input_names"], buffers)
+    captured = jit.CapturedJit(ret, linear, header["input_names"], []) if takes_inputs else jit.CapturedJit(ret, linear, (), header["input_names"], [], {})
+    super().__init__(captured, header["input_names"], buffers)
 
     if not verify or not (check := header.get("check")):
       return
