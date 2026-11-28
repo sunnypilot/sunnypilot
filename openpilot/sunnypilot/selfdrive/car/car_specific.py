@@ -5,6 +5,7 @@ This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
 
+import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 from opendbc.car import structs
 
@@ -23,9 +24,14 @@ class CarSpecificEventsSP:
     self.CP_SP = CP_SP
 
     self.low_speed_alert = False
+    self.sm = messaging.SubMaster(['carStateSP'])
 
   def update(self, CS: structs.CarState, events: Events):
     events_sp = EventsSP()
+
+    self.sm.update(0)
+    if self.sm['carStateSP'].stockSteerIntervention:
+      events_sp.add(EventNameSP.stockSteerIntervention)
 
     if self.CP.brand == 'chrysler':
       if self.CP.carFingerprint in RAM_DT:
