@@ -302,7 +302,7 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
 
   toggle_cases: Cases = [
     lambda: click(times=3, wait_after=FAST_CLICK),  # first toggle is personality, which has 3 states
-    None, None, None, None, None, None,  # skip other toggles to save time
+    None, None, None,  # skip other toggles to save time
     lambda: click(times=2, wait_after=FAST_CLICK),  # test final toggle (enable openpilot)
   ]
 
@@ -316,6 +316,7 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
     None,
     click,  # update
     explore_setting,  # pairing (just open and close)
+    None, None, None,  # metric, record cabin camera, record mic
     lambda: explore_setting(
       # training guide
       lambda: swipe_left(width * 2), click,  # first page, click next
@@ -348,7 +349,7 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
     lambda: scroll_through_cases(device_cases),
     lambda: script.wait(WAIT_SHORT),  # software
     lambda: script.wait(WAIT_SHORT),  # pairing
-    lambda: run_actions(lambda: swipe_up(height * 3), lambda: swipe_down(height * 3)),  # firehose (scroll down and back up)
+    lambda: run_actions(lambda: swipe_left(width * 3), lambda: swipe_right(width * 3)),  # firehose (scroll through cards and back)
     lambda: scroll_through_cases(developer_cases),
   ]
 
@@ -364,12 +365,13 @@ def build_mici_script(pm: PubMaster, main_layout, script: Script) -> None:
     params = Params()
     main_layout._alerts_layout._pending_params = ({"UpdaterNewDescription": params.get("UpdaterNewDescription")} |
                                                   {alert_data.key: params.get(alert_data.key) for alert_data in main_layout._alerts_layout.sorted_alerts})
-    main_layout._alerts_layout._update_state()
+    main_layout._alerts_layout._refresh_state()
 
-  swipe_right(width, wait_after=WAIT_SHORT)  # open alerts
-  script.setup(setup_offroad_alerts_and_refresh)  # show alerts
+  script.setup(setup_offroad_alerts_and_refresh)  # show alerts pill
+  script.click(width - 60, height - 20, wait_after=WAIT_SHORT)  # open alerts
   swipe_up(height)  # scroll alerts
-  swipe_left(width, wait_after=WAIT_SHORT)  # close alerts
+  swipe_down()  # back to the top
+  swipe_down(wait_after=WAIT_SHORT)  # close alerts
 
   # === Settings === #
   click()  # open settings
@@ -403,14 +405,9 @@ def build_tizi_script(pm: PubMaster, main_layout, script: Script) -> None:
 
   def do_onboarding() -> None:
     """Click through the training guide and close."""
-    from openpilot.selfdrive.ui.layouts.onboarding import STEP_RECTS
-    step = 0
-    for step_rect in STEP_RECTS:
-      if step < len(STEP_RECTS) - 1:
-        script.click(int(step_rect.x), int(step_rect.y), wait_after=FAST_CLICK)
-      else:
-        script.click(950, 900)  # On the last step, click Finish instead of restart
-      step += 1
+    from openpilot.selfdrive.ui.layouts.training_guide import STEP_RECTS
+    for r in STEP_RECTS:
+      script.click(int(r.x + r.width / 2), int(r.y + r.height / 2), wait_after=FAST_CLICK)
 
   def type_keyboard() -> None:
     """Types 8 characters using the big keyboard to test different layouts and interactions."""

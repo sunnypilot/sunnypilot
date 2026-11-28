@@ -4,7 +4,7 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-import pyray as rl
+import raylib_nb as rl
 from dataclasses import dataclass
 
 from openpilot.common.constants import CV
@@ -136,7 +136,7 @@ class DesiredSteeringAngleElement(LateralControlElement):
     controls_state = sm['controlsState']
     lat_active = sm['carControl'].latActive
     angle_steers = car_state.steeringAngleDeg
-    steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDeg
+    steer_angle_desired = controls_state.lateralControlState.angleState.steeringAngleDesiredDeg
 
     value = f"{steer_angle_desired:.1f}°" if lat_active else "-"
 

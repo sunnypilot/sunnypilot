@@ -49,7 +49,10 @@ class AccelBoostSP:
     self.boost = self.total_boost = 0.0
     return True
 
-  def update(self, sm, output_a_target_e2e, output_a_target_mpc, a_cruise):
+  def reset(self):
+    self.boost = self.total_boost = 0.0
+
+  def update(self, sm, output_a_target_e2e, curve_offset):
     model = sm['modelV2']
     brake_probs = model.meta.disengagePredictions.brakePressProbs
     gas_probs = model.meta.disengagePredictions.gasPressProbs

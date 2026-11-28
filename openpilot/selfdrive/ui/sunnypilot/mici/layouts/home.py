@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import math
 
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.selfdrive.ui.mici.layouts.home import MiciHomeLayout
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState

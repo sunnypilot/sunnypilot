@@ -12,6 +12,8 @@ from functools import partial
 from openpilot.common.basedir import BASEDIR
 from openpilot.sunnypilot.modeld_v2.helpers import _dtype, read_parts
 
+SPLIT_FRAMES = ("big_frame", "frame")
+
 
 def pack_layout(shapes: dict[str, tuple], frame_size: int) -> tuple[dict[str, int], int]:
   offsets, offset = {}, 0

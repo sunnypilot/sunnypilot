@@ -30,10 +30,10 @@ def record_kernel_linear():
     yield recorded
 
 
-def capture_frame(jit, kwargs: dict, output_container: str | None = None):
+def capture_frame(jit, kwargs: dict, output_container: str | None = None, run: bool = True):
   inputs = [([name] if key is None else [name, key], tensor.numpy().copy(), tensor.device)
             for name, value in kwargs.items() for key, tensor in (value.items() if isinstance(value, dict) else [(None, value)])]
-  result = jit(**kwargs)
+  result = jit(**kwargs) if run else None  # run=False: the last call already left these inputs' outputs in output_container
   outputs = kwargs[output_container].values() if output_container else flatten(result)
   return {"inputs": inputs, "outputs": [tensor.numpy().copy() for tensor in outputs], "output_container": output_container}, result
 

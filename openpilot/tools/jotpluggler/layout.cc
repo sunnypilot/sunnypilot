@@ -125,7 +125,7 @@ void draw_stream_popup(AppSession *session, UiState *state) {
   if (ImGui::RadioButton("Local (MSGQ)", state->stream_source_kind == StreamSourceKind::CerealLocal)) {
     state->stream_source_kind = StreamSourceKind::CerealLocal;
   }
-  if (ImGui::RadioButton("Remote (ZMQ)", state->stream_source_kind == StreamSourceKind::CerealRemote)) {
+  if (ImGui::RadioButton("Remote", state->stream_source_kind == StreamSourceKind::CerealRemote)) {
     state->stream_source_kind = StreamSourceKind::CerealRemote;
   }
 
@@ -477,6 +477,7 @@ bool reset_layout(AppSession *session, UiState *state) {
     session->autosave_path = autosave_path_for_layout(session->layout_path);
     state->undo.reset(session->layout);
     refresh_replaced_layout_ui(session, state, false);
+    refresh_all_custom_curves(session, state);
     reset_shared_range(state, *session);
     state->status_text = "Reset layout";
     return true;
@@ -501,6 +502,7 @@ bool reload_layout(AppSession *session, UiState *state, const std::string &layou
     state->layout_dirty = load_draft;
     state->undo.reset(session->layout);
     refresh_replaced_layout_ui(session, state, true);
+    refresh_all_custom_curves(session, state);
     if (preserve_shared_range) {
       state->has_shared_range = true;
       state->x_view_min = preserved_x_min;

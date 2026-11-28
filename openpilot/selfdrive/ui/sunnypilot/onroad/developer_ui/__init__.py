@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 from enum import IntEnum
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
   UiElement, RelDistElement, RelSpeedElement, SteeringAngleElement,
@@ -17,6 +17,28 @@ from openpilot.selfdrive.ui.sunnypilot.onroad.developer_ui.elements import (
 from openpilot.system.ui.lib.application import gui_app, FontWeight
 from openpilot.system.ui.lib.text_measure import measure_text_cached
 from openpilot.system.ui.widgets import Widget
+
+_rotated_text_cache: dict[tuple[int, str, int], rl.RenderTexture] = {}
+
+
+def draw_text_rotated(font: rl.Font, text: str, position: rl.Vector2, rotation: float, font_size: int, color: rl.Color) -> None:
+  """Stand-in for rl.draw_text_pro, which raylib_nb doesn't bind: draw the text once into a cached
+  texture, then draw that rotated about its top-left corner. Matches draw_text_pro (unscaled size)."""
+  key = (font.texture.id, text, font_size)
+  if key not in _rotated_text_cache:
+    size = measure_text_cached(font, text, font_size)  # FONT_SCALE'd, so at least the unscaled text's size
+    # drawing into a texture is slow on the CPU renderer, but this runs once per string
+    rt = rl.load_render_texture(int(size.x) + 2, int(size.y) + 2)  # noqa: TID251
+    rl.begin_texture_mode(rt)
+    rl.clear_background(rl.BLANK)
+    getattr(rl, "_orig_draw_text_ex", rl.draw_text_ex)(font, text, rl.Vector2(0, 0), font_size, 0, rl.WHITE)
+    rl.end_texture_mode()
+    rl.set_texture_filter(rt.texture, rl.TextureFilter.TEXTURE_FILTER_BILINEAR)
+    _rotated_text_cache[key] = rt
+  tex = _rotated_text_cache[key].texture
+  # render textures are stored bottom-up: flip the source rect
+  rl.draw_texture_pro(tex, rl.Rectangle(0, 0, tex.width, -tex.height), rl.Rectangle(position.x, position.y, tex.width, tex.height),
+                      rl.Vector2(0, 0), rotation, color)
 
 
 def get_bottom_dev_ui_offset():
@@ -61,8 +83,7 @@ class DeveloperUiRenderer(Widget):
     if self.dev_ui_mode == DeveloperUiState.OFF:
       return
 
-    sm = ui_state.sm
-    if sm.recv_frame["carState"] < ui_state.started_frame:
+    if not ui_state.received_since_started("carState"):
       return
 
     if self.dev_ui_mode == DeveloperUiState.BOTTOM:
@@ -122,7 +143,7 @@ class DeveloperUiRenderer(Widget):
       units_x = x + container_width
       units_y = y + (value_size / 2) + (units_height / 2)
 
-      rl.draw_text_pro(self._font_bold, element.unit, rl.Vector2(units_x, units_y), rl.Vector2(0, 0), -90.0, unit_size, 0, rl.WHITE)
+      draw_text_rotated(self._font_bold, element.unit, rl.Vector2(units_x, units_y), -90.0, unit_size, rl.WHITE)
 
     return 130
 

@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import base64
 
-import pyray as rl
+import raylib_nb as rl
 from openpilot.common.swaglog import cloudlog
 from openpilot.selfdrive.ui.ui_state import ui_state
 from openpilot.selfdrive.ui.widgets.pairing_dialog import PairingDialog

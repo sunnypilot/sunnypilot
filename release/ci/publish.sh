@@ -46,6 +46,11 @@ git init
 git rm -rf "$OUTPUT_DIR/.git" || true # Doing cleanup, but it might fail if the .git doesn't exist or not allowed to delete
 git remote remove origin || true # ensure cleanup
 git remote add origin "$GIT_ORIGIN"
+
+# LFS files upload to the HF bucket from lfs.py's pre-push hook (needs HF_TOKEN and hf-xet)
+if [ -f lfs.py ] && grep -qs 'filter=lfs' .gitattributes; then
+  ./lfs.py install
+fi
 #git push origin -d $DEV_BRANCH || true # Ensuring we delete the remote branch if it exists as we are wiping it out
 git fetch --depth 1 origin "$DEV_BRANCH" || (git checkout -b "$DEV_BRANCH" && git commit --allow-empty -m "sunnypilot v$VERSION release" && git push -u origin "$DEV_BRANCH")
 

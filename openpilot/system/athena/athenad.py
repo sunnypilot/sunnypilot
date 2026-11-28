@@ -47,7 +47,8 @@ from openpilot.tools.lib.helpers import RE
 from openpilot.common.swaglog import cloudlog
 from openpilot.common.version import get_build_metadata
 from openpilot.common.hardware.hw import Paths
-from openpilot.system.athena.rpc import dispatcher, handle, is_call, is_response, loads
+from openpilot.system.athena.rpc import (boolean, dict_of, dispatcher, either, handle, integer, is_call, is_response,
+                                         list_of, loads, number, one_of, regex, struct)
 
 
 ATHENA_HOST = os.getenv('ATHENA_HOST', 'wss://athena.comma.ai')
@@ -80,6 +81,15 @@ UploadFileDict = dict[str, str | int | float | bool]
 UploadItemDict = dict[str, str | bool | int | float | dict[str, str]]
 
 UploadFilesToUrlResponse = dict[str, int | list[UploadItemDict] | list[str]]
+
+# param validators for RPC inputs
+DATA_PATH = r'(?!.*\.\.)[\w\-.][\w\-./]*'  # relative to log root
+UPLOAD_URL = regex(r'https?://[\x21-\x7e]+')
+UPLOAD_HEADERS = dict_of(regex(r'[\w\-]+'), regex(r'[\x20-\x7e]*'))
+UPLOAD_ID = regex(r'[0-9a-f]{40}')
+CLIP_FILENAME = regex(r'[\w\-][\w\-.]*')
+UPLOAD_FILE = struct({"fn": regex(DATA_PATH), "url": UPLOAD_URL, "headers": UPLOAD_HEADERS},
+                     {"allow_cellular": boolean, "priority": integer(0, DEFAULT_UPLOAD_PRIORITY)})
 
 
 class UploadTOSAdapter(HTTPAdapter):
@@ -136,7 +146,6 @@ class UploadItem:
     return self.priority == other.priority
 
 
-dispatcher["echo"] = lambda s: s
 recv_queue: Queue[str] = queue.Queue()
 send_queue: Queue[tuple[int, int, str]] = queue.PriorityQueue()
 upload_queue: Queue[UploadItem] = queue.PriorityQueue()
@@ -217,8 +226,13 @@ def handle_long_poll(ws: WebSocket, exit_event: threading.Event | None) -> None:
       thread.join()
 
 
-def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None) -> None:
-  dispatcher["startLocalProxy"] = localProxyHandler or partial(startLocalProxy, end_event)
+COMMA_PROXY_URI = regex(r'wss://ssh\.comma\.ai(:(443|8443))?/[0-9a-f]{16}')
+
+
+def jsonrpc_handler(end_event: threading.Event, localProxyHandler = None, proxy_uri_validator = COMMA_PROXY_URI) -> None:
+  handler = localProxyHandler or partial(startLocalProxy, end_event)
+  dispatcher.add_method(handler, name="startLocalProxy",
+                        remote_ws_uri=proxy_uri_validator, local_port=one_of(8022, *LOCAL_PORT_WHITELIST))
   while not end_event.is_set():
     try:
       data = recv_queue.get(timeout=1)
@@ -253,10 +267,7 @@ def retry_upload(tid: int, end_event: threading.Event, increase_count: bool = Tr
 
     cur_upload_items[tid] = None
 
-    for _ in range(RETRY_DELAY):
-      time.sleep(1)
-      if end_event.is_set():
-        break
+    end_event.wait(RETRY_DELAY)
 
 
 def cb(sm, item, tid, end_event: threading.Event, sz: int, cur: int) -> None:
@@ -355,11 +366,8 @@ def _do_upload(upload_item: UploadItem, callback: Callable | None = None) -> req
 
 
 # security: user should be able to request any message from their car
-@dispatcher.add_method
+@dispatcher.add_method(service=one_of(*SERVICE_LIST), timeout=integer(0, 10_000))
 def getMessage(service: str, timeout: int = 1000) -> dict:
-  if service is None or service not in SERVICE_LIST:
-    raise Exception("invalid service")
-
   socket = messaging.sub_sock(service, timeout=timeout)
   try:
     ret = messaging.recv_one(socket)
@@ -406,7 +414,7 @@ def scan_dir(path: str, prefix: str, base: str | None = None) -> list[str]:
           files.append(rel_path)
   return files
 
-@dispatcher.add_method
+@dispatcher.add_method(prefix=either(one_of(''), regex(DATA_PATH)))
 def listDataDirectory(prefix='') -> list[str]:
   internal_files = scan_dir(Paths.log_root(), prefix, Paths.log_root())
   try:
@@ -621,13 +629,16 @@ class VideoClips:
 
 
 video_clips = VideoClips()
-dispatcher.add_method(video_clips.createClip)
-dispatcher.add_method(video_clips.getClipState)
-dispatcher.add_method(video_clips.deleteClip)
-dispatcher.add_method(video_clips.getClipChunk)
+dispatcher.add_method(video_clips.createClip, route=regex(RE.ROUTE_NAME),
+                      source_start_time=number(0, 24*3600), source_end_time=number(0, 24*3600),
+                      clip=struct({"camera": regex(r'[a-z]*camera\.hevc'), "filename": CLIP_FILENAME, "bitrate": number(1, 20),
+                                   "speedup": integer(1, 10)}))
+dispatcher.add_method(video_clips.getClipState, route=regex(RE.ROUTE_NAME))
+dispatcher.add_method(video_clips.deleteClip, filename=CLIP_FILENAME)
+dispatcher.add_method(video_clips.getClipChunk, filename=CLIP_FILENAME, offset=integer(0, 2**32))
 
 
-@dispatcher.add_method
+@dispatcher.add_method(fn=regex(DATA_PATH), url=UPLOAD_URL, headers=UPLOAD_HEADERS)
 def uploadFileToUrl(fn: str, url: str, headers: dict[str, str]) -> UploadFilesToUrlResponse:
   # this is because mypy doesn't understand that the decorator doesn't change the return type
   response: UploadFilesToUrlResponse = uploadFilesToUrls([{
@@ -638,17 +649,13 @@ def uploadFileToUrl(fn: str, url: str, headers: dict[str, str]) -> UploadFilesTo
   return response
 
 
-@dispatcher.add_method
+@dispatcher.add_method(files_data=list_of(UPLOAD_FILE))
 def uploadFilesToUrls(files_data: list[UploadFileDict]) -> UploadFilesToUrlResponse:
   files = map(UploadFile.from_dict, files_data)
 
   items: list[UploadItemDict] = []
   failed: list[str] = []
   for file in files:
-    if len(file.fn) == 0 or file.fn[0] == '/' or '..' in file.fn or len(file.url) == 0:
-      failed.append(file.fn)
-      continue
-
     path_internal = os.path.join(Paths.log_root(), file.fn)
     path_external = os.path.join(Paths.log_root_external(), file.fn)
     if os.path.exists(path_internal) or os.path.exists(strip_zst_extension(path_internal)):
@@ -694,7 +701,7 @@ def listUploadQueue() -> list[UploadItemDict]:
   return [asdict(i) for i in items if (i is not None) and (i.id not in cancelled_uploads)]
 
 
-@dispatcher.add_method
+@dispatcher.add_method(upload_id=either(UPLOAD_ID, list_of(UPLOAD_ID)))
 def cancelUpload(upload_id: str | list[str]) -> dict[str, int | str]:
   if not isinstance(upload_id, list):
     upload_id = [upload_id]
@@ -707,10 +714,8 @@ def cancelUpload(upload_id: str | list[str]) -> dict[str, int | str]:
   cancelled_uploads.update(cancelled_ids)
   return {"success": 1}
 
-@dispatcher.add_method
+@dispatcher.add_method(latitude=number(-90, 90), longitude=number(-180, 180))
 def setNavDestination(latitude: float, longitude: float) -> dict[str, int | str]:
-  if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
-    return {"success": 0, "error": "Invalid destination coordinates"}
   Params().put("NavDestination", {"latitude": latitude, "longitude": longitude}, block=True)
   return {"success": 1}
 
@@ -721,7 +726,7 @@ def clearNavDestination() -> dict[str, int]:
   return {"success": 1}
 
 
-@dispatcher.add_method
+@dispatcher.add_method(route=regex(RE.ROUTE_NAME))
 def setRouteViewed(route: str) -> dict[str, int | str]:
   # maintain a list of the last 10 routes viewed in connect
   params = Params()
@@ -741,7 +746,7 @@ def startLocalProxy(global_end_event: threading.Event, remote_ws_uri: str, local
   cloudlog.debug("athena.startLocalProxy.starting")
   dongle_id = Params().get("DongleId")
   identity_token = Api(dongle_id).get_token()
-  ws = create_connection(remote_ws_uri, cookie="jwt=" + identity_token, enable_multithread=True)
+  ws = create_connection(remote_ws_uri, cookie="jwt=" + identity_token, redirect_limit=0, enable_multithread=True)
 
   return start_local_proxy_shim(global_end_event, local_port, ws)
 
@@ -754,9 +759,6 @@ def start_local_proxy_shim(global_end_event: threading.Event, local_port: int, w
     # migration, can be removed once 0.9.8 is out for a while
     if local_port == 8022:
       local_port = 22
-
-    if local_port not in LOCAL_PORT_WHITELIST:
-      raise Exception("Requested local port not whitelisted")
 
     # Set TOS to keep connection responsive while under load.
     ws.sock.setsockopt(socket.IPPROTO_IP, socket.IP_TOS, SSH_TOS)
@@ -822,7 +824,7 @@ def getNetworkMetered() -> bool:
   return HARDWARE.get_network_metered(network_type)
 
 
-@dispatcher.add_method
+@dispatcher.add_method(sdp=regex(r'[\x20-\x7e\r\n]*'), enabled=boolean)
 def startStream(sdp: str, enabled: bool) -> dict:
   from openpilot.system.webrtc.helpers import StreamRequestBody, post_stream_request, wait_for_webrtcd
   params = Params()

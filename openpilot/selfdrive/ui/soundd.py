@@ -20,7 +20,7 @@ SAMPLE_RATE = 48000
 SAMPLE_BUFFER = 4096 # (approx 100ms)
 MAX_VOLUME = 1.0
 MIN_VOLUME = 0.1
-ALERT_RAMP_TIME = 4 # seconds to ramp to max volume for warningImmediate
+ALERT_RAMP_TIME = 4 # seconds to ramp to max volume for immediate warnings
 SELFDRIVE_STATE_TIMEOUT = 5 # 5 seconds
 FILTER_DT = 1. / (micd.SAMPLE_RATE / micd.FFT_SAMPLES)
 
@@ -55,10 +55,15 @@ sound_list: dict[int, tuple[str, int | None, float]] = {
   AudibleAlert.preAlert: ("pre_alert.wav", 1, MAX_VOLUME),
 
   AudibleAlert.warningSoft: ("critical.wav", None, MAX_VOLUME),
-  AudibleAlert.warningImmediate: ("dm_critical.wav", None, MAX_VOLUME),
+  AudibleAlert.warningImmediateSystem: ("critical.wav", None, MAX_VOLUME),
+  AudibleAlert.warningImmediateUser: ("dm_critical.wav", None, MAX_VOLUME),
 
   **sound_list_sp,
 }
+
+# sunnypilot: immediate warnings ramp up in volume, without upstream's switch to a max sound
+RAMP_ALERTS = (AudibleAlert.warningImmediateSystem, AudibleAlert.warningImmediateUser)
+
 
 def check_selfdrive_timeout_alert(sm):
   ss_missing = time.monotonic() - sm.recv_time['selfdriveState']
@@ -147,7 +152,7 @@ class Soundd(QuietMode):
       return
     self.pending_stop = False
     if self.current_alert != new_alert and (new_alert != AudibleAlert.none or current_alert_played_once):
-      if new_alert == AudibleAlert.warningImmediate:
+      if new_alert in RAMP_ALERTS:
         self.ramp_start_volume = self.current_volume
         self.ramp_start_time = time.monotonic()
       self.current_alert = new_alert
@@ -158,7 +163,7 @@ class Soundd(QuietMode):
       new_alert = sm['selfdriveState'].alertSound.raw
       self.update_alert(new_alert)
     elif check_selfdrive_timeout_alert(sm):
-      self.update_alert(AudibleAlert.warningImmediate)
+      self.update_alert(AudibleAlert.warningImmediateSystem)
       self.selfdrive_timeout_alert = True
     elif self.selfdrive_timeout_alert:
       self.update_alert(AudibleAlert.none)
@@ -199,8 +204,8 @@ class Soundd(QuietMode):
 
         self.get_audible_alert(sm)
 
-        # Ramp up immediate warning sound over 4s
-        if self.current_alert == AudibleAlert.warningImmediate:
+        # Ramp up immediate warning sounds over 4s
+        if self.current_alert in RAMP_ALERTS:
           elapsed = time.monotonic() - self.ramp_start_time
           ramp_vol = float(np.interp(elapsed, [0, ALERT_RAMP_TIME], [self.ramp_start_volume, MAX_VOLUME]))
           self.current_volume = max(self.current_volume, ramp_vol)

@@ -1,4 +1,4 @@
-import pyray as rl
+import raylib_nb as rl
 from openpilot.cereal import log, messaging
 from openpilot.cereal.visionipc import VisionStreamType
 from openpilot.selfdrive.ui.mici.onroad.cameraview import CameraView
@@ -108,7 +108,7 @@ class BaseCabinCameraDialog(Widget):
     ALERT_SOUNDS = {
       'one': AudibleAlert.preAlert,
       'two': AudibleAlert.promptDistracted,
-      'three': AudibleAlert.warningImmediate,
+      'three': AudibleAlert.warningImmediateUser,
     }
     msg = messaging.new_message('selfdriveState')
     if dm_state is not None:
@@ -123,11 +123,11 @@ class BaseCabinCameraDialog(Widget):
     is_vision = dm_state.activePolicy == log.DriverMonitoringState.MonitoringPolicy.vision
     awareness_pct = dm_state.visionPolicyState.awarenessPercent if is_vision else dm_state.wheeltouchPolicyState.awarenessPercent
     gui_label(rl.Rectangle(rect.x + 2, rect.y + 2, rect.width, rect.height),
-              f"Awareness: {awareness_pct:.0f}%", font_size=44, font_weight=FontWeight.MEDIUM,
+              f"awareness: {awareness_pct:.0f}%", font_size=44, font_weight=FontWeight.MEDIUM,
               alignment=TextAlignment.RIGHT,
               alignment_vertical=TextAlignmentVertical.TOP,
               color=rl.Color(0, 0, 0, 180))
-    gui_label(rect, f"Awareness: {awareness_pct:.0f}%", font_size=44, font_weight=FontWeight.MEDIUM,
+    gui_label(rect, f"awareness: {awareness_pct:.0f}%", font_size=44, font_weight=FontWeight.MEDIUM,
               alignment=TextAlignment.RIGHT,
               alignment_vertical=TextAlignmentVertical.TOP,
               color=rl.Color(255, 255, 255, int(255 * 0.9)))
@@ -217,8 +217,8 @@ class BaseCabinCameraDialog(Widget):
       fill_opacity = eye_prob
       orange_opacity = 1.0 - eye_prob
 
-      rl.draw_texture_v(self._eye_orange_texture, (eye_x, eye_y), rl.Color(255, 255, 255, int(255 * orange_opacity)))
-      rl.draw_texture_v(self._eye_fill_texture, (eye_x, eye_y), rl.Color(255, 255, 255, int(255 * fill_opacity)))
+      rl.draw_texture_v(self._eye_orange_texture, rl.Vector2(eye_x, eye_y), rl.Color(255, 255, 255, int(255 * orange_opacity)))
+      rl.draw_texture_v(self._eye_fill_texture, rl.Vector2(eye_x, eye_y), rl.Color(255, 255, 255, int(255 * fill_opacity)))
 
     # Draw sunglasses indicator based on sunglasses probability
     # Position glasses centered between the two eyes at top left
