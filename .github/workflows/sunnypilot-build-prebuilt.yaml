@@ -112,7 +112,7 @@ jobs:
     concurrency:
       group: build-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: false
-    runs-on: [self-hosted, tici]
+    runs-on: ubuntu-24.04-arm
     if: ${{
       (always() && !cancelled() && !failure()) &&
       needs.prepare_strategy.result == 'success' &&
@@ -129,55 +129,60 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.fork && github.event.pull_request.head.repo.full_name || github.repository }}
       - run: ./lfs.py pull --exclude=''
 
-      - name: Set environment variables
+      - name: Import the AGNOS system image this commit pins
         run: |
-          # Set up common environment
-          source /etc/profile;
+          read -r URL HASH HASH_RAW < <(python3 -c "import json; p = next(p for p in json.load(open('openpilot/common/hardware/comma/agnos.json')) if p['name'] == 'system'); print(p['url'], p['hash'], p['hash_raw'])")
+          curl -fsSL --retry 3 "$URL" | xz -dc -T0 > "$RUNNER_TEMP/system.sparse.img"
+          echo "$HASH  $RUNNER_TEMP/system.sparse.img" | sha256sum -c
+          sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends android-sdk-libsparse-utils
+          simg2img "$RUNNER_TEMP/system.sparse.img" "$RUNNER_TEMP/system.img" && rm "$RUNNER_TEMP/system.sparse.img"
+          echo "$HASH_RAW  $RUNNER_TEMP/system.img" | sha256sum -c
+          sudo mkdir -p /mnt/agnos && sudo mount -o loop,ro "$RUNNER_TEMP/system.img" /mnt/agnos
+          sudo tar -C /mnt/agnos --exclude=./etc/resolv.conf -c . | docker import - agnos  # a symlink into /run: docker writes its own
+          sudo umount /mnt/agnos && rm "$RUNNER_TEMP/system.img"
+
+      - name: Build Main Project in AGNOS
+        run: |
+          cat > "$RUNNER_TEMP/build.sh" <<'EOF'
+          set -e
+          source /etc/profile
+          set -x
           export UV_PROJECT_ENVIRONMENT=${HOME}/venv
           export UV_PYTHON_PREFERENCE=managed
           export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
           export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
+          mkdir -p "$HOME"
+          git config --global --add safe.directory '*'
+          cat /VERSION
+          clang --version | head -1
+          cd /src
           uv sync
-          printenv >> $GITHUB_ENV
-
-      - name: Setup build environment
-        run: |
-          mkdir -p "${BUILD_DIR}/"
-          sudo find $BUILD_DIR/ -mindepth 1 -delete
-          echo "Starting build stage..."
-          echo "BUILD_DIR: ${BUILD_DIR}"
-          echo "CI_DIR: ${CI_DIR}"
-          echo "VERSION: ${{ needs.prepare_strategy.outputs.version }}"
-          echo "UV_PROJECT_ENVIRONMENT: ${UV_PROJECT_ENVIRONMENT}"
-          echo "VIRTUAL_ENV: ${VIRTUAL_ENV}"
-          echo "-------"
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            printenv
-          fi
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
-
-      - name: Build Main Project
-        run: |
           export PYTHONPATH="$BUILD_DIR:$BUILD_DIR/msgq_repo:$BUILD_DIR/opendbc_repo:$BUILD_DIR/rednose_repo:$BUILD_DIR/teleoprtc_repo:$BUILD_DIR/tinygrad_repo"
           ./tools/release/release_files.py | xargs -0 cp -pR --parents -t "$BUILD_DIR" --
-          # outside the checkout, which is wiped each run. /data/scons_cache is the device's, not ours.
-          SCONS_CACHE="$RUNNER_WORKSPACE/scons_cache"
+          python3 -m pip install -q tinymesa==25.2.7.2
+          # scons passes the warp commands only PATH, TMPDIR and PYTHONPATH, so the mock goes into the command itself
+          sed -i "s/'DEV=QCOM /'DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes /" "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
+          grep -q "'DEV=MOCK+QCOM " "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
+          SCONS_CACHE=/data/scons_cache
           mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
-          echo "Building locationd..."
-          # -j1: parallel rednose generators OOM the device
-          scons -j1 cache_dir="$SCONS_CACHE" --minimal \
-            openpilot/selfdrive/locationd
-          echo "Building rest of sunnypilot"
-          sudo rm -rf /tmp/* || true
+          scons -j1 cache_dir="$SCONS_CACHE" --minimal openpilot/selfdrive/locationd
+          rm -rf /tmp/* || true
           mkdir -p "$BUILD_DIR/tmp"
           export TMPDIR="$BUILD_DIR/tmp"
-          SKIP_TINYGRAD_COMPILE=1 /usr/bin/time -v scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
+          SKIP_TINYGRAD_COMPILE=1 scons -j$(nproc) cache_dir="$SCONS_CACHE" --minimal
           touch ${BUILD_DIR}/prebuilt
-          if [[ "${{ runner.debug }}" == "1" ]]; then
-            ls -la ${BUILD_DIR}
-          fi
+          EOF
+          sudo mkdir -p "$BUILD_DIR"
+          # MemAvailable, not RSS: scons runs many processes at once
+          (while :; do awk '/MemAvailable/{print $2}' /proc/meminfo; sleep 1; done) > "$RUNNER_TEMP/mem.log" &
+          MEM_PID=$!
+          trap 'kill $MEM_PID' EXIT
+          docker run --rm --privileged -e CI=true -e HOME=/home/comma -e BUILD_DIR \
+            -v "$GITHUB_WORKSPACE:/src" -v "$BUILD_DIR:$BUILD_DIR" -v "$RUNNER_TEMP/build.sh:/build.sh:ro" agnos bash /build.sh
+          TOTAL=$(awk '/MemTotal/{print $2}' /proc/meminfo)
+          echo "peak mem used: $(( (TOTAL - $(sort -n "$RUNNER_TEMP/mem.log" | head -1)) / 1024 )) of $((TOTAL / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
+          sudo chown -R "$(id -u):$(id -g)" "$BUILD_DIR"
 
       - name: Strip release tree
         run: |
@@ -208,12 +213,6 @@ jobs:
           name: prebuilt
           path: prebuilt.tar.gz
           compression-level: 0
-
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   prepare_chestnut:
     needs: [ prepare_strategy ]
