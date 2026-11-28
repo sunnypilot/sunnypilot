@@ -8,7 +8,7 @@ import json
 import math
 import os
 from collections.abc import Callable
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.common.basedir import BASEDIR
 from openpilot.selfdrive.ui.ui_state import ui_state
