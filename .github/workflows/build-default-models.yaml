@@ -102,7 +102,7 @@ jobs:
       - name: Compile small model from ONNX
         run: |
           export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
-          TG_FLAGS="DEV=MOCK+QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           env ${TG_FLAGS} python3 ${{ github.workspace }}/${{ env.COMPILER }}/compile_onnx.py \
             ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
             ${{ github.workspace }}/${{ env.SMALL_PKL }} \
@@ -173,7 +173,7 @@ jobs:
         run: |
           export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          CHESTNUT_TG_FLAGS="DEBUG=1 DEV=MOCKUSB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 CHECK_OOB=0 TC_OPT=2 TC_MIN_GLOBALS=32"
+          CHESTNUT_TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 CHECK_OOB=0 TC_OPT=2 TC_MIN_GLOBALS=32"
           COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
@@ -188,7 +188,7 @@ jobs:
           print(f'{s},{y},{u},{sz}')
           " $CAM_W $CAM_H)
             WARP_PKL="${MODELS_DIR}/big_driving_warp_${res}_tinygrad.pkl"
-            env ${CHESTNUT_TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
+            python3 tinygrad_repo/test/mockgpu/usb_server.py env PYTHONPATH="$PYTHONPATH" ${CHESTNUT_TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
               --frame ${CAM_W},${CAM_H},${STRIDE_INFO} \
               --warp-to ${MODEL_SIZE} \
               --layout yuv420 \
@@ -387,7 +387,7 @@ jobs:
         run: |
           export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          TG_FLAGS="DEV=MOCK+QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
 
           env ${TG_FLAGS} python3 \
             ${{ github.workspace }}/tinygrad_repo/examples/openpilot/compile_onnx.py \
@@ -399,7 +399,7 @@ jobs:
         run: |
           export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          TG_FLAGS="DEV=MOCK+QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           DM_SIZE=$(python3 -c "from openpilot.common.transformations.model import DM_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
