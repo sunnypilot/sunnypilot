@@ -2199,22 +2199,9 @@
       "items": [
         {
           "key": "HyundaiLongitudinalTuning",
-          "widget": "multiple_button",
+          "widget": "toggle",
           "title": "Custom Longitudinal Tuning",
-          "options": [
-            {
-              "value": 0,
-              "label": "Off"
-            },
-            {
-              "value": 1,
-              "label": "Dynamic"
-            },
-            {
-              "value": 2,
-              "label": "Predictive"
-            }
-          ],
+          "description": "Accelerates and brakes the way your car's own cruise control does.",
           "visibility": [
             {
               "type": "capability",
