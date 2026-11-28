@@ -59,6 +59,7 @@ class UIStateSP:
     self.road_name_toggle: bool = False
     self.rocket_fuel: bool = False
     self.speed_limit_mode = None
+    self.speed_limit_sign_style: int = 0  # 0 auto (EU for km/h, US for mph), 1 Canadian MAXIMUM sign for km/h
     self.standstill_timer: bool = False
     self.sunnylink_enabled: bool = False
     self.torque_bar: bool = False
@@ -182,6 +183,7 @@ class UIStateSP:
     self.road_name_toggle = self.params.get_bool("RoadNameToggle")
     self.rocket_fuel = self.params.get_bool("RocketFuel")
     self.speed_limit_mode = self.params.get("SpeedLimitMode", return_default=True)
+    self.speed_limit_sign_style = self.params.get("SpeedLimitSignStyle", return_default=True)
     self.standstill_timer = self.params.get_bool("StandstillTimer")
     self.sunnylink_enabled = self.params.get_bool("SunnylinkEnabled")
     self.torque_bar = self.params.get_bool("TorqueBar")
