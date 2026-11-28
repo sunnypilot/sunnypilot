@@ -10,6 +10,9 @@ from openpilot.selfdrive.ui.layouts.main import MainLayout
 from openpilot.selfdrive.ui.mici.layouts.main import MiciMainLayout
 from openpilot.selfdrive.ui.ui_state import ui_state
 
+if gui_app.sunnypilot_ui():
+  from openpilot.selfdrive.ui.sunnypilot.mici.layouts.main import MiciMainLayoutSP as MiciMainLayout
+
 BIG_UI = gui_app.big_ui()
 
 
