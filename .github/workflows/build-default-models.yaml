@@ -77,9 +77,8 @@ jobs:
   build_small_model:
     needs: resolve
     if: ${{ inputs.target == 'small' }}
-    runs-on: [self-hosted, tici]
+    runs-on: ubuntu-24.04-arm
     env:
-      MODELS_DIR: openpilot/selfdrive/modeld/models
       COMPILER: tinygrad_repo/examples/openpilot
       SMALL_ONNX: openpilot/selfdrive/modeld/models/driving_supercombo.onnx
       SMALL_PKL: openpilot/selfdrive/modeld/models/driving_tinygrad.pkl
@@ -91,37 +90,28 @@ jobs:
       - name: Pull small ONNX via LFS
         run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Set environment variables
-        run: |
-          source /etc/profile
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export UV_PYTHON_PREFERENCE=managed
-          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          uv sync --frozen
-          printenv >> $GITHUB_ENV
-
-      - name: Disable powersave
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+      - name: Set up the qcom mock
+        uses: ./.github/workflows/setup-qcom-mock
+        with:
+          hf_token: ${{ secrets.HF_TOKEN }}
 
       - name: Compile small model from ONNX
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
-          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           env ${TG_FLAGS} python3 ${{ github.workspace }}/${{ env.COMPILER }}/compile_onnx.py \
             ${{ github.workspace }}/${{ env.SMALL_ONNX }} \
             ${{ github.workspace }}/${{ env.SMALL_PKL }} \
-            --out-of-band --benchmark-runs 1
+            --out-of-band --benchmark-runs 0
 
       - name: Prepare output
         env:
           MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH=${{ github.workspace }}
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           OUTPUT_DIR="${{ github.workspace }}/small_output"
@@ -153,19 +143,11 @@ jobs:
           name: artifact-name-${{ needs.resolve.outputs.safe_model_name }}
           path: ${{ github.workspace }}/small_output/artifact_name.txt
 
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
-
   build_big_model:
     needs: resolve
     if: ${{ inputs.target == 'big' }}
-    runs-on: [self-hosted, chestnut]
+    runs-on: ubuntu-24.04
     env:
-      MODELS_DIR: openpilot/selfdrive/modeld/models
-      COMPILER: tinygrad_repo/examples/openpilot
       BIG_PKL: openpilot/selfdrive/modeld/models/big_driving_tinygrad.pkl
     steps:
       - uses: actions/checkout@v4
@@ -175,43 +157,23 @@ jobs:
       - name: Pull big PKL via LFS
         run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
-      - name: Set environment variables
-        run: |
-          source /etc/profile
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export UV_PYTHON_PREFERENCE=managed
-          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          uv sync --frozen
-          printenv >> $GITHUB_ENV
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Disable powersave
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+      - name: Install LLVM 20 and ROCm comgr for the amd mock
+        uses: ./.github/workflows/setup-amd-mock
+        with:
+          emu_cache: big-warp
 
-      - name: Wait for chestnut PCIe link
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
-          python3 -c "
-          import time
-          from openpilot.sunnypilot.modeld_v2.compile_modeld import chestnut_link_up
-          for i in range(10):
-              if chestnut_link_up():
-                  print(f'PCIe link up after {i+1} attempt(s)')
-                  break
-              time.sleep(1)
-          else:
-              raise RuntimeError('Chestnut PCIe link not ready after 10 attempts')
-          "
+      - name: Install the amd mock build dependencies
+        run: python3 -m pip install -q numpy zstandard
 
       - name: Compile big warp
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          CHESTNUT_TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 TC_OPT=2 TC_MIN_GLOBALS=32"
+          CHESTNUT_TG_FLAGS="DEBUG=1 DEV=USB+AMD:LLVM FRAME_DEV=CPU FLOAT16=1 JIT_BATCH_SIZE=0 GMMU=0 CHECK_OOB=0 TC_OPT=2 TC_MIN_GLOBALS=32"
           COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           MODEL_SIZE=$(python3 -c "from openpilot.common.transformations.model import MEDMODEL_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
@@ -226,11 +188,13 @@ jobs:
           print(f'{s},{y},{u},{sz}')
           " $CAM_W $CAM_H)
             WARP_PKL="${MODELS_DIR}/big_driving_warp_${res}_tinygrad.pkl"
-            env ${CHESTNUT_TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
+            python3 tinygrad_repo/test/mockgpu/usb_server.py env PYTHONPATH="$PYTHONPATH" ${CHESTNUT_TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
               --frame ${CAM_W},${CAM_H},${STRIDE_INFO} \
               --warp-to ${MODEL_SIZE} \
               --layout yuv420 \
               --frames 2 \
+              --benchmark-runs 0 \
+              --retargetable \
               --output "${WARP_PKL}"
           done
 
@@ -238,7 +202,6 @@ jobs:
         env:
           MODEL_NAME: ${{ needs.resolve.outputs.safe_model_name }}
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
           export PYTHONPATH=${{ github.workspace }}
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           OUTPUT_DIR="${{ github.workspace }}/big_output"
@@ -271,12 +234,6 @@ jobs:
         with:
           name: artifact-name-${{ needs.resolve.outputs.safe_model_name }}
           path: ${{ github.workspace }}/big_output/artifact_name.txt
-
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable
 
   upload_defaults:
     needs: [ resolve, build_small_model, build_big_model, build_dm_model ]
@@ -405,7 +362,7 @@ jobs:
   build_dm_model:
     needs: resolve
     if: ${{ inputs.target == 'dm' }}
-    runs-on: [self-hosted, tici]
+    runs-on: ubuntu-24.04-arm
     env:
       DM_ONNX: openpilot/selfdrive/modeld/models/dmonitoring_model.onnx
       DM_PKL: openpilot/selfdrive/modeld/models/dmonitoring_model_tinygrad.pkl
@@ -417,40 +374,32 @@ jobs:
       - name: Pull DM ONNX via LFS
         run: ./lfs.py pull --exclude=''  # ponytail: pulls every LFS file (lfs.py has no include filter); HF egress is free
 
-      - name: Set environment variables
-        run: |
-          source /etc/profile
-          export UV_PROJECT_ENVIRONMENT=${HOME}/venv
-          export UV_PYTHON_PREFERENCE=managed
-          export UV_PYTHON_INSTALL_DIR=${HOME}/uv/python
-          export VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT
-          uv sync --frozen
-          printenv >> $GITHUB_ENV
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-      - name: Disable powersave
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --disable
+      - name: Set up the qcom mock
+        uses: ./.github/workflows/setup-qcom-mock
+        with:
+          hf_token: ${{ secrets.HF_TOKEN }}
 
       - name: Compile DM model
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
 
-          taskset -c 7 env ${TG_FLAGS} python3 \
+          env ${TG_FLAGS} python3 \
             ${{ github.workspace }}/tinygrad_repo/examples/openpilot/compile_onnx.py \
             ${{ github.workspace }}/${{ env.DM_ONNX }} \
             ${{ github.workspace }}/${{ env.DM_PKL }} \
-            --out-of-band --benchmark-runs 1
+            --out-of-band --benchmark-runs 0
 
       - name: Compile DM warp
         run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          export PYTHONPATH="${PYTHONPATH}:${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
+          export PYTHONPATH="${{ github.workspace }}/tinygrad_repo:${{ github.workspace }}"
 
-          TG_FLAGS="DEV=QCOM IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
+          TG_FLAGS="DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes IMAGE=1 FLOAT16=1 NOLOCALS=1 JIT_BATCH_SIZE=0 OPENPILOT_HACKS=1"
           COMPILER="${{ github.workspace }}/tinygrad_repo/examples/openpilot"
           MODELS_DIR="${{ github.workspace }}/openpilot/selfdrive/modeld/models"
           DM_SIZE=$(python3 -c "from openpilot.common.transformations.model import DM_INPUT_SIZE as s; print(f'{s[0]}x{s[1]}')")
@@ -465,12 +414,13 @@ jobs:
           print(f'{s},{y},{u},{sz}')
           " $CAM_W $CAM_H)
             WARP_PKL="${MODELS_DIR}/dm_warp_${res}_tinygrad.pkl"
-            taskset -c 7 env ${TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
+            env ${TG_FLAGS} python3 "${COMPILER}/compile_warp.py" \
               --frame ${CAM_W},${CAM_H},${STRIDE_INFO} \
               --warp-to ${DM_SIZE} \
               --layout luma \
               --border-fill 16 \
               --transform-device NPY \
+              --benchmark-runs 0 \
               --output "${WARP_PKL}"
           done
 
@@ -485,9 +435,3 @@ jobs:
         with:
           name: dm-model-${{ github.run_number }}
           path: dm_output/
-
-      - name: Re-enable powersave
-        if: always()
-        run: |
-          source ${UV_PROJECT_ENVIRONMENT}/bin/activate
-          PYTHONPATH=$PYTHONPATH:${{ github.workspace }}/ ${{ github.workspace }}/scripts/manage-powersave.py --enable

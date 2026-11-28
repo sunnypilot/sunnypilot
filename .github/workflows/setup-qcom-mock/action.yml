@@ -1,0 +1,62 @@
+name: Set up tinygrad's qcom mock
+description: The a630 compiler, checked against what an a630 compiled, and the kernels earlier builds compiled
+inputs:
+  hf_token:
+    description: Records a passed compiler check on HF so the next build skips it
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install the qcom mock build dependencies
+      id: deps
+      shell: bash
+      run: |
+        python3 -m pip install -q numpy zstandard tinymesa==25.2.7.2
+        if [ "$RUNNER_ARCH" = ARM64 ]; then  # the qcomcl rootfs's compiler loads in this python, no qemu
+          sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends aria2
+          FS=$(PYTHONPATH="$GITHUB_WORKSPACE/tinygrad_repo" python3 -c "from tinygrad.helpers import fetch; print(fetch('https://git.tinygrad.win/tinygrad/images/releases/download/v2/qcomcl.tar.gz', extract=True))")
+          echo "LLVM_QCOM_PATH=$FS/usr/lib/libllvm-qcom.so" >> "$GITHUB_ENV"
+          echo "compiler=native-$(sha256sum "$FS/usr/lib/libllvm-qcom.so" | cut -c1-16)" >> "$GITHUB_OUTPUT"
+        else
+          sudo apt-get -qq update && sudo apt-get -qq install -y --no-install-recommends qemu-user-static aria2
+          echo "compiler=qemu-$(dpkg-query -W -f='${Version}' qemu-user-static)" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Compiler check passed before with all of it identical?
+      id: compiler
+      shell: bash
+      env:
+        KEY: qcom-compiler-parity-${{ steps.deps.outputs.compiler }}-${{ hashFiles('tinygrad_repo/test/device/qcom/compiler_parity.py', 'tinygrad_repo/test/mockgpu/qcom/a630_compiled.pkl.xz', 'tinygrad_repo/tinygrad/runtime/support/compiler_qcom.py') }}
+      run: |
+        MARKER="ci/qcom-compiler-parity/$(printf '%s' "$KEY" | tr -c 'A-Za-z0-9._-' '_').txt"
+        CODE=$(curl -s -o /dev/null -w '%{http_code}' -I -L "https://huggingface.co/datasets/sunnypilot/sunnypilot_models_v1/resolve/main/$MARKER")
+        echo "$MARKER: HTTP $CODE"
+        { echo "key=$KEY"; echo "marker=$MARKER"; echo "passed=$([ "$CODE" = 200 ] && echo true || echo false)"; } >> "$GITHUB_OUTPUT"
+
+    - name: Check the off-device qcom compiler builds the a630's bytes
+      if: steps.compiler.outputs.passed != 'true'
+      shell: bash
+      run: |
+        # every kernel an a630 has compiled must compile to the same bytes here before a model is built here
+        TG="$GITHUB_WORKSPACE/tinygrad_repo"
+        PYTHONPATH="$TG" python3 "$TG/test/device/qcom/compiler_parity.py" check "$TG/test/mockgpu/qcom/a630_compiled.pkl.xz"
+
+    - name: Remember the compiler check passed
+      if: steps.compiler.outputs.passed != 'true' && inputs.hf_token != ''
+      shell: bash
+      env:
+        HF_TOKEN: ${{ inputs.hf_token }}
+        KEY: ${{ steps.compiler.outputs.key }}
+        MARKER: ${{ steps.compiler.outputs.marker }}
+      run: |
+        python3 -m pip install -q --upgrade "huggingface_hub>=0.34"
+        printf '%s\n%s\n' "$KEY" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > "$RUNNER_TEMP/marker.txt"
+        hf upload --repo-type dataset sunnypilot/sunnypilot_models_v1 "$RUNNER_TEMP/marker.txt" "$MARKER" \
+          --commit-message "qcom compiler parity passed: $KEY" || echo "::warning::could not record the pass, the next build checks again"
+
+    - name: Kernels compiled by earlier builds
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/tinygrad/cache.db
+        key: qcom-kernels-${{ steps.compiler.outputs.key }}-${{ github.run_id }}
+        restore-keys: qcom-kernels-${{ steps.compiler.outputs.key }}-

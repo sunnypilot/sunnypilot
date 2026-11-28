@@ -90,7 +90,7 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
     kwargs = self.inputs(2)
     frame, _ = capture_frame(jit, kwargs, "output_buffers")
     header, blob = convert(jit, kwargs, frame, Device[Device.DEFAULT].renderer.target)
-    kernels = jit.captured._linear.src[0].without_after.arg.aux.kernels
+    kernels = convert_upstream_pkl.submit_kernels(jit)
     assert [call["name"] for call in header["calls"]] == [re.sub(r"\x1b\[[0-9;]*m", "", kernel[1]) for kernel in kernels]
     assert all(re.fullmatch(r"\w+", call["name"]) for call in header["calls"]), "kernel names: failure point 1"
     assert [(tuple(call["outs"]), tuple(call["ins"])) for call in header["calls"]] == [tuple(kernel[6]) for kernel in kernels], "outs/ins: failure point 1"
@@ -107,12 +107,11 @@ class TestConvertUpstreamPkl(OpenpilotTestCase):
 
   def test_pickle_round_trip_through_main(self):
     from examples.openpilot.helpers import dump_pickle, load_pickle
-    from tinygrad.engine.realize import lower_and_compile
     pkl, out = os.path.join(self.tmp.name, "tiny_tinygrad.pkl"), os.path.join(self.tmp.name, "tiny_plain.pkl")
     dump_pickle({"run": self.jit(), "input_specs": self.input_specs, "output_specs": self.output_specs, "metadata": {"name": "tiny"}}, pkl)
 
     artifact = load_pickle(pkl, out_of_band=True)
-    artifact["run"].captured._linear = lower_and_compile(artifact["run"].captured._linear)
+    artifact["run"].captured._linear = convert_upstream_pkl.lower_and_compile(artifact["run"].captured._linear)
     self.assert_matches_eager(PlainJit(*self.convert(artifact["run"])), 5)
 
     with mock.patch.object(sys, "argv", ["convert_upstream_pkl", pkl, out]):
