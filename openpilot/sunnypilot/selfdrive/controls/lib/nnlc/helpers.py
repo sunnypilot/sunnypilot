@@ -60,7 +60,7 @@ def get_nn_model_path(CP: structs.CarParams) -> tuple[str, str, bool]:
 
       exact_match = False
 
-  if CP.steerControlType == structs.CarParams.SteerControlType.angle:
+  if CP.steerControlType != structs.CarParams.SteerControlType.torque:
     model_path = MOCK_MODEL_PATH
 
   model_name = os.path.splitext(os.path.basename(model_path))[0]
