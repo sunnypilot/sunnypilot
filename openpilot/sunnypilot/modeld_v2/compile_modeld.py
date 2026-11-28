@@ -371,15 +371,6 @@ def _compile_warp_resolution_worker(cam_w, cam_h, model_w, model_h, benchmark_ru
 
 
 if __name__ == "__main__":
-  if 'USB' in os.getenv('DEV', '') or os.getenv('CHESTNUT'):
-    from openpilot.system.hardware.chestnut.flash import link_up
-    for _ in range(10):
-      if link_up():
-        break
-      time.sleep(1)
-    else:
-      raise RuntimeError("Chestnut not ready, skipping big model build")
-
   parser = argparse.ArgumentParser(description="Compile combined JIT pkl for sunnypilot modeld_v2")
   parser.add_argument('--model-type', choices=MODEL_TYPES, required=True)
   parser.add_argument('--model-size', type=_parse_size, required=True, help='model input WxH')

@@ -1,4 +1,4 @@
-import pyray as rl
+import raylib_nb as rl
 
 from openpilot.system.ui.lib.application import gui_app, FontWeight, FONT_SCALE
 from openpilot.system.ui.lib.multilang import tr, tr_noop
@@ -28,6 +28,11 @@ class FirehoseLayout(FirehoseLayoutBase):
   def __init__(self):
     super().__init__()
     self._scroll_panel = GuiScrollPanel()
+    self._content_height = 0
+
+  def show_event(self):
+    super().show_event()
+    self._scroll_panel.set_offset(0)
 
   def _render(self, rect: rl.Rectangle):
     # Calculate content dimensions
