@@ -476,8 +476,7 @@ def main(demo=False):
       inputs['action_t'] = np.array([lat_action_t, long_action_t], dtype=np.float32)
 
     if 'speed_limit' in model.numpy_inputs:
-      resolver = sm['longitudinalPlanSP'].speedLimit.resolver
-      inputs['speed_limit'] = np.array([resolver.speedLimitFinal if resolver.speedLimitValid else 0.0], dtype=np.float32)
+      inputs['speed_limit'] = np.zeros(1, dtype=np.float32)
 
     mt1 = time.perf_counter()
     try:
