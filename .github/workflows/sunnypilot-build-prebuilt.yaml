@@ -163,6 +163,8 @@ jobs:
           # scons passes the warp commands only PATH, TMPDIR and PYTHONPATH, so the mock goes into the command itself
           sed -i "s/'DEV=QCOM /'DEV=MOCK+QCOM HCQ_RUNTIME_DEV=CPU:LLVM:arm64,cortex-a75,fp-armv8,sha2,lse,neon,crc,aes /" "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
           grep -q "'DEV=MOCK+QCOM " "$BUILD_DIR/openpilot/selfdrive/modeld/SConscript"
+          # msgq builds the ION vision buffers only when /dev/ion exists; the device has one, the runner does not
+          touch /dev/ion
           SCONS_CACHE=/data/scons_cache
           mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
