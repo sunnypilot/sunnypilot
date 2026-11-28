@@ -168,7 +168,6 @@ jobs:
           SCONS_CACHE=/data/scons_cache
           mkdir -p "$SCONS_CACHE"
           cd $BUILD_DIR
-          scons -j1 cache_dir="$SCONS_CACHE" --minimal openpilot/selfdrive/locationd
           rm -rf /tmp/* || true
           mkdir -p "$BUILD_DIR/tmp"
           export TMPDIR="$BUILD_DIR/tmp"
