@@ -156,6 +156,8 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"BlinkerLateralReengageDelay", {PERSISTENT | BACKUP, INT, "0"}},  // seconds
     {"BlinkerMinLateralControlSpeed", {PERSISTENT | BACKUP, INT, "20"}},  // MPH or km/h
     {"BlinkerPauseLateralControl", {PERSISTENT | BACKUP, INT, "0"}},
+    {"BluetoothAllowed", {PERSISTENT, BOOL, "1"}},
+    {"BluetoothEnabled", {CLEAR_ON_MANAGER_START, BOOL, "0"}},
     {"Brightness", {PERSISTENT | BACKUP, INT, "0"}},
     {"CarList", {PERSISTENT, JSON}},
     {"CarParamsSP", {CLEAR_ON_MANAGER_START | CLEAR_ON_ONROAD_TRANSITION, BYTES}},
@@ -233,6 +235,11 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"SunnylinkDongleId", {PERSISTENT, STRING}},
     {"SunnylinkdPid", {PERSISTENT, INT}},
     {"SunnylinkEnabled", {PERSISTENT, BOOL, "1"}},
+    {"SunnylinkLocalConnectPhoneRequest", {CLEAR_ON_MANAGER_START | DONT_LOG, JSON}},
+    {"SunnylinkLocalConnectPhoneWindow", {CLEAR_ON_MANAGER_START | DONT_LOG, JSON}},
+    {"SunnylinkLocalBleGrants", {PERSISTENT | DONT_LOG, JSON}},
+    {"SunnylinkLocalBleKey", {PERSISTENT | DONT_LOG, BYTES}},
+    {"SunnylinkLocalBluetoothStatus", {CLEAR_ON_MANAGER_START | DONT_LOG, JSON}},
     {"SunnylinkTempFault", {CLEAR_ON_MANAGER_START | CLEAR_ON_OFFROAD_TRANSITION, BOOL, "0"}},
 
     // Backup Manager params

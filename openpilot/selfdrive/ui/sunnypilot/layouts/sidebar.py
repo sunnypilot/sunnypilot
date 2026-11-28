@@ -11,6 +11,7 @@ import time
 from dataclasses import dataclass
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState
 from openpilot.sunnypilot.sunnylink.api import UNREGISTERED_SUNNYLINK_DONGLE_ID
+from openpilot.sunnypilot.system.connect_phone import phone_indicator, read_status
 from openpilot.system.ui.lib.application import gui_app
 from openpilot.system.ui.lib.multilang import tr_noop
 
@@ -23,6 +24,11 @@ HOME_BTN = rl.Rectangle(60, 860, 180, 180)
 
 CHESTNUT_ICON_WIDTH = 180
 CHESTNUT_ICON_HEIGHT = 133
+BT_ICON_SIZE = 30
+BT_ICON_X = 250  # right of the signal dots, clear of the mic indicator
+BT_ICON_Y = 195
+BT_POLL_SECONDS = 1.0
+BT_WAITING_OPACITY = 0.35
 
 
 # Color scheme
@@ -62,6 +68,19 @@ class SidebarSP:
     self._chestnut_green_img = gui_app.texture("icons_mici/chestnut_green.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
     self._chestnut_default_img = gui_app.texture("icons_mici/chestnut.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
     self._chestnut_orange_img = gui_app.texture("icons_mici/chestnut_orange.png", CHESTNUT_ICON_WIDTH, CHESTNUT_ICON_HEIGHT)
+    self._bt_img = gui_app.texture("../../sunnypilot/selfdrive/assets/offroad/icon_bluetooth.png", BT_ICON_SIZE, BT_ICON_SIZE)
+    self._bt_state = "hidden"
+    self._bt_polled_at = float("-inf")
+
+  def _draw_bluetooth_indicator(self, rect: rl.Rectangle):
+    now = time.monotonic()
+    if now - self._bt_polled_at >= BT_POLL_SECONDS:
+      self._bt_polled_at = now
+      self._bt_state = phone_indicator(read_status(ui_state.params))
+    if self._bt_state == "hidden":
+      return
+    alpha = 255 if self._bt_state == "connected" else int(255 * BT_WAITING_OPACITY)
+    rl.draw_texture_ex(self._bt_img, rl.Vector2(rect.x + BT_ICON_X, rect.y + BT_ICON_Y), 0.0, 1.0, rl.Color(255, 255, 255, alpha))
 
   def _update_sunnylink_status(self):
     if not ui_state.params.get_bool("SunnylinkEnabled"):
