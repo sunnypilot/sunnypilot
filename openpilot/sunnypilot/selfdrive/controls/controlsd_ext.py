@@ -6,6 +6,8 @@ See the LICENSE.md file in the root directory for more details.
 """
 import time
 
+import numpy as np
+
 import openpilot.cereal.messaging as messaging
 from openpilot.cereal import log, custom
 
@@ -17,6 +19,21 @@ from openpilot.sunnypilot.livedelay.helpers import get_lat_delay
 from openpilot.sunnypilot.modeld_v2.modeld_base import ModelStateBase
 from openpilot.sunnypilot.selfdrive.controls.lib.blinker_pause_lateral import BlinkerPauseLateral
 from openpilot.sunnypilot.selfdrive.controls.lib.latcontrol_torque_v0 import LatControlTorque as LatControlTorqueV0
+
+
+PATH_CURVATURE_LOOKAHEAD_SLICE = slice(2, 11)  # ~0.04s to ~1.0s lookahead in T_IDXS
+PATH_CURVATURE_MIN_SPEED = 1.0  # m/s
+
+
+def path_curvature_ahead(model_v2) -> float:
+  vx = model_v2.velocity.x
+  oz = model_v2.orientationRate.z
+  if len(vx) < 11 or len(oz) < 11 or vx[0] < PATH_CURVATURE_MIN_SPEED:
+    return 0.0
+
+  vx_arr = np.maximum(np.asarray(vx, dtype=np.float64)[PATH_CURVATURE_LOOKAHEAD_SLICE], PATH_CURVATURE_MIN_SPEED)
+  oz_arr = np.asarray(oz, dtype=np.float64)[PATH_CURVATURE_LOOKAHEAD_SLICE]
+  return float(np.mean(oz_arr / vx_arr))
 
 
 class ControlsExt(ModelStateBase):
@@ -103,6 +120,8 @@ class ControlsExt(ModelStateBase):
     CC_SP.intelligentCruiseButtonManagement.state = icbm_src.state
     CC_SP.intelligentCruiseButtonManagement.sendButton = icbm_src.sendButton
     CC_SP.intelligentCruiseButtonManagement.vTarget = icbm_src.vTarget
+
+    CC_SP.pathCurvature = path_curvature_ahead(sm['modelV2'])
 
     return CC_SP
 
