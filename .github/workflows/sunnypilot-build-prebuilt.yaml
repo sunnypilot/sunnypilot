@@ -179,9 +179,10 @@ jobs:
           MEM_PID=$!
           trap 'kill $MEM_PID' EXIT
           # AGNOS mounts these at boot (usr/comma/boot.sh); its uv and pip shims remount / read-only and resize /tmp
+          # /root: scons drops HOME, so tinygrad's compile cache lands in root's home
           docker run --rm --privileged -e CI=true -e HOME=/data/media/0/github -e BUILD_DIR \
             --tmpfs /tmp:rw,exec,nosuid,nodev,size=150m,nr_inodes=1m,mode=1777 --tmpfs /var:rw,exec,nosuid,nodev,size=128m,mode=755 \
-            --tmpfs /home:rw,exec,nosuid,nodev,size=100m,mode=755 \
+            --tmpfs /home:rw,exec,nosuid,nodev,size=100m,mode=755 --tmpfs /root:rw,exec,nosuid,nodev,size=1g,mode=700 \
             -v "$GITHUB_WORKSPACE:/src" -v /data:/data -v "$RUNNER_TEMP/build.sh:/build.sh:ro" agnos bash /build.sh
           TOTAL=$(awk '/MemTotal/{print $2}' /proc/meminfo)
           echo "peak mem used: $(( (TOTAL - $(sort -n "$RUNNER_TEMP/mem.log" | head -1)) / 1024 )) of $((TOTAL / 1024)) MB" | tee -a "$GITHUB_STEP_SUMMARY"
