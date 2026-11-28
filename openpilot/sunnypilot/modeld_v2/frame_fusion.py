@@ -44,7 +44,7 @@ def fused_with_warp(cam_w: int, cam_h: int, chestnut: bool):  # load_model's ext
                  light_warp_path=f"{models}/{big}driving_lightwarp_{cam_w}x{cam_h}_tinygrad.pkl")
 
 
-def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str | None = None) -> dict:
+def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str = "") -> dict:
   if "input_specs" not in extras:  # a legacy model warps in its own parts
     return {}
   (model, model_blob), (warp, warp_blob) = parts["run"], read_parts(warp_path)[0]["run"]
@@ -58,7 +58,8 @@ def frame_part(warp_path: str, parts: dict, extras: dict, light_warp_path: str |
   shift = len(model_blob)
   buf_base, blob_base = [len(model["buffers"]) + len(warp["buffers"])], [len(model_blob) + len(warp_blob)]
   for _, _, part, blob in extra:
-    buf_base.append(buf_base[-1] + len(part["buffers"])); blob_base.append(blob_base[-1] + len(blob))
+    buf_base.append(buf_base[-1] + len(part["buffers"]))
+    blob_base.append(blob_base[-1] + len(blob))
   upload, u8 = buf_base[-1], repr(_dtype("dtypes.uint8"))
   extra_at = {img: (part, buf_base[i], blob_base[i], tfm) for i, (img, tfm, part, _) in enumerate(extra)}
 
