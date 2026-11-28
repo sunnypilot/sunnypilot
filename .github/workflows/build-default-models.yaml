@@ -194,6 +194,7 @@ jobs:
               --layout yuv420 \
               --frames 2 \
               --benchmark-runs 0 \
+              --retargetable \
               --output "${WARP_PKL}"
           done
 
