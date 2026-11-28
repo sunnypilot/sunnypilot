@@ -226,6 +226,7 @@ class UIStateSP:
       # BSM not available: clear BSM-dependent settings
       if not has_bsm(CP, self.CP_SP):
         self.params.remove("AutoLaneChangeBsmDelay")
+        self.params.remove("AlwaysOnBsm")
     else:
       # No CarParams: clear all car-dependent params as safety default
       self.params.remove("EnforceTorqueControl")

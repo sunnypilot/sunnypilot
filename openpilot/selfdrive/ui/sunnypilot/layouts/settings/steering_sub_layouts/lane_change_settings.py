@@ -52,6 +52,12 @@ class LaneChangeSettingsLayout(Widget):
       description=lambda: tr("Toggle to enable a delay timer for seamless lane changes when blind spot monitoring " +
                              "(BSM) detects a obstructing vehicle, ensuring safe maneuvering."),
     )
+    self._always_on_bsm = toggle_item_sp(
+      param="AlwaysOnBsm",
+      title=lambda: tr("Always-On Blind Spot Monitoring"),
+      description=lambda: tr("Play an audible alert when a vehicle is detected in the blind spot while the blinker is on, " +
+                             "even if lateral control is inactive."),
+    )
     self._road_edge_block = toggle_item_sp(
       param="RoadEdgeLaneChangeEnabled",
       title=lambda: tr("Block Lane Change: Road Edge Detection"),
@@ -62,6 +68,8 @@ class LaneChangeSettingsLayout(Widget):
       self._lane_change_timer,
       LineSeparatorSP(40),
       self._bsm_delay,
+      LineSeparatorSP(40),
+      self._always_on_bsm,
       LineSeparatorSP(40),
       self._road_edge_block,
     ]
@@ -86,4 +94,7 @@ class LaneChangeSettingsLayout(Widget):
     enable_bsm = ui_state.CP is not None and has_bsm(ui_state.CP, ui_state.CP_SP)
     if not enable_bsm and ui_state.params.get_bool("AutoLaneChangeBsmDelay"):
       ui_state.params.remove("AutoLaneChangeBsmDelay")
+    if not enable_bsm and ui_state.params.get_bool("AlwaysOnBsm"):
+      ui_state.params.remove("AlwaysOnBsm")
     self._bsm_delay.action_item.set_enabled(enable_bsm and ui_state.params.get("AutoLaneChangeTimer", return_default=True) > AutoLaneChangeMode.NUDGE)
+    self._always_on_bsm.action_item.set_enabled(enable_bsm)
