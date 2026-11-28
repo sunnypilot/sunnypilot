@@ -48,11 +48,19 @@ msgstr "<br><br>การปรับเทียบความล่าช้�
 msgid "<br><br>Steering lag calibration is {}% complete."
 msgstr "<br><br>การปรับเทียบความล่าช้าของพวงมาลัย {}% เสร็จสมบูรณ์"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "A driver assistance system is not a self-driving car."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "A green border will appear around the screen whenever openpilot is engaged."
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "ADD"
 msgstr "เพิ่ม"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "APN Setting"
 msgstr "การตั้งค่า APN"
 
@@ -60,7 +68,11 @@ msgstr "การตั้งค่า APN"
 msgid "Acknowledge Excessive Actuation"
 msgstr "รับทราบการดำเนินการที่มากเกินไป"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Adjust the Max Speed"
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Advanced"
 msgstr "ขั้นสูง"
 
@@ -72,9 +84,13 @@ msgstr "ก้าวร้าว"
 msgid "Agree"
 msgstr "เห็นด้วย"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Alongside this path, lane lines are displayed in white and road edges are displayed in red."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Always-On Driver Monitoring"
-msgstr "การตรวจสอบไดรเวอร์ตลอดเวลา"
+msgstr "การตรวจสอบผู้ขับขี่ตลอดเวลา"
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Are you sure you want to power off?"
@@ -92,8 +108,13 @@ msgstr "คุณแน่ใจหรือไม่ว่าต้องกา
 msgid "Are you sure you want to uninstall?"
 msgstr "คุณแน่ใจหรือไม่ว่าต้องการถอนการติดตั้ง?"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Avoid construction barriers, cones, or pedestrians."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Back"
 msgstr "กลับ"
 
@@ -101,9 +122,21 @@ msgstr "กลับ"
 msgid "Become a comma prime member at connect.comma.ai"
 msgstr "เป็นสมาชิกจุลภาคไพรม์ที่ Connect.comma.ai"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Before we continue, please confirm the following:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Begin Training"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Bookmark connect.comma.ai to your home screen to use it like an app"
 msgstr "คั่นหน้า Connect.comma.ai ไปที่หน้าจอหลักของคุณเพื่อใช้เหมือนแอป"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Both steering and distance to the lead car will be managed by openpilot until the brake pedal is pressed to disengage."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "CHANGE"
@@ -114,22 +147,22 @@ msgid "CHECK"
 msgstr "ตรวจสอบ"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECT"
 msgstr "เชื่อมต่อ"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "CONNECTING..."
 msgstr "กำลังเชื่อมต่อ..."
 
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/keyboard.py
-#: system/ui/widgets/network.py
-#: system/ui/widgets/option_dialog.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/keyboard.py
+#: openpilot/system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Cancel"
 msgstr "ยกเลิก"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Cellular Metered"
 msgstr "เซลล์วัดแสง"
 
@@ -137,21 +170,29 @@ msgstr "เซลล์วัดแสง"
 msgid "Change Language"
 msgstr "เปลี่ยนภาษา"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Change lanes with driver assistance."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Changing this setting will restart sunnypilot if the car is powered on."
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Choose your sponsorship tier and confirm your support"
 msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/pairing_dialog.py
 msgid "Click \"add new device\" and scan the QR code on the right"
-msgstr "คลิก \"เพิ่มอุปกรณ์ใหม่\" และสแกนโค้ด QR ทางด้านขวา"
+msgstr "คลิก \"add new device\" และสแกนโค้ด QR ทางด้านขวา"
 
 #: openpilot/selfdrive/ui/widgets/offroad_alerts.py
 msgid "Close"
 msgstr "ปิด"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Congratulations! You have completed openpilot training."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Current Version"
@@ -169,6 +210,10 @@ msgstr "ปฏิเสธ"
 msgid "Decline, uninstall sunnypilot"
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Determine a path to drive."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Developer"
 msgstr "นักพัฒนา"
@@ -180,6 +225,10 @@ msgstr "อุปกรณ์"
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Disengage on Accelerator Pedal"
 msgstr "ปลดเมื่อเหยียบคันเร่ง"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Disengage openpilot"
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Disengage to Power Off"
@@ -197,6 +246,10 @@ msgstr "ปลดเพื่อรีเซ็ตการปรับเที
 msgid "Display speed in km/h instead of mph."
 msgstr "แสดงความเร็วเป็น km/h แทน mph"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Distracted Driving"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Dongle ID"
 msgstr "รหัสดองเกิล"
@@ -209,11 +262,19 @@ msgstr "ดาวน์โหลด"
 msgid "Driver Camera"
 msgstr "กล้องไดร์เวอร์"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Driver Distracted"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Driver Monitoring"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Driving Personality"
 msgstr "บุคลิกภาพในการขับขี่"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "EDIT"
 msgstr "แก้ไข"
 
@@ -225,11 +286,7 @@ msgstr "ข้อผิดพลาด"
 msgid "ETH"
 msgstr "ผลประโยชน์ทับซ้อน"
 
-#: openpilot/selfdrive/ui/widgets/exp_mode_button.py
-msgid "EXPERIMENTAL MODE ON"
-msgstr "โหมดทดลองเปิดอยู่"
-
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Early Access: Become a sunnypilot Sponsor"
 msgstr ""
 
@@ -245,7 +302,7 @@ msgstr "เปิดใช้งาน ADB"
 msgid "Enable Lane Departure Warnings"
 msgstr "เปิดใช้งานคำเตือนการออกนอกเลน"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Roaming"
 msgstr "เปิดใช้งานโรมมิ่ง"
 
@@ -253,7 +310,7 @@ msgstr "เปิดใช้งานโรมมิ่ง"
 msgid "Enable SSH"
 msgstr "เปิดใช้งาน SSH"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enable Tethering"
 msgstr "เปิดใช้งานการปล่อยสัญญาณ"
 
@@ -265,27 +322,27 @@ msgstr ""
 msgid "Enable sunnypilot"
 msgstr ""
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Enable the sunnypilot longitudinal control (alpha) toggle to allow Experimental mode."
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Engage openpilot"
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter APN"
 msgstr "ป้อน APN"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter SSID"
 msgstr "ป้อน SSID"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter new tethering password"
 msgstr "ป้อนรหัสผ่านการปล่อยสัญญาณใหม่"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Enter password"
 msgstr "ใส่รหัสผ่าน"
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Enter search query"
 msgstr ""
 
@@ -293,19 +350,11 @@ msgstr ""
 msgid "Enter your GitHub username"
 msgstr "ป้อนชื่อผู้ใช้ GitHub ของคุณ"
 
-#: system/ui/widgets/list_view.py
+#: openpilot/system/ui/widgets/list_view.py
 msgid "Error"
 msgstr "ข้อผิดพลาด"
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Experimental Mode"
-msgstr "โหมดทดลอง"
-
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Experimental mode is currently unavailable on this car since the car's stock ACC is used for longitudinal control."
-msgstr "ขณะนี้โหมดทดลองไม่สามารถใช้งานได้บนรถคันนี้ เนื่องจาก ACC ในสต็อกของรถใช้สำหรับการควบคุมตามยาว"
-
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "FORGETTING..."
 msgstr "กำลังลืม..."
 
@@ -313,26 +362,28 @@ msgstr "กำลังลืม..."
 msgid "Finish Setup"
 msgstr "เสร็จสิ้นการตั้งค่า"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Finish Training"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Firehose"
 msgstr "สายดับเพลิง"
 
 #: openpilot/selfdrive/ui/layouts/settings/firehose.py
+#: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Firehose Mode"
 msgstr "โหมดสายดับเพลิง"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Follow the prompts to complete the pairing process"
 msgstr ""
 
-#: system/ui/widgets/network.py
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "Following Distance"
-msgstr ""
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget"
 msgstr "ลืม"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Forget Wi-Fi Network \"{}\"?"
 msgstr "ลืมเครือข่าย Wi-Fi \"{}\" หรือไม่"
 
@@ -348,20 +399,74 @@ msgstr "ไปที่ https://connect.comma.ai บนโทรศัพท์�
 msgid "HIGH"
 msgstr "สูง"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Help improve driver monitoring by including your driving data in the training data set."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Hidden Network"
 msgstr "เครือข่ายที่ซ่อนอยู่"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to change lanes with openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to disengage openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "How to engage and control openpilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will be ready to take over at any time!"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will be ready to take over at any time."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "I will keep my eyes on the road."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "INSTALL"
 msgstr "ติดตั้ง"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "IP Address"
 msgstr "ที่อยู่ IP"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If no triangle is present, your car may be using its stock ACC system, and some openpilot features may not be available."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If openpilot senses that your eyes aren't on the road, the system will go through a series of alerts and actions."
+msgstr ""
+
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "If sponsorship status was not updated, please contact a moderator on the community forum at https://community.sunnypilot.ai"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If the problem persists, the system will begin decelerating the vehicle."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If you are distracted, openpilot will show alerts of increasing severity, and you will be locked out from engaging."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "If you are traveling above 20 mph (32 km/h), openpilot can perform a lane change."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Improve Driver Monitoring"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "Initial Max Speed"
 msgstr ""
@@ -370,13 +475,21 @@ msgstr ""
 msgid "Install Update"
 msgstr "ติดตั้งอัปเดต"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Join our Community Forum at https://community.sunnypilot.ai and reach out to a moderator if you have issues"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Joystick Debug Mode"
 msgstr "โหมดดีบักจอยสติ๊ก"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Keep in mind that it is not capable of checking if a lane change is safe. This is your job."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Keep in mind that openpilot will not recognize certain scenarios including construction zones, close cut-ins, or pedestrians."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "LOADING"
@@ -390,13 +503,34 @@ msgstr "แอลทีที"
 msgid "Lateral Maneuver Mode"
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Let's review the functionality and limitations of openpilot before getting started."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Let's review. openpilot can:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Limited Features"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/developer.py
 msgid "Longitudinal Maneuver Mode"
-msgstr "โหมดการซ้อมรบตามยาว"
+msgstr "โหมดทดสอบการควบคุมตามยาว"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "MAX"
 msgstr "สูงสุด"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Maintain a maximum speed."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Maintain a safe distance from a lead car."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Maximize your training data uploads to improve openpilot's driving models."
@@ -414,6 +548,10 @@ msgstr "เลขที่"
 msgid "Network"
 msgstr "เครือข่าย"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "No"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/ssh_key.py
 msgid "No SSH keys found for user '{}'"
 msgstr "ไม่พบคีย์ SSH สำหรับผู้ใช้ '{}'"
@@ -426,15 +564,18 @@ msgstr "ไม่มีบันทึกประจำรุ่น"
 msgid "OFFLINE"
 msgstr "ออฟไลน์"
 
-#: openpilot/selfdrive/ui/layouts/sidebar.py
-#: system/ui/widgets/confirm_dialog.py
-#: system/ui/widgets/html_render.py
+#: openpilot/system/ui/widgets/confirm_dialog.py
+#: openpilot/system/ui/widgets/html_render.py
 msgid "OK"
 msgstr "ตกลง"
 
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "ONLINE"
 msgstr "ออนไลน์"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Once initiated, openpilot will change lanes regardless if another vehicle is present."
+msgstr ""
 
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Open"
@@ -464,7 +605,7 @@ msgstr "จับคู่อุปกรณ์"
 msgid "Pair device"
 msgstr "จับคู่อุปกรณ์"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Pair your GitHub account"
 msgstr ""
 
@@ -477,6 +618,14 @@ msgstr "จับคู่อุปกรณ์ของคุณกับบั
 msgid "Pair your device with comma connect (connect.comma.ai) and claim your comma prime offer."
 msgstr "จับคู่อุปกรณ์ของคุณกับการเชื่อมต่อด้วยเครื่องหมายจุลภาค (connect.comma.ai) และรับข้อเสนอจุลภาคเฉพาะของคุณ"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Pay Attention"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Perform Lane Change"
+msgstr ""
+
 #: openpilot/selfdrive/ui/widgets/setup.py
 msgid "Please connect to Wi-Fi to complete initial pairing"
 msgstr "โปรดเชื่อมต่อ Wi-Fi เพื่อทำการจับคู่ครั้งแรกให้เสร็จสิ้น"
@@ -485,11 +634,15 @@ msgstr "โปรดเชื่อมต่อ Wi-Fi เพื่อทำก�
 msgid "Power Off"
 msgstr "ปิดเครื่อง"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Press + or - on your cruise control inputs to adjust the max speed shown in the upper left corner."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered Wi-Fi connection"
 msgstr "ป้องกันการอัปโหลดข้อมูลขนาดใหญ่เมื่อใช้การเชื่อมต่อ Wi-Fi แบบมิเตอร์"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Prevent large data uploads when on a metered cellular connection"
 msgstr "ป้องกันการอัพโหลดข้อมูลขนาดใหญ่เมื่อใช้การเชื่อมต่อมือถือแบบคิดค่าบริการตามปริมาณข้อมูล"
 
@@ -513,8 +666,12 @@ msgstr "รีเซ็ต"
 msgid "REVIEW"
 msgstr "ทบทวน"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Re-enter the \"sunnylink\" panel to verify sponsorship status"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "React to unsafe situations like close vehicle cut-ins or road hazards."
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
@@ -569,6 +726,10 @@ msgstr "รีเซ็ต"
 msgid "Reset Calibration"
 msgstr "รีเซ็ตการปรับเทียบ"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Restart"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "Review Training Guide"
 msgstr "ทบทวนคู่มือการฝึกอบรม"
@@ -585,23 +746,27 @@ msgstr "เลือก"
 msgid "SSH Keys"
 msgstr "คีย์ SSH"
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to login to your GitHub account"
 msgstr ""
 
-#: system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/sunnylink_pairing_dialog.py
 msgid "Scan the QR code to visit sunnyhaibin's GitHub Sponsors page"
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Scanning Wi-Fi networks..."
 msgstr "กำลังสแกนเครือข่าย Wi-Fi..."
 
-#: system/ui/sunnypilot/widgets/tree_dialog.py
+#: openpilot/system/ui/sunnypilot/widgets/tree_dialog.py
 msgid "Search"
 msgstr ""
 
-#: system/ui/widgets/option_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "See other cars during a lane change."
+msgstr ""
+
+#: openpilot/system/ui/widgets/option_dialog.py
 msgid "Select"
 msgstr "เลือก"
 
@@ -629,6 +794,10 @@ msgstr "ซอฟต์แวร์"
 msgid "Standard"
 msgstr "มาตรฐาน"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Stay engaged while the driver is distracted."
+msgstr ""
+
 #: openpilot/selfdrive/ui/onroad/alert_renderer.py
 msgid "System Unresponsive"
 msgstr "ระบบไม่ตอบสนอง"
@@ -641,13 +810,81 @@ msgstr "เข้าควบคุมทันที"
 msgid "TEMP"
 msgstr "อุณหภูมิ"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the alert to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the brake pedal to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the driver to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the driving path to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the lead car indicator"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the max speed to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap the steering wheel to continue"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Tap “SET” in the image to continue"
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/settings/software.py
 msgid "Target Branch"
 msgstr "สาขาเป้าหมาย"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Tethering Password"
 msgstr "รหัสผ่านการแชร์อินเทอร์เน็ต"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The Driving Path"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The Lead Car Indicator"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The lead car indicator is displayed as a triangle under the lead car."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "The sequence of turn signal and wheel nudge will prompt openpilot to change lanes."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "These are usually located on the steering wheel or on a control lever near the steering column."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This guide can be replayed at any time from the device settings."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This is only a maximum, not a set speed. openpilot may drive slower for curves, the road scene, red lights, and stop signs."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "This means openpilot is designed to work with you, not without you."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "To read more about openpilot, visit github.com/commaai/openpilot and join the community at discord.comma.ai."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/settings.py
 msgid "Toggles"
@@ -701,25 +938,57 @@ msgstr "ดู"
 msgid "Waiting to start"
 msgstr "กำลังรอที่จะเริ่ม"
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Welcome to openpilot"
+msgstr "ยินดีต้อนรับสู่ openpilot"
+
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "Welcome to sunnypilot"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "What is openpilot?"
 msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/toggles.py
 msgid "When enabled, pressing the accelerator pedal will disengage sunnypilot."
 msgstr ""
 
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When it's safe, gently nudge the steering wheel towards your desired lane."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When you are ready to engage openpilot at a comfortable speed, engage the cruise control system and press “SET” to begin."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "When you encounter a potentially unsafe situation or need to exit a highway, disengage openpilot by pressing the brake pedal."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "While openpilot is engaged, you may keep your hands on the wheel to override steering controls."
+msgstr ""
+
 #: openpilot/selfdrive/ui/layouts/sidebar.py
 msgid "Wi-Fi"
 msgstr "อินเตอร์เน็ตไร้สาย"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "Wi-Fi Network Metered"
 msgstr "เครือข่าย Wi-Fi มีการตรวจวัด"
 
-#: system/ui/widgets/network.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "With openpilot engaged, turn on your signal and check your surroundings."
+msgstr ""
+
+#: openpilot/system/ui/widgets/network.py
 msgid "Wrong password"
 msgstr "รหัสผ่านผิด"
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Yes"
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/onboarding.py
 msgid "You must accept the Terms of Service in order to use sunnypilot."
@@ -729,7 +998,23 @@ msgstr ""
 msgid "You must accept the Terms of Service to use sunnypilot. Read the latest terms at https://sunnypilot.ai/terms before continuing."
 msgstr ""
 
-#: openpilot/selfdrive/ui/onroad/driver_camera_dialog.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "You must pay attention at all times."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "You must stay alert and be ready to retake control of the vehicle at all times."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Your attention is required at all times to drive with openpilot."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "Your preference can be changed at any time in Settings. Would you like to share your data?"
+msgstr ""
+
+#: openpilot/selfdrive/ui/onroad/cabin_camera_dialog.py
 msgid "camera starting"
 msgstr "กำลังเริ่มกล้อง"
 
@@ -741,7 +1026,7 @@ msgstr "กำลังตรวจสอบ..."
 msgid "comma prime"
 msgstr "เครื่องหมายลูกน้ำเฉพาะ"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "default"
 msgstr "ค่าเริ่มต้น"
 
@@ -761,7 +1046,7 @@ msgstr "ไม่สามารถตรวจสอบการอัปเด
 msgid "finalizing update..."
 msgstr "กำลังสรุปการอัปเดต..."
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "for \"{}\""
 msgstr "สำหรับ \"{}\""
 
@@ -770,7 +1055,7 @@ msgstr "สำหรับ \"{}\""
 msgid "km/h"
 msgstr "กม./ชม"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "leave blank for automatic configuration"
 msgstr "เว้นว่างไว้เพื่อกำหนดค่าอัตโนมัติ"
 
@@ -778,11 +1063,12 @@ msgstr "เว้นว่างไว้เพื่อกำหนดค่า
 msgid "left"
 msgstr "ซ้าย"
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "metered"
 msgstr "คิดค่าบริการตามปริมาณ"
 
 #: openpilot/selfdrive/ui/layouts/settings/initial_cruise_speed.py
+#: openpilot/selfdrive/ui/layouts/training_guide.py
 #: openpilot/selfdrive/ui/onroad/hud_renderer.py
 msgid "mph"
 msgstr "ไมล์/ชม."
@@ -795,15 +1081,29 @@ msgstr "ไม่เคย"
 msgid "now"
 msgstr "ตอนนี้"
 
-#: openpilot/selfdrive/ui/layouts/settings/developer.py
-msgid "openpilot Longitudinal Control (Alpha)"
-msgstr "การควบคุมตามยาวของ openpilot (อัลฟา)"
-#: openpilot/selfdrive/ui/onroad/alert_renderer.py
-msgid "openpilot Unavailable"
-msgstr "openpilot ไม่พร้อมใช้งาน"
-#: openpilot/selfdrive/ui/layouts/settings/device.py
-msgid "openpilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
-msgstr "openpilot ต้องติดตั้งอุปกรณ์ให้อยู่ในช่วงเอียงซ้ายหรือขวาไม่เกิน 4° และเอียงขึ้นไม่เกิน 5° หรือเอียงลงไม่เกิน 9°"
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot can detect 2 cars simultaneously. The second triangle will appear when a cut-in is detected."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot cannot:"
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot is an advanced driver assistance system."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot is controlled using your car's cruise control inputs."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot monitors your awareness through the device's driver-facing camera."
+msgstr ""
+
+#: openpilot/selfdrive/ui/layouts/training_guide.py
+msgid "openpilot uses the road-facing camera to plan the best path to drive."
+msgstr ""
 
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "right"
@@ -817,15 +1117,11 @@ msgstr ""
 msgid "sunnypilot Unavailable"
 msgstr ""
 
-#: openpilot/selfdrive/ui/layouts/settings/toggles.py
-msgid "sunnypilot longitudinal control may come in a future update."
-msgstr ""
-
 #: openpilot/selfdrive/ui/layouts/settings/device.py
 msgid "sunnypilot requires the device to be mounted within 4° left or right and within 5° up or 9° down."
 msgstr ""
 
-#: system/ui/widgets/network.py
+#: openpilot/system/ui/widgets/network.py
 msgid "unmetered"
 msgstr "ไม่จำกัดปริมาณ"
 
@@ -865,16 +1161,7 @@ msgid "{} minute ago"
 msgid_plural "{} minutes ago"
 msgstr[0] "{} นาทีที่แล้ว"
 
-#: openpilot/selfdrive/ui/layouts/settings/firehose.py
-msgid "{} segment of your driving is in the training dataset so far."
-msgid_plural "{} segments of your driving is in the training dataset so far."
-msgstr[0] "ขณะนี้มีช่วงการขับขี่ของคุณ {} ช่วงอยู่ในชุดข้อมูลฝึกสอนแล้ว"
-
 #: openpilot/selfdrive/ui/widgets/prime.py
 msgid "✓ SUBSCRIBED"
 msgstr "✓ สมัครแล้ว"
-
-#: openpilot/selfdrive/ui/widgets/setup.py
-msgid "🔥 Firehose Mode 🔥"
-msgstr "🔥 โหมด Firehose 🔥"
 

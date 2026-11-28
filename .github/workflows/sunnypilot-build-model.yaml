@@ -131,8 +131,11 @@ jobs:
             for f in "$@"; do
               grep -qs "^version https://git-lfs" "$f" || continue
               OID=$(awk -F'sha256:' '/^oid/{print $2}' "$f"); SIZE=$(awk '/^size/{print $2}' "$f")
-              HREF="https://huggingface.co/buckets/commaai/openpilot-lfs/resolve/sha256/$OID" # lfs.py's bucket (commaai/openpilot#39206)
-              curl -fsSL --retry 3 -r 0-0 -o /dev/null "$HREF" || HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
+              HREF=""
+              for B in sunnypilot/sunnypilot-lfs commaai/openpilot-lfs; do # lfs.py's buckets (commaai/openpilot#39206)
+                if curl -fsSL --retry 3 -r 0-0 -o /dev/null "https://huggingface.co/buckets/$B/resolve/sha256/$OID"; then HREF="https://huggingface.co/buckets/$B/resolve/sha256/$OID"; break; fi
+              done
+              [ -n "$HREF" ] || HREF=$(curl -fsSL --retry 3 -X POST -H "Accept: application/vnd.git-lfs+json" -H "Content-Type: application/vnd.git-lfs+json" "$LFS_URL/objects/batch" \
                 -d "{\"operation\":\"download\",\"transfer\":[\"basic\"],\"objects\":[{\"oid\":\"$OID\",\"size\":$SIZE}]}" | jq -r '.objects[0].actions.download.href // empty')
               if [ -z "$HREF" ]; then # not in openpilot's LFS: comma also publishes models to openpilot_driving_models
                 HF_PATH=$(curl -fsSL --retry 3 "https://huggingface.co/api/models/commaai/openpilot_driving_models/tree/main?recursive=true" | jq -r --arg oid "$OID" 'map(select(.lfs.oid == $oid))[0].path // empty')
@@ -146,7 +149,9 @@ jobs:
           }
           UPSTREAM_PKL=selfdrive/modeld/models/big_driving_tinygrad.pkl
           if [ "${{ inputs.target_hardware }}" != "chestnut" ]; then
-            git lfs pull -X "**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl" || true
+            LFS_EXCLUDE="**/selfdrive/modeld/models/big_*.onnx,**/selfdrive/modeld/models/dmonitoring_*.onnx,**/selfdrive/modeld/models/big_*.pkl,**/selfdrive/modeld/models/dmonitoring_*.pkl"
+            TOP=$(git rev-parse --show-toplevel)
+            if [ -f "$TOP/lfs.py" ]; then (cd "$TOP" && ./lfs.py pull --exclude="$LFS_EXCLUDE"); else git lfs pull -X "$LFS_EXCLUDE"; fi || true
             rm -f selfdrive/modeld/models/big_*.onnx selfdrive/modeld/models/dmonitoring_*.onnx selfdrive/modeld/models/big_*.pkl selfdrive/modeld/models/dmonitoring_*.pkl
             fetch_lfs selfdrive/modeld/models/*.onnx
           elif compgen -G "selfdrive/modeld/models/big_*.onnx" > /dev/null; then

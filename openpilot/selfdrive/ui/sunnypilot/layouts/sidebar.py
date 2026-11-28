@@ -6,7 +6,7 @@ See the LICENSE.md file in the root directory for more details.
 """
 import math
 
-import pyray as rl
+import raylib_nb as rl
 import time
 from dataclasses import dataclass
 from openpilot.selfdrive.ui.ui_state import ui_state, ChestnutState

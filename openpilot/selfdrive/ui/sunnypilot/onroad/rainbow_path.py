@@ -6,8 +6,8 @@ See the LICENSE.md file in the root directory for more details.
 """
 import time
 import colorsys
-import pyray as rl
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
+import raylib_nb as rl
+from openpilot.system.ui.lib.polygon import draw_polygon, Gradient
 
 
 class RainbowPath:

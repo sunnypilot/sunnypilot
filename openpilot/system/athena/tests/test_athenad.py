@@ -45,6 +45,9 @@ def with_upload_handler(func):
       return func(*args, **kwargs)
     finally:
       end_event.set()
+      # wake the handler from its blocking queue get
+      athenad.cancelled_uploads.add('wakeup')
+      athenad.upload_queue.put_nowait(athenad.UploadItem(path='', url='', headers={}, created_at=0, id='wakeup'))
       thread.join()
   return wrapper
 
@@ -56,11 +59,8 @@ def host():
     yield f"http://{host}:{port}"
 
 class TestAthenadMethods(OpenpilotTestCase):
-  @classmethod
-  def setup_class(cls):
-    athenad.Api = MockApi  # ty: ignore[invalid-assignment]  # test double
-
   def setup_method(self):
+    athenad.Api = MockApi  # ty: ignore[invalid-assignment]  # test double
     self.default_params = {
       "DongleId": "0000000000000000",
       "GithubSshKeys": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC307aE+nuHzTAgaJhzSf5v7ZZQW9gaperjhCmyPyl4PzY7T1mDGenTlVTN7yoVFZ9UfO9oMQqo0n1OwDIiqbIFxqnhrHU0cYfj88rI85m5BEKlNu5RdaVTj1tcbaPpQc5kZEolaI1nDDjzV0lwS7jo5VYDHseiJHlik3HH1SgtdtsuamGR2T80q1SyW+5rHoMOJG73IH2553NnWuikKiuikGHUYBd00K1ilVAK2xSiMWJp55tQfZ0ecr9QjEsJ+J/efL4HqGNXhffxvypCXvbUYAFSddOwXUPo5BTKevpxMtH+2YrkpSjocWA04VnTYFiPG6U4ItKmbLOTFZtPzoez private", # noqa: E501
@@ -120,19 +120,17 @@ class TestAthenadMethods(OpenpilotTestCase):
 
     # out of range and non-finite coordinates are rejected without touching the destination
     for latitude, longitude in [(91, 0), (0, -181), (float('nan'), 0), (0, float('inf'))]:
-      assert set_destination(latitude, longitude)["success"] == 0, (latitude, longitude)
+      with self.assertRaises(TypeError):
+        set_destination(latitude, longitude)
       assert self.params.get("NavDestination") == destination
 
     assert dispatcher["clearNavDestination"]() == {"success": 1}
     assert dispatcher["clearNavDestination"]() == {"success": 1}
     assert self.params.get("NavDestination") is None
 
-  def test_echo(self):
-    assert dispatcher["echo"]("bob") == "bob"
-
   def test_get_message(self):
     with self.assertRaises(TimeoutError) as _:
-      dispatcher["getMessage"]("controlsState")
+      dispatcher["getMessage"]("controlsState", timeout=100)
 
     end_event = multiprocessing.Event()
 
@@ -348,7 +346,7 @@ class TestAthenadMethods(OpenpilotTestCase):
   @with_upload_handler
   def test_cancel_upload(self):
     item = athenad.UploadItem(path="qlog.zst", url="http://localhost:44444/qlog.zst", headers={},
-                              created_at=int(time.time()*1000), id='id', allow_cellular=True)  # noqa: TID251
+                              created_at=int(time.time()*1000), id='0' * 40, allow_cellular=True)  # noqa: TID251
     athenad.upload_queue.put_nowait(item)
     dispatcher["cancelUpload"](item.id)
 
@@ -488,16 +486,19 @@ class TestAthenadMethods(OpenpilotTestCase):
       assert isinstance(resp[k], str), f"{k} is not a string"
       assert len(resp[k]) > 0, f"{k} has no value"
 
-  def test_jsonrpc_handler(self):
+  def test_jsonrpc_handler(self, mocker):
+    # private queues, so the shutdown wakeup below can't leak into other tests
+    for q in ('recv_queue', 'send_queue', 'log_recv_queue'):
+      mocker.patch.object(athenad, q, type(getattr(athenad, q))())
     end_event = threading.Event()
     thread = threading.Thread(target=athenad.jsonrpc_handler, args=(end_event,))
     thread.daemon = True
     thread.start()
     try:
       # with params
-      athenad.recv_queue.put_nowait(json.dumps({"method": "echo", "params": ["hello"], "jsonrpc": "2.0", "id": 0}))
+      athenad.recv_queue.put_nowait(json.dumps({"method": "cancelUpload", "params": ["0" * 40], "jsonrpc": "2.0", "id": 0}))
       _, _, resp = athenad.send_queue.get(timeout=3)
-      assert json.loads(resp) == {'result': 'hello', 'id': 0, 'jsonrpc': '2.0'}
+      assert json.loads(resp) == {'result': {'success': 0, 'error': 'not found'}, 'id': 0, 'jsonrpc': '2.0'}
       # without params
       athenad.recv_queue.put_nowait(json.dumps({"method": "getNetworkType", "jsonrpc": "2.0", "id": 0}))
       _, _, resp = athenad.send_queue.get(timeout=3)
@@ -508,6 +509,8 @@ class TestAthenadMethods(OpenpilotTestCase):
       assert json.loads(resp) == {'result': {'success': 1}, 'id': 0, 'jsonrpc': '2.0'}
     finally:
       end_event.set()
+      # wake the handler from its blocking queue get
+      athenad.recv_queue.put_nowait(json.dumps({'result': None, 'id': 0, 'jsonrpc': '2.0'}))
       thread.join()
 
   def test_get_logs_to_send_sorted(self):

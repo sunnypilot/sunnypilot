@@ -1,5 +1,5 @@
 import math
-import pyray as rl
+import raylib_nb as rl
 from collections.abc import Callable
 
 from openpilot.selfdrive.ui.layouts.settings.initial_cruise_speed import get_speed_options, set_initial_cruise_speed
@@ -147,7 +147,8 @@ class InitialCruiseSpeedButton(BigButton):
   def __init__(self):
     super().__init__("initial max speed", " ", description="Max speed when engaging openpilot.\n" +
                                                            "If you are already driving faster, your current speed is used.\n" +
-                                                           "Resume restores the previous max speed.")
+                                                           "Resume restores the previous max speed.",
+                     icon=gui_app.texture("icons_mici/longitudinal/speed_dial.png", 75, 64))
     self._picker = InitialCruiseSpeedPicker(self.refresh)
     self.set_click_callback(lambda: gui_app.push_widget(self._picker))
     self.refresh()

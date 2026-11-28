@@ -1,13 +1,13 @@
 import colorsys
 import numpy as np
-import pyray as rl
+import raylib_nb as rl
 from openpilot.cereal import messaging
 from opendbc.car.structs import car
 from dataclasses import dataclass, field
 from openpilot.common.params import Params
 from openpilot.selfdrive.locationd.calibrationd import HEIGHT_INIT
 from openpilot.selfdrive.ui.ui_state import ui_state
-from openpilot.system.ui.lib.shader_polygon import draw_polygon, Gradient
+from openpilot.system.ui.lib.polygon import draw_polygon, Gradient
 from openpilot.system.ui.widgets import Widget
 
 from openpilot.selfdrive.ui.sunnypilot.onroad.model_renderer import ChevronMetrics, ModelRendererSP
@@ -38,6 +38,9 @@ class LeadVehicle:
 
 
 class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
+  LANE_LINE_WIDTHS = (0.025, 0.025, 0.025, 0.025)
+  ROAD_EDGE_WIDTH = 0.025
+
   def __init__(self):
     Widget.__init__(self)
     ChevronMetrics.__init__(self)
@@ -49,6 +52,8 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._path_offset_z = HEIGHT_INIT[0]
     self._counter = -1
     self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
+    self._path_half_width = 0.9  # m
+
     # Initialize ModelPoints objects
     self._path = ModelPoints()
     self._lane_lines = [ModelPoints() for _ in range(4)]
@@ -76,12 +81,14 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     self._car_space_transform = transform.astype(np.float32)
     self._transform_dirty = True
 
+  def _draw_offset(self) -> np.ndarray:
+    return np.zeros(2, dtype=np.float32)
+
   def _render(self, rect: rl.Rectangle):
     sm = ui_state.sm
 
     # Check if data is up-to-date
-    if (sm.recv_frame["extrinsicsCalibration"] < ui_state.started_frame or
-        sm.recv_frame["modelV2"] < ui_state.started_frame):
+    if not ui_state.received_since_started("extrinsicsCalibration") or not ui_state.received_since_started("modelV2"):
       return
 
     # Set up clipping region
@@ -96,6 +103,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     if self._counter % 60 == 0:
       self._camera_offset = ui_state.params.get("CameraOffset", return_default=True) if ui_state.active_bundle else 0.0
     self._counter += 1
+    self._path_half_width = self._get_path_half_width()
 
     if sm.updated['carParams']:
       self._longitudinal_control = sm['carParams'].openpilotLongitudinalControl
@@ -167,12 +175,12 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     # Update lane lines using raw points
     for i, lane_line in enumerate(self._lane_lines):
       lane_line.projected_points = self._map_line_to_polygon(
-        lane_line.raw_points, 0.025 * self._lane_line_probs[i], 0.0, max_idx, max_distance
+        lane_line.raw_points, self.LANE_LINE_WIDTHS[i] * self._lane_line_probs[i], 0.0, max_idx, max_distance
       )
 
     # Update road edges using raw points
     for road_edge in self._road_edges:
-      road_edge.projected_points = self._map_line_to_polygon(road_edge.raw_points, 0.025, 0.0, max_idx, max_distance)
+      road_edge.projected_points = self._map_line_to_polygon(road_edge.raw_points, self.ROAD_EDGE_WIDTH, 0.0, max_idx, max_distance)
     self.blendful.update(self, max_idx, max_distance)
 
     # Update path using raw points
@@ -182,7 +190,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
 
     max_idx = self._get_path_length_idx(path_x_array, max_distance)
     self._path.projected_points = self._map_line_to_polygon(
-      self._path.raw_points, self._get_path_half_width(), self._path_offset_z, max_idx, max_distance, allow_invert=False
+      self._path.raw_points, self._path_half_width, self._path_offset_z, max_idx, max_distance, allow_invert=False
     )
 
     self._update_path_gradient()
@@ -191,7 +199,8 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     if not self._longitudinal_control:
       return
 
-    max_len = min(len(self._path.projected_points) // 2, len(self._acceleration_x))
+    path_pts = self._path.projected_points + self._draw_offset()
+    max_len = min(len(path_pts) // 2, len(self._acceleration_x))
 
     segment_colors = []
     gradient_stops = []
@@ -199,7 +208,7 @@ class ModelRenderer(Widget, ChevronMetrics, ModelRendererSP):
     i = 0
     while i < max_len:
       # Some points (screen space) are out of frame (rect space)
-      track_y = self._path.projected_points[i][1]
+      track_y = path_pts[i][1]
       if track_y < self._rect.y or track_y > (self._rect.y + self._rect.height):
         i += 1
         continue
