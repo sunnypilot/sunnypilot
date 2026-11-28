@@ -14,6 +14,8 @@ sections:
   - key: OffroadMode
     widget: toggle
     title: Force Offroad Mode
+    enablement:
+    - $ref: '#/macros/not_engaged'
   - key: DeviceBootMode
     widget: option
     title: Wake Up Behavior
